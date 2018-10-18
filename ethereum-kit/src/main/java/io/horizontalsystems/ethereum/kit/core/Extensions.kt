@@ -2,7 +2,9 @@ package io.horizontalsystems.ethereum.kit.core
 
 import io.horizontalsystems.hdwalletkit.ECKey
 import io.horizontalsystems.hdwalletkit.HDWallet
-import org.web3j.crypto.Keys
+import org.web3j.crypto.Credentials
+import org.web3j.crypto.ECKeyPair
+import java.math.BigInteger
 
 fun ByteArray.toHexString(): String {
     return this.joinToString(separator = "") {
@@ -17,11 +19,14 @@ fun String.hexStringToByteArray(): ByteArray {
     }
 }
 
-fun HDWallet.address(): String {
+fun HDWallet.address(): String =
+        credentials().address
+
+fun HDWallet.credentials(): Credentials {
     val accountKey = privateKey(0, HDWallet.Chain.EXTERNAL.ordinal)
     val pubKey = ECKey.pubKeyFromPrivKey(accountKey.privKey, false)
 
-    val addressWithNoHexPrefix = Keys.getAddress(pubKey.slice(1 until pubKey.size).toByteArray()).toHexString()
+    val ecKeyPair = ECKeyPair(accountKey.privKey, BigInteger(1, pubKey.slice(1 until pubKey.size).toByteArray()))
 
-    return "0x$addressWithNoHexPrefix"
+    return Credentials.create(ecKeyPair)
 }

@@ -16,6 +16,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     val balance = MutableLiveData<Long>()
     val lastBlockHeight = MutableLiveData<Int>()
     val status = MutableLiveData<State>()
+    val sendStatus = MutableLiveData<Throwable?>()
 
     private var started = false
         set(value) {
@@ -27,7 +28,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
 
     init {
         val words = listOf("subway", "plate", "brick", "pattern", "inform", "used", "oblige", "identify", "cherry", "drop", "flush", "balance")
-        ethereumKit = EthereumKit(words, NetworkType.Ropsten)
+        ethereumKit = EthereumKit(words, NetworkType.Kovan)
 
         ethereumKit.listener = this
 
@@ -46,11 +47,13 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     }
 
     fun receiveAddress(): String {
-        return ""//ethereumKit.receiveAddress()
+        return ethereumKit.receiveAddress()
     }
 
-    fun send(address: String, amount: Int) {
-        //ethereumKit.send(address, amount)
+    fun send(address: String, amount: Double) {
+        ethereumKit.send(address, amount) { error ->
+            sendStatus.value = error
+        }
     }
 
     override fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {

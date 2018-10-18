@@ -3,13 +3,12 @@ package io.horizontalsystems.ethereum.kit
 import android.content.Context
 import io.horizontalsystems.ethereum.kit.core.RealmFactory
 import io.horizontalsystems.ethereum.kit.core.address
+import io.horizontalsystems.ethereum.kit.core.credentials
 import io.horizontalsystems.ethereum.kit.models.Transaction
 import io.horizontalsystems.ethereum.kit.network.EtherscanService
 import io.horizontalsystems.ethereum.kit.network.NetworkType
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
 import io.realm.OrderedCollectionChangeSet
 import io.realm.Realm
 import io.realm.RealmResults
@@ -17,6 +16,13 @@ import io.realm.annotations.RealmModule
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.Web3jFactory
 import org.web3j.protocol.http.HttpService
+import org.web3j.tx.Transfer
+import org.web3j.utils.Convert
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
+import rx.subscriptions.CompositeSubscription
+import java.math.BigDecimal
+
 
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
@@ -32,16 +38,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     var listener: Listener? = null
 
     val transactions: List<Transaction>
-        get() = transactionRealmResults.map { it }
+        get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
-    var realmFactory: RealmFactory = RealmFactory(networkType.name) //make private after tests
+    private var realmFactory: RealmFactory = RealmFactory(networkType.name)
     private val transactionRealmResults: RealmResults<Transaction>
 
-    private val web3j: Web3j = Web3jFactory.build(HttpService("https://ropsten.infura.io/v3/2a1306f1d12f4c109a4d4fb9be46b02e"))
+    private val web3j: Web3j = Web3jFactory.build(HttpService("https://kovan.infura.io/v3/2a1306f1d12f4c109a4d4fb9be46b02e"))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
 
     private val etherscanService = EtherscanService(networkType)
-    private var disposables: CompositeDisposable = CompositeDisposable()
+    private var subscriptions: CompositeSubscription = CompositeSubscription()
 
     init {
 
@@ -49,7 +55,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
         transactionRealmResults = realm.where(Transaction::class.java)
                 .findAll()
-
 
         transactionRealmResults.addChangeListener { t, changeSet ->
             handleTransactions(t, changeSet)
@@ -59,9 +64,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 //
 //        println("web3clientVersion = $web3ClientVersion")
 //
-//        println("address = ${hdWallet.address()}")
-
-
     }
 
     fun start() {
@@ -75,14 +77,35 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
         realm.close()
 
-        disposables.clear()
+        subscriptions.clear()
     }
 
-    fun updateTransactions() {
+    fun receiveAddress(): String {
+        return hdWallet.address()
+    }
+
+    fun send(address: String, value: Double, completion: ((Throwable?) -> (Unit))? = null) {
+        Transfer.sendFunds(
+                web3j, hdWallet.credentials(),
+                address,
+                BigDecimal.valueOf(value), Convert.Unit.ETHER)
+                .observable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnError { throwable ->
+                    completion?.invoke(throwable)
+                }
+                .subscribe {
+                    completion?.invoke(null)
+                }.let {
+                    subscriptions.add(it)
+                }
+    }
+
+    private fun updateTransactions() {
         etherscanService.getTransactionList(hdWallet.address())
                 .subscribeOn(Schedulers.io())
                 .subscribe { etherscanResponse ->
-
                     realmFactory.realm.use { realm ->
                         realm.executeTransaction {
                             etherscanResponse.result.map { etherscanTx -> Transaction(etherscanTx) }.forEach { transaction ->
@@ -90,7 +113,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                             }
                         }
                     }
-                }.let { disposables.add(it) }
+                }.let { subscriptions.add(it) }
 
     }
 

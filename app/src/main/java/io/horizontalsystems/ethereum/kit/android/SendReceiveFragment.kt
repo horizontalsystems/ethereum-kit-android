@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereum.kit.android
 
+import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -9,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 
 class SendReceiveFragment : Fragment() {
 
@@ -51,22 +53,16 @@ class SendReceiveFragment : Fragment() {
             } else if (sendAmount.text.isEmpty()) {
                 sendAmount.error = "Send amount cannot be blank"
             } else {
-                send()
+                viewModel.send(sendAddress.text.toString(), sendAmount.text.toString().toDouble())
             }
         }
+
+        viewModel.sendStatus.observe(this, Observer { sendError ->
+
+            val msg = if (sendError != null) sendError.localizedMessage else " Successfully sent!"
+
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        })
     }
 
-    private fun send() {
-//        try {
-//            viewModel.send(sendAddress.text.toString(), sendAmount.text.toString().toInt())
-//        } catch (e: Exception) {
-//            val message = when (e) {
-//                is UnspentOutputSelector.InsufficientUnspentOutputs,
-//                is UnspentOutputSelector.EmptyUnspentOutputs -> "Insufficient balance"
-//                else -> e.message
-//            }
-//
-//            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-//        }
-    }
 }
