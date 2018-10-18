@@ -1,0 +1,74 @@
+package io.horizontalsystems.ethereumkit.sample
+
+import android.arch.lifecycle.MutableLiveData
+import android.arch.lifecycle.ViewModel
+import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.network.NetworkType
+
+class MainViewModel : ViewModel(), EthereumKit.Listener {
+
+    enum class State {
+        STARTED, STOPPED
+    }
+
+    val transactions = MutableLiveData<List<Transaction>>()
+    val balance = MutableLiveData<Double>()
+    val lastBlockHeight = MutableLiveData<Int>()
+    val status = MutableLiveData<State>()
+    val sendStatus = SingleLiveEvent<Throwable?>()
+
+    private var started = false
+        set(value) {
+            field = value
+            status.value = (if (value) State.STARTED else State.STOPPED)
+        }
+
+    private var ethereumKit: EthereumKit
+
+    init {
+        val words = listOf("subway", "plate", "brick", "pattern", "inform", "used", "oblige", "identify", "cherry", "drop", "flush", "balance")
+        ethereumKit = EthereumKit(words, NetworkType.Kovan)
+
+        ethereumKit.listener = this
+
+        transactions.value = ethereumKit.transactions
+        balance.value = ethereumKit.balance
+//        lastBlockHeight.value = ethereumKit.lastBlockHeight
+
+        started = false
+    }
+
+    fun start() {
+//        if (started) return
+//        started = true
+
+        ethereumKit.start()
+    }
+
+    fun receiveAddress(): String {
+        return ethereumKit.receiveAddress()
+    }
+
+    fun send(address: String, amount: Double) {
+        ethereumKit.send(address, amount) { error ->
+            sendStatus.value = error
+        }
+    }
+
+    override fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
+        transactions.value = ethereumKit.transactions
+    }
+
+    override fun balanceUpdated(ethereumKit: EthereumKit, balance: Double) {
+        this.balance.value = balance
+    }
+
+//    override fun lastBlockInfoUpdated(ethereumKit: EthereumKit, lastBlockInfo: BlockInfo) {
+//        this.lastBlockHeight.value = lastBlockInfo.height
+//    }
+
+    override fun progressUpdated(ethereumKit: EthereumKit, progress: Double) {
+//        TODO("not implemented")
+    }
+}
