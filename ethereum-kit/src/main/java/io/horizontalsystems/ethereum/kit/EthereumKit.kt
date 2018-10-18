@@ -4,6 +4,7 @@ import android.content.Context
 import io.horizontalsystems.ethereum.kit.core.RealmFactory
 import io.horizontalsystems.ethereum.kit.core.address
 import io.horizontalsystems.ethereum.kit.core.credentials
+import io.horizontalsystems.ethereum.kit.models.Balance
 import io.horizontalsystems.ethereum.kit.models.Transaction
 import io.horizontalsystems.ethereum.kit.network.EtherscanService
 import io.horizontalsystems.ethereum.kit.network.NetworkType
@@ -15,6 +16,7 @@ import io.realm.RealmResults
 import io.realm.annotations.RealmModule
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.Web3jFactory
+import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.Transfer
 import org.web3j.utils.Convert
@@ -31,7 +33,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     interface Listener {
         fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
-        fun balanceUpdated(ethereumKit: EthereumKit, balance: Long)
+        fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
         fun progressUpdated(ethereumKit: EthereumKit, progress: Double)
     }
 
@@ -40,8 +42,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     val transactions: List<Transaction>
         get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
+    val balance: Double
+        get() = balanceRealmResults.firstOrNull()?.balance ?: 0.0
+
     private var realmFactory: RealmFactory = RealmFactory(networkType.name)
     private val transactionRealmResults: RealmResults<Transaction>
+    private val balanceRealmResults: RealmResults<Balance>
 
     private val web3j: Web3j = Web3jFactory.build(HttpService("https://kovan.infura.io/v3/2a1306f1d12f4c109a4d4fb9be46b02e"))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
@@ -55,9 +61,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
         transactionRealmResults = realm.where(Transaction::class.java)
                 .findAll()
-
         transactionRealmResults.addChangeListener { t, changeSet ->
             handleTransactions(t, changeSet)
+        }
+
+        balanceRealmResults = realm.where(Balance::class.java)
+                .findAll()
+        balanceRealmResults.addChangeListener { _, changeSet ->
+            handleBalance(changeSet)
         }
 
 //        val web3ClientVersion = web3j.web3ClientVersion().send().web3ClientVersion
@@ -67,6 +78,11 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     fun start() {
+        refresh()
+    }
+
+    private fun refresh() {
+        updateBalance()
         updateTransactions()
     }
 
@@ -85,10 +101,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     fun send(address: String, value: Double, completion: ((Throwable?) -> (Unit))? = null) {
-        Transfer.sendFunds(
-                web3j, hdWallet.credentials(),
-                address,
-                BigDecimal.valueOf(value), Convert.Unit.ETHER)
+        Transfer.sendFunds(web3j, hdWallet.credentials(), address, BigDecimal.valueOf(value), Convert.Unit.ETHER)
                 .observable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -97,6 +110,24 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }
                 .subscribe {
                     completion?.invoke(null)
+                    refresh()
+                }.let {
+                    subscriptions.add(it)
+                }
+    }
+
+    private fun updateBalance() {
+        val address = hdWallet.address()
+        web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
+                .observable()
+                .subscribeOn(Schedulers.io())
+                .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
+                .subscribe { balance ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(Balance(address, balance))
+                        }
+                    }
                 }.let {
                     subscriptions.add(it)
                 }
@@ -126,6 +157,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
                 listener.transactionsUpdated(this, inserted, updated, deleted)
             }
+        }
+    }
+
+    private fun handleBalance(changeSet: OrderedCollectionChangeSet) {
+        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
+            listener?.balanceUpdated(this, balance)
         }
     }
 

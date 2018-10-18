@@ -13,10 +13,10 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     }
 
     val transactions = MutableLiveData<List<Transaction>>()
-    val balance = MutableLiveData<Long>()
+    val balance = MutableLiveData<Double>()
     val lastBlockHeight = MutableLiveData<Int>()
     val status = MutableLiveData<State>()
-    val sendStatus = MutableLiveData<Throwable?>()
+    val sendStatus = SingleLiveEvent<Throwable?>()
 
     private var started = false
         set(value) {
@@ -33,7 +33,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         ethereumKit.listener = this
 
         transactions.value = ethereumKit.transactions
-//        balance.value = ethereumKit.balance
+        balance.value = ethereumKit.balance
 //        lastBlockHeight.value = ethereumKit.lastBlockHeight
 
         started = false
@@ -60,8 +60,8 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         transactions.value = ethereumKit.transactions
     }
 
-    override fun balanceUpdated(ethereumKit: EthereumKit, balance: Long) {
-//        this.balance.value = balance
+    override fun balanceUpdated(ethereumKit: EthereumKit, balance: Double) {
+        this.balance.value = balance
     }
 
 //    override fun lastBlockInfoUpdated(ethereumKit: EthereumKit, lastBlockInfo: BlockInfo) {
