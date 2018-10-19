@@ -8,21 +8,10 @@ import io.horizontalsystems.ethereumkit.network.NetworkType
 
 class MainViewModel : ViewModel(), EthereumKit.Listener {
 
-    enum class State {
-        STARTED, STOPPED
-    }
-
     val transactions = MutableLiveData<List<Transaction>>()
     val balance = MutableLiveData<Double>()
-    val lastBlockHeight = MutableLiveData<Int>()
-    val status = MutableLiveData<State>()
+    val fee = MutableLiveData<Double>()
     val sendStatus = SingleLiveEvent<Throwable?>()
-
-    private var started = false
-        set(value) {
-            field = value
-            status.value = (if (value) State.STARTED else State.STOPPED)
-        }
 
     private var ethereumKit: EthereumKit
 
@@ -34,16 +23,12 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
 
         transactions.value = ethereumKit.transactions
         balance.value = ethereumKit.balance
-//        lastBlockHeight.value = ethereumKit.lastBlockHeight
-
-        started = false
+        fee.value = ethereumKit.fee()
     }
 
-    fun start() {
-//        if (started) return
-//        started = true
-
-        ethereumKit.start()
+    fun refresh() {
+        ethereumKit.refresh()
+        fee.value = ethereumKit.fee()
     }
 
     fun receiveAddress(): String {
@@ -64,11 +49,4 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         this.balance.value = balance
     }
 
-//    override fun lastBlockInfoUpdated(ethereumKit: EthereumKit, lastBlockInfo: BlockInfo) {
-//        this.lastBlockHeight.value = lastBlockInfo.height
-//    }
-
-    override fun progressUpdated(ethereumKit: EthereumKit, progress: Double) {
-//        TODO("not implemented")
-    }
 }

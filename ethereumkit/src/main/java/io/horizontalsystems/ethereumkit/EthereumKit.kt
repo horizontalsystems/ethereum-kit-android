@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.RealmFactory
 import io.horizontalsystems.ethereumkit.core.address
 import io.horizontalsystems.ethereumkit.core.credentials
 import io.horizontalsystems.ethereumkit.models.Balance
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.horizontalsystems.ethereumkit.network.NetworkType
@@ -34,7 +35,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     interface Listener {
         fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
         fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
-        fun progressUpdated(ethereumKit: EthereumKit, progress: Double)
     }
 
     var listener: Listener? = null
@@ -56,7 +56,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private var subscriptions: CompositeSubscription = CompositeSubscription()
 
     init {
-
         val realm = realmFactory.realm
 
         transactionRealmResults = realm.where(Transaction::class.java)
@@ -70,29 +69,24 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         balanceRealmResults.addChangeListener { _, changeSet ->
             handleBalance(changeSet)
         }
-
-//        val web3ClientVersion = web3j.web3ClientVersion().send().web3ClientVersion
-//
-//        println("web3clientVersion = $web3ClientVersion")
-//
     }
 
     fun start() {
         refresh()
     }
 
-    private fun refresh() {
+    fun refresh() {
         updateBalance()
         updateTransactions()
+        updateGasPrice()
     }
 
     fun clear() {
-        val realm = realmFactory.realm
-        realm.executeTransaction {
-            it.deleteAll()
+        realmFactory.realm.use { realm ->
+            realm.executeTransaction {
+                it.deleteAll()
+            }
         }
-        realm.close()
-
         subscriptions.clear()
     }
 
@@ -111,6 +105,34 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .subscribe {
                     completion?.invoke(null)
                     refresh()
+                }.let {
+                    subscriptions.add(it)
+                }
+    }
+
+    fun fee(): Double {
+        realmFactory.realm.use { realm ->
+            val gasPriceInGwei = realm.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
+                    ?: DEFAULT_GAS_PRICE
+            val gasPriceInWei = Convert.toWei(BigDecimal(gasPriceInGwei), Convert.Unit.GWEI)
+            return Convert.fromWei(gasPriceInWei.multiply(BigDecimal(GAS_LIMIT)), Convert.Unit.ETHER).toDouble()
+        }
+    }
+
+    private fun updateGasPrice() {
+        web3j.ethGasPrice()
+                .observable()
+                .subscribeOn(Schedulers.io())
+                .map {
+                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
+                }
+                .onErrorReturn { DEFAULT_GAS_PRICE }
+                .subscribe { gasPrice ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(GasPrice(gasPrice))
+                        }
+                    }
                 }.let {
                     subscriptions.add(it)
                 }
@@ -167,6 +189,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     companion object {
+        private const val DEFAULT_GAS_PRICE = 41.0 //in GWei
+        private const val GAS_LIMIT = 21_000
+
         fun init(context: Context) {
             Realm.init(context)
         }

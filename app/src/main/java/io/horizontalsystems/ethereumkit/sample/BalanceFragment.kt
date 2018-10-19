@@ -15,8 +15,8 @@ class BalanceFragment : Fragment() {
 
     lateinit var viewModel: MainViewModel
     lateinit var balanceValue: TextView
-    lateinit var lastBlockValue: TextView
-    lateinit var startButton: Button
+    lateinit var feeValue: TextView
+    lateinit var refreshButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,25 +24,13 @@ class BalanceFragment : Fragment() {
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
 
-            viewModel.balance.observe(this, Observer {
-                balanceValue.text = (it ?: 0).toString()
+            viewModel.balance.observe(this, Observer { balance ->
+                balanceValue.text = (balance ?: 0).toString()
             })
 
-            viewModel.lastBlockHeight.observe(this, Observer {
-                lastBlockValue.text = (it ?: 0).toString()
+            viewModel.fee.observe(this, Observer { fee ->
+                feeValue.text = String.format("%f", fee)
             })
-
-            viewModel.status.observe(this, Observer {
-                when (it) {
-                    MainViewModel.State.STARTED -> {
-                        startButton.isEnabled = false
-                    }
-                    else -> {
-                        startButton.isEnabled = true
-                    }
-                }
-            })
-
         }
     }
 
@@ -54,11 +42,11 @@ class BalanceFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         balanceValue = view.findViewById(R.id.balanceValue)
-        lastBlockValue = view.findViewById(R.id.lastBlockValue)
-        startButton = view.findViewById(R.id.buttonStart)
+        refreshButton = view.findViewById(R.id.buttonRefresh)
+        feeValue = view.findViewById(R.id.feeValue)
 
-        startButton.setOnClickListener {
-            viewModel.start()
+        refreshButton.setOnClickListener {
+            viewModel.refresh()
         }
     }
 }

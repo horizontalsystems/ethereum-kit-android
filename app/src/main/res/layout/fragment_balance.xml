@@ -29,58 +29,39 @@
         tools:text="100.0"
         />
 
+    <Button
+        android:id="@+id/buttonRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="100dp"
+        android:text="Refresh"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/feeTitle"
+        />
+
     <TextView
-        android:id="@+id/progressTitle"
+        android:id="@+id/feeTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Sync Progress: "
+        android:text="Fee (in ETH):"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/balanceTitle"
         />
 
     <TextView
-        android:id="@+id/progressValue"
+        android:id="@+id/feeValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
+        android:text=""
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintStart_toEndOf="@+id/progressTitle"
-        app:layout_constraintTop_toTopOf="@+id/progressTitle"
-        tools:text="12%"
-        />
-
-    <TextView
-        android:id="@+id/lastBlockTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Last Block: "
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressTitle"
-        />
-
-    <TextView
-        android:id="@+id/lastBlockValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        app:layout_constraintStart_toEndOf="@+id/lastBlockTitle"
-        app:layout_constraintTop_toTopOf="@+id/lastBlockTitle"
-        tools:text="123000"
-        />
-
-    <Button
-        android:id="@+id/buttonStart"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Start"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lastBlockTitle"
+        app:layout_constraintStart_toEndOf="@+id/feeTitle"
+        app:layout_constraintTop_toTopOf="@+id/feeTitle"
         />
 
 </android.support.constraint.ConstraintLayout>
