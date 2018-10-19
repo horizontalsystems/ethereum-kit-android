@@ -39,6 +39,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     var listener: Listener? = null
 
+    private val infuraApiKey = "2a1306f1d12f4c109a4d4fb9be46b02e"
+
     val transactions: List<Transaction>
         get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
@@ -49,7 +51,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
-    private val web3j: Web3j = Web3jFactory.build(HttpService("https://kovan.infura.io/v3/2a1306f1d12f4c109a4d4fb9be46b02e"))
+    private val web3j: Web3j = Web3jFactory.build(HttpService(getInfuraUrl(networkType)))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
 
     private val etherscanService = EtherscanService(networkType)
@@ -186,6 +188,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
             listener?.balanceUpdated(this, balance)
         }
+    }
+
+    private fun getInfuraUrl(network: NetworkType): String {
+        val subDomain = when (network) {
+            NetworkType.Kovan -> "kovan."
+            NetworkType.Rinkeby -> "rinkeby."
+            NetworkType.Ropsten -> "ropsten."
+            else -> ""
+        }
+        return "https://${subDomain}infura.io/v3/$infuraApiKey"
     }
 
     companion object {
