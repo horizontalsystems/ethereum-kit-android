@@ -15,9 +15,9 @@ open class Transaction : RealmObject {
 
     var value: String = ""
     var gas: Int = 0
-    var gasPrice: Int = 0
+    var gasPrice: String = ""
 
-    var blockNumber: Int = 0
+    var blockNumber: Long = 0
     var blockHash: String = ""
 
     var nonce: Int = 0
@@ -41,9 +41,9 @@ open class Transaction : RealmObject {
 
         this.value = etherscanTx.value
         this.gas = etherscanTx.gas.toIntOrNull() ?: 0
-        this.gasPrice = etherscanTx.gasPrice.toIntOrNull() ?: 0
+        this.gasPrice = etherscanTx.gasPrice
 
-        this.blockNumber = etherscanTx.blockNumber.toIntOrNull() ?: 0
+        this.blockNumber = etherscanTx.blockNumber.toLongOrNull() ?: 0
         this.blockHash = etherscanTx.blockHash
 
         this.nonce = etherscanTx.nonce.toIntOrNull() ?: 0
