@@ -18,6 +18,7 @@ import io.realm.annotations.RealmModule
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.Web3jFactory
 import org.web3j.protocol.core.DefaultBlockParameterName
+import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.Transfer
 import org.web3j.utils.Convert
@@ -96,6 +97,11 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         return hdWallet.address()
     }
 
+    @Throws
+    fun validateAddress(address: String) {
+//        TODO validate address
+    }
+
     fun send(address: String, value: Double, completion: ((Throwable?) -> (Unit))? = null) {
         Transfer.sendFunds(web3j, hdWallet.credentials(), address, BigDecimal.valueOf(value), Convert.Unit.ETHER)
                 .observable()
@@ -105,18 +111,42 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     completion?.invoke(throwable)
                 }
                 .subscribe {
-                    completion?.invoke(null)
+                    insertSentTransaction(it, Convert.toWei(BigDecimal.valueOf(value), Convert.Unit.ETHER))
                     refresh()
+                    completion?.invoke(null)
                 }.let {
                     subscriptions.add(it)
                 }
+    }
+
+    private fun insertSentTransaction(txReceipt: TransactionReceipt, amountInWei: BigDecimal) {
+        realmFactory.realm.use {
+            val gasPriceInGwei = it.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
+                    ?: DEFAULT_GAS_PRICE
+            val gasPriceInWei = Convert.toWei(BigDecimal.valueOf(gasPriceInGwei), Convert.Unit.GWEI)
+
+            val transaction = Transaction().apply {
+                hash = txReceipt.transactionHash
+                timeStamp = System.currentTimeMillis() / 1000
+                from = txReceipt.from
+                to = txReceipt.to
+                gasUsed = txReceipt.gasUsed.toString()
+                gasPrice = gasPriceInWei.toBigInteger().toString()
+                value = amountInWei.toBigIntegerExact().toString()
+                blockNumber = txReceipt.blockNumber.toLong()
+                blockHash = txReceipt.blockHash
+            }
+            it.executeTransaction { realm ->
+                realm.insertOrUpdate(transaction)
+            }
+        }
     }
 
     fun fee(): Double {
         realmFactory.realm.use { realm ->
             val gasPriceInGwei = realm.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
                     ?: DEFAULT_GAS_PRICE
-            val gasPriceInWei = Convert.toWei(BigDecimal(gasPriceInGwei), Convert.Unit.GWEI)
+            val gasPriceInWei = Convert.toWei(BigDecimal.valueOf(gasPriceInGwei), Convert.Unit.GWEI)
             return Convert.fromWei(gasPriceInWei.multiply(BigDecimal(GAS_LIMIT)), Convert.Unit.ETHER).toDouble()
         }
     }
