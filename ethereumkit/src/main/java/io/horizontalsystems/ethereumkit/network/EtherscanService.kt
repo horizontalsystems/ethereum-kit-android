@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.network
 
 import com.google.gson.GsonBuilder
+import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

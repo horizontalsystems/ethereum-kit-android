@@ -9,7 +9,6 @@ import io.horizontalsystems.ethereumkit.models.Balance
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
-import io.horizontalsystems.ethereumkit.network.NetworkType
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.realm.OrderedCollectionChangeSet
@@ -38,6 +37,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
         fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
     }
+
+    enum class NetworkType { MainNet, Ropsten, Kovan, Rinkeby }
 
     var listener: Listener? = null
 

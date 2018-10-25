@@ -4,7 +4,7 @@ import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.network.NetworkType
+import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 
 class MainViewModel : ViewModel(), EthereumKit.Listener {
 
