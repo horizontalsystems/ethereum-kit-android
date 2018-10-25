@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit
 
 import android.content.Context
+import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.RealmFactory
 import io.horizontalsystems.ethereumkit.core.address
 import io.horizontalsystems.ethereumkit.core.credentials
@@ -56,6 +57,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
 
     private val etherscanService = EtherscanService(networkType)
+    private val addressValidator = AddressValidator()
     private var subscriptions: CompositeSubscription = CompositeSubscription()
 
     init {
@@ -99,7 +101,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     @Throws
     fun validateAddress(address: String) {
-//        TODO validate address
+        addressValidator.validate(address)
     }
 
     fun send(address: String, value: Double, completion: ((Throwable?) -> (Unit))? = null) {
