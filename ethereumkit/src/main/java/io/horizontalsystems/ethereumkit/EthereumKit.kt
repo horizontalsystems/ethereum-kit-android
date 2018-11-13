@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit
 
 import android.content.Context
+import android.util.Log
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.RealmFactory
 import io.horizontalsystems.ethereumkit.core.address
@@ -82,9 +83,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     fun refresh() {
-        updateBalance()
-        updateTransactions()
-        updateGasPrice()
+        val completion: ((Throwable?) -> (Unit)) = {
+            Log.e("EthereumKit", "exception", it)
+        }
+        updateBalance(completion)
+        updateTransactions(completion)
+        updateGasPrice(completion)
     }
 
     fun clear() {
@@ -154,10 +158,13 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
     }
 
-    private fun updateGasPrice() {
+    private fun updateGasPrice(completion: ((Throwable?) -> (Unit))? = null) {
         web3j.ethGasPrice()
                 .observable()
                 .subscribeOn(Schedulers.io())
+                .doOnError {
+                    completion?.invoke(it)
+                }
                 .map {
                     Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
                 }
@@ -173,11 +180,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }
     }
 
-    private fun updateBalance() {
+    private fun updateBalance(completion: ((Throwable?) -> (Unit))? = null) {
         val address = hdWallet.address()
         web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
                 .observable()
                 .subscribeOn(Schedulers.io())
+                .doOnError {
+                    completion?.invoke(it)
+                }
                 .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
                 .subscribe { balance ->
                     realmFactory.realm.use { realm ->
@@ -190,9 +200,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }
     }
 
-    private fun updateTransactions() {
+    private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
         etherscanService.getTransactionList(hdWallet.address())
                 .subscribeOn(Schedulers.io())
+                .doOnError {
+                    completion?.invoke(it)
+                }
                 .subscribe { etherscanResponse ->
                     realmFactory.realm.use { realm ->
                         realm.executeTransaction {
