@@ -51,7 +51,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     val balance: Double
         get() = balanceRealmResults.firstOrNull()?.balance ?: 0.0
 
-    private var realmFactory: RealmFactory = RealmFactory(networkType.name)
+    private var realmFactory: RealmFactory = RealmFactory("ethereumkit-${networkType.name}")
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
