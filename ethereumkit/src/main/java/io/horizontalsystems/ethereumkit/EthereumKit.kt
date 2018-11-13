@@ -238,10 +238,10 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     private fun getInfuraUrl(network: NetworkType): String {
         val subDomain = when (network) {
+            NetworkType.MainNet -> "mainnet."
             NetworkType.Kovan -> "kovan."
             NetworkType.Rinkeby -> "rinkeby."
             NetworkType.Ropsten -> "ropsten."
-            else -> ""
         }
         return "https://${subDomain}infura.io/v3/$infuraApiKey"
     }
