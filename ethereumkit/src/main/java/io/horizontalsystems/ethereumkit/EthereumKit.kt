@@ -58,6 +58,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val web3j: Web3j = Web3jFactory.build(HttpService(getInfuraUrl(networkType)))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
 
+    private val address = hdWallet.address()
+
     private val etherscanService = EtherscanService(networkType)
     private val addressValidator = AddressValidator()
     private var subscriptions: CompositeSubscription = CompositeSubscription()
@@ -101,9 +103,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         subscriptions.clear()
     }
 
-    fun receiveAddress(): String {
-        return hdWallet.address()
-    }
+    fun receiveAddress() = address
 
     @Throws
     fun validateAddress(address: String) {
@@ -178,7 +178,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     private fun updateBalance(completion: ((Throwable?) -> (Unit))? = null) {
-        val address = hdWallet.address()
         web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
                 .observable()
                 .subscribeOn(Schedulers.io())
@@ -197,7 +196,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
-        etherscanService.getTransactionList(hdWallet.address())
+        etherscanService.getTransactionList(address)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ etherscanResponse ->
                     realmFactory.realm.use { realm ->
