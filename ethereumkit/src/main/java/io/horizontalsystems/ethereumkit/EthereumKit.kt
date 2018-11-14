@@ -84,11 +84,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     fun refresh() {
         val completion: ((Throwable?) -> (Unit)) = {
-            Log.e("EthereumKit", "exception", it)
+            Log.e("EthereumKit", it?.message)
+            it?.printStackTrace()
         }
         updateBalance(completion)
         updateTransactions(completion)
-        updateGasPrice(completion)
+        updateGasPrice()
     }
 
     fun clear() {
@@ -114,14 +115,13 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .observable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnError { throwable ->
-                    completion?.invoke(throwable)
-                }
-                .subscribe {
+                .subscribe({
                     insertSentTransaction(it, Convert.toWei(BigDecimal.valueOf(value), Convert.Unit.ETHER))
                     refresh()
                     completion?.invoke(null)
-                }.let {
+                }, {
+                    completion?.invoke(it)
+                }).let {
                     subscriptions.add(it)
                 }
     }
@@ -158,13 +158,10 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
     }
 
-    private fun updateGasPrice(completion: ((Throwable?) -> (Unit))? = null) {
+    private fun updateGasPrice() {
         web3j.ethGasPrice()
                 .observable()
                 .subscribeOn(Schedulers.io())
-                .doOnError {
-                    completion?.invoke(it)
-                }
                 .map {
                     Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
                 }
@@ -185,17 +182,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
                 .observable()
                 .subscribeOn(Schedulers.io())
-                .doOnError {
-                    completion?.invoke(it)
-                }
                 .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
-                .subscribe { balance ->
+                .subscribe({ balance ->
                     realmFactory.realm.use { realm ->
                         realm.executeTransaction {
                             it.insertOrUpdate(Balance(address, balance))
                         }
                     }
-                }.let {
+                }, {
+                    completion?.invoke(it)
+                }).let {
                     subscriptions.add(it)
                 }
     }
@@ -203,10 +199,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
         etherscanService.getTransactionList(hdWallet.address())
                 .subscribeOn(Schedulers.io())
-                .doOnError {
-                    completion?.invoke(it)
-                }
-                .subscribe { etherscanResponse ->
+                .subscribe({ etherscanResponse ->
                     realmFactory.realm.use { realm ->
                         realm.executeTransaction {
                             etherscanResponse.result.map { etherscanTx -> Transaction(etherscanTx) }.forEach { transaction ->
@@ -214,7 +207,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                             }
                         }
                     }
-                }.let { subscriptions.add(it) }
+                }, {
+                    completion?.invoke(it)
+                }).let { subscriptions.add(it) }
 
     }
 
