@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.core.address
 import io.horizontalsystems.ethereumkit.core.credentials
 import io.horizontalsystems.ethereumkit.models.Balance
 import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.horizontalsystems.hdwalletkit.HDWallet
@@ -37,6 +38,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     interface Listener {
         fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
         fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
+        fun lastBlockHeightUpdated(height: Int)
     }
 
     enum class NetworkType { MainNet, Ropsten, Kovan, Rinkeby }
@@ -51,9 +53,13 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     val balance: Double
         get() = balanceRealmResults.firstOrNull()?.balance ?: 0.0
 
+    val lastBlockHeight: Int?
+        get() = lastBlockHeightRealmResults.firstOrNull()?.height
+
     private var realmFactory: RealmFactory = RealmFactory("ethereumkit-${networkType.name}")
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
+    private val lastBlockHeightRealmResults: RealmResults<LastBlockHeight>
 
     private val web3j: Web3j = Web3jFactory.build(HttpService(getInfuraUrl(networkType)))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
@@ -78,6 +84,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         balanceRealmResults.addChangeListener { _, changeSet ->
             handleBalance(changeSet)
         }
+
+        lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java)
+                .findAll()
+        lastBlockHeightRealmResults.addChangeListener { _, changeSet ->
+            handleLastBlockHeight(changeSet)
+        }
     }
 
     fun start() {
@@ -90,6 +102,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
             it?.printStackTrace()
         }
         updateBalance(completion)
+        updateLastBlockHeight(completion)
         updateTransactions(completion)
         updateGasPrice()
     }
@@ -195,8 +208,26 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }
     }
 
+    private fun updateLastBlockHeight(completion: ((Throwable?) -> Unit)? = null) {
+        web3j.ethBlockNumber()
+                .observable()
+                .subscribeOn(Schedulers.io())
+                .map { it.blockNumber.toInt() }
+                .subscribe({ lastBlockHeight ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(LastBlockHeight(lastBlockHeight))
+                        }
+                    }
+                }, {
+                    completion?.invoke(it)
+                }).let {
+                    subscriptions.add(it)
+                }
+    }
+
     private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
-        etherscanService.getTransactionList(address)
+        etherscanService.getTransactionList(address, (lastBlockHeight ?: 0) + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ etherscanResponse ->
                     realmFactory.realm.use { realm ->
@@ -227,6 +258,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private fun handleBalance(changeSet: OrderedCollectionChangeSet) {
         if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
             listener?.balanceUpdated(this, balance)
+        }
+    }
+
+    private fun handleLastBlockHeight(changeSet: OrderedCollectionChangeSet) {
+        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
+            lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
         }
     }
 

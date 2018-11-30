@@ -3,13 +3,14 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.models.Transaction
 
 class MainViewModel : ViewModel(), EthereumKit.Listener {
 
     val transactions = MutableLiveData<List<Transaction>>()
     val balance = MutableLiveData<Double>()
+    val lastBlockHeight = MutableLiveData<Int>()
     val fee = MutableLiveData<Double>()
     val sendStatus = SingleLiveEvent<Throwable?>()
 
@@ -47,6 +48,10 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
 
     override fun balanceUpdated(ethereumKit: EthereumKit, balance: Double) {
         this.balance.value = balance
+    }
+
+    override fun lastBlockHeightUpdated(height: Int) {
+        this.lastBlockHeight.value = height
     }
 
 }

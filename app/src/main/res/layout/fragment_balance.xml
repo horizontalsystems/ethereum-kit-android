@@ -64,4 +64,26 @@
         app:layout_constraintTop_toTopOf="@+id/feeTitle"
         />
 
+    <TextView
+        android:id="@+id/lbhTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Last block height:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/feeTitle"
+        />
+
+    <TextView
+        android:id="@+id/lbhValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="0"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toEndOf="@+id/lbhTitle"
+        app:layout_constraintTop_toTopOf="@+id/lbhTitle"
+        />
+
 </android.support.constraint.ConstraintLayout>

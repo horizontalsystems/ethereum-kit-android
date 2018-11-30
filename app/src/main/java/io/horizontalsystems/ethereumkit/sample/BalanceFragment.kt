@@ -16,6 +16,7 @@ class BalanceFragment : Fragment() {
     lateinit var viewModel: MainViewModel
     lateinit var balanceValue: TextView
     lateinit var feeValue: TextView
+    lateinit var lbhValue: TextView
     lateinit var refreshButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +32,10 @@ class BalanceFragment : Fragment() {
             viewModel.fee.observe(this, Observer { fee ->
                 feeValue.text = String.format("%f", fee)
             })
+
+            viewModel.lastBlockHeight.observe(this, Observer { lbh ->
+                lbhValue.text = (lbh ?: 0).toString()
+            })
         }
     }
 
@@ -44,6 +49,7 @@ class BalanceFragment : Fragment() {
         balanceValue = view.findViewById(R.id.balanceValue)
         refreshButton = view.findViewById(R.id.buttonRefresh)
         feeValue = view.findViewById(R.id.feeValue)
+        lbhValue = view.findViewById(R.id.lbhValue)
 
         refreshButton.setOnClickListener {
             viewModel.refresh()

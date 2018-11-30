@@ -45,8 +45,8 @@ class EtherscanService(networkType: NetworkType) {
         service = retrofit.create(EtherscanServiceAPI::class.java)
     }
 
-    fun getTransactionList(address: String): Observable<EtherscanResponse> =
-            service.getTransactionList("account", "txList", address, 0, 99_999_999, "desc", apiKey)
+    fun getTransactionList(address: String, startBlock: Int): Observable<EtherscanResponse> =
+            service.getTransactionList("account", "txList", address, startBlock, 99_999_999, "desc", apiKey)
 
 
     interface EtherscanServiceAPI {
