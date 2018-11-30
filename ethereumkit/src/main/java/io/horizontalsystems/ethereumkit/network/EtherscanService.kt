@@ -12,10 +12,9 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import rx.Observable
 
-class EtherscanService(networkType: NetworkType) {
+class EtherscanService(networkType: NetworkType, private val apiKey: String) {
 
     private val service: EtherscanServiceAPI
-    private val apiKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
 
     init {
         val baseUrl = when (networkType) {

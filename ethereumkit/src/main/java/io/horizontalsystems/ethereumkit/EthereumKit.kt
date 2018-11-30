@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.RealmFactory
@@ -45,8 +46,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     var listener: Listener? = null
 
-    private val infuraApiKey = "2a1306f1d12f4c109a4d4fb9be46b02e"
-
     val transactions: List<Transaction>
         get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
@@ -66,7 +65,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     private val address = hdWallet.address()
 
-    private val etherscanService = EtherscanService(networkType)
+    private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
     private var subscriptions: CompositeSubscription = CompositeSubscription()
 
@@ -281,9 +280,42 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         private const val DEFAULT_GAS_PRICE = 41.0 //in GWei
         private const val GAS_LIMIT = 21_000
 
+        private var infuraApiKey = ""
+        private var etherscanApiKey = ""
+
         fun init(context: Context) {
             Realm.init(context)
+
+            try {
+                val applicationInfo = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+                val bundle = applicationInfo.metaData
+
+                val infuraKey = bundle.getString("io.horizontalsystems.ethereumkit.infura_api_key")
+                val etherscanKey = bundle.getString("io.horizontalsystems.ethereumkit.etherscan_api_key")
+
+                infuraApiKey = if (infuraKey == null || infuraKey.isBlank()) {
+                    throw EthereumKitException.InfuraApiKeyNotSet()
+                } else {
+                    infuraKey
+                }
+                etherscanApiKey = if (etherscanKey == null || etherscanKey.isBlank()) {
+                    throw EthereumKitException.EtherscanApiKeyNotSet()
+                } else {
+                    etherscanKey
+                }
+
+            } catch (e: PackageManager.NameNotFoundException) {
+                throw EthereumKitException.FailedToLoadMetaData(e.message)
+            } catch (e: NullPointerException) {
+                throw EthereumKitException.FailedToLoadMetaData(e.message)
+            }
         }
+    }
+
+    open class EthereumKitException(msg: String) : Exception(msg) {
+        class InfuraApiKeyNotSet : EthereumKitException("Infura API Key is not set!")
+        class EtherscanApiKeyNotSet : EthereumKitException("Etherscan API Key is not set!")
+        class FailedToLoadMetaData(errMsg: String?) : EthereumKitException("Failed to load meta-data, NameNotFound: $errMsg")
     }
 
 }
