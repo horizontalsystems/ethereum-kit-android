@@ -17,6 +17,7 @@ import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.realm.OrderedCollectionChangeSet
 import io.realm.Realm
 import io.realm.RealmResults
+import io.realm.Sort
 import io.realm.annotations.RealmModule
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.Web3jFactory
@@ -49,11 +50,11 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     val transactions: List<Transaction>
         get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
-    val balance: Double
-        get() = balanceRealmResults.firstOrNull()?.balance ?: 0.0
+    var balance: Double = 0.0
+        private set
 
-    val lastBlockHeight: Int?
-        get() = lastBlockHeightRealmResults.firstOrNull()?.height
+    var lastBlockHeight: Int? = null
+        private set
 
     private var realmFactory: RealmFactory = RealmFactory("ethereumkit-${networkType.name}")
     private val transactionRealmResults: RealmResults<Transaction>
@@ -80,14 +81,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
         balanceRealmResults = realm.where(Balance::class.java)
                 .findAll()
-        balanceRealmResults.addChangeListener { _, changeSet ->
-            handleBalance(changeSet)
+        balanceRealmResults.addChangeListener { balanceCollection, _ ->
+            balance = balanceCollection.firstOrNull()?.balance ?: 0.0
+            listener?.balanceUpdated(this, balance)
         }
 
         lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java)
                 .findAll()
-        lastBlockHeightRealmResults.addChangeListener { _, changeSet ->
-            handleLastBlockHeight(changeSet)
+        lastBlockHeightRealmResults.addChangeListener { lastBlockHeightCollection, _ ->
+            lastBlockHeight = lastBlockHeightCollection.firstOrNull()?.height
+            lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
         }
     }
 
@@ -129,8 +132,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     insertSentTransaction(it, Convert.toWei(BigDecimal.valueOf(value), Convert.Unit.ETHER))
-                    refresh()
                     completion?.invoke(null)
+                    refresh()
                 }, {
                     completion?.invoke(it)
                 }).let {
@@ -226,6 +229,15 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
+
+        var lastBlockHeight = this.lastBlockHeight
+
+        realmFactory.realm.use { realm ->
+            lastBlockHeight = realm.where(Transaction::class.java)
+                    .sort("blockNumber", Sort.DESCENDING)
+                    .findFirst()?.blockNumber?.toInt()
+        }
+
         etherscanService.getTransactionList(address, (lastBlockHeight ?: 0) + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ etherscanResponse ->
@@ -251,18 +263,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
                 listener.transactionsUpdated(this, inserted, updated, deleted)
             }
-        }
-    }
-
-    private fun handleBalance(changeSet: OrderedCollectionChangeSet) {
-        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
-            listener?.balanceUpdated(this, balance)
-        }
-    }
-
-    private fun handleLastBlockHeight(changeSet: OrderedCollectionChangeSet) {
-        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
-            lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
         }
     }
 
