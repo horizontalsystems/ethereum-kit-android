@@ -43,6 +43,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
         fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
         fun lastBlockHeightUpdated(height: Int)
+        fun onKitStateUpdate(state: KitState)
     }
 
     enum class NetworkType { MainNet, Ropsten, Kovan, Rinkeby }
@@ -101,14 +102,23 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     fun refresh() {
-        val completion: ((Throwable?) -> (Unit)) = {
-            Log.e("EthereumKit", it?.message)
-            it?.printStackTrace()
+        listener?.onKitStateUpdate(KitState.Syncing(0.0))
+
+        Observable.zip(updateBalance(),
+                updateLastBlockHeight(),
+                updateTransactions(),
+                updateGasPrice()) { balance, lbh, txCount, gasPrice ->
+            Tuple4(balance, lbh, txCount, gasPrice)
         }
-        updateBalance(completion)
-        updateLastBlockHeight(completion)
-        updateTransactions(completion)
-        updateGasPrice()
+                .subscribeOn(Schedulers.io())
+                .subscribe({
+                    listener?.onKitStateUpdate(KitState.Synced)
+                }, {
+                    Log.e("EthereumKit", it?.message)
+                    it?.printStackTrace()
+                    listener?.onKitStateUpdate(KitState.NotSynced)
+
+                })
     }
 
     fun clear() {
@@ -190,62 +200,50 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
     }
 
-    private fun updateGasPrice() {
-        web3j.ethGasPrice()
-                .observable()
-                .subscribeOn(Schedulers.io())
-                .map {
-                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
-                }
-                .onErrorReturn { DEFAULT_GAS_PRICE }
-                .subscribe { gasPrice ->
-                    realmFactory.realm.use { realm ->
-                        realm.executeTransaction {
-                            it.insertOrUpdate(GasPrice(gasPrice))
-                        }
+    private fun updateGasPrice(): Observable<Double> =
+            web3j.ethGasPrice()
+                    .observable()
+                    .map {
+                        Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
                     }
-                }.let {
-                    subscriptions.add(it)
-                }
-    }
-
-    private fun updateBalance(completion: ((Throwable?) -> (Unit))? = null) {
-        web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
-                .observable()
-                .subscribeOn(Schedulers.io())
-                .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
-                .subscribe({ balance ->
-                    realmFactory.realm.use { realm ->
-                        realm.executeTransaction {
-                            it.insertOrUpdate(Balance(address, balance))
+                    .onErrorReturn { DEFAULT_GAS_PRICE }
+                    .map { gasPrice ->
+                        realmFactory.realm.use { realm ->
+                            realm.executeTransaction {
+                                it.insertOrUpdate(GasPrice(gasPrice))
+                            }
                         }
+                        gasPrice
                     }
-                }, {
-                    completion?.invoke(it)
-                }).let {
-                    subscriptions.add(it)
-                }
-    }
 
-    private fun updateLastBlockHeight(completion: ((Throwable?) -> Unit)? = null) {
-        web3j.ethBlockNumber()
-                .observable()
-                .subscribeOn(Schedulers.io())
-                .map { it.blockNumber.toInt() }
-                .subscribe({ lastBlockHeight ->
-                    realmFactory.realm.use { realm ->
-                        realm.executeTransaction {
-                            it.insertOrUpdate(LastBlockHeight(lastBlockHeight))
+    private fun updateBalance(): Observable<Double> =
+            web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
+                    .observable()
+                    .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
+                    .map { balance ->
+                        realmFactory.realm.use { realm ->
+                            realm.executeTransaction {
+                                it.insertOrUpdate(Balance(address, balance))
+                            }
                         }
+                        balance
                     }
-                }, {
-                    completion?.invoke(it)
-                }).let {
-                    subscriptions.add(it)
-                }
-    }
 
-    private fun updateTransactions(completion: ((Throwable?) -> (Unit))? = null) {
+    private fun updateLastBlockHeight(): Observable<Int> =
+            web3j.ethBlockNumber()
+                    .observable()
+                    .map { it.blockNumber.toInt() }
+                    .map { lastBlockHeight ->
+                        realmFactory.realm.use { realm ->
+                            realm.executeTransaction {
+                                it.insertOrUpdate(LastBlockHeight(lastBlockHeight))
+                            }
+                        }
+                        lastBlockHeight
+                    }
+
+
+    private fun updateTransactions(): Observable<Int> {
 
         var lastBlockHeight = this.lastBlockHeight
 
@@ -255,9 +253,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     .findFirst()?.blockNumber?.toInt()
         }
 
-        etherscanService.getTransactionList(address, (lastBlockHeight ?: 0) + 1)
-                .subscribeOn(Schedulers.io())
-                .subscribe({ etherscanResponse ->
+        return etherscanService.getTransactionList(address, (lastBlockHeight ?: 0) + 1)
+                .map { etherscanResponse ->
                     realmFactory.realm.use { realm ->
                         realm.executeTransaction {
                             etherscanResponse.result.map { etherscanTx -> Transaction(etherscanTx) }.forEach { transaction ->
@@ -265,9 +262,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                             }
                         }
                     }
-                }, {
-                    completion?.invoke(it)
-                }).let { subscriptions.add(it) }
+                    etherscanResponse.result.size
+                }
 
     }
 
@@ -294,7 +290,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     companion object {
-        private const val DEFAULT_GAS_PRICE = 41.0 //in GWei
+        private const val DEFAULT_GAS_PRICE = 10.0 //in GWei
         private const val GAS_LIMIT = 21_000
 
         private var infuraApiKey = ""
@@ -333,6 +329,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         class InfuraApiKeyNotSet : EthereumKitException("Infura API Key is not set!")
         class EtherscanApiKeyNotSet : EthereumKitException("Etherscan API Key is not set!")
         class FailedToLoadMetaData(errMsg: String?) : EthereumKitException("Failed to load meta-data, NameNotFound: $errMsg")
+    }
+
+    sealed class KitState {
+        object Synced : KitState()
+        object NotSynced : KitState()
+        class Syncing(val progress: Double) : KitState()
     }
 
 }
