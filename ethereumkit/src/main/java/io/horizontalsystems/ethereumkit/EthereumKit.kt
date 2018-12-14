@@ -111,6 +111,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         refresh()
     }
 
+    @Synchronized
     fun refresh() {
         listener?.onKitStateUpdate(KitState.Syncing(0.0))
 
@@ -128,7 +129,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     it?.printStackTrace()
                     listener?.onKitStateUpdate(KitState.NotSynced)
 
-                })
+                }).let {
+                    subscriptions.add(it)
+                }
     }
 
     fun clear() {
