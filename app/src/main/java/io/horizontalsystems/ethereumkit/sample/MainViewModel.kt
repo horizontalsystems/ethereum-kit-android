@@ -45,11 +45,11 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
+    override fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
         transactions.postValue(ethereumKit.transactions)
     }
 
-    override fun balanceUpdated(ethereumKit: EthereumKit, balance: Double) {
+    override fun balanceUpdated(balance: Double) {
         this.balance.postValue(balance)
     }
 

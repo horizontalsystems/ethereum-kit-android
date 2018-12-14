@@ -41,8 +41,8 @@ class EthereumKitModule
 class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     interface Listener {
-        fun transactionsUpdated(ethereumKit: EthereumKit, inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
-        fun balanceUpdated(ethereumKit: EthereumKit, balance: Double)
+        fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
+        fun balanceUpdated(balance: Double)
         fun lastBlockHeightUpdated(height: Int)
         fun onKitStateUpdate(state: KitState)
     }
@@ -89,7 +89,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .findAll()
         balanceRealmResults.addChangeListener { balanceCollection, _ ->
             balance = balanceCollection.firstOrNull()?.balance ?: 0.0
-            listener?.balanceUpdated(this, balance)
+            listener?.balanceUpdated(balance)
         }
 
         lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java)
@@ -285,7 +285,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 val updated = changeSet.changes.asList().mapNotNull { collection[it] }
                 val deleted = changeSet.deletions.asList()
 
-                listener.transactionsUpdated(this, inserted, updated, deleted)
+                listener.transactionsUpdated(inserted, updated, deleted)
             }
         }
     }
