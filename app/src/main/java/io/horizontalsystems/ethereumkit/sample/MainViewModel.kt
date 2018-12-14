@@ -27,6 +27,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         transactions.value = ethereumKit.transactions
         balance.value = ethereumKit.balance
         fee.value = ethereumKit.fee()
+        ethereumKit.start()
     }
 
     fun refresh() {

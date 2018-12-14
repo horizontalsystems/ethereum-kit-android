@@ -25,6 +25,7 @@ import org.web3j.protocol.Web3j
 import org.web3j.protocol.Web3jFactory
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.http.HttpService
+import org.web3j.tuples.generated.Tuple4
 import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import rx.Observable
@@ -73,6 +74,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val addressValidator = AddressValidator()
     private var subscriptions: CompositeSubscription = CompositeSubscription()
 
+    private var timer: Timer
+
     init {
         val realm = realmFactory.realm
 
@@ -95,9 +98,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
             lastBlockHeight = lastBlockHeightCollection.firstOrNull()?.height
             lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
         }
+
+        timer = Timer(30, object : Timer.Listener {
+            override fun onTimeIsUp() {
+                refresh()
+            }
+        })
     }
 
     fun start() {
+        timer.start()
         refresh()
     }
 
@@ -128,6 +138,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
             }
         }
         subscriptions.clear()
+        timer.stop()
     }
 
     fun receiveAddress() = address
