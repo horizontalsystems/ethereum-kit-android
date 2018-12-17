@@ -300,7 +300,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
             NetworkType.Rinkeby -> "rinkeby."
             NetworkType.Ropsten -> "ropsten."
         }
-        return "https://${subDomain}infura.io/v3/$infuraApiKey"
+        return "https://${subDomain}infura.io/$infuraApiKey"
     }
 
     companion object {
