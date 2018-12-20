@@ -143,6 +143,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
         disposables.clear()
         timer.stop()
+        web3j.shutdown()
     }
 
     fun receiveAddress() = address
