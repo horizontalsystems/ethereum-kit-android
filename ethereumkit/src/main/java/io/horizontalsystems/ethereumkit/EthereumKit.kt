@@ -14,6 +14,11 @@ import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
+import io.reactivex.Flowable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Function4
+import io.reactivex.schedulers.Schedulers
 import io.realm.OrderedCollectionChangeSet
 import io.realm.Realm
 import io.realm.RealmResults
@@ -22,16 +27,11 @@ import io.realm.annotations.RealmModule
 import org.web3j.crypto.RawTransaction
 import org.web3j.crypto.TransactionEncoder
 import org.web3j.protocol.Web3j
-import org.web3j.protocol.Web3jFactory
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.http.HttpService
 import org.web3j.tuples.generated.Tuple4
 import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
-import rx.subscriptions.CompositeSubscription
 import java.math.BigDecimal
 
 
@@ -65,14 +65,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val balanceRealmResults: RealmResults<Balance>
     private val lastBlockHeightRealmResults: RealmResults<LastBlockHeight>
 
-    private val web3j: Web3j = Web3jFactory.build(HttpService(getInfuraUrl(networkType)))
+    private val web3j: Web3j = Web3j.build(HttpService(getInfuraUrl(networkType)))
     private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 60)
 
     private val address = hdWallet.address()
 
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
-    private var subscriptions: CompositeSubscription = CompositeSubscription()
+    private var disposables = CompositeDisposable()
 
     private var timer: Timer
 
@@ -115,13 +115,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     fun refresh() {
         listener?.onKitStateUpdate(KitState.Syncing(0.0))
 
-        Observable.zip(updateBalance(),
+        Flowable.zip(updateBalance(),
                 updateLastBlockHeight(),
                 updateTransactions(),
-                updateGasPrice()) { balance, lbh, txCount, gasPrice ->
-            Tuple4(balance, lbh, txCount, gasPrice)
-        }
-                .subscribeOn(Schedulers.io())
+                updateGasPrice(),
+                Function4 { balance: Double, lbh: Int, txCount: Int, gasPrice: Double ->
+                    Tuple4(balance, lbh, txCount, gasPrice)
+                })
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
                     listener?.onKitStateUpdate(KitState.Synced)
                 }, {
@@ -130,7 +131,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     listener?.onKitStateUpdate(KitState.NotSynced)
 
                 }).let {
-                    subscriptions.add(it)
+                    disposables.add(it)
                 }
     }
 
@@ -140,7 +141,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 it.deleteAll()
             }
         }
-        subscriptions.clear()
+        disposables.clear()
         timer.stop()
     }
 
@@ -158,7 +159,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     }
 
     private fun broadCastTransaction(toAddress: String, value: Double) =
-            Observable.fromCallable {
+            Flowable.fromCallable {
                 // get the next available nonce
                 val ethGetTransactionCount = web3j.ethGetTransactionCount(address, DefaultBlockParameterName.LATEST).send()
                 val nonce = ethGetTransactionCount.transactionCount
@@ -201,7 +202,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }, {
                     completion?.invoke(it)
                 }).let {
-                    subscriptions.add(it)
+                    disposables.add(it)
                 }
     }
 
@@ -214,9 +215,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
     }
 
-    private fun updateGasPrice(): Observable<Double> =
+    private fun updateGasPrice(): Flowable<Double> =
             web3j.ethGasPrice()
-                    .observable()
+                    .flowable()
                     .map {
                         Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
                     }
@@ -230,9 +231,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                         gasPrice
                     }
 
-    private fun updateBalance(): Observable<Double> =
+    private fun updateBalance(): Flowable<Double> =
             web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
-                    .observable()
+                    .flowable()
                     .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
                     .map { balance ->
                         realmFactory.realm.use { realm ->
@@ -243,9 +244,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                         balance
                     }
 
-    private fun updateLastBlockHeight(): Observable<Int> =
+    private fun updateLastBlockHeight(): Flowable<Int> =
             web3j.ethBlockNumber()
-                    .observable()
+                    .flowable()
                     .map { it.blockNumber.toInt() }
                     .map { lastBlockHeight ->
                         realmFactory.realm.use { realm ->
@@ -257,7 +258,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     }
 
 
-    private fun updateTransactions(): Observable<Int> {
+    private fun updateTransactions(): Flowable<Int> {
 
         var lastBlockHeight = this.lastBlockHeight
 

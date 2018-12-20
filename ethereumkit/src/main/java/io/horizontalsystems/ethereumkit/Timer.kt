@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit
 
-import rx.Observable
-import rx.Subscription
+import io.reactivex.Flowable
+import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 
 class Timer(timeIntervalSeconds: Long, private val listener: Listener) {
@@ -10,17 +10,17 @@ class Timer(timeIntervalSeconds: Long, private val listener: Listener) {
         fun onTimeIsUp()
     }
 
-    private var timer = Observable.interval(timeIntervalSeconds, timeIntervalSeconds, TimeUnit.SECONDS)
-    private var subscription: Subscription? = null
+    private var timer = Flowable.interval(timeIntervalSeconds, timeIntervalSeconds, TimeUnit.SECONDS)
+    private var disposable: Disposable? = null
 
     fun start() {
-        subscription = timer.subscribe {
+        disposable = timer.subscribe {
             listener.onTimeIsUp()
         }
     }
 
     fun stop() {
-        subscription?.unsubscribe()
+        disposable?.dispose()
     }
 
 }
