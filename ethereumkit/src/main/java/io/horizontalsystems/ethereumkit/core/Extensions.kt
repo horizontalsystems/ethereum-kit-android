@@ -23,7 +23,7 @@ fun HDWallet.address(): String =
         credentials().address
 
 fun HDWallet.credentials(): Credentials {
-    val accountKey = privateKey(0, HDWallet.Chain.EXTERNAL.ordinal)
+    val accountKey = privateKey(0, 0, HDWallet.Chain.EXTERNAL.ordinal)
     val pubKey = ECKey.pubKeyFromPrivKey(accountKey.privKey, false)
 
     val ecKeyPair = ECKeyPair(accountKey.privKey, BigInteger(1, pubKey.slice(1 until pubKey.size).toByteArray()))

@@ -28,7 +28,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:1.0.0'
+    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:a3666d8'
     implementation 'org.web3j:core:3.3.1-android'
 
     implementation 'io.reactivex:rxandroid:1.2.1'
