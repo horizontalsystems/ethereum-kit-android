@@ -6,6 +6,7 @@ import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.EthereumKit.KitState
 import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Transaction
+import io.reactivex.disposables.CompositeDisposable
 
 class MainViewModel : ViewModel(), EthereumKit.Listener {
 
@@ -15,6 +16,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     val fee = MutableLiveData<Double>()
     val kitState = MutableLiveData<KitState>()
     val sendStatus = SingleLiveEvent<Throwable?>()
+    private val disposables = CompositeDisposable()
 
     private var ethereumKit: EthereumKit
 
@@ -24,7 +26,11 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
 
         ethereumKit.listener = this
 
-        transactions.value = ethereumKit.transactions
+        ethereumKit.transactions().subscribe { txList: List<Transaction> ->
+            transactions.value = txList
+        }.let {
+            disposables.add(it)
+        }
         balance.value = ethereumKit.balance
         fee.value = ethereumKit.fee()
         ethereumKit.start()
@@ -46,7 +52,11 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     }
 
     override fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
-        transactions.postValue(ethereumKit.transactions)
+        ethereumKit.transactions().subscribe { txList: List<Transaction> ->
+            transactions.value = txList
+        }.let {
+            disposables.add(it)
+        }
     }
 
     override fun balanceUpdated(balance: Double) {

@@ -15,6 +15,7 @@ import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Flowable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function4
@@ -50,9 +51,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     enum class NetworkType { MainNet, Ropsten, Kovan, Rinkeby }
 
     var listener: Listener? = null
-
-    val transactions: List<Transaction>
-        get() = transactionRealmResults.map { it }.sortedByDescending { it.blockNumber }
 
     var balance: Double = 0.0
         private set
@@ -133,6 +131,29 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 }).let {
                     disposables.add(it)
                 }
+    }
+
+    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<Transaction>> {
+        return Single.create { subscriber ->
+            realmFactory.realm.use { realm ->
+                var results = realm.where(Transaction::class.java)
+                        .sort("timeStamp", Sort.DESCENDING)
+
+                fromHash?.let { fromHash ->
+                    realm.where(Transaction::class.java)
+                            .equalTo("hashHexReversed", fromHash)
+                            .findFirst()?.let { fromTransaction ->
+                                results = results.lessThan("timeStamp", fromTransaction.timeStamp)
+                            }
+                }
+
+                limit?.let {
+                    results = results.limit(it.toLong())
+                }
+
+                subscriber.onSuccess(results.findAll().mapNotNull { realm.copyFromRealm(it) })
+            }
+        }
     }
 
     fun clear() {
