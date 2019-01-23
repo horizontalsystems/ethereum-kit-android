@@ -3,10 +3,7 @@ package io.horizontalsystems.ethereumkit
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.Log
-import io.horizontalsystems.ethereumkit.core.AddressValidator
-import io.horizontalsystems.ethereumkit.core.RealmFactory
-import io.horizontalsystems.ethereumkit.core.address
-import io.horizontalsystems.ethereumkit.core.credentials
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Balance
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
@@ -29,12 +26,12 @@ import org.web3j.crypto.RawTransaction
 import org.web3j.crypto.TransactionEncoder
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
+import org.web3j.protocol.core.methods.response.EthSendTransaction
 import org.web3j.protocol.http.HttpService
 import org.web3j.tuples.generated.Tuple4
 import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
-
 
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
@@ -77,21 +74,18 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     init {
         val realm = realmFactory.realm
 
-        transactionRealmResults = realm.where(Transaction::class.java)
-                .findAll()
+        transactionRealmResults = realm.where(Transaction::class.java).findAll()
         transactionRealmResults.addChangeListener { t, changeSet ->
             handleTransactions(t, changeSet)
         }
 
-        balanceRealmResults = realm.where(Balance::class.java)
-                .findAll()
+        balanceRealmResults = realm.where(Balance::class.java).findAll()
         balanceRealmResults.addChangeListener { balanceCollection, _ ->
             balance = balanceCollection.firstOrNull()?.balance ?: 0.0
             listener?.balanceUpdated(balance)
         }
 
-        lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java)
-                .findAll()
+        lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java).findAll()
         lastBlockHeightRealmResults.addChangeListener { lastBlockHeightCollection, _ ->
             lastBlockHeight = lastBlockHeightCollection.firstOrNull()?.height
             lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
@@ -127,7 +121,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     Log.e("EthereumKit", it?.message)
                     it?.printStackTrace()
                     listener?.onKitStateUpdate(KitState.NotSynced)
-
                 }).let {
                     disposables.add(it)
                 }
@@ -169,35 +162,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     fun receiveAddress() = address
 
-    @Throws
     fun validateAddress(address: String) {
         addressValidator.validate(address)
     }
-
-    private fun getGasPrice() = realmFactory.realm.use {
-        val gasPriceInGwei = it.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
-                ?: DEFAULT_GAS_PRICE
-        Convert.toWei(BigDecimal.valueOf(gasPriceInGwei), Convert.Unit.GWEI).toBigInteger()
-    }
-
-    private fun broadCastTransaction(toAddress: String, value: Double) =
-            Flowable.fromCallable {
-                // get the next available nonce
-                val ethGetTransactionCount = web3j.ethGetTransactionCount(address, DefaultBlockParameterName.LATEST).send()
-                val nonce = ethGetTransactionCount.transactionCount
-
-                val gasPrice = getGasPrice()
-                val gasLimit = GAS_LIMIT.toBigInteger()
-                val valueInWei = Convert.toWei(BigDecimal.valueOf(value), Convert.Unit.ETHER).toBigInteger()
-
-                // create our transaction
-                val rawTransaction = RawTransaction.createEtherTransaction(nonce, gasPrice, gasLimit, toAddress, valueInWei)
-
-                // sign & send our transaction
-                val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
-                val hexValue = Numeric.toHexString(signedMessage)
-                web3j.ethSendRawTransaction(hexValue).send()
-            }
 
     fun send(toAddress: String, amount: Double, completion: ((Throwable?) -> (Unit))? = null) {
 
@@ -237,47 +204,76 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
     }
 
-    private fun updateGasPrice(): Flowable<Double> =
-            web3j.ethGasPrice()
-                    .flowable()
-                    .map {
-                        Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
-                    }
-                    .onErrorReturn { DEFAULT_GAS_PRICE }
-                    .map { gasPrice ->
-                        realmFactory.realm.use { realm ->
-                            realm.executeTransaction {
-                                it.insertOrUpdate(GasPrice(gasPrice))
-                            }
-                        }
-                        gasPrice
-                    }
+    private fun broadCastTransaction(toAddress: String, value: Double): Flowable<EthSendTransaction> {
+        return Flowable.fromCallable {
+            //  get the next available nonce
+            val ethGetTransactionCount = web3j.ethGetTransactionCount(address, DefaultBlockParameterName.LATEST).send()
+            val nonce = ethGetTransactionCount.transactionCount
 
-    private fun updateBalance(): Flowable<Double> =
-            web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
-                    .flowable()
-                    .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
-                    .map { balance ->
-                        realmFactory.realm.use { realm ->
-                            realm.executeTransaction {
-                                it.insertOrUpdate(Balance(address, balance))
-                            }
-                        }
-                        balance
-                    }
+            val gasPrice = getGasPrice()
+            val gasLimit = GAS_LIMIT.toBigInteger()
+            val valueInWei = Convert.toWei(BigDecimal.valueOf(value), Convert.Unit.ETHER).toBigInteger()
 
-    private fun updateLastBlockHeight(): Flowable<Int> =
-            web3j.ethBlockNumber()
-                    .flowable()
-                    .map { it.blockNumber.toInt() }
-                    .map { lastBlockHeight ->
-                        realmFactory.realm.use { realm ->
-                            realm.executeTransaction {
-                                it.insertOrUpdate(LastBlockHeight(lastBlockHeight))
-                            }
+            //  create our transaction
+            val rawTransaction = RawTransaction.createEtherTransaction(nonce, gasPrice, gasLimit, toAddress, valueInWei)
+
+            //  sign & send our transaction
+            val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
+            val hexValue = Numeric.toHexString(signedMessage)
+            web3j.ethSendRawTransaction(hexValue).send()
+        }
+    }
+
+    private fun getGasPrice() = realmFactory.realm.use {
+        val gasPriceInGwei = it.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
+                ?: DEFAULT_GAS_PRICE
+        Convert.toWei(BigDecimal.valueOf(gasPriceInGwei), Convert.Unit.GWEI).toBigInteger()
+    }
+
+    private fun updateGasPrice(): Flowable<Double> {
+        return web3j.ethGasPrice()
+                .flowable()
+                .map {
+                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
+                }
+                .onErrorReturn { DEFAULT_GAS_PRICE }
+                .map { gasPrice ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(GasPrice(gasPrice))
                         }
-                        lastBlockHeight
                     }
+                    gasPrice
+                }
+    }
+
+    private fun updateBalance(): Flowable<Double> {
+        return web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
+                .flowable()
+                .map { Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble() }
+                .map { balance ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(Balance(address, balance))
+                        }
+                    }
+                    balance
+                }
+    }
+
+    private fun updateLastBlockHeight(): Flowable<Int> {
+        return web3j.ethBlockNumber()
+                .flowable()
+                .map { it.blockNumber.toInt() }
+                .map { lastBlockHeight ->
+                    realmFactory.realm.use { realm ->
+                        realm.executeTransaction {
+                            it.insertOrUpdate(LastBlockHeight(lastBlockHeight))
+                        }
+                    }
+                    lastBlockHeight
+                }
+    }
 
 
     private fun updateTransactions(): Flowable<Int> {
@@ -318,12 +314,12 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     private fun getInfuraUrl(network: NetworkType): String {
         val subDomain = when (network) {
-            NetworkType.MainNet -> "mainnet."
-            NetworkType.Kovan -> "kovan."
-            NetworkType.Rinkeby -> "rinkeby."
-            NetworkType.Ropsten -> "ropsten."
+            NetworkType.MainNet -> "mainnet"
+            NetworkType.Kovan -> "kovan"
+            NetworkType.Rinkeby -> "rinkeby"
+            NetworkType.Ropsten -> "ropsten"
         }
-        return "https://${subDomain}infura.io/$infuraApiKey"
+        return "https://$subDomain.infura.io/$infuraApiKey"
     }
 
     companion object {
