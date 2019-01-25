@@ -3,15 +3,19 @@ package io.horizontalsystems.ethereumkit.models
 import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanTransaction
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.web3j.crypto.Keys
 
 open class Transaction : RealmObject {
 
     @PrimaryKey
+    var compoundKey: String = ""
+
     var hash: String = ""
     var timeStamp: Long = 0
 
     var from: String = ""
     var to: String = ""
+    var contractAddress: String = ""
 
     var value: String = ""
     var gas: Int = 0
@@ -25,7 +29,6 @@ open class Transaction : RealmObject {
     var isError: String = ""
     var txReceiptStatus: String = ""
     var input: String = ""
-    var contractAddress: String = ""
     var cumulativeGasUsed: String = ""
     var gasUsed: String = ""
     var confirmations: Int = 0
@@ -38,6 +41,8 @@ open class Transaction : RealmObject {
 
         this.from = etherscanTx.from
         this.to = etherscanTx.to
+        this.contractAddress = if (etherscanTx.contractAddress.isEmpty()) ""
+        else Keys.toChecksumAddress(etherscanTx.contractAddress)
 
         this.value = etherscanTx.value
         this.gas = etherscanTx.gas.toIntOrNull() ?: 0
@@ -48,13 +53,15 @@ open class Transaction : RealmObject {
 
         this.nonce = etherscanTx.nonce.toIntOrNull() ?: 0
         this.transactionIndex = etherscanTx.transactionIndex
-        this.isError = etherscanTx.isError
-        this.txReceiptStatus = etherscanTx.txreceipt_status
+        this.isError = etherscanTx.isError ?: ""
+        this.txReceiptStatus = etherscanTx.txreceipt_status ?: ""
         this.input = etherscanTx.input
-        this.contractAddress = etherscanTx.contractAddress
         this.cumulativeGasUsed = etherscanTx.cumulativeGasUsed
         this.gasUsed = etherscanTx.gasUsed
         this.confirmations = etherscanTx.confirmations.toIntOrNull() ?: 0
+
+        // Composite Primary Key from two fields
+        compoundKey = hash + contractAddress
     }
 
 }

@@ -21,8 +21,10 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     private var ethereumKit: EthereumKit
 
     init {
-        val words = listOf("subway", "plate", "brick", "pattern", "inform", "used", "oblige", "identify", "cherry", "drop", "flush", "balance")
-        ethereumKit = EthereumKit(words, NetworkType.Kovan)
+        //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
+        val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
+        ethereumKit = EthereumKit(words, NetworkType.Ropsten)
+        ethereumKit.include("0x583cbBb8a8443B38aBcC0c956beCe47340ea1367", 18)
 
         ethereumKit.listener = this
 
@@ -33,6 +35,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
         balance.value = ethereumKit.balance
         fee.value = ethereumKit.fee()
+
         ethereumKit.start()
     }
 
@@ -59,7 +62,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun balanceUpdated(balance: Double) {
+    override fun balanceUpdated(address: String, balance: Double) {
         this.balance.postValue(balance)
     }
 
@@ -67,7 +70,8 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         this.lastBlockHeight.postValue(height)
     }
 
-    override fun onKitStateUpdate(state: KitState) {
+    override fun onKitStateUpdate(address: String?, state: KitState) {
+        address?.let { return }
         this.kitState.postValue(state)
     }
 }
