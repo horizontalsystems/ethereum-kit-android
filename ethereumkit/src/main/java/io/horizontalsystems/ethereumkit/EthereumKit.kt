@@ -141,7 +141,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
                 fromHash?.let { fromHash ->
                     realm.where(Transaction::class.java)
-                            .equalTo("hashHexReversed", fromHash)
+                            .equalTo("hash", fromHash)
                             .findFirst()?.let { fromTransaction ->
                                 results = results.lessThan("timeStamp", fromTransaction.timeStamp)
                             }
