@@ -11,7 +11,6 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import io.horizontalsystems.ethereumkit.R
 
 class SendReceiveFragment : Fragment() {
 
@@ -19,6 +18,7 @@ class SendReceiveFragment : Fragment() {
     private lateinit var receiveAddressButton: Button
     private lateinit var receiveAddressText: TextView
 
+    private lateinit var sendToken: Button
     private lateinit var sendButton: Button
     private lateinit var sendAmount: EditText
     private lateinit var sendAddress: EditText
@@ -49,12 +49,19 @@ class SendReceiveFragment : Fragment() {
         sendAmount = view.findViewById(R.id.sendAmount)
         sendButton = view.findViewById(R.id.sendButton)
         sendButton.setOnClickListener {
-            if (sendAddress.text.isEmpty()) {
-                sendAddress.error = "Send address cannot be blank"
-            } else if (sendAmount.text.isEmpty()) {
-                sendAmount.error = "Send amount cannot be blank"
-            } else {
-                viewModel.send(sendAddress.text.toString(), sendAmount.text.toString().toDouble())
+            when {
+                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
+                sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
+                else -> viewModel.send(sendAddress.text.toString(), sendAmount.text.toString().toDouble())
+            }
+        }
+
+        sendToken = view.findViewById(R.id.sendToken)
+        sendToken.setOnClickListener {
+            when {
+                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
+                sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
+                else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toDouble())
             }
         }
 

@@ -12,6 +12,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
 
     val transactions = MutableLiveData<List<Transaction>>()
     val balance = MutableLiveData<Double>()
+    val balanceToken = MutableLiveData<Double>()
     val lastBlockHeight = MutableLiveData<Int>()
     val fee = MutableLiveData<Double>()
     val kitState = MutableLiveData<KitState>()
@@ -19,12 +20,14 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     private val disposables = CompositeDisposable()
 
     private var ethereumKit: EthereumKit
+    private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
+    private val decimal = 28
 
     init {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
         ethereumKit = EthereumKit(words, NetworkType.Ropsten)
-        ethereumKit.include("0x583cbBb8a8443B38aBcC0c956beCe47340ea1367", 18)
+        ethereumKit.include(contractAddress, decimal)
 
         ethereumKit.listener = this
 
@@ -33,7 +36,9 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }.let {
             disposables.add(it)
         }
+
         balance.value = ethereumKit.balance
+        balanceToken.value = ethereumKit.balanceERC20[contractAddress] ?: 0.0
         fee.value = ethereumKit.fee()
 
         ethereumKit.start()
@@ -54,6 +59,27 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
+    //
+    // ERC20
+    //
+    fun sendERC20(address: String, amount: Double) {
+        ethereumKit.sendERC20(address, contractAddress, decimal, amount) { error ->
+            sendStatus.value = error
+        }
+    }
+
+    fun filterTransactions(ethTx: Boolean) {
+        val txMethod = if (ethTx)
+            ethereumKit.transactions() else
+            ethereumKit.transactionsERC20(contractAddress)
+
+        txMethod.subscribe { txList: List<Transaction> ->
+            transactions.value = txList
+        }.let {
+            disposables.add(it)
+        }
+    }
+
     override fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
         ethereumKit.transactions().subscribe { txList: List<Transaction> ->
             transactions.value = txList
@@ -63,15 +89,20 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     }
 
     override fun balanceUpdated(address: String, balance: Double) {
-        this.balance.postValue(balance)
+        if (address == contractAddress) {
+            this.balanceToken.postValue(balance)
+        } else {
+            this.balance.postValue(balance)
+        }
     }
 
     override fun lastBlockHeightUpdated(height: Int) {
         this.lastBlockHeight.postValue(height)
     }
 
-    override fun onKitStateUpdate(address: String?, state: KitState) {
-        address?.let { return }
+    override fun onKitStateUpdate(contractAddress: String?, state: KitState) {
+        contractAddress?.let { return }
+
         this.kitState.postValue(state)
     }
 }

@@ -136,6 +136,9 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     @Synchronized
     fun refresh() {
+        listener?.onKitStateUpdate(null, KitState.Syncing(0.0))
+        erc20List.forEach { refresh(it) }
+
         Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateGasPrice(),
                 Function4 { b: Double, h: Int, t: Int, g: Double ->
                     Tuple4(b, h, t, g)
@@ -144,6 +147,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .subscribe({
                     listener?.onKitStateUpdate(null, KitState.Synced)
                 }, {
+                    it?.printStackTrace()
                     listener?.onKitStateUpdate(null, KitState.NotSynced)
                 }).let {
                     disposables.add(it)
@@ -223,6 +227,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     @Synchronized
     fun refresh(erc20: ERC20) {
+        listener?.onKitStateUpdate(erc20.contractAddress, KitState.Syncing(0.0))
+
         Flowable.zip(updateBalance(erc20), updateTransactions(true),
                 BiFunction { b: Double, t: Int ->
                     Tuple2(b, t)
@@ -231,6 +237,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 .subscribe({
                     listener?.onKitStateUpdate(erc20.contractAddress, KitState.Synced)
                 }, {
+                    it?.printStackTrace()
                     listener?.onKitStateUpdate(erc20.contractAddress, KitState.NotSynced)
                 }).let {
                     disposables.add(it)

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="8dp"
-    >
+    android:padding="8dp">
 
     <TextView
         android:id="@+id/balanceTitle"
@@ -15,8 +13,7 @@
         android:text="Balance:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/balanceValue"
@@ -26,21 +23,27 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/balanceTitle"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="100.0"
-        />
+        tools:text="100.0" />
 
-    <Button
-        android:id="@+id/buttonRefresh"
+    <TextView
+        android:id="@+id/tokenBalanceTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="60dp"
-        android:text="Refresh"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
+        android:text="Token balance:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/balanceTitle" />
+
+    <TextView
+        android:id="@+id/tokenBalanceValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="100.0"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toEndOf="@+id/tokenBalanceTitle"
+        app:layout_constraintTop_toTopOf="@+id/tokenBalanceTitle" />
 
     <TextView
         android:id="@+id/feeTitle"
@@ -50,19 +53,17 @@
         android:text="Fee (in ETH):"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/balanceTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/tokenBalanceTitle" />
 
     <TextView
         android:id="@+id/feeValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text=""
+        android:text="100.0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/feeTitle"
-        app:layout_constraintTop_toTopOf="@+id/feeTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/feeTitle" />
 
     <TextView
         android:id="@+id/lbhTitle"
@@ -72,8 +73,7 @@
         android:text="Last block height:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/feeTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/feeTitle" />
 
     <TextView
         android:id="@+id/lbhValue"
@@ -83,8 +83,7 @@
         android:text="0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/lbhTitle"
-        app:layout_constraintTop_toTopOf="@+id/lbhTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/lbhTitle" />
 
     <TextView
         android:id="@+id/kitStateTitle"
@@ -94,8 +93,7 @@
         android:text="KitState:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lbhTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/lbhTitle" />
 
     <TextView
         android:id="@+id/kitStateValue"
@@ -105,7 +103,18 @@
         android:text="(Synced, Syncing, NotSyncing)"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/kitStateTitle"
-        app:layout_constraintTop_toTopOf="@+id/kitStateTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/kitStateTitle" />
+
+    <Button
+        android:id="@+id/buttonRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="8dp"
+        android:text="Refresh"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle" />
 
 </android.support.constraint.ConstraintLayout>
