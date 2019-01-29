@@ -80,7 +80,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
+    override fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
         ethereumKit.transactions().subscribe { txList: List<Transaction> ->
             transactions.value = txList
         }.let {
@@ -88,7 +88,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun balanceUpdated(address: String, balance: Double) {
+    override fun onBalanceUpdate(address: String, balance: Double) {
         if (address == contractAddress) {
             this.balanceToken.postValue(balance)
         } else {
@@ -96,7 +96,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun lastBlockHeightUpdated(height: Int) {
+    override fun onLastBlockHeightUpdate(height: Int) {
         this.lastBlockHeight.postValue(height)
     }
 

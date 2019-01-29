@@ -44,9 +44,9 @@ class EthereumKitModule
 class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     interface Listener {
-        fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
-        fun balanceUpdated(address: String, balance: Double)
-        fun lastBlockHeightUpdated(height: Int)
+        fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
+        fun onBalanceUpdate(address: String, balance: Double)
+        fun onLastBlockHeightUpdate(height: Int)
         fun onKitStateUpdate(contractAddress: String?, state: KitState)
     }
 
@@ -95,14 +95,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     balanceERC20[it.address] = it.balance
                 }
 
-                listener?.balanceUpdated(it.address, it.balance)
+                listener?.onBalanceUpdate(it.address, it.balance)
             }
         }
 
         lastBlockHeightRealmResults = realm.where(LastBlockHeight::class.java).findAll()
         lastBlockHeightRealmResults.addChangeListener { lastBlockHeightCollection, _ ->
             lastBlockHeight = lastBlockHeightCollection.firstOrNull()?.height
-            lastBlockHeight?.let { listener?.lastBlockHeightUpdated(it) }
+            lastBlockHeight?.let { listener?.onLastBlockHeightUpdate(it) }
         }
 
         timer = Timer(30, object : Timer.Listener {
@@ -414,12 +414,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     private fun handleTransactions(collection: RealmResults<Transaction>, changeSet: OrderedCollectionChangeSet) {
         if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
+            val skipInvalid: (Transaction) -> Boolean = { it.contractAddress.isNotEmpty() && it.input != "0x" }
+
             listener?.let { listener ->
-                val inserted = changeSet.insertions.asList().mapNotNull { collection[it] }
-                val updated = changeSet.changes.asList().mapNotNull { collection[it] }
+                val inserted = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(skipInvalid)
+                val updated = changeSet.changes.asList().mapNotNull { collection[it] }.filter(skipInvalid)
                 val deleted = changeSet.deletions.asList()
 
-                listener.transactionsUpdated(inserted, updated, deleted)
+                listener.onTransactionsUpdate(inserted, updated, deleted)
             }
         }
     }
