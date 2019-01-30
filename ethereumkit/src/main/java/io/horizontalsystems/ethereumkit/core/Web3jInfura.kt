@@ -59,19 +59,19 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                 }
     }
 
-    fun getTokenBalance(address: String, erc20: ERC20): Flowable<Double> {
+    fun getTokenBalance(address: String, contractAddress: String, decimal: Int): Flowable<Double> {
         val function = Function("balanceOf",
                 Arrays.asList<Type<*>>(Address(address)),
                 Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))
 
-        return web3j.ethCall(createEthCallTransaction(address, erc20.contractAddress, FunctionEncoder.encode(function)), DefaultBlockParameterName.LATEST)
+        return web3j.ethCall(createEthCallTransaction(address, contractAddress, FunctionEncoder.encode(function)), DefaultBlockParameterName.LATEST)
                 .flowable()
                 .map {
                     val result = FunctionReturnDecoder.decode(it.value, function.outputParameters)
                     result[0].value as BigInteger
                 }
                 .map {
-                    it.toBigDecimal().divide(BigDecimal.TEN.pow(erc20.decimal)).toDouble()
+                    it.toBigDecimal().divide(BigDecimal.TEN.pow(decimal)).toDouble()
                 }
     }
 

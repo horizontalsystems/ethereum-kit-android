@@ -31,7 +31,7 @@ class BalanceFragment : Fragment() {
                 balanceValue.text = (balance ?: 0).toString()
             })
 
-            viewModel.balanceToken.observe(this, Observer { balance ->
+            viewModel.tokenBalance.observe(this, Observer { balance ->
                 tokenBalanceValue.text = (balance ?: 0).toString()
             })
 

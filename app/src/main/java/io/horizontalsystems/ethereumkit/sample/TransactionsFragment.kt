@@ -32,6 +32,12 @@ class TransactionsFragment : Fragment() {
                     transactionsAdapter.notifyDataSetChanged()
                 }
             })
+
+            viewModel.lastBlockHeight.observe(this, Observer { height ->
+                height?.let {
+                    transactionsAdapter.lastBlockHeight = height
+                }
+            })
         }
     }
 
@@ -61,6 +67,7 @@ class TransactionsFragment : Fragment() {
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     var items = listOf<Transaction>()
+    var lastBlockHeight: Int = 0
 
     override fun getItemCount() = items.size
 
@@ -69,7 +76,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position)
+            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position, lastBlockHeight)
         }
     }
 }
@@ -77,7 +84,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: Transaction, index: Int) {
+    fun bind(tx: Transaction, index: Int, lastBlockHeight: Int) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT
@@ -85,15 +92,16 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
 
         var value = """
             - #$index
-            - Block: ${tx.blockNumber}
             - From: ${tx.from}
             - To: ${tx.to}
             - Amount: ${tx.value}
         """
 
-        if (tx.contractAddress.isNotEmpty()) {
+        if (lastBlockHeight > 0)
+            value += "- Confirmations: ${lastBlockHeight - tx.blockNumber}"
+
+        if (tx.contractAddress.isNotEmpty())
             value += "- Contract: ${tx.contractAddress}"
-        }
 
         summary.text = value.trimIndent()
     }

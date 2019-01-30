@@ -1,4 +1,5 @@
 package io.horizontalsystems.ethereumkit.core
 
-class ERC20(val contractAddress: String, val decimal: Int)
+import io.horizontalsystems.ethereumkit.EthereumKit
 
+class ERC20(var listener: EthereumKit.ListenerERC20?, var balance: Double = 0.0)
