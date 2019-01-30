@@ -91,16 +91,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         }
 
         balanceRealmResults = realm.where(Balance::class.java).findAll()
-        balanceRealmResults.addChangeListener { collection, _ ->
-            collection.forEach {
-                if (it.address == receiveAddress) {
-                    balance = it.balance
-                    listener?.onBalanceUpdate(it.balance)
-                } else {
-                    erc20List[it.address]?.balance = it.balance
-                    erc20List[it.address]?.listener?.onBalanceUpdate(it.balance)
-                }
-            }
+        balanceRealmResults.addChangeListener { b, changeSet ->
+            handleUpdateBalance(b, changeSet)
         }
 
         timer = Timer(30, object : Timer.Listener {
@@ -266,22 +258,39 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
             val invalid: (Transaction) -> Boolean = { it.contractAddress.isNotEmpty() && it.input != "0x" }
 
-            val insertions = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(invalid)
-            val modifications = changeSet.changes.asList().mapNotNull { collection[it] }.filter(invalid)
-            val deletions = changeSet.deletions.asList()
+            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(invalid)
+            val updates = changeSet.changes.asList().mapNotNull { collection[it] }.filter(invalid)
+            val deletes = changeSet.deletions.asList()
 
-            listener?.let { listener ->
-                listener.onTransactionsUpdate(
-                        insertions.filter { it.contractAddress.isEmpty() },
-                        modifications.filter { it.contractAddress.isEmpty() },
-                        deletions)
+            val ethInserts = inserts.filter { it.contractAddress.isEmpty() }
+            val ethUpdates = updates.filter { it.contractAddress.isEmpty() }
+            if (ethInserts.isNotEmpty() || ethUpdates.isNotEmpty()) {
+                listener?.onTransactionsUpdate(ethInserts, ethUpdates, deletes)
             }
 
             erc20List.forEach {
-                it.value.listener?.onTransactionsUpdate(
-                        insertions.filter { item -> item.contractAddress == it.key },
-                        modifications.filter { item -> item.contractAddress == it.key },
-                        deletions)
+                val tokenInserts = inserts.filter { item -> item.contractAddress == it.key }
+                val tokenUpdates = updates.filter { item -> item.contractAddress == it.key }
+                if (tokenInserts.isNotEmpty() || tokenUpdates.isNotEmpty()) {
+                    it.value.listener?.onTransactionsUpdate(tokenInserts, tokenUpdates, deletes)
+                }
+            }
+        }
+    }
+
+    private fun handleUpdateBalance(collection: RealmResults<Balance>, changeSet: OrderedCollectionChangeSet) {
+        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
+            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }
+            val updates = changeSet.changes.asList().mapNotNull { collection[it] }
+
+            (inserts + updates).forEach {
+                if (it.address == receiveAddress) {
+                    balance = it.balance
+                    listener?.onBalanceUpdate(it.balance)
+                } else {
+                    erc20List[it.address]?.balance = it.balance
+                    erc20List[it.address]?.listener?.onBalanceUpdate(it.balance)
+                }
             }
         }
     }
