@@ -10,12 +10,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.R
 
 class BalanceFragment : Fragment() {
 
     lateinit var viewModel: MainViewModel
     lateinit var balanceValue: TextView
+    lateinit var tokenBalanceValue: TextView
     lateinit var feeValue: TextView
     lateinit var lbhValue: TextView
     lateinit var kitStateValue: TextView
@@ -29,6 +29,10 @@ class BalanceFragment : Fragment() {
 
             viewModel.balance.observe(this, Observer { balance ->
                 balanceValue.text = (balance ?: 0).toString()
+            })
+
+            viewModel.tokenBalance.observe(this, Observer { balance ->
+                tokenBalanceValue.text = (balance ?: 0).toString()
             })
 
             viewModel.fee.observe(this, Observer { fee ->
@@ -57,6 +61,7 @@ class BalanceFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         balanceValue = view.findViewById(R.id.balanceValue)
+        tokenBalanceValue = view.findViewById(R.id.tokenBalanceValue)
         refreshButton = view.findViewById(R.id.buttonRefresh)
         feeValue = view.findViewById(R.id.feeValue)
         lbhValue = view.findViewById(R.id.lbhValue)

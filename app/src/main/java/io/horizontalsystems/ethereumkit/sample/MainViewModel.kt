@@ -8,33 +8,82 @@ import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.disposables.CompositeDisposable
 
-class MainViewModel : ViewModel(), EthereumKit.Listener {
+class MainViewModel : ViewModel() {
 
     val transactions = MutableLiveData<List<Transaction>>()
     val balance = MutableLiveData<Double>()
-    val lastBlockHeight = MutableLiveData<Int>()
     val fee = MutableLiveData<Double>()
+    val lastBlockHeight = MutableLiveData<Int>()
     val kitState = MutableLiveData<KitState>()
+
+    val tokenTransactions = MutableLiveData<List<Transaction>>()
+    val tokenBalance = MutableLiveData<Double>()
+
     val sendStatus = SingleLiveEvent<Throwable?>()
+
     private val disposables = CompositeDisposable()
 
     private var ethereumKit: EthereumKit
+    private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
+
+    private val erc20Adapter = ERC20Adapter(contractAddress, 28)
+    private val ethereumAdapter = EthereumAdapter()
 
     init {
-        val words = listOf("subway", "plate", "brick", "pattern", "inform", "used", "oblige", "identify", "cherry", "drop", "flush", "balance")
-        ethereumKit = EthereumKit(words, NetworkType.Kovan)
+        //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
+        val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
-        ethereumKit.listener = this
+        ethereumKit = EthereumKit(words, NetworkType.Ropsten)
+        ethereumKit.listener = ethereumAdapter
+        ethereumKit.register(erc20Adapter)
 
-        ethereumKit.transactions().subscribe { txList: List<Transaction> ->
-            transactions.value = txList
+        // Previous or default values
+        balance.value = ethereumKit.balance
+        tokenBalance.value = ethereumKit.balanceERC20(contractAddress)
+        fee.value = ethereumKit.fee()
+
+        //
+        // Ethereum
+        //
+        ethereumAdapter.transactionSubject.subscribe {
+            updateTransactions()
         }.let {
             disposables.add(it)
         }
-        balance.value = ethereumKit.balance
-        fee.value = ethereumKit.fee()
+
+        ethereumAdapter.balanceSubject.subscribe {
+            this.balance.postValue(it)
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.lastBlockHeightSubject.subscribe {
+            this.lastBlockHeight.postValue(it)
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.kitStateUpdateSubject.subscribe {
+            this.kitState.postValue(it)
+        }.let {
+            disposables.add(it)
+        }
+
+        //
+        // ERC20
+        //
+        erc20Adapter.balanceSubject.subscribe {
+            this.tokenBalance.postValue(it)
+        }.let {
+            disposables.add(it)
+        }
+
         ethereumKit.start()
     }
+
+    //
+    // Ethereum
+    //
 
     fun refresh() {
         ethereumKit.refresh()
@@ -42,7 +91,7 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
     }
 
     fun receiveAddress(): String {
-        return ethereumKit.receiveAddress()
+        return ethereumKit.receiveAddress
     }
 
     fun send(address: String, amount: Double) {
@@ -51,23 +100,38 @@ class MainViewModel : ViewModel(), EthereumKit.Listener {
         }
     }
 
-    override fun transactionsUpdated(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
-        ethereumKit.transactions().subscribe { txList: List<Transaction> ->
+    //
+    // ERC20
+    //
+
+    fun sendERC20(address: String, amount: Double) {
+        ethereumKit.sendERC20(address, contractAddress, amount) { error ->
+            sendStatus.value = error
+        }
+    }
+
+    fun filterTransactions(ethTx: Boolean) {
+        val txMethod = if (ethTx)
+            ethereumKit.transactions() else
+            ethereumKit.transactionsERC20(contractAddress)
+
+        txMethod.subscribe { txList: List<Transaction> ->
             transactions.value = txList
         }.let {
             disposables.add(it)
         }
     }
 
-    override fun balanceUpdated(balance: Double) {
-        this.balance.postValue(balance)
+    //
+    // Private
+    //
+
+    private fun updateTransactions() {
+        ethereumKit.transactions().subscribe { list: List<Transaction> ->
+            transactions.value = list
+        }.let {
+            disposables.add(it)
+        }
     }
 
-    override fun lastBlockHeightUpdated(height: Int) {
-        this.lastBlockHeight.postValue(height)
-    }
-
-    override fun onKitStateUpdate(state: KitState) {
-        this.kitState.postValue(state)
-    }
 }

@@ -44,9 +44,13 @@ class EtherscanService(networkType: NetworkType, private val apiKey: String) {
         service = retrofit.create(EtherscanServiceAPI::class.java)
     }
 
-    fun getTransactionList(address: String, startBlock: Int): Flowable<EtherscanResponse> =
-            service.getTransactionList("account", "txList", address, startBlock, 99_999_999, "desc", apiKey)
+    fun getTransactionList(address: String, startBlock: Int): Flowable<EtherscanResponse> {
+        return service.getTransactionList("account", "txList", address, startBlock, 99_999_999, "desc", apiKey)
+    }
 
+    fun getTokenTransactions(address: String, startBlock: Int): Flowable<EtherscanResponse> {
+        return service.getTransactionList("account", "tokentx", address, startBlock, 99_999_999, "desc", apiKey)
+    }
 
     interface EtherscanServiceAPI {
 

@@ -5,7 +5,7 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "io.horizontalsystems.ethereum.kit.android"
+        applicationId "io.horizontalsystems.ethereumkit"
         minSdkVersion 23
         targetSdkVersion 27
         versionCode 1
@@ -14,8 +14,13 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            debuggable false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            minifyEnabled false
         }
     }
 
