@@ -39,7 +39,7 @@ import java.util.*
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
 
-class EthereumKit(words: List<String>, networkType: NetworkType) {
+class EthereumKit(words: List<String>, networkType: NetworkType, walletId: String) {
 
     interface Listener {
         fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
@@ -70,7 +70,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     private val erc20List = hashMapOf<String, ERC20>()
 
-    private var realmFactory: RealmFactory = RealmFactory("ethereumkit-${networkType.name}")
+    private val realmFactory = RealmFactory("ethereumkit-${networkType.name}-$walletId")
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
@@ -79,7 +79,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val web3j = Web3jInfura(networkType, infuraApiKey)
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
-    private var disposables = CompositeDisposable()
+    private val disposables = CompositeDisposable()
 
     private val timer: Timer
 
