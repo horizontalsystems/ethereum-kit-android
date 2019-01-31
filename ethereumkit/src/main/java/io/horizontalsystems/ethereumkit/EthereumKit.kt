@@ -74,8 +74,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
-    private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 1)
-
+    private val hdWallet = HDWallet(Mnemonic().toSeed(words), if (networkType == NetworkType.MainNet) 60 else 1)
     private val web3j = Web3jInfura(networkType, infuraApiKey)
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
