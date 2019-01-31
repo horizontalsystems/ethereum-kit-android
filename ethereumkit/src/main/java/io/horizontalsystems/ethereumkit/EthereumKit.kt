@@ -39,7 +39,7 @@ import java.util.*
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
 
-class EthereumKit(words: List<String>, networkType: NetworkType) {
+class EthereumKit(words: List<String>, networkType: NetworkType, walletId: String) {
 
     interface Listener {
         fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
@@ -53,7 +53,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         val decimal: Int
     }
 
-    var listener: Listener? = null
     val receiveAddress: String
 
     var balance: Double = 0.0
@@ -62,9 +61,16 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     var lastBlockHeight: Int? = null
         private set
 
+    var listener: Listener? = null
+    var kitState: KitState = KitState.NotSynced
+        private set(value) {
+            listener?.onKitStateUpdate(value)
+            field = value
+        }
+
     private val erc20List = hashMapOf<String, ERC20>()
 
-    private var realmFactory: RealmFactory = RealmFactory("ethereumkit-${networkType.name}")
+    private val realmFactory = RealmFactory("ethereumkit-${networkType.name}-$walletId")
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
@@ -73,7 +79,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
     private val web3j = Web3jInfura(networkType, infuraApiKey)
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
-    private var disposables = CompositeDisposable()
+    private val disposables = CompositeDisposable()
 
     private val timer: Timer
 
@@ -111,7 +117,6 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
         timer.start()
 
         refresh()
-        erc20List.forEach { refresh(it.key) }
     }
 
     fun clear() {
@@ -128,15 +133,15 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     @Synchronized
     fun refresh() {
-        listener?.onKitStateUpdate(KitState.Syncing(0.0))
+        kitState = KitState.Syncing(0.0)
 
         Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateGasPrice(), Function4<Double, Int, Int, Double, Unit> { _, _, _, _ -> Unit })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
-                    listener?.onKitStateUpdate(KitState.Synced)
+                    kitState = KitState.Synced
                 }, {
                     it?.printStackTrace()
-                    listener?.onKitStateUpdate(KitState.NotSynced)
+                    kitState = KitState.NotSynced
                 }).let {
                     disposables.add(it)
                 }
@@ -184,12 +189,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
             return
         }
 
+
         val holder = ERC20(token)
         erc20List[token.contractAddress] = holder
-
         getBalance(token.contractAddress)?.let {
             holder.balance = it.balance
         }
+
+        refresh(token.contractAddress)
     }
 
     fun unregister(contractAddress: String) {
@@ -198,17 +205,17 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
 
     @Synchronized
     fun refresh(contractAddress: String) {
-        val listener = erc20List[contractAddress]?.listener ?: return
+        val erc20 = erc20List[contractAddress] ?: return
 
-        listener.onKitStateUpdate(KitState.Syncing(0.0))
+        erc20.kitState = KitState.Syncing(0.0)
 
-        Flowable.zip(updateBalance(contractAddress, listener.decimal), updateTransactions(contractAddress), BiFunction<Double, Int, Unit> { _, _ -> Unit })
+        Flowable.zip(updateBalance(contractAddress, erc20.listener.decimal), updateTransactions(contractAddress), BiFunction<Double, Int, Unit> { _, _ -> Unit })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
-                    listener.onKitStateUpdate(KitState.Synced)
+                    erc20.kitState = KitState.Synced
                 }, {
                     it?.printStackTrace()
-                    listener.onKitStateUpdate(KitState.NotSynced)
+                    erc20.kitState = KitState.NotSynced
                 }).let {
                     disposables.add(it)
                 }
@@ -272,7 +279,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                 val tokenInserts = inserts.filter { item -> item.contractAddress == it.key }
                 val tokenUpdates = updates.filter { item -> item.contractAddress == it.key }
                 if (tokenInserts.isNotEmpty() || tokenUpdates.isNotEmpty()) {
-                    it.value.listener?.onTransactionsUpdate(tokenInserts, tokenUpdates, deletes)
+                    it.value.listener.onTransactionsUpdate(tokenInserts, tokenUpdates, deletes)
                 }
             }
         }
@@ -423,7 +430,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType) {
                     listener?.onLastBlockHeightUpdate(height)
 
                     erc20List.forEach {
-                        it.value.listener?.onLastBlockHeightUpdate(height)
+                        it.value.listener.onLastBlockHeightUpdate(height)
                     }
 
                     height

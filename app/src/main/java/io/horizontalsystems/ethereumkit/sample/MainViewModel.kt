@@ -33,7 +33,7 @@ class MainViewModel : ViewModel() {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
-        ethereumKit = EthereumKit(words, NetworkType.Ropsten)
+        ethereumKit = EthereumKit(words, NetworkType.Ropsten, "unique-wallet-id")
         ethereumKit.listener = ethereumAdapter
         ethereumKit.register(erc20Adapter)
 
