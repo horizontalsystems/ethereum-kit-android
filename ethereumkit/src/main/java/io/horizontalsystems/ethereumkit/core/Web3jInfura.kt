@@ -68,7 +68,11 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                 .flowable()
                 .map {
                     val result = FunctionReturnDecoder.decode(it.value, function.outputParameters)
-                    result[0].value as BigInteger
+                    if (result.isEmpty()) {
+                        0.toBigInteger()
+                    } else {
+                        result[0].value as BigInteger
+                    }
                 }
                 .map {
                     it.toBigDecimal().divide(BigDecimal.TEN.pow(decimal)).toDouble()

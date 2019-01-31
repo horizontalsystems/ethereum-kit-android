@@ -74,8 +74,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
-    private val hdWallet: HDWallet = HDWallet(Mnemonic().toSeed(words), 1)
-
+    private val hdWallet = HDWallet(Mnemonic().toSeed(words), if (networkType == NetworkType.MainNet) 60 else 1)
     private val web3j = Web3jInfura(networkType, infuraApiKey)
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
@@ -263,10 +262,10 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
 
     private fun handleTransactionsUpdate(collection: RealmResults<Transaction>, changeSet: OrderedCollectionChangeSet) {
         if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
-            val invalid: (Transaction) -> Boolean = { it.contractAddress.isNotEmpty() && it.input != "0x" }
+            val validTx: (Transaction) -> Boolean = { it.contractAddress.isNotEmpty() || it.input == "0x" }
 
-            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(invalid)
-            val updates = changeSet.changes.asList().mapNotNull { collection[it] }.filter(invalid)
+            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(validTx)
+            val updates = changeSet.changes.asList().mapNotNull { collection[it] }.filter(validTx)
             val deletes = changeSet.deletions.asList()
 
             val ethInserts = inserts.filter { it.contractAddress.isEmpty() }
@@ -448,7 +447,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
         val flowable = if (contractAddress == null) {
             etherscanService.getTransactionList(receiveAddress, lastBlockHeight + 1)
         } else {
-            etherscanService.getTokenTransactions(receiveAddress, lastBlockHeight + 1)
+            etherscanService.getTokenTransactions(contractAddress, receiveAddress, lastBlockHeight + 1)
         }
 
         return flowable.map { response ->
