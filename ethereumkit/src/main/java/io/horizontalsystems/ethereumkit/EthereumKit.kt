@@ -118,10 +118,14 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
         refresh()
     }
 
-    fun clear() {
+    fun stop() {
         disposables.clear()
         timer.stop()
         web3j.shutdown()
+    }
+
+    fun clear() {
+        stop()
         erc20List.forEach { unregister(it.key) }
         realmFactory.realm.use { realm ->
             realm.executeTransaction {
