@@ -43,7 +43,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
 
     interface Listener {
         fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
-        fun onBalanceUpdate(balance: Double)
+        fun onBalanceUpdate(balance: BigDecimal)
         fun onLastBlockHeightUpdate(height: Int)
         fun onKitStateUpdate(state: KitState)
     }
@@ -55,7 +55,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
 
     val receiveAddress: String
 
-    var balance: Double = 0.0
+    var balance: BigDecimal = BigDecimal.valueOf(0.0)
         private set
 
     var lastBlockHeight: Int? = null
@@ -92,7 +92,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
         }
 
         getBalance(receiveAddress)?.let {
-            balance = it.balance
+            balance = it.balance.toBigDecimal()
         }
 
         balanceRealmResults = realm.where(Balance::class.java).findAll()
@@ -138,7 +138,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
     fun refresh() {
         kitState = KitState.Syncing(0.0)
 
-        Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateGasPrice(), Function4<Double, Int, Int, Double, Unit> { _, _, _, _ -> Unit })
+        Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateGasPrice(), Function4<BigDecimal, Int, Int, Double, Unit> { _, _, _, _ -> Unit })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
                     kitState = KitState.Synced
@@ -158,18 +158,18 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
         return getTransactions(fromHash, limit)
     }
 
-    fun fee(): Double {
+    fun fee(): BigDecimal {
         realmFactory.realm.use { realm ->
             val gwei = realm.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
             val wei = Convert.toWei(BigDecimal.valueOf(gwei
                     ?: DEFAULT_GAS_PRICE), Convert.Unit.GWEI)
 
-            return Convert.fromWei(wei.multiply(BigDecimal(GAS_LIMIT)), Convert.Unit.ETHER).toDouble()
+            return Convert.fromWei(wei.multiply(BigDecimal(GAS_LIMIT)), Convert.Unit.ETHER)
         }
     }
 
-    fun send(toAddress: String, amount: Double, completion: ((Throwable?) -> Unit)? = null) {
-        val value = Convert.toWei(BigDecimal.valueOf(amount), Convert.Unit.ETHER).toBigInteger()
+    fun send(toAddress: String, amount: BigDecimal, completion: ((Throwable?) -> Unit)? = null) {
+        val value = Convert.toWei(amount, Convert.Unit.ETHER).toBigInteger()
 
         broadcastTransaction(toAddress, value)
                 .subscribeOn(Schedulers.io())
@@ -192,11 +192,10 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
             return
         }
 
-
         val holder = ERC20(token)
         erc20List[token.contractAddress] = holder
         getBalance(token.contractAddress)?.let {
-            holder.balance = it.balance
+            holder.balance = it.balance.toBigDecimal()
         }
 
         refresh(token.contractAddress)
@@ -212,7 +211,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
 
         erc20.kitState = KitState.Syncing(0.0)
 
-        Flowable.zip(updateBalance(contractAddress, erc20.listener.decimal), updateTransactions(contractAddress), BiFunction<Double, Int, Unit> { _, _ -> Unit })
+        Flowable.zip(updateBalance(contractAddress, erc20.listener.decimal), updateTransactions(contractAddress), BiFunction<BigDecimal, Int, Unit> { _, _ -> Unit })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
                     erc20.kitState = KitState.Synced
@@ -234,8 +233,8 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
         }
     }
 
-    fun balanceERC20(contractAddress: String): Double {
-        return erc20List[contractAddress]?.balance ?: 0.0
+    fun balanceERC20(contractAddress: String): BigDecimal {
+        return erc20List[contractAddress]?.balance ?: BigDecimal.valueOf(0.0)
     }
 
     fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<Transaction>> {
@@ -295,11 +294,11 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
 
             (inserts + updates).forEach {
                 if (it.address == receiveAddress) {
-                    balance = it.balance
-                    listener?.onBalanceUpdate(it.balance)
+                    balance = it.balance.toBigDecimal()
+                    listener?.onBalanceUpdate(it.balance.toBigDecimal())
                 } else {
-                    erc20List[it.address]?.balance = it.balance
-                    erc20List[it.address]?.listener?.onBalanceUpdate(it.balance)
+                    erc20List[it.address]?.balance = it.balance.toBigDecimal()
+                    erc20List[it.address]?.listener?.onBalanceUpdate(it.balance.toBigDecimal())
                 }
             }
         }
@@ -402,7 +401,7 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
                 }
     }
 
-    private fun updateBalance(contractAddress: String? = null, decimal: Int = ETH_DECIMAL): Flowable<Double> {
+    private fun updateBalance(contractAddress: String? = null, decimal: Int = ETH_DECIMAL): Flowable<BigDecimal> {
         val flowable = if (contractAddress == null) {
             web3j.getBalance(receiveAddress)
         } else {

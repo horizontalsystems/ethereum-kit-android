@@ -7,17 +7,18 @@ import io.horizontalsystems.ethereumkit.EthereumKit.KitState
 import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.disposables.CompositeDisposable
+import java.math.BigDecimal
 
 class MainViewModel : ViewModel() {
 
     val transactions = MutableLiveData<List<Transaction>>()
-    val balance = MutableLiveData<Double>()
-    val fee = MutableLiveData<Double>()
+    val balance = MutableLiveData<BigDecimal>()
+    val fee = MutableLiveData<BigDecimal>()
     val lastBlockHeight = MutableLiveData<Int>()
     val kitState = MutableLiveData<KitState>()
 
     val tokenTransactions = MutableLiveData<List<Transaction>>()
-    val tokenBalance = MutableLiveData<Double>()
+    val tokenBalance = MutableLiveData<BigDecimal>()
 
     val sendStatus = SingleLiveEvent<Throwable?>()
 
@@ -94,7 +95,7 @@ class MainViewModel : ViewModel() {
         return ethereumKit.receiveAddress
     }
 
-    fun send(address: String, amount: Double) {
+    fun send(address: String, amount: BigDecimal) {
         ethereumKit.send(address, amount) { error ->
             sendStatus.value = error
         }
