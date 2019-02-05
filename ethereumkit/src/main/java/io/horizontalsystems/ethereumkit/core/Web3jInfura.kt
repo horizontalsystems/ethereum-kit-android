@@ -51,15 +51,15 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                 .map { it.blockNumber.toInt() }
     }
 
-    fun getBalance(address: String): Flowable<Double> {
+    fun getBalance(address: String): Flowable<BigDecimal> {
         return web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
                 .flowable()
                 .map {
-                    Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER).toDouble()
+                    Convert.fromWei(it.balance.toBigDecimal(), Convert.Unit.ETHER)
                 }
     }
 
-    fun getTokenBalance(address: String, contractAddress: String, decimal: Int): Flowable<Double> {
+    fun getTokenBalance(address: String, contractAddress: String, decimal: Int): Flowable<BigDecimal> {
         val function = Function("balanceOf",
                 Arrays.asList<Type<*>>(Address(address)),
                 Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))
@@ -75,7 +75,7 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                     }
                 }
                 .map {
-                    it.toBigDecimal().divide(BigDecimal.TEN.pow(decimal)).toDouble()
+                    it.toBigDecimal().divide(BigDecimal.TEN.pow(decimal))
                 }
     }
 

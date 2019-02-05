@@ -3,10 +3,11 @@ package io.horizontalsystems.ethereumkit.sample
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.subjects.PublishSubject
+import java.math.BigDecimal
 
 class ERC20Adapter(override val contractAddress: String, override val decimal: Int) : EthereumKit.ListenerERC20 {
     val transactionSubject = PublishSubject.create<Void>()
-    val balanceSubject = PublishSubject.create<Double>()
+    val balanceSubject = PublishSubject.create<BigDecimal>()
     val lastBlockHeightSubject = PublishSubject.create<Int>()
     val kitStateUpdateSubject = PublishSubject.create<EthereumKit.KitState>()
 
@@ -14,7 +15,7 @@ class ERC20Adapter(override val contractAddress: String, override val decimal: I
         transactionSubject.onComplete()
     }
 
-    override fun onBalanceUpdate(balance: Double) {
+    override fun onBalanceUpdate(balance: BigDecimal) {
         balanceSubject.onNext(balance)
     }
 
