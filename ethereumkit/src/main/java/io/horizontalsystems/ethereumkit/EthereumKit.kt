@@ -39,7 +39,7 @@ import java.util.*
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
 
-class EthereumKit(words: List<String>, networkType: NetworkType, walletId: String) {
+class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
 
     interface Listener {
         fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
@@ -74,13 +74,15 @@ class EthereumKit(words: List<String>, networkType: NetworkType, walletId: Strin
     private val transactionRealmResults: RealmResults<Transaction>
     private val balanceRealmResults: RealmResults<Balance>
 
-    private val hdWallet = HDWallet(Mnemonic().toSeed(words), if (networkType == NetworkType.MainNet) 60 else 1)
+    private val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
     private val web3j = Web3jInfura(networkType, infuraApiKey)
     private val etherscanService = EtherscanService(networkType, etherscanApiKey)
     private val addressValidator = AddressValidator()
     private val disposables = CompositeDisposable()
 
     private val timer: Timer
+
+    constructor(words: List<String>, networkType: NetworkType, walletId: String) : this(Mnemonic().toSeed(words), networkType, walletId)
 
     init {
         val realm = realmFactory.realm
