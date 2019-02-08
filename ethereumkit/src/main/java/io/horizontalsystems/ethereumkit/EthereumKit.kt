@@ -35,6 +35,7 @@ import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 @RealmModule(library = true, allClasses = true)
 class EthereumKitModule
@@ -68,7 +69,7 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
             field = value
         }
 
-    private val erc20List = hashMapOf<String, ERC20>()
+    private val erc20List = ConcurrentHashMap<String, ERC20>()
 
     private val realmFactory = RealmFactory("ethereumkit-${networkType.name}-$walletId")
     private val transactionRealmResults: RealmResults<Transaction>
