@@ -14,8 +14,7 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.BiFunction
-import io.reactivex.functions.Function4
+import io.reactivex.functions.Function5
 import io.reactivex.schedulers.Schedulers
 import io.realm.OrderedCollectionChangeSet
 import io.realm.Realm
@@ -141,7 +140,10 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
     fun refresh() {
         kitState = KitState.Syncing(0.0)
 
-        Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateGasPrice(), Function4<BigDecimal, Int, Int, Double, Unit> { _, _, _, _ -> Unit })
+        Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateTransactions(token = true), updateGasPrice(),
+                Function5<BigDecimal, Int, Int, Int, Double, Unit> { _, _, _, _, _ ->
+                    Unit
+                })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
                     kitState = KitState.Synced
@@ -214,7 +216,7 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
 
         erc20.kitState = KitState.Syncing(0.0)
 
-        Flowable.zip(updateBalance(contractAddress, erc20.listener.decimal), updateTransactions(contractAddress), BiFunction<BigDecimal, Int, Unit> { _, _ -> Unit })
+        updateBalance(contractAddress, erc20.listener.decimal)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({
                     erc20.kitState = KitState.Synced
@@ -442,18 +444,18 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
                 }
     }
 
-    private fun updateTransactions(contractAddress: String? = null): Flowable<Int> {
+    private fun updateTransactions(token: Boolean = false): Flowable<Int> {
 
         val lastBlockHeight = realmFactory.realm.use {
-            it.where(Transaction::class.java).equalTo("contractAddress", contractAddress ?: "")
+            it.where(Transaction::class.java)
                     .sort("blockNumber", Sort.DESCENDING)
                     .findFirst()?.blockNumber?.toInt() ?: 0
         }
 
-        val flowable = if (contractAddress == null) {
-            etherscanService.getTransactionList(receiveAddress, lastBlockHeight + 1)
+        val flowable = if (token) {
+            etherscanService.getTokenTransactions(receiveAddress, lastBlockHeight + 1)
         } else {
-            etherscanService.getTokenTransactions(contractAddress, receiveAddress, lastBlockHeight + 1)
+            etherscanService.getTransactionList(receiveAddress, lastBlockHeight + 1)
         }
 
         return flowable.map { response ->
