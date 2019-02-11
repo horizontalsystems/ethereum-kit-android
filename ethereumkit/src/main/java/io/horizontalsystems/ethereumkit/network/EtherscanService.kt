@@ -48,8 +48,8 @@ class EtherscanService(networkType: NetworkType, private val apiKey: String) {
         return service.getTransactionList("account", "txList", address, startBlock, 99_999_999, "desc", apiKey)
     }
 
-    fun getTokenTransactions(contractAddress: String, address: String, startBlock: Int): Flowable<EtherscanResponse> {
-        return service.getTokenTransactions("account", "tokentx", contractAddress, address, startBlock, 99_999_999, "desc", apiKey)
+    fun getTokenTransactions(address: String, startBlock: Int): Flowable<EtherscanResponse> {
+        return service.getTokenTransactions("account", "tokentx", address, startBlock, 99_999_999, "desc", apiKey)
     }
 
     interface EtherscanServiceAPI {
@@ -68,7 +68,6 @@ class EtherscanService(networkType: NetworkType, private val apiKey: String) {
         fun getTokenTransactions(
                 @Query("module") module: String,
                 @Query("action") action: String,
-                @Query("contractaddress") contractAddress: String,
                 @Query("address") address: String,
                 @Query("startblock") startblock: Int,
                 @Query("endblock") endblock: Int,
