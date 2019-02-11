@@ -28,7 +28,7 @@ open class Transaction : RealmObject {
     var transactionIndex: String = ""
     var isError: String = ""
     var txReceiptStatus: String = ""
-    var input: String = ""
+    var input: String = "0x"
     var cumulativeGasUsed: String = ""
     var gasUsed: String = ""
     var confirmations: Int = 0
