@@ -334,6 +334,8 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
     }
 
     private fun broadcastTransaction(toAddress: String, amount: BigInteger, contractAddress: String? = null): Flowable<Unit> {
+        var data = "0x"
+
         return Flowable.fromCallable {
             //  get the next available nonce
             val ethGetTransactionCount = web3j.getTransactionCount(receiveAddress)
@@ -352,6 +354,8 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
                 RawTransaction.createEtherTransaction(nonce, gasPrice, GAS_LIMIT.toBigInteger(), toAddress, amount)
             }
 
+            data = Numeric.prependHexPrefix(rawTransaction.data)
+
             //  sign & send our transaction
             val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
             val hexValue = Numeric.toHexString(signedMessage)
@@ -364,6 +368,7 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
                 from = receiveAddress
                 to = toAddress
                 value = amount.toString()
+                input = data
 
                 contractAddress?.let {
                     this.contractAddress = it
