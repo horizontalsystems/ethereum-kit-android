@@ -452,8 +452,15 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
     private fun updateTransactions(token: Boolean = false): Flowable<Int> {
 
         val lastBlockHeight = realmFactory.realm.use {
-            it.where(Transaction::class.java)
-                    .sort("blockNumber", Sort.DESCENDING)
+            var query = it.where(Transaction::class.java)
+            query = if (token) {
+                query.notEqualTo("contractAddress", "")
+                        .notEqualTo("input", "0x")
+            } else {
+                query.equalTo("contractAddress", "")
+                        .equalTo("input", "0x")
+            }
+            query.sort("blockNumber", Sort.DESCENDING)
                     .findFirst()?.blockNumber?.toInt() ?: 0
         }
 
