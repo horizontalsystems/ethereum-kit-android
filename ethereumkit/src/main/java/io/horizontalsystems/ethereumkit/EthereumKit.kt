@@ -3,10 +3,10 @@ package io.horizontalsystems.ethereumkit
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
+import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.ethereumkit.models.TransactionRoom
 import io.reactivex.Single
 import java.math.BigDecimal
-import java.util.concurrent.ConcurrentHashMap
 
 class EthereumKitModule
 
@@ -197,76 +197,6 @@ class EthereumKit(
             return ethereumKit
         }
 
-    }
-
-    class State {
-
-        var balance: BigDecimal? = null
-        var lastBlockHeight: Int? = null
-        var syncState: SyncState? = null
-
-        val erc20List = ConcurrentHashMap<String, ERC20>()
-
-        val erc20Listeners: List<Listener>
-            get() {
-                val listeners = mutableListOf<Listener>()
-                erc20List.values.forEach {
-                    listeners.add(it.listener)
-                }
-                return listeners
-            }
-
-        val isSyncing: Boolean
-            get() {
-                if (syncState == SyncState.Syncing) {
-                    return true
-                }
-                erc20List.values.forEach {
-                    if (it.syncState == SyncState.Syncing) {
-                        return true
-                    }
-                }
-                return false
-            }
-
-        fun clear() {
-            balance = null
-            lastBlockHeight = null
-            syncState = SyncState.NotSynced
-            erc20List.clear()
-        }
-
-        fun add(contractAddress: String, decimal: Int, listener: Listener) {
-            erc20List[contractAddress] = ERC20(contractAddress, decimal, listener)
-        }
-
-        fun hasContract(contractAddress: String): Boolean {
-            return erc20List.containsKey(contractAddress)
-        }
-
-        fun remove(contractAddress: String) {
-            erc20List.remove(contractAddress)
-        }
-
-        fun balance(contractAddress: String): BigDecimal? {
-            return erc20List[contractAddress]?.balance
-        }
-
-        fun state(contractAddress: String): SyncState? {
-            return erc20List[contractAddress]?.syncState
-        }
-
-        fun listener(contractAddress: String): Listener? {
-            return erc20List[contractAddress]?.listener
-        }
-
-        fun setBalance(balance: BigDecimal?, contractAddress: String) {
-            erc20List[contractAddress]?.balance = balance
-        }
-
-        fun setSyncState(syncState: SyncState?, contractAddress: String) {
-            erc20List[contractAddress]?.syncState = syncState
-        }
     }
 
 }

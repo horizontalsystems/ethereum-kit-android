@@ -7,6 +7,7 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IStorage
+import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.ethereumkit.models.TransactionRoom
 import io.reactivex.Single
 import org.junit.Assert
@@ -20,7 +21,7 @@ class EthereumKitTest {
     private val blockchain = mock(IBlockchain::class.java)
     private val storage = mock(IStorage::class.java)
     private val addressValidator = mock(AddressValidator::class.java)
-    private val state = mock(EthereumKit.State::class.java)
+    private val state = mock(State::class.java)
     private val listener = mock(EthereumKit.Listener::class.java)
     private lateinit var kit: EthereumKit
 
