@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.EthereumKit.KitState
+import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.disposables.CompositeDisposable
@@ -15,7 +15,7 @@ class MainViewModel : ViewModel() {
     val balance = MutableLiveData<BigDecimal>()
     val fee = MutableLiveData<BigDecimal>()
     val lastBlockHeight = MutableLiveData<Int>()
-    val kitState = MutableLiveData<KitState>()
+    val kitState = MutableLiveData<SyncState>()
 
     val tokenTransactions = MutableLiveData<List<Transaction>>()
     val tokenBalance = MutableLiveData<BigDecimal>()

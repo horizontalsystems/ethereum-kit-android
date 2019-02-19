@@ -9,7 +9,7 @@ class ERC20Adapter(override val contractAddress: String, override val decimal: I
     val transactionSubject = PublishSubject.create<Void>()
     val balanceSubject = PublishSubject.create<BigDecimal>()
     val lastBlockHeightSubject = PublishSubject.create<Int>()
-    val kitStateUpdateSubject = PublishSubject.create<EthereumKit.KitState>()
+    val kitStateUpdateSubject = PublishSubject.create<EthereumKit.SyncState>()
 
     override fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>) {
         transactionSubject.onComplete()
@@ -23,7 +23,7 @@ class ERC20Adapter(override val contractAddress: String, override val decimal: I
         lastBlockHeightSubject.onNext(height)
     }
 
-    override fun onKitStateUpdate(state: EthereumKit.KitState) {
+    override fun onKitStateUpdate(state: EthereumKit.SyncState) {
         kitStateUpdateSubject.onNext(state)
     }
 }

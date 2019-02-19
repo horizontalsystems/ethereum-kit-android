@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.EthereumKit
 import io.reactivex.Flowable
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
@@ -20,38 +19,38 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
 
-class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey: String) {
+class Web3jInfura(testMode: Boolean, private val infuraApiKey: String): IWeb3jInfura {
 
-    private val infuraUrl = getInfuraUrl(networkType)
+    private val infuraUrl = getInfuraUrl(testMode)
     private val web3j: Web3j = Web3j.build(HttpService(infuraUrl))
 
-    fun shutdown() {
+    override fun shutdown() {
         web3j.shutdown()
     }
 
-    fun sendRawTransaction(raw: String): EthSendTransaction {
-        return web3j.ethSendRawTransaction(raw).send()
+    override fun sendRawTransaction(rawTransaction: String): EthSendTransaction {
+        return web3j.ethSendRawTransaction(rawTransaction).send()
     }
 
-    fun getTransactionCount(address: String): EthGetTransactionCount {
+    override fun getTransactionCount(address: String): EthGetTransactionCount {
         return web3j.ethGetTransactionCount(address, DefaultBlockParameterName.LATEST).send()
     }
 
-    fun getGasPrice(): Flowable<Double> {
+    override fun getGasPrice(): Flowable<BigDecimal> {
         return web3j.ethGasPrice()
                 .flowable()
                 .map {
-                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toDouble()
+                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI)
                 }
     }
 
-    fun getBlockNumber(): Flowable<Int> {
+    override fun getLastBlockHeight(): Flowable<Int> {
         return web3j.ethBlockNumber()
                 .flowable()
                 .map { it.blockNumber.toInt() }
     }
 
-    fun getBalance(address: String): Flowable<BigDecimal> {
+    override fun getBalance(address: String): Flowable<BigDecimal> {
         return web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST)
                 .flowable()
                 .map {
@@ -59,7 +58,7 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                 }
     }
 
-    fun getTokenBalance(address: String, contractAddress: String, decimal: Int): Flowable<BigDecimal> {
+    override fun getBalanceErc20(address: String, contractAddress: String, decimal: Int): Flowable<BigDecimal> {
         val function = Function("balanceOf",
                 Arrays.asList<Type<*>>(Address(address)),
                 Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))
@@ -79,12 +78,10 @@ class Web3jInfura(networkType: EthereumKit.NetworkType, private val infuraApiKey
                 }
     }
 
-    private fun getInfuraUrl(network: EthereumKit.NetworkType): String {
-        val subDomain = when (network) {
-            EthereumKit.NetworkType.MainNet -> "mainnet"
-            EthereumKit.NetworkType.Kovan -> "kovan"
-            EthereumKit.NetworkType.Rinkeby -> "rinkeby"
-            EthereumKit.NetworkType.Ropsten -> "ropsten"
+    private fun getInfuraUrl(testMode: Boolean): String {
+        val subDomain = when (testMode) {
+            true -> "ropsten"
+            false -> "mainnet"
         }
 
         return "https://$subDomain.infura.io/$infuraApiKey"
