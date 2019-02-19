@@ -5,7 +5,12 @@ import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.horizontalsystems.hdwalletkit.HDWallet
 import java.math.BigDecimal
 
-class Web3jBlockchain(storage: RoomStorage, seed: ByteArray, testMode: Boolean, infuraKey: String, etherscanKey: String) : IBlockchain {
+class Web3jBlockchain(
+        storage: RoomStorage,
+        seed: ByteArray,
+        testMode: Boolean,
+        infuraKey: String,
+        etherscanKey: String) : IBlockchain {
 
     override val ethereumGasLimit: Int = 21_000
     override val erc20GasLimit: Int = 100_000

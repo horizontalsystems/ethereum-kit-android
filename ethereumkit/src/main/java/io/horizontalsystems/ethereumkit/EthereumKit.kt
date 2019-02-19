@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
 import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.ethereumkit.models.TransactionRoom
+import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Single
 import java.math.BigDecimal
 
@@ -184,7 +185,12 @@ class EthereumKit(
         object Syncing : SyncState()
     }
 
+
     companion object {
+        fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
+            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
+        }
+
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
 
             val storage = RoomStorage("ethereumKit-$testMode-$walletId", context)
