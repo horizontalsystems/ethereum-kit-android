@@ -6,10 +6,10 @@ import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import java.math.BigInteger
 
-fun ByteArray.toHexString(): String {
-    return this.joinToString(separator = "") {
+fun ByteArray?.toHexString(): String {
+    return this?.joinToString(separator = "") {
         it.toInt().and(0xff).toString(16).padStart(2, '0')
-    }
+    } ?: ""
 }
 
 @Throws(NumberFormatException::class)
