@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 class State {
     var balance: BigDecimal? = null
     var lastBlockHeight: Int? = null
-    var syncState: EthereumKit.SyncState? = null
 
     val erc20List = ConcurrentHashMap<String, ERC20>()
 
@@ -21,23 +20,9 @@ class State {
             return listeners
         }
 
-    val isSyncing: Boolean
-        get() {
-            if (syncState == EthereumKit.SyncState.Syncing) {
-                return true
-            }
-            erc20List.values.forEach {
-                if (it.syncState == EthereumKit.SyncState.Syncing) {
-                    return true
-                }
-            }
-            return false
-        }
-
     fun clear() {
         balance = null
         lastBlockHeight = null
-        syncState = EthereumKit.SyncState.NotSynced
         erc20List.clear()
     }
 
@@ -57,19 +42,12 @@ class State {
         return erc20List[contractAddress]?.balance
     }
 
-    fun state(contractAddress: String): EthereumKit.SyncState? {
-        return erc20List[contractAddress]?.syncState
-    }
-
     fun listener(contractAddress: String): EthereumKit.Listener? {
         return erc20List[contractAddress]?.listener
     }
 
-    fun setBalance(balance: BigDecimal?, contractAddress: String) {
+    fun setBalance(balance: BigDecimal, contractAddress: String) {
         erc20List[contractAddress]?.balance = balance
     }
 
-    fun setSyncState(syncState: EthereumKit.SyncState?, contractAddress: String) {
-        erc20List[contractAddress]?.syncState = syncState
-    }
 }

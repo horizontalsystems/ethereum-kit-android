@@ -11,15 +11,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-class EtherscanService(testMode: Boolean, private val apiKey: String) {
+class EtherscanService(baseUrl: String, private val apiKey: String) {
 
     private val service: EtherscanServiceAPI
 
     init {
-        val baseUrl = when (testMode) {
-            true -> "https://api-ropsten.etherscan.io"
-            false -> "https://api.etherscan.io"
-        }
 
         val logger = HttpLoggingInterceptor()
                 .setLevel(HttpLoggingInterceptor.Level.BASIC)

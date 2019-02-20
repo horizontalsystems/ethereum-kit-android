@@ -2,10 +2,10 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "f196a4ca9ce36046d178950d90f09d2e",
+    "identityHash": "46b83f982c6fb76e689af74784473e88",
     "entities": [
       {
-        "tableName": "BalanceRoom",
+        "tableName": "EthereumBalance",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`address` TEXT NOT NULL, `balance` TEXT NOT NULL, PRIMARY KEY(`address`))",
         "fields": [
           {
@@ -31,13 +31,13 @@
         "foreignKeys": []
       },
       {
-        "tableName": "GasPriceRoom",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gasPriceInGwei` TEXT NOT NULL, PRIMARY KEY(`gasPriceInGwei`))",
+        "tableName": "GasPrice",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gasPriceInGwei` INTEGER NOT NULL, PRIMARY KEY(`gasPriceInGwei`))",
         "fields": [
           {
             "fieldPath": "gasPriceInGwei",
             "columnName": "gasPriceInGwei",
-            "affinity": "TEXT",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -51,7 +51,7 @@
         "foreignKeys": []
       },
       {
-        "tableName": "LastBlockHeightRoom",
+        "tableName": "LastBlockHeight",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`height` INTEGER NOT NULL, PRIMARY KEY(`height`))",
         "fields": [
           {
@@ -71,63 +71,9 @@
         "foreignKeys": []
       },
       {
-        "tableName": "TransactionRoom",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contractAddress` TEXT NOT NULL, `blockHash` TEXT, `blockNumber` INTEGER, `confirmations` INTEGER, `gasUsed` TEXT, `cumulativeGasUsed` TEXT, `iserror` TEXT, `transactionIndex` TEXT, `txReceiptStatus` TEXT, `hash` TEXT NOT NULL, `nonce` INTEGER NOT NULL, `input` TEXT NOT NULL, `from` TEXT NOT NULL, `to` TEXT NOT NULL, `value` TEXT NOT NULL, `gasLimit` INTEGER NOT NULL, `gasPrice` TEXT NOT NULL, `timeStamp` INTEGER NOT NULL, PRIMARY KEY(`hash`, `contractAddress`))",
+        "tableName": "EthereumTransaction",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hash` TEXT NOT NULL, `nonce` INTEGER NOT NULL, `input` TEXT NOT NULL, `from` TEXT NOT NULL, `to` TEXT NOT NULL, `value` TEXT NOT NULL, `gasLimit` INTEGER NOT NULL, `gasPriceInWei` INTEGER NOT NULL, `timeStamp` INTEGER NOT NULL, `contractAddress` TEXT NOT NULL, `blockHash` TEXT NOT NULL, `blockNumber` INTEGER NOT NULL, `confirmations` INTEGER NOT NULL, `gasUsed` TEXT NOT NULL, `cumulativeGasUsed` TEXT NOT NULL, `iserror` TEXT NOT NULL, `transactionIndex` TEXT NOT NULL, `txReceiptStatus` TEXT NOT NULL, PRIMARY KEY(`hash`, `contractAddress`))",
         "fields": [
-          {
-            "fieldPath": "contractAddress",
-            "columnName": "contractAddress",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "blockHash",
-            "columnName": "blockHash",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "blockNumber",
-            "columnName": "blockNumber",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "confirmations",
-            "columnName": "confirmations",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "gasUsed",
-            "columnName": "gasUsed",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "cumulativeGasUsed",
-            "columnName": "cumulativeGasUsed",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "iserror",
-            "columnName": "iserror",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "transactionIndex",
-            "columnName": "transactionIndex",
-            "affinity": "TEXT",
-            "notNull": false
-          },
-          {
-            "fieldPath": "txReceiptStatus",
-            "columnName": "txReceiptStatus",
-            "affinity": "TEXT",
-            "notNull": false
-          },
           {
             "fieldPath": "hash",
             "columnName": "hash",
@@ -171,15 +117,69 @@
             "notNull": true
           },
           {
-            "fieldPath": "gasPrice",
-            "columnName": "gasPrice",
-            "affinity": "TEXT",
+            "fieldPath": "gasPriceInWei",
+            "columnName": "gasPriceInWei",
+            "affinity": "INTEGER",
             "notNull": true
           },
           {
             "fieldPath": "timeStamp",
             "columnName": "timeStamp",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contractAddress",
+            "columnName": "contractAddress",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockHash",
+            "columnName": "blockHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blockNumber",
+            "columnName": "blockNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confirmations",
+            "columnName": "confirmations",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gasUsed",
+            "columnName": "gasUsed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cumulativeGasUsed",
+            "columnName": "cumulativeGasUsed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iserror",
+            "columnName": "iserror",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transactionIndex",
+            "columnName": "transactionIndex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "txReceiptStatus",
+            "columnName": "txReceiptStatus",
+            "affinity": "TEXT",
             "notNull": true
           }
         ],
@@ -196,7 +196,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"f196a4ca9ce36046d178950d90f09d2e\")"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"46b83f982c6fb76e689af74784473e88\")"
     ]
   }
 }

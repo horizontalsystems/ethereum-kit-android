@@ -7,13 +7,14 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IStorage
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.State
-import io.horizontalsystems.ethereumkit.models.TransactionRoom
 import io.reactivex.Single
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
+import org.web3j.utils.Convert
 import java.math.BigDecimal
 
 class EthereumKitTest {
@@ -26,6 +27,16 @@ class EthereumKitTest {
     private lateinit var kit: EthereumKit
 
     private val ethereumAddress = "ether"
+
+    private val transaction = EthereumTransaction().apply {
+        hash = "hash"
+        nonce = 123
+        input = "input"
+        from = "from"
+        to = "to"
+        value = BigDecimal.valueOf(23.0)
+    }
+
 
     @Before
     fun setUp() {
@@ -52,17 +63,9 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testStart_notSyncing() {
-        whenever(state.isSyncing).thenReturn(false)
+    fun testStart() {
         kit.start()
         verify(blockchain).start()
-    }
-
-    @Test
-    fun testStart_alreadySyncing() {
-        whenever(state.isSyncing).thenReturn(true)
-        kit.start()
-        verify(blockchain, never()).start()
     }
 
     @Test
@@ -90,11 +93,14 @@ class EthereumKitTest {
     fun testRegister() {
         val address = "address"
         val decimal = 4
+        val balance = BigDecimal.valueOf(123)
         val listenerMock = mock(EthereumKit.Listener::class.java)
+        whenever(storage.getBalance(address)).thenReturn(balance)
         whenever(state.hasContract(address)).thenReturn(false)
         kit.register(address, decimal, listenerMock)
 
         verify(state).add(contractAddress = address, decimal = decimal, listener = listenerMock)
+        verify(state).setBalance(balance, address)
         verify(blockchain).register(contractAddress = address, decimal = decimal)
     }
 
@@ -141,12 +147,13 @@ class EthereumKitTest {
     @Test
     fun testFee() {
         val gasLimit = 21_000
-        val gasPrice = BigDecimal.valueOf(123)
+        val gasPrice = 123L
 
-        whenever(blockchain.gasPrice).thenReturn(gasPrice)
-        whenever(blockchain.ethereumGasLimit).thenReturn(gasLimit)
+        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
+        whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
-        val expectedFee = gasPrice * gasLimit.toBigDecimal()
+        val gas = BigDecimal.valueOf(gasPrice)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.fee()
 
@@ -156,11 +163,12 @@ class EthereumKitTest {
     @Test
     fun testFee_customGasPrice() {
         val gasLimit = 21_000
-        val customGasPrice = BigDecimal.valueOf(23)
+        val customGasPrice = 23L
 
-        whenever(blockchain.ethereumGasLimit).thenReturn(gasLimit)
+        whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
-        val expectedFee = customGasPrice * gasLimit.toBigDecimal()
+        val gas = BigDecimal.valueOf(customGasPrice)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.fee(customGasPrice)
 
@@ -171,7 +179,7 @@ class EthereumKitTest {
     fun testTransactions() {
         val fromHash = "hash"
         val limit = 5
-        val expectedResult = Single.just(listOf<TransactionRoom>())
+        val expectedResult = Single.just(listOf<EthereumTransaction>())
 
         whenever(storage.getTransactions(fromHash, limit, null)).thenReturn(expectedResult)
 
@@ -185,25 +193,29 @@ class EthereumKitTest {
         val amount = BigDecimal.valueOf(23.4)
         val gasPrice = null
         val toAddress = "address"
-        val onSuccess: (() -> Unit)? = { }
-        val onError: (() -> Unit)? = { }
 
-        kit.send(toAddress, amount, gasPrice, onSuccess, onError)
+        val expectedResult = Single.just(transaction)
 
-        verify(blockchain).send(toAddress, amount, gasPrice, onSuccess, onError)
+        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
+
+        val result = kit.send(toAddress, amount, gasPrice)
+
+        Assert.assertEquals(expectedResult, result)
     }
 
     @Test
     fun testSend_withCustomGasPrice() {
         val amount = BigDecimal.valueOf(23.4)
-        val gasPrice = BigDecimal.valueOf(3.4)
+        val gasPrice = 34L
         val toAddress = "address"
-        val onSuccess: (() -> Unit)? = { }
-        val onError: (() -> Unit)? = { }
 
-        kit.send(toAddress, amount, gasPrice, onSuccess, onError)
+        val expectedResult = Single.just(transaction)
 
-        verify(blockchain).send(toAddress, amount, gasPrice, onSuccess, onError)
+        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
+
+        val result = kit.send(toAddress, amount, gasPrice)
+
+        Assert.assertEquals(expectedResult, result)
     }
 
     @Test
@@ -223,17 +235,17 @@ class EthereumKitTest {
         Assert.assertEquals(balance, result)
     }
 
-    @Test
-    fun testSyncState_null() {
-        whenever(state.syncState).thenReturn(null)
-        val result = kit.syncState
-
-        Assert.assertEquals(EthereumKit.SyncState.NotSynced, result)
-    }
+//    @Test
+//    fun testSyncState_null() {
+//        whenever(blockchain.blockchainSyncState).thenReturn(null)
+//        val result = kit.syncState
+//
+//        Assert.assertEquals(EthereumKit.SyncState.NotSynced, result)
+//    }
 
     @Test
     fun testState_syncing() {
-        whenever(state.syncState).thenReturn(EthereumKit.SyncState.Syncing)
+        whenever(blockchain.blockchainSyncState).thenReturn(EthereumKit.SyncState.Syncing)
         val result = kit.syncState
 
         Assert.assertEquals(EthereumKit.SyncState.Syncing, result)
@@ -247,12 +259,13 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee() {
         val erc20GasLimit = 100_000
-        val gasPrice = BigDecimal.valueOf(123)
+        val gasPrice = 123L
 
-        whenever(blockchain.gasPrice).thenReturn(gasPrice)
-        whenever(blockchain.erc20GasLimit).thenReturn(erc20GasLimit)
+        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
+        whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
-        val expectedFee = gasPrice * erc20GasLimit.toBigDecimal()
+        val gas = BigDecimal.valueOf(gasPrice)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.feeERC20()
 
@@ -262,11 +275,12 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee_customGasPrice() {
         val erc20GasLimit = 100_000
-        val customGasPrice = BigDecimal.valueOf(23)
+        val customGasPrice = 23L
 
-        whenever(blockchain.erc20GasLimit).thenReturn(erc20GasLimit)
+        whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
-        val expectedFee = customGasPrice * erc20GasLimit.toBigDecimal()
+        val gas = BigDecimal.valueOf(customGasPrice)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.feeERC20(customGasPrice)
 
@@ -297,18 +311,10 @@ class EthereumKitTest {
     fun testState_null() {
         val address = "address"
 
+        whenever(blockchain.syncState(address)).thenReturn(EthereumKit.SyncState.NotSynced)
+
         val result = kit.syncStateErc20(address)
         Assert.assertEquals(EthereumKit.SyncState.NotSynced, result)
-    }
-
-    @Test
-    fun testState_synced() {
-        val address = "address"
-
-        whenever(state.state(address)).thenReturn(EthereumKit.SyncState.Synced)
-
-        val result = kit.syncStateErc20(address)
-        Assert.assertEquals(EthereumKit.SyncState.Synced, result)
     }
 
     @Test
@@ -316,7 +322,7 @@ class EthereumKitTest {
         val address = "address"
         val fromHash = "hash"
         val limit = 5
-        val expectedResult = Single.just(listOf<TransactionRoom>())
+        val expectedResult = Single.just(listOf<EthereumTransaction>())
 
         whenever(storage.getTransactions(fromHash, limit, address)).thenReturn(expectedResult)
 
@@ -331,26 +337,30 @@ class EthereumKitTest {
         val gasPrice = null
         val toAddress = "address"
         val contractAddress = "contAddress"
-        val onSuccess: (() -> Unit)? = { }
-        val onError: (() -> Unit)? = { }
 
-        kit.sendERC20(toAddress, contractAddress, amount, gasPrice, onSuccess, onError)
+        val expectedResult = Single.just(transaction)
 
-        verify(blockchain).sendErc20(toAddress, contractAddress, amount, gasPrice, onSuccess, onError)
+        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
+
+        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
+
+        Assert.assertEquals(expectedResult, result)
     }
 
     @Test
     fun testErc20Send_withCustomGasPrice() {
         val amount = BigDecimal.valueOf(23.4)
-        val gasPrice = BigDecimal.valueOf(3.4)
+        val gasPrice = 234L
         val toAddress = "address"
         val contractAddress = "contAddress"
-        val onSuccess: (() -> Unit)? = { }
-        val onError: (() -> Unit)? = { }
 
-        kit.sendERC20(toAddress, contractAddress, amount, gasPrice, onSuccess, onError)
+        val expectedResult = Single.just(transaction)
 
-        verify(blockchain).sendErc20(toAddress, contractAddress, amount, gasPrice, onSuccess, onError)
+        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
+
+        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
+
+        Assert.assertEquals(expectedResult, result)
     }
 
     @Test
@@ -371,17 +381,16 @@ class EthereumKitTest {
         val syncState = EthereumKit.SyncState.Syncing
         kit.onUpdateState(syncState)
 
-        verify(state).syncState = syncState
+        verify(listener).onSyncStateUpdate()
     }
 
     @Test
     fun testOnUpdateErc20State() {
-        val contractAddress= "address"
+        val contractAddress = "address"
         val syncState = EthereumKit.SyncState.Syncing
         kit.onUpdateErc20State(syncState, contractAddress)
 
-        verify(state).setSyncState(syncState, contractAddress)
-        verify(state).listener(contractAddress)?.onStateUpdate()
+        verify(state).listener(contractAddress)?.onSyncStateUpdate()
     }
 
     @Test
@@ -394,7 +403,7 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateErc20Balance() {
-        val contractAddress= "address"
+        val contractAddress = "address"
         val balance = BigDecimal.valueOf(345)
 
         kit.onUpdateErc20Balance(balance, contractAddress)
@@ -405,7 +414,7 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateTransactions() {
-        val transactions = listOf<TransactionRoom>()
+        val transactions = listOf<EthereumTransaction>()
 
         kit.onUpdateTransactions(transactions)
         verify(listener).onTransactionsUpdate(transactions)
@@ -413,11 +422,12 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateErc20Transactions() {
-        val contractAddress= "address"
-        val transactions = listOf<TransactionRoom>()
+        val contractAddress = "address"
+        val transactions = listOf<EthereumTransaction>()
 
         kit.onUpdateErc20Transactions(transactions, contractAddress)
         verify(state).listener(contractAddress)?.onTransactionsUpdate(transactions)
     }
+
 
 }

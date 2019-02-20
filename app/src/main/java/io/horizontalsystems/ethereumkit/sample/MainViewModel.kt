@@ -4,20 +4,19 @@ import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
-import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.disposables.CompositeDisposable
 import java.math.BigDecimal
 
 class MainViewModel : ViewModel() {
 
-    val transactions = MutableLiveData<List<Transaction>>()
+    val transactions = MutableLiveData<List<EthereumTransaction>>()
     val balance = MutableLiveData<BigDecimal>()
     val fee = MutableLiveData<BigDecimal>()
     val lastBlockHeight = MutableLiveData<Int>()
     val kitState = MutableLiveData<SyncState>()
 
-    val tokenTransactions = MutableLiveData<List<Transaction>>()
+    val tokenTransactions = MutableLiveData<List<EthereumTransaction>>()
     val tokenBalance = MutableLiveData<BigDecimal>()
 
     val sendStatus = SingleLiveEvent<Throwable?>()
@@ -34,9 +33,9 @@ class MainViewModel : ViewModel() {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
-        ethereumKit = EthereumKit(words, NetworkType.Ropsten, "unique-wallet-id")
+        ethereumKit = EthereumKit.ethereumKit(App.instance, words, "unique-wallet-id", true, infuraKey = "2a1306f1d12f4c109a4d4fb9be46b02e", etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE")
         ethereumKit.listener = ethereumAdapter
-        ethereumKit.register(erc20Adapter)
+//        ethereumKit.register(erc20Adapter)
 
         // Previous or default values
         balance.value = ethereumKit.balance
@@ -87,8 +86,8 @@ class MainViewModel : ViewModel() {
     //
 
     fun refresh() {
-        ethereumKit.refresh()
-        fee.postValue(ethereumKit.fee())
+//        ethereumKit.refresh()
+//        fee.postValue(ethereumKit.fee())
     }
 
     fun receiveAddress(): String {
@@ -96,9 +95,9 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(address: String, amount: BigDecimal) {
-        ethereumKit.send(address, amount) { error ->
-            sendStatus.value = error
-        }
+//        ethereumKit.send(address, amount) { error ->
+//            sendStatus.value = error
+//        }
     }
 
     //
@@ -106,21 +105,21 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(address: String, amount: Double) {
-        ethereumKit.sendERC20(address, contractAddress, amount) { error ->
-            sendStatus.value = error
-        }
+//        ethereumKit.sendERC20(address, contractAddress, amount) { error ->
+//            sendStatus.value = error
+//        }
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val txMethod = if (ethTx)
-            ethereumKit.transactions() else
-            ethereumKit.transactionsERC20(contractAddress)
-
-        txMethod.subscribe { txList: List<Transaction> ->
-            transactions.value = txList
-        }.let {
-            disposables.add(it)
-        }
+//        val txMethod = if (ethTx)
+//            ethereumKit.transactions() else
+//            ethereumKit.transactionsERC20(contractAddress)
+//
+//        txMethod.subscribe { txList: List<Transaction> ->
+//            transactions.value = txList
+//        }.let {
+//            disposables.add(it)
+//        }
     }
 
     //
@@ -128,11 +127,11 @@ class MainViewModel : ViewModel() {
     //
 
     private fun updateTransactions() {
-        ethereumKit.transactions().subscribe { list: List<Transaction> ->
-            transactions.value = list
-        }.let {
-            disposables.add(it)
-        }
+//        ethereumKit.transactions().subscribe { list: List<Transaction> ->
+//            transactions.value = list
+//        }.let {
+//            disposables.add(it)
+//        }
     }
 
 }

@@ -1,24 +1,24 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.arch.persistence.room.*
-import io.horizontalsystems.ethereumkit.models.TransactionRoom
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 
 @Dao
 interface TransactionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transaction: TransactionRoom)
+    fun insert(ethereumTransaction: EthereumTransaction)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transactions: List<TransactionRoom>)
+    fun insert(ethereumTransactions: List<EthereumTransaction>)
 
-    @Query("SELECT * FROM TransactionRoom WHERE contractAddress = :address ORDER BY timeStamp DESC")
-    fun getTransactions(address: String?): Single<List<TransactionRoom>>
+    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = :address ORDER BY timeStamp DESC")
+    fun getTransactions(address: String?): Single<List<EthereumTransaction>>
 
     @Delete
-    fun delete(transaction: TransactionRoom)
+    fun delete(ethereumTransaction: EthereumTransaction)
 
-    @Query("DELETE FROM TransactionRoom")
+    @Query("DELETE FROM EthereumTransaction")
     fun deleteAll()
 }

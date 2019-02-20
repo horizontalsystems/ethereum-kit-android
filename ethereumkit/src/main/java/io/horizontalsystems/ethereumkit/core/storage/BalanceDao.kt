@@ -1,20 +1,20 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.arch.persistence.room.*
-import io.horizontalsystems.ethereumkit.models.BalanceRoom
+import io.horizontalsystems.ethereumkit.models.EthereumBalance
 
 @Dao
 interface BalanceDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(balance: BalanceRoom)
+    fun insert(ethereumBalance: EthereumBalance)
 
-    @Query("SELECT * FROM BalanceRoom WHERE address = :address")
-    fun getBalance(address: String): BalanceRoom?
+    @Query("SELECT * FROM EthereumBalance WHERE address = :address")
+    fun getBalance(address: String): EthereumBalance?
 
     @Delete
-    fun delete(rate: BalanceRoom)
+    fun delete(rate: EthereumBalance)
 
-    @Query("DELETE FROM BalanceRoom")
+    @Query("DELETE FROM EthereumBalance")
     fun deleteAll()
 }

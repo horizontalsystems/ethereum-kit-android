@@ -1,20 +1,20 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.arch.persistence.room.*
-import io.horizontalsystems.ethereumkit.models.LastBlockHeightRoom
+import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 
 @Dao
 interface LastBlockHeightDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(lastBlockHeight: LastBlockHeightRoom)
+    fun insert(lastBlockHeight: LastBlockHeight)
 
-    @Query("SELECT * FROM LastBlockHeightRoom")
-    fun getLastBlockHeight(): LastBlockHeightRoom?
+    @Query("SELECT * FROM LastBlockHeight")
+    fun getLastBlockHeight(): LastBlockHeight?
 
     @Delete
-    fun delete(lastBlockHeight: LastBlockHeightRoom)
+    fun delete(lastBlockHeight: LastBlockHeight)
 
-    @Query("DELETE FROM LastBlockHeightRoom")
+    @Query("DELETE FROM LastBlockHeight")
     fun deleteAll()
 }

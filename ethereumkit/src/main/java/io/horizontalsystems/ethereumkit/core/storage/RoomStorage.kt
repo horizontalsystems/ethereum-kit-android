@@ -2,10 +2,10 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.IStorage
-import io.horizontalsystems.ethereumkit.models.BalanceRoom
-import io.horizontalsystems.ethereumkit.models.GasPriceRoom
-import io.horizontalsystems.ethereumkit.models.LastBlockHeightRoom
-import io.horizontalsystems.ethereumkit.models.TransactionRoom
+import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 import java.math.BigDecimal
 
@@ -14,7 +14,7 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
     private val database: KitDatabase = KitDatabase.getInstance(context, databaseName)
 
 
-    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<TransactionRoom>> {
+    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
         return database.transactionDao().getTransactions(contractAddress)
                 .flatMap { transactions ->
 
@@ -51,24 +51,24 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun getGasPrice(): BigDecimal? {
+    override fun getGasPriceInWei(): Long? {
         return database.gasPriceDao().getGasPrice()?.gasPriceInGwei
     }
 
     override fun saveLastBlockHeight(lastBlockHeight: Int) {
-        database.lastBlockHeight().insert(LastBlockHeightRoom(lastBlockHeight))
+        database.lastBlockHeight().insert(LastBlockHeight(lastBlockHeight))
     }
 
-    override fun saveGasPrice(gasPrice: BigDecimal) {
-        database.gasPriceDao().insert(GasPriceRoom(gasPrice))
+    override fun saveGasPriceInWei(gasPriceInWei: Long) {
+        database.gasPriceDao().insert(GasPrice(gasPriceInWei))
     }
 
     override fun saveBalance(balance: BigDecimal, address: String) {
-        database.balanceDao().insert(BalanceRoom(address, balance))
+        database.balanceDao().insert(EthereumBalance(address, balance))
     }
 
-    override fun saveTransactions(transactions: List<TransactionRoom>) {
-        database.transactionDao().insert(transactions)
+    override fun saveTransactions(ethereumTransactions: List<EthereumTransaction>) {
+        database.transactionDao().insert(ethereumTransactions)
     }
 
     override fun clear() {

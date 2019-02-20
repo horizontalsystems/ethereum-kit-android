@@ -8,4 +8,8 @@ import java.math.BigDecimal
 
 @Entity
 @TypeConverters(DatabaseConverters::class)
-data class GasPriceRoom(@PrimaryKey val gasPriceInGwei: BigDecimal)
+data class EthereumBalance(
+        @PrimaryKey
+        val address: String,
+        val balance: BigDecimal
+)
