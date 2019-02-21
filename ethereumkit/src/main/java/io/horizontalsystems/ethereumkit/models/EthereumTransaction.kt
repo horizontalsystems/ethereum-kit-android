@@ -15,11 +15,11 @@ class EthereumTransaction() {
         hash =  etherscanTx.hash
         nonce = etherscanTx.nonce.toIntOrNull() ?: 0
         input = etherscanTx.input
-        from = etherscanTx.from
-        contractAddress = if (etherscanTx.contractAddress.isEmpty()) "" else Keys.toChecksumAddress(etherscanTx.contractAddress)
+        from = formatInEip55(etherscanTx.from)
+        contractAddress = formatInEip55(etherscanTx.contractAddress)
         blockNumber = etherscanTx.blockNumber.toLongOrNull() ?: 0
         blockHash = etherscanTx.blockHash
-        to = etherscanTx.to
+        to = formatInEip55(etherscanTx.to)
         decimal?.let {
             val rate = BigDecimal.valueOf(Math.pow(10.0, it.toDouble()))
             value = (etherscanTx.value.toBigDecimalOrNull())?.divide(rate) ?: BigDecimal.ZERO
@@ -53,5 +53,8 @@ class EthereumTransaction() {
     var iserror: String = ""
     var transactionIndex: String = ""
     var txReceiptStatus: String = ""
+
+    private fun formatInEip55(textString: String) =
+            if (textString.isEmpty()) "" else Keys.toChecksumAddress(textString)
 
 }

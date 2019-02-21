@@ -10,6 +10,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
+import org.web3j.crypto.Keys
 import java.math.BigDecimal
 import java.util.concurrent.TimeUnit
 
@@ -280,7 +281,9 @@ class ApiBlockchain(
 
             val apiProvider = ApiProvider(configuration, hdWallet)
 
-            return ApiBlockchain(storage, apiProvider, hdWallet.address())
+            val formattedAddress = Keys.toChecksumAddress(hdWallet.address())
+
+            return ApiBlockchain(storage, apiProvider, formattedAddress)
         }
     }
 
