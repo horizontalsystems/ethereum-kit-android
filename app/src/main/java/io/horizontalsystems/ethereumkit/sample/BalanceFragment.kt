@@ -36,7 +36,7 @@ class BalanceFragment : Fragment() {
             })
 
             viewModel.fee.observe(this, Observer { fee ->
-                feeValue.text = String.format("%f", fee)
+                feeValue.text = fee?.toPlainString()
             })
 
             viewModel.lastBlockHeight.observe(this, Observer { lbh ->

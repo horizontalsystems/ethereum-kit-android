@@ -85,7 +85,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: BigDecimal, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    fun send(toAddress: String, amount: BigDecimal, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
         return blockchain.send(toAddress, amount, gasPriceInWei)
     }
 
@@ -133,7 +133,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: BigDecimal, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    fun sendERC20(toAddress: String, contractAddress: String, amount: BigDecimal, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
         return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
     }
 

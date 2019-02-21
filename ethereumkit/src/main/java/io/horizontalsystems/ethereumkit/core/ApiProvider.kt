@@ -14,6 +14,7 @@ import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.Function
 import org.web3j.abi.datatypes.Type
 import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.crypto.Keys
 import org.web3j.crypto.RawTransaction
 import org.web3j.crypto.TransactionEncoder
 import org.web3j.protocol.Web3j
@@ -94,16 +95,22 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
         return etherscanService.getTokenTransactions(address, startBlock)
                 .map {
                     it.result.map { etherscanTransaction: EtherscanTransaction ->
-                        val tokenDecimal = decimals[etherscanTransaction.contractAddress]
-                        EthereumTransaction(etherscanTransaction, tokenDecimal)
+                        val contractAddress =
+                                if (etherscanTransaction.contractAddress.isNotEmpty()) {
+                                    Keys.toChecksumAddress(etherscanTransaction.contractAddress)
+                                } else {
+                                    ""
+                                }
+
+                        EthereumTransaction(etherscanTransaction, decimals[contractAddress])
                     }
                 }
                 .firstOrError()
     }
 
     override fun send(fromAddress: String, toAddress: String, nonce: Int, amount: BigDecimal, gasPriceInWei: Long, gasLimit: Int): Single<EthereumTransaction> {
-        var data = "0x"
-        val rawTransaction = RawTransaction.createEtherTransaction(nonce.toBigInteger(), gasPriceInWei.toBigInteger(), gasLimit.toBigInteger(), toAddress, amount.toBigInteger())
+        val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigInteger()
+        val rawTransaction = RawTransaction.createEtherTransaction(nonce.toBigInteger(), gasPriceInWei.toBigInteger(), gasLimit.toBigInteger(), toAddress, amountInWei)
 
         //  sign & send our transaction
         val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
@@ -112,29 +119,32 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
         return web3j.ethSendRawTransaction(hexValue)
                 .flowable()
                 .flatMap {
-                    data = Numeric.prependHexPrefix(rawTransaction.data)
-                    val pendingTx = EthereumTransaction().apply {
-                        hash = it.transactionHash
-                        timeStamp = System.currentTimeMillis() / 1000
-                        from = fromAddress
-                        to = toAddress
-                        value = amount
-                        input = data
+                    if (it.hasError()) {
+                        Flowable.error(Throwable(it.error.message))
+                    } else {
+                        val data = Numeric.prependHexPrefix(rawTransaction.data)
+                        val pendingTx = EthereumTransaction().apply {
+                            hash = it.transactionHash
+                            timeStamp = System.currentTimeMillis() / 1000
+                            from = fromAddress
+                            to = toAddress
+                            value = amount
+                            input = data
+                        }
+                        Flowable.just(pendingTx)
                     }
-                    Flowable.just(pendingTx)
                 }
                 .firstOrError()
     }
 
     override fun sendErc20(contractAddress: String, decimal: Int, fromAddress: String, toAddress: String, nonce: Int, amount: BigDecimal, gasPriceInWei: Long, gasLimit: Int): Single<EthereumTransaction> {
-        var data = "0x"
+        val amountInWei = amount.multiply(BigDecimal.TEN.pow(decimal)).toBigInteger()
         val transferFN = Function("transfer",
-                Arrays.asList<Type<*>>(Address(toAddress), Uint256(amount.toBigInteger())),
+                Arrays.asList<Type<*>>(Address(toAddress), Uint256(amountInWei)),
                 Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))
 
         val encodeData = FunctionEncoder.encode(transferFN)
         val rawTransaction = RawTransaction.createTransaction(nonce.toBigInteger(), gasPriceInWei.toBigInteger(), gasLimit.toBigInteger(), contractAddress, encodeData)
-
 
         //  sign & send our transaction
         val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
@@ -143,17 +153,21 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
         return web3j.ethSendRawTransaction(hexValue)
                 .flowable()
                 .flatMap {
-                    data = Numeric.prependHexPrefix(rawTransaction.data)
-                    val pendingTx = EthereumTransaction().apply {
-                        hash = it.transactionHash
-                        timeStamp = System.currentTimeMillis() / 1000
-                        from = fromAddress
-                        to = toAddress
-                        value = amount
-                        input = data
-                        this.contractAddress = contractAddress
+                    if (it.hasError()) {
+                        Flowable.error(Throwable(it.error.message))
+                    } else {
+                        val data = Numeric.prependHexPrefix(rawTransaction.data)
+                        val pendingTx = EthereumTransaction().apply {
+                            hash = it.transactionHash
+                            timeStamp = System.currentTimeMillis() / 1000
+                            from = fromAddress
+                            to = toAddress
+                            value = amount
+                            input = data
+                            this.contractAddress = contractAddress
+                        }
+                        Flowable.just(pendingTx)
                     }
-                    Flowable.just(pendingTx)
                 }
                 .firstOrError()
     }

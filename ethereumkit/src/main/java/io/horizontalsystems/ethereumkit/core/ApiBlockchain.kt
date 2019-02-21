@@ -88,7 +88,7 @@ class ApiBlockchain(
                             ?: this.gasPriceInWei, gasLimitEthereum)
                 }
                 .doAfterSuccess {
-                    storage.saveTransactions(listOf(it))
+                    updateTransactions(listOf(it))
                 }
     }
 
@@ -102,7 +102,7 @@ class ApiBlockchain(
                             ?: this.gasPriceInWei, gasLimitErc20)
                 }
                 .doAfterSuccess {
-                    storage.saveTransactions(listOf(it))
+                    updateTransactionsErc20(listOf(it))
                 }
     }
 

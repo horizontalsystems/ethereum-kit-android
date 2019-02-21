@@ -8,13 +8,19 @@ import io.reactivex.Single
 interface TransactionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(ethereumTransaction: EthereumTransaction)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(ethereumTransactions: List<EthereumTransaction>)
 
-    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = :address ORDER BY timeStamp DESC")
-    fun getTransactions(address: String?): Single<List<EthereumTransaction>>
+    @Query("SELECT * FROM EthereumTransaction ORDER BY timeStamp DESC")
+    fun getTransactions(): Single<List<EthereumTransaction>>
+
+    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = :contractAddress ORDER BY timeStamp DESC")
+    fun getErc20Transactions(contractAddress: String): Single<List<EthereumTransaction>>
+
+    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = '' ORDER BY blockNumber DESC LIMIT 1")
+    fun getLastTransaction(): EthereumTransaction?
+
+    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress != '' ORDER BY blockNumber DESC LIMIT 1")
+    fun getTokenLastTransaction(): EthereumTransaction?
 
     @Delete
     fun delete(ethereumTransaction: EthereumTransaction)

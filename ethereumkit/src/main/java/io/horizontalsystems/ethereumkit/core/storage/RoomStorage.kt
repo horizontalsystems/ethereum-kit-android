@@ -3,9 +3,9 @@ package io.horizontalsystems.ethereumkit.core.storage
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.IStorage
 import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 import java.math.BigDecimal
 
@@ -15,7 +15,13 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
 
 
     override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
-        return database.transactionDao().getTransactions(contractAddress)
+        val single =
+                if (contractAddress == null)
+                    database.transactionDao().getTransactions()
+                else
+                    database.transactionDao().getErc20Transactions(contractAddress)
+
+        return single
                 .flatMap { transactions ->
 
                     var filtered = if (contractAddress.isNullOrEmpty()) {
@@ -48,7 +54,11 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
     }
 
     override fun getLastTransactionBlockHeight(isErc20: Boolean): Int? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if (isErc20) {
+            return database.transactionDao().getTokenLastTransaction()?.blockNumber?.toInt()
+        } else {
+            return database.transactionDao().getLastTransaction()?.blockNumber?.toInt()
+        }
     }
 
     override fun getGasPriceInWei(): Long? {
