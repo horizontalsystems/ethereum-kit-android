@@ -5,10 +5,13 @@ import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.NetworkType
 import io.horizontalsystems.ethereumkit.network.Configuration
 import io.horizontalsystems.hdwalletkit.HDWallet
+import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
 import java.math.BigDecimal
+import java.util.concurrent.TimeUnit
 
 class ApiBlockchain(
         private val storage: IStorage,
@@ -28,6 +31,8 @@ class ApiBlockchain(
     override val blockchainSyncState: EthereumKit.SyncState
         get() { return syncState }
 
+    private val refreshInterval: Long = 30
+
     private var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
         set(value) {
             if (field != value) {
@@ -40,19 +45,16 @@ class ApiBlockchain(
         storage.getGasPriceInWei()?.let {
             gasPriceInWei = it
         }
+
+        Flowable.interval(refreshInterval, TimeUnit.SECONDS)
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    refreshAll()
+                }?.let { disposables.add(it) }
     }
 
     override fun start() {
-        if (syncState == EthereumKit.SyncState.Syncing) {
-            return
-        }
-
-        erc20Contracts.values.forEach {
-            if (it.syncState == EthereumKit.SyncState.Syncing) {
-                return
-            }
-        }
-
         refreshAll()
     }
 
@@ -75,6 +77,8 @@ class ApiBlockchain(
         }
 
         erc20Contracts[contractAddress] = (Erc20Contract(contractAddress, decimal, EthereumKit.SyncState.NotSynced))
+
+        refreshAll()
     }
 
     override fun unregister(contractAddress: String) {
