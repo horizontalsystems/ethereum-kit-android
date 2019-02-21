@@ -36,7 +36,7 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
         return web3j.ethGasPrice()
                 .flowable()
                 .map {
-                    Convert.fromWei(it.gasPrice.toBigDecimal(), Convert.Unit.GWEI).toLong()
+                    it.gasPrice.toLong()
                 }
                 .firstOrError()
     }

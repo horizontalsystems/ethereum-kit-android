@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "46b83f982c6fb76e689af74784473e88",
+    "identityHash": "0808743b7808947177c3ed28d6aa6090",
     "entities": [
       {
         "tableName": "EthereumBalance",
@@ -32,18 +32,18 @@
       },
       {
         "tableName": "GasPrice",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gasPriceInGwei` INTEGER NOT NULL, PRIMARY KEY(`gasPriceInGwei`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gasPriceInWei` INTEGER NOT NULL, PRIMARY KEY(`gasPriceInWei`))",
         "fields": [
           {
-            "fieldPath": "gasPriceInGwei",
-            "columnName": "gasPriceInGwei",
+            "fieldPath": "gasPriceInWei",
+            "columnName": "gasPriceInWei",
             "affinity": "INTEGER",
             "notNull": true
           }
         ],
         "primaryKey": {
           "columnNames": [
-            "gasPriceInGwei"
+            "gasPriceInWei"
           ],
           "autoGenerate": false
         },
@@ -196,7 +196,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"46b83f982c6fb76e689af74784473e88\")"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"0808743b7808947177c3ed28d6aa6090\")"
     ]
   }
 }

@@ -62,7 +62,7 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
     }
 
     override fun getGasPriceInWei(): Long? {
-        return database.gasPriceDao().getGasPrice()?.gasPriceInGwei
+        return database.gasPriceDao().getGasPrice()?.gasPriceInWei
     }
 
     override fun saveLastBlockHeight(lastBlockHeight: Int) {
