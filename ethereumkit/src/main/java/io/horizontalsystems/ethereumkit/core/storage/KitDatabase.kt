@@ -5,9 +5,9 @@ import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
 import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 
 
 @Database(entities = [EthereumBalance::class, GasPrice::class, LastBlockHeight::class, EthereumTransaction::class], version = 1, exportSchema = true)
@@ -15,7 +15,7 @@ abstract class KitDatabase : RoomDatabase() {
 
     abstract fun balanceDao(): BalanceDao
     abstract fun gasPriceDao(): GasPriceDao
-    abstract fun lastBlockHeight(): LastBlockHeightDao
+    abstract fun lastBlockHeightDao(): LastBlockHeightDao
     abstract fun transactionDao(): TransactionDao
 
     companion object {

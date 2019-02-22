@@ -49,7 +49,7 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
     }
 
     override fun getLastBlockHeight(): Int? {
-        return database.lastBlockHeight().getLastBlockHeight()?.height
+        return database.lastBlockHeightDao().getLastBlockHeight()?.height
     }
 
     override fun getLastTransactionBlockHeight(isErc20: Boolean): Int? {
@@ -65,7 +65,7 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
     }
 
     override fun saveLastBlockHeight(lastBlockHeight: Int) {
-        database.lastBlockHeight().insert(LastBlockHeight(lastBlockHeight))
+        database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
     }
 
     override fun saveGasPriceInWei(gasPriceInWei: Long) {
