@@ -34,7 +34,7 @@ class EthereumKitTest {
         input = "input"
         from = "from"
         to = "to"
-        value = BigDecimal.valueOf(23.0)
+        value = "3.0"
     }
 
 
@@ -50,7 +50,7 @@ class EthereumKitTest {
 
     @Test
     fun testInit_balance() {
-        val balance = BigDecimal.valueOf(123.45)
+        val balance = "123.45"
         val lastBlockHeight = 123
 
         whenever(storage.getBalance(ethereumAddress)).thenReturn(balance)
@@ -92,29 +92,27 @@ class EthereumKitTest {
     @Test
     fun testRegister() {
         val address = "address"
-        val decimal = 4
-        val balance = BigDecimal.valueOf(123)
+        val balance = "123"
         val listenerMock = mock(EthereumKit.Listener::class.java)
         whenever(storage.getBalance(address)).thenReturn(balance)
         whenever(state.hasContract(address)).thenReturn(false)
-        kit.register(address, decimal, listenerMock)
+        kit.register(address, listenerMock)
 
-        verify(state).add(contractAddress = address, decimal = decimal, listener = listenerMock)
+        verify(state).add(contractAddress = address, listener = listenerMock)
         verify(state).setBalance(balance, address)
-        verify(blockchain).register(contractAddress = address, decimal = decimal)
+        verify(blockchain).register(contractAddress = address)
     }
 
     @Test
     fun testRegister_alreadyExists() {
         val address = "address"
-        val decimal = 4
         val listenerMock = mock(EthereumKit.Listener::class.java)
 
         whenever(state.hasContract(address)).thenReturn(true)
-        kit.register(address, decimal, listenerMock)
+        kit.register(address, listenerMock)
 
-        verify(state, never()).add(contractAddress = address, decimal = decimal, listener = listenerMock)
-        verify(blockchain, never()).register(contractAddress = address, decimal = decimal)
+        verify(state, never()).add(contractAddress = address, listener = listenerMock)
+        verify(blockchain, never()).register(contractAddress = address)
     }
 
     @Test
@@ -190,7 +188,7 @@ class EthereumKitTest {
 
     @Test
     fun testSend_gasPriceNull() {
-        val amount = BigDecimal.valueOf(23.4)
+        val amount = "23.4"
         val gasPrice = null
         val toAddress = "address"
 
@@ -205,7 +203,7 @@ class EthereumKitTest {
 
     @Test
     fun testSend_withCustomGasPrice() {
-        val amount = BigDecimal.valueOf(23.4)
+        val amount = "23.4"
         val gasPrice = 34L
         val toAddress = "address"
 
@@ -219,29 +217,13 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testBalance_null() {
-        whenever(state.balance).thenReturn(null)
-        val result = kit.balance
-
-        Assert.assertEquals(BigDecimal.valueOf(0.0), result)
-    }
-
-    @Test
     fun testBalance() {
-        val balance = BigDecimal.valueOf(32.3)
+        val balance = "32.3"
         whenever(state.balance).thenReturn(balance)
         val result = kit.balance
 
         Assert.assertEquals(balance, result)
     }
-
-//    @Test
-//    fun testSyncState_null() {
-//        whenever(blockchain.blockchainSyncState).thenReturn(null)
-//        val result = kit.syncState
-//
-//        Assert.assertEquals(EthereumKit.SyncState.NotSynced, result)
-//    }
 
     @Test
     fun testState_syncing() {
@@ -259,7 +241,7 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee() {
         val erc20GasLimit = 100_000
-        val gasPrice = 123L
+        val gasPrice = 1230000000L
 
         whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
@@ -288,18 +270,8 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testErc20Balance_null() {
-        val address = "address"
-
-        whenever(state.balance(address)).thenReturn(null)
-
-        val result = kit.balanceERC20(address)
-        Assert.assertEquals(BigDecimal.valueOf(0.0), result)
-    }
-
-    @Test
     fun testErc20Balance() {
-        val balance = BigDecimal.valueOf(23.03)
+        val balance = "23.03"
         val address = "address"
         whenever(state.balance(address)).thenReturn(balance)
 
@@ -333,7 +305,7 @@ class EthereumKitTest {
 
     @Test
     fun testErc20Send_gasPriceNull() {
-        val amount = BigDecimal.valueOf(23.4)
+        val amount = "23.4"
         val gasPrice = null
         val toAddress = "address"
         val contractAddress = "contAddress"
@@ -349,7 +321,7 @@ class EthereumKitTest {
 
     @Test
     fun testErc20Send_withCustomGasPrice() {
-        val amount = BigDecimal.valueOf(23.4)
+        val amount = "23.4"
         val gasPrice = 234L
         val toAddress = "address"
         val contractAddress = "contAddress"
@@ -395,7 +367,7 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateBalance() {
-        val balance = BigDecimal.valueOf(345)
+        val balance = "345"
         kit.onUpdateBalance(balance)
         verify(state).balance = balance
         verify(listener).onBalanceUpdate()
@@ -404,7 +376,7 @@ class EthereumKitTest {
     @Test
     fun testOnUpdateErc20Balance() {
         val contractAddress = "address"
-        val balance = BigDecimal.valueOf(345)
+        val balance = "345"
 
         kit.onUpdateErc20Balance(balance, contractAddress)
 

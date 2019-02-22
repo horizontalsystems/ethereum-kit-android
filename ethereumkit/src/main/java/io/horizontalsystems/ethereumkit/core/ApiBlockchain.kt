@@ -11,7 +11,6 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Function3
 import org.web3j.crypto.Keys
-import java.math.BigDecimal
 import java.util.concurrent.TimeUnit
 
 class ApiBlockchain(
@@ -30,7 +29,7 @@ class ApiBlockchain(
     override var listener: IBlockchainListener? = null
 
     override val blockchainSyncState: EthereumKit.SyncState
-        get() { return syncState }
+        get() = syncState
 
     private val refreshInterval: Long = 30
 
@@ -72,12 +71,12 @@ class ApiBlockchain(
         return erc20Contracts[contractAddress]?.syncState ?: EthereumKit.SyncState.NotSynced
     }
 
-    override fun register(contractAddress: String, decimal: Int) {
+    override fun register(contractAddress: String) {
         if (erc20Contracts[contractAddress] != null) {
             return
         }
 
-        erc20Contracts[contractAddress] = (Erc20Contract(contractAddress, decimal, EthereumKit.SyncState.NotSynced))
+        erc20Contracts[contractAddress] = (Erc20Contract(contractAddress, EthereumKit.SyncState.NotSynced))
 
         refreshAll()
     }
@@ -86,7 +85,7 @@ class ApiBlockchain(
         erc20Contracts.remove(contractAddress)
     }
 
-    override fun send(toAddress: String, amount: BigDecimal, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    override fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
                     apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei
@@ -97,13 +96,10 @@ class ApiBlockchain(
                 }
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: BigDecimal, gasPriceInWei: Long?): Single<EthereumTransaction> {
-        val contract = erc20Contracts[contractAddress]
-                ?: return Single.error(ApiException.ContractNotRegistered)
-
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
-                    apiProvider.sendErc20(contractAddress, contract.decimal, ethereumAddress, toAddress, nonce, amount, gasPriceInWei
+                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei
                             ?: this.gasPriceInWei, gasLimitErc20)
                 }
                 .doAfterSuccess {
@@ -116,7 +112,7 @@ class ApiBlockchain(
             return
         }
         erc20Contracts.values.forEach {
-            if (it.syncState == EthereumKit.SyncState.Syncing){
+            if (it.syncState == EthereumKit.SyncState.Syncing) {
                 return
             }
         }
@@ -127,7 +123,7 @@ class ApiBlockchain(
                 apiProvider.getLastBlockHeight(),
                 apiProvider.getGasPriceInWei(),
                 apiProvider.getBalance(ethereumAddress),
-                Function3<Int, Long, BigDecimal, Triple<Int, Long, BigDecimal>> { t1, t2, t3 ->
+                Function3<Int, Long, String, Triple<Int, Long, String>> { t1, t2, t3 ->
                     Triple(t1, t2, t3)
                 })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
@@ -165,12 +161,8 @@ class ApiBlockchain(
         }
 
         val erc20LastTransactionBlockHeight = storage.getLastTransactionBlockHeight(true) ?: 0
-        val decimals = hashMapOf<String, Int>()
-        erc20Contracts.values.forEach {
-            decimals[it.address] = it.decimal
-        }
 
-        apiProvider.getTransactionsErc20(ethereumAddress, (erc20LastTransactionBlockHeight + 1), decimals)
+        apiProvider.getTransactionsErc20(ethereumAddress, (erc20LastTransactionBlockHeight + 1))
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactionsErc20(transactions)
@@ -185,8 +177,8 @@ class ApiBlockchain(
     }
 
     private fun refreshErc20Balances() {
-        erc20Contracts.values.forEach {contract ->
-            apiProvider.getBalanceErc20(ethereumAddress, contract.address, contract.decimal)
+        erc20Contracts.values.forEach { contract ->
+            apiProvider.getBalanceErc20(ethereumAddress, contract.address)
                     .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                     .subscribe({ balance ->
                         updateErc20Balance(balance, contract.address)
@@ -225,12 +217,12 @@ class ApiBlockchain(
         storage.saveGasPriceInWei(gasPriceInWei)
     }
 
-    private fun updateBalance(balance: BigDecimal) {
+    private fun updateBalance(balance: String) {
         storage.saveBalance(balance, ethereumAddress)
         listener?.onUpdateBalance(balance)
     }
 
-    private fun updateErc20Balance(balance: BigDecimal, contractAddress: String) {
+    private fun updateErc20Balance(balance: String, contractAddress: String) {
         storage.saveBalance(balance, contractAddress)
         listener?.onUpdateErc20Balance(balance, contractAddress)
     }
@@ -247,18 +239,20 @@ class ApiBlockchain(
 
         ethereumTransactions.forEach { transaction ->
             val address = transaction.contractAddress
-            if (contractTransactions[address] == null){
+            if (contractTransactions[address] == null) {
                 contractTransactions[address] = mutableListOf()
             }
             contractTransactions[address]?.add(transaction)
         }
 
         contractTransactions.forEach { (contractAddress, transactions) ->
-            listener?.onUpdateErc20Transactions(transactions, contractAddress)
+            if (erc20Contracts[contractAddress] != null) {
+                listener?.onUpdateErc20Transactions(transactions, contractAddress)
+            }
         }
     }
 
-    class Erc20Contract(var address: String, var decimal: Int, var syncState: EthereumKit.SyncState)
+    class Erc20Contract(var address: String, var syncState: EthereumKit.SyncState)
 
     sealed class ApiException : Exception() {
         object ContractNotRegistered : ApiException()

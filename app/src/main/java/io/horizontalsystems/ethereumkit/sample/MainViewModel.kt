@@ -3,45 +3,60 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Log
+import android.widget.Toast
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
+import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
+import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import java.math.BigDecimal
 
 class MainViewModel : ViewModel() {
 
-    val transactions = MutableLiveData<List<EthereumTransaction>>()
-    val balance = MutableLiveData<BigDecimal>()
-    val fee = MutableLiveData<BigDecimal>()
-    val lastBlockHeight = MutableLiveData<Int>()
-    val kitState = MutableLiveData<SyncState>()
-
-    val tokenBalance = MutableLiveData<BigDecimal>()
-
-    val sendStatus = SingleLiveEvent<Throwable?>()
+    private val infuraKey = "2a1306f1d12f4c109a4d4fb9be46b02e"
+    private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
+    private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
+    private val contractDecimal = 28
+    private val testMode = true
 
     private val disposables = CompositeDisposable()
 
     private var ethereumKit: EthereumKit
-    private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
+    private val erc20Adapter: Erc20Adapter
+    private val ethereumAdapter: EthereumAdapter
 
-    private val erc20Adapter = ERC20Adapter(contractAddress, 28)
-    private val ethereumAdapter = EthereumAdapter()
+
+
+    val transactions = MutableLiveData<List<TransactionRecord>>()
+    val balance = MutableLiveData<BigDecimal>()
+    val fee = MutableLiveData<BigDecimal>()
+    val lastBlockHeight = MutableLiveData<Int>()
+    val etherState = MutableLiveData<SyncState>()
+    val erc20State = MutableLiveData<SyncState>()
+
+    val erc20TokenBalance = MutableLiveData<BigDecimal>()
+    val sendStatus = SingleLiveEvent<Throwable?>()
+
 
     init {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
-        ethereumKit = EthereumKit.ethereumKit(App.instance, words, "unique-wallet-id", true, infuraKey = "2a1306f1d12f4c109a4d4fb9be46b02e", etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE")
-        ethereumKit.listener = ethereumAdapter
-        ethereumKit.register(contractAddress, 28, erc20Adapter)
+        ethereumKit = EthereumKit.ethereumKit(App.instance, words, "unique-wallet-id", testMode, infuraKey = infuraKey, etherscanKey = etherscanKey)
+        ethereumAdapter = EthereumAdapter(ethereumKit)
+        erc20Adapter = Erc20Adapter(ethereumKit, contractAddress, contractDecimal)
 
-        // Previous or default values
-        balance.value = ethereumKit.balance
-        tokenBalance.value = ethereumKit.balanceERC20(contractAddress)
+        ethereumKit.start()
+
+
         fee.value = ethereumKit.fee()
+        updateBalance()
+        updateErc20Balance()
+        updateState()
+        updateErc20State()
+        updateLastBlockHeight()
 
         //
         // Ethereum
@@ -53,19 +68,25 @@ class MainViewModel : ViewModel() {
         }
 
         ethereumAdapter.balanceSubject.subscribe {
-            this.balance.postValue(ethereumKit.balance)
+            updateBalance()
         }.let {
             disposables.add(it)
         }
 
         ethereumAdapter.lastBlockHeightSubject.subscribe {
-            this.lastBlockHeight.postValue(ethereumKit.lastBlockHeight)
+            updateLastBlockHeight()
         }.let {
             disposables.add(it)
         }
 
-        ethereumAdapter.kitStateUpdateSubject.subscribe {
-            this.kitState.postValue(ethereumKit.syncState)
+        ethereumAdapter.syncStateUpdateSubject.subscribe {
+            updateState()
+        }.let {
+            disposables.add(it)
+        }
+
+        erc20Adapter.syncStateUpdateSubject.subscribe {
+            updateErc20State()
         }.let {
             disposables.add(it)
         }
@@ -75,12 +96,32 @@ class MainViewModel : ViewModel() {
         //
 
         erc20Adapter.balanceSubject.subscribe {
-            this.tokenBalance.postValue(ethereumKit.balanceERC20(contractAddress))
+            updateErc20Balance()
         }.let {
             disposables.add(it)
         }
 
         ethereumKit.start()
+    }
+
+    private fun updateLastBlockHeight() {
+        lastBlockHeight.postValue(ethereumKit.lastBlockHeight)
+    }
+
+    private fun updateState() {
+        etherState.postValue(ethereumAdapter.syncState)
+    }
+
+    private fun updateErc20State() {
+        erc20State.postValue(erc20Adapter.syncState)
+    }
+
+    private fun updateBalance() {
+        balance.postValue(ethereumAdapter.balance)
+    }
+
+    private fun updateErc20Balance() {
+        erc20TokenBalance.postValue(erc20Adapter.balance)
     }
 
     //
@@ -97,16 +138,17 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(address: String, amount: BigDecimal) {
-        ethereumKit.send(address, amount)
+        ethereumAdapter.sendSingle(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ t: EthereumTransaction? ->
+                .subscribe({
                     //success
-                    Log.e("MainViewModel", "send success")
+                    Toast.makeText(App.instance, "Success", Toast.LENGTH_SHORT).show()
                 }, {
                     Log.e("MainViewModel", "send failed ${it.message}")
                     sendStatus.value = it
                 })?.let { disposables.add(it) }
+
     }
 
     //
@@ -114,12 +156,12 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(address: String, amount: BigDecimal) {
-        ethereumKit.sendERC20(address, contractAddress, amount)
+        erc20Adapter.sendSingle(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ t: EthereumTransaction? ->
+                .subscribe({
                     //success
-                    Log.e("MainViewModel", "send success")
+                    Toast.makeText(App.instance, "Success", Toast.LENGTH_SHORT).show()
                 }, {
                     Log.e("MainViewModel", "send failed ${it.message}")
                     sendStatus.value = it
@@ -127,13 +169,11 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val txMethod = if (ethTx)
-            ethereumKit.transactions() else
-            ethereumKit.transactionsERC20(contractAddress)
+        val txMethod = if (ethTx) ethereumAdapter.transactionsSingle() else erc20Adapter.transactionsSingle()
 
         txMethod
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { txList: List<EthereumTransaction> ->
+                .subscribe { txList: List<TransactionRecord> ->
                     transactions.value = txList
                 }.let {
                     disposables.add(it)
@@ -145,9 +185,9 @@ class MainViewModel : ViewModel() {
     //
 
     private fun updateTransactions() {
-        ethereumKit.transactions()
+        ethereumAdapter.transactionsSingle()
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { list: List<EthereumTransaction> ->
+                .subscribe { list: List<TransactionRecord> ->
                     transactions.value = list
                 }.let {
                     disposables.add(it)

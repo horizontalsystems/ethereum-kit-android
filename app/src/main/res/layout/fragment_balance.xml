@@ -116,6 +116,28 @@
         tools:text="(Synced, Syncing, NotSyncing)"
         />
 
+    <TextView
+        android:id="@+id/erc20StateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Erc20State:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle"
+        />
+
+    <TextView
+        android:id="@+id/erc20StateValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toEndOf="@+id/erc20StateTitle"
+        app:layout_constraintTop_toTopOf="@+id/erc20StateTitle"
+        tools:text="(Synced, Syncing, NotSyncing)"
+        />
+
     <Button
         android:id="@+id/buttonRefresh"
         android:layout_width="wrap_content"

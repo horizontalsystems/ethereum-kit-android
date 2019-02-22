@@ -2,11 +2,10 @@ package io.horizontalsystems.ethereumkit.models
 
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ERC20
-import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 
 class State {
-    var balance: BigDecimal? = null
+    var balance: String? = null
     var lastBlockHeight: Int? = null
 
     val erc20List = ConcurrentHashMap<String, ERC20>()
@@ -26,8 +25,8 @@ class State {
         erc20List.clear()
     }
 
-    fun add(contractAddress: String, decimal: Int, listener: EthereumKit.Listener) {
-        erc20List[contractAddress] = ERC20(contractAddress, decimal, listener)
+    fun add(contractAddress: String, listener: EthereumKit.Listener) {
+        erc20List[contractAddress] = ERC20(contractAddress, listener)
     }
 
     fun hasContract(contractAddress: String): Boolean {
@@ -38,7 +37,7 @@ class State {
         erc20List.remove(contractAddress)
     }
 
-    fun balance(contractAddress: String): BigDecimal? {
+    fun balance(contractAddress: String): String? {
         return erc20List[contractAddress]?.balance
     }
 
@@ -46,7 +45,7 @@ class State {
         return erc20List[contractAddress]?.listener
     }
 
-    fun setBalance(balance: BigDecimal, contractAddress: String) {
+    fun setBalance(balance: String?, contractAddress: String) {
         erc20List[contractAddress]?.balance = balance
     }
 

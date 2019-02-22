@@ -10,8 +10,6 @@ import io.reactivex.Single
 import org.web3j.utils.Convert
 import java.math.BigDecimal
 
-class EthereumKitModule
-
 class EthereumKit(
         private val blockchain: IBlockchain,
         val storage: IStorage,
@@ -28,7 +26,7 @@ class EthereumKit(
     var listener: Listener? = null
 
     init {
-        state.balance = storage.getBalance(blockchain.ethereumAddress) ?: BigDecimal.ZERO
+        state.balance = storage.getBalance(blockchain.ethereumAddress)
         state.lastBlockHeight = storage.getLastBlockHeight()
     }
 
@@ -54,16 +52,15 @@ class EthereumKit(
         }
 
 
-    fun register(contractAddress: String, decimal: Int, listener: Listener) {
+    fun register(contractAddress: String, listener: Listener) {
         if (state.hasContract(contractAddress)) {
             return
         }
 
-        state.add(contractAddress, decimal, listener)
-        state.setBalance(storage.getBalance(contractAddress)
-                ?: BigDecimal.valueOf(0.0), contractAddress)
+        state.add(contractAddress, listener)
+        state.setBalance(storage.getBalance(contractAddress), contractAddress)
 
-        blockchain.register(contractAddress, decimal)
+        blockchain.register(contractAddress)
     }
 
     fun unregister(contractAddress: String) {
@@ -85,7 +82,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: BigDecimal, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+    fun send(toAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
         return blockchain.send(toAddress, amount, gasPriceInWei)
     }
 
@@ -95,9 +92,9 @@ class EthereumKit(
         return lines.joinToString { "\n" }
     }
 
-    val balance: BigDecimal
+    val balance: String?
         get() {
-            return state.balance ?: BigDecimal.valueOf(0.0)
+            return state.balance
         }
 
     val lastBlockHeight: Int?
@@ -106,9 +103,7 @@ class EthereumKit(
         }
 
     val syncState: SyncState
-        get() {
-            return blockchain.blockchainSyncState
-        }
+        get() = blockchain.blockchainSyncState
 
 
     //
@@ -121,8 +116,8 @@ class EthereumKit(
         return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
 
-    fun balanceERC20(contractAddress: String): BigDecimal {
-        return state.balance(contractAddress) ?: BigDecimal.valueOf(0.0)
+    fun balanceERC20(contractAddress: String): String? {
+        return state.balance(contractAddress)
     }
 
     fun syncStateErc20(contractAddress: String): SyncState {
@@ -133,7 +128,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: BigDecimal, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
         return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
     }
 
@@ -157,12 +152,12 @@ class EthereumKit(
         state.listener(contractAddress)?.onSyncStateUpdate()
     }
 
-    override fun onUpdateBalance(balance: BigDecimal) {
+    override fun onUpdateBalance(balance: String) {
         state.balance = balance
         listener?.onBalanceUpdate()
     }
 
-    override fun onUpdateErc20Balance(balance: BigDecimal, contractAddress: String) {
+    override fun onUpdateErc20Balance(balance: String, contractAddress: String) {
         state.setBalance(balance, contractAddress)
         state.listener(contractAddress)?.onBalanceUpdate()
     }

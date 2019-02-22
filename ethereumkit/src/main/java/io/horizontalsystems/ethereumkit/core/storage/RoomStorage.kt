@@ -7,7 +7,6 @@ import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 import io.reactivex.Single
-import java.math.BigDecimal
 
 class RoomStorage(databaseName: String, context: Context) : IStorage {
 
@@ -45,8 +44,8 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
                 }
     }
 
-    override fun getBalance(address: String): BigDecimal {
-        return database.balanceDao().getBalance(address)?.balance ?: BigDecimal.ZERO
+    override fun getBalance(address: String): String? {
+        return database.balanceDao().getBalance(address)?.balance
     }
 
     override fun getLastBlockHeight(): Int? {
@@ -73,7 +72,7 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
         database.gasPriceDao().insert(GasPrice(gasPriceInWei))
     }
 
-    override fun saveBalance(balance: BigDecimal, address: String) {
+    override fun saveBalance(balance: String, address: String) {
         database.balanceDao().insert(EthereumBalance(address, balance))
     }
 
