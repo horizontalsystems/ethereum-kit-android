@@ -1,7 +1,7 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.light.models.BlockHeader
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toLong
@@ -27,7 +27,7 @@ class BlockHeadersMessage(payload: ByteArray) : IMessage {
         }
     }
 
-    override var code: Int = BlockHeadersMessage.code
+    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         return byteArrayOf()

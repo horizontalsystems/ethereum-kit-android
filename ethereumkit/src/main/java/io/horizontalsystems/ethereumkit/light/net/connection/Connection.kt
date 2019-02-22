@@ -2,8 +2,8 @@ package io.horizontalsystems.ethereumkit.light.net.connection
 
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.net.Node
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
 import io.horizontalsystems.ethereumkit.light.toShort
 import org.spongycastle.math.ec.ECPoint
 import java.io.IOException

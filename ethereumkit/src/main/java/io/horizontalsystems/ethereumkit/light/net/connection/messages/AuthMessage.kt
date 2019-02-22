@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.light.net.connection
+package io.horizontalsystems.ethereumkit.light.net.connection.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.rlp.RLP

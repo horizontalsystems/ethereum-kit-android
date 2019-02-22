@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.light.net.connection
+package io.horizontalsystems.ethereumkit.light.net.connection.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils.CURVE
@@ -21,7 +21,8 @@ class AuthAckMessage(val publicKeyPoint: ECPoint, val nonce: ByteArray, val vers
             val versionBytes = params[2].rlpData
             val version = versionBytes.toInt()
 
-            return AuthAckMessage(ephemeralPublicKey, nonce ?: byteArrayOf(0), version)
+            return AuthAckMessage(ephemeralPublicKey, nonce
+                    ?: byteArrayOf(0), version)
         }
     }
 

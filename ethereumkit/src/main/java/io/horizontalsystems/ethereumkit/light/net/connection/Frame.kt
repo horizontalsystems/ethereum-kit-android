@@ -1,14 +1,14 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.devp2p.DisconnectMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.devp2p.HelloMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.devp2p.PingMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.devp2p.PongMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.les.BlockHeadersMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.les.ProofsMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.les.StatusMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.devp2p.messages.DisconnectMessage
+import io.horizontalsystems.ethereumkit.light.net.devp2p.messages.HelloMessage
+import io.horizontalsystems.ethereumkit.light.net.devp2p.messages.PingMessage
+import io.horizontalsystems.ethereumkit.light.net.devp2p.messages.PongMessage
+import io.horizontalsystems.ethereumkit.light.net.les.messages.BlockHeadersMessage
+import io.horizontalsystems.ethereumkit.light.net.les.messages.ProofsMessage
+import io.horizontalsystems.ethereumkit.light.net.les.messages.StatusMessage
 
 class Frame {
     var type: Int = 0

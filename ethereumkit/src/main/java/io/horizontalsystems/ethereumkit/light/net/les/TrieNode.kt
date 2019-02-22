@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils

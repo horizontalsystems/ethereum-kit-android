@@ -1,7 +1,7 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toBigInteger
@@ -47,7 +47,7 @@ class StatusMessage : IMessage {
         genesisHash = (paramsList[5] as RLPList)[1].rlpData ?: byteArrayOf()
     }
 
-    override var code: Int = StatusMessage.code
+    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         val protocolVersion = RLP.encodeList(RLP.encodeString("protocolVersion"), RLP.encodeByte(this.protocolVersion))

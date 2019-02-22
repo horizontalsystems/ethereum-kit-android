@@ -3,11 +3,11 @@ package io.horizontalsystems.ethereumkit.light.net.connection
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.net.Node
 import io.horizontalsystems.ethereumkit.light.net.PeerGroup
 import io.horizontalsystems.ethereumkit.light.net.Ropsten
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.les.ProofsMessage
+import io.horizontalsystems.ethereumkit.light.net.les.messages.ProofsMessage
 import org.junit.Before
 import org.junit.Test
 import java.math.BigInteger

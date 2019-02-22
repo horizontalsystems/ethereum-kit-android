@@ -1,7 +1,7 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import java.math.BigInteger
 
@@ -14,7 +14,7 @@ class GetBlockHeadersMessage(val requestID: Long,
         const val maxHeaders = 50
     }
 
-    override var code: Int = GetBlockHeadersMessage.code
+    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         val reqID = RLP.encodeBigInteger(BigInteger.valueOf(this.requestID))
@@ -30,6 +30,6 @@ class GetBlockHeadersMessage(val requestID: Long,
     }
 
     override fun toString(): String {
-        return "GetHeaders [requestId: $requestID; blockHash: ${blockHash.toHexString()}; maxHeaders: ${GetBlockHeadersMessage.maxHeaders}; skip: $skip; reverse: $reverse]"
+        return "GetHeaders [requestId: $requestID; blockHash: ${blockHash.toHexString()}; maxHeaders: $maxHeaders; skip: $skip; reverse: $reverse]"
     }
 }

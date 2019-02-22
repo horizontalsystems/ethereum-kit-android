@@ -1,9 +1,10 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.models.AccountState
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.les.TrieNode
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toBigInteger
@@ -76,7 +77,7 @@ class ProofsMessage(data: ByteArray) : IMessage {
         return AccountState(address, nonce, balance, storageRoot, codeHash)
     }
 
-    override var code: Int = ProofsMessage.code
+    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         return ByteArray(0)

@@ -3,7 +3,9 @@ package io.horizontalsystems.ethereumkit.light.net
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.models.BlockHeader
-import io.horizontalsystems.ethereumkit.light.net.messages.les.ProofsMessage
+import io.horizontalsystems.ethereumkit.light.net.les.IPeerListener
+import io.horizontalsystems.ethereumkit.light.net.les.Peer
+import io.horizontalsystems.ethereumkit.light.net.les.messages.ProofsMessage
 import java.math.BigInteger
 
 class PeerGroup(network: INetwork, address: String) : IPeerListener {

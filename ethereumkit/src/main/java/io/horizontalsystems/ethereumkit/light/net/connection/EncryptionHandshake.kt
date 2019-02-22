@@ -4,6 +4,8 @@ import io.horizontalsystems.ethereumkit.light.ByteUtils.xor
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.crypto.EciesCoder
+import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthAckMessage
+import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthMessage
 import io.horizontalsystems.ethereumkit.light.toBytes
 import org.spongycastle.crypto.digests.KeccakDigest
 import org.spongycastle.math.ec.ECPoint

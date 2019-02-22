@@ -1,13 +1,13 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.devp2p
+package io.horizontalsystems.ethereumkit.light.net.devp2p.messages
 
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 
 class DisconnectMessage : IMessage {
 
     private var reason: ReasonCode = ReasonCode.UNKNOWN
-    override var code: Int = DisconnectMessage.code
+    override var code: Int = Companion.code
 
     companion object {
         const val code = 0x01

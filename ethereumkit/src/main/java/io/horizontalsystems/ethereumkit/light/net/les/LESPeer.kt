@@ -1,9 +1,13 @@
-package io.horizontalsystems.ethereumkit.light.net
+package io.horizontalsystems.ethereumkit.light.net.les
 
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.models.BlockHeader
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
-import io.horizontalsystems.ethereumkit.light.net.messages.les.*
+import io.horizontalsystems.ethereumkit.light.net.devp2p.DevP2PPeer
+import io.horizontalsystems.ethereumkit.light.net.devp2p.IDevP2PPeerListener
+import io.horizontalsystems.ethereumkit.light.net.INetwork
+import io.horizontalsystems.ethereumkit.light.net.Node
+import io.horizontalsystems.ethereumkit.light.net.les.messages.*
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import java.util.*
 
 

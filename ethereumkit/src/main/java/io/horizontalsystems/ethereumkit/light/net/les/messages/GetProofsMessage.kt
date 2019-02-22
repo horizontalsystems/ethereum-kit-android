@@ -1,8 +1,8 @@
-package io.horizontalsystems.ethereumkit.light.net.messages.les
+package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.light.net.messages.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import java.math.BigInteger
 
@@ -15,7 +15,7 @@ class GetProofsMessage(requestID: Long, blockHash: ByteArray, key: ByteArray, ke
     private val requestID: Long = requestID
     private var proofRequests: List<ProofRequest> = listOf(ProofRequest(blockHash, key, key2, fromLevel))
 
-    override var code: Int = GetProofsMessage.code
+    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         val reqID = RLP.encodeBigInteger(BigInteger.valueOf(this.requestID))
