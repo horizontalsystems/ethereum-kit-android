@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.State
+import io.horizontalsystems.ethereumkit.utils.MainThreadExecutor
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Single
 import org.web3j.utils.Convert
@@ -24,6 +25,7 @@ class EthereumKit(
     }
 
     var listener: Listener? = null
+    private var listenerExecutor: MainThreadExecutor = MainThreadExecutor()
 
     init {
         state.balance = storage.getBalance(blockchain.ethereumAddress)
@@ -138,36 +140,52 @@ class EthereumKit(
 
     override fun onUpdateLastBlockHeight(lastBlockHeight: Int) {
         state.lastBlockHeight = lastBlockHeight
-        listener?.onLastBlockHeightUpdate()
+        listenerExecutor.execute {
+            listener?.onLastBlockHeightUpdate()
+        }
         for (erc20Listener in state.erc20Listeners) {
-            erc20Listener.onLastBlockHeightUpdate()
+            listenerExecutor.execute {
+                erc20Listener.onLastBlockHeightUpdate()
+            }
         }
     }
 
     override fun onUpdateState(syncState: SyncState) {
-        listener?.onSyncStateUpdate()
+        listenerExecutor.execute {
+            listener?.onSyncStateUpdate()
+        }
     }
 
     override fun onUpdateErc20State(syncState: SyncState, contractAddress: String) {
-        state.listener(contractAddress)?.onSyncStateUpdate()
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onSyncStateUpdate()
+        }
     }
 
     override fun onUpdateBalance(balance: String) {
         state.balance = balance
-        listener?.onBalanceUpdate()
+        listenerExecutor.execute {
+            listener?.onBalanceUpdate()
+        }
     }
 
     override fun onUpdateErc20Balance(balance: String, contractAddress: String) {
         state.setBalance(balance, contractAddress)
-        state.listener(contractAddress)?.onBalanceUpdate()
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onBalanceUpdate()
+        }
     }
 
     override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
-        listener?.onTransactionsUpdate(ethereumTransactions)
+        listenerExecutor.execute {
+            listener?.onTransactionsUpdate(ethereumTransactions)
+        }
     }
 
     override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: String) {
-        state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
+        }
     }
 
 
