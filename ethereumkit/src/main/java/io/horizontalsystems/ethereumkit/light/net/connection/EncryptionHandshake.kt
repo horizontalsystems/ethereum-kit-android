@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.light.net.connection
 
 import io.horizontalsystems.ethereumkit.light.ByteUtils.xor
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.crypto.EciesCoder
 import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthAckMessage
@@ -40,11 +41,11 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
         authMessagePacket = encrypt(message)
     }
 
-    fun handleAuthAckMessage(messagePackets: ByteArray, prefixBytes: ByteArray): Secrets {
+    fun handleAuthAckMessage(eciesEncryptedMessage: ECIESEncryptedMessage): Secrets {
 
-        authAckMessagePacket = prefixBytes + messagePackets
+        authAckMessagePacket = eciesEncryptedMessage.encoded()
 
-        val decrypted = EciesCoder.decrypt(myKey.privateKey, messagePackets, prefixBytes)
+        val decrypted = EciesCoder.decrypt(myKey.privateKey, eciesEncryptedMessage)
         val authAckMessage = AuthAckMessage.decode(decrypted)
 
         return agreeSecret(authAckMessage)
@@ -79,10 +80,8 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
     private fun encrypt(message: AuthMessage): ByteArray {
         val encodedMessage = message.encoded()
         val padded = eip8pad(encodedMessage)
-        val size = padded.size + EciesCoder.PREFIX_SIZE
-        val prefix = size.toShort().toBytes()
-        val encrypted = EciesCoder.encrypt(remotePublicKeyPoint, padded, prefix)
-        return prefix + encrypted
+        val encrypted = EciesCoder.encrypt(remotePublicKeyPoint, padded)
+        return encrypted.encoded()
     }
 
     private fun eip8pad(msg: ByteArray): ByteArray {

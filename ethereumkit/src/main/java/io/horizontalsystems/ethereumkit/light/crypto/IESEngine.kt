@@ -89,16 +89,11 @@ class IESEngine(var agree: BasicAgreement,
 
         // Apply the MAC.
         val T = ByteArray(mac.macSize)
+        val K2a = ByteArray(hash.digestSize)
 
-        val K2a: ByteArray
-        if (hashK2) {
-            K2a = ByteArray(hash.digestSize)
-            hash.reset()
-            hash.update(k2, 0, k2.size)
-            hash.doFinal(K2a, 0)
-        } else {
-            K2a = k2
-        }
+        hash.reset()
+        hash.update(k2, 0, k2.size)
+        hash.doFinal(K2a, 0)
         mac.init(KeyParameter(K2a))
         mac.update(IV, 0, IV!!.size)
         mac.update(c, 0, c.size)
@@ -169,17 +164,12 @@ class IESEngine(var agree: BasicAgreement,
         // Verify the MAC.
         val end = inOff + inLen
         val T1 = Arrays.copyOfRange(in_enc, end - mac.macSize, end)
-
         val T2 = ByteArray(T1.size)
-        val K2a: ByteArray
-        if (hashK2) {
-            K2a = ByteArray(hash.digestSize)
-            hash.reset()
-            hash.update(K2, 0, K2.size)
-            hash.doFinal(K2a, 0)
-        } else {
-            K2a = K2
-        }
+
+        val K2a = ByteArray(hash.digestSize)
+        hash.reset()
+        hash.update(K2, 0, K2.size)
+        hash.doFinal(K2a, 0)
         mac.init(KeyParameter(K2a))
         mac.update(IV, 0, IV!!.size)
         mac.update(in_enc, inOff + V.size, inLen - V.size - T2.size)

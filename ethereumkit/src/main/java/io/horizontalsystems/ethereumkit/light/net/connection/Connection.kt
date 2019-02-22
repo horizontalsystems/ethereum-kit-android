@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils.CURVE
+import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.net.Node
@@ -97,7 +98,7 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
 
         inputsStream.read(messagePackets)
 
-        return handshake.handleAuthAckMessage(messagePackets, prefixBytes)
+        return handshake.handleAuthAckMessage(ECIESEncryptedMessage.decode(prefixBytes + messagePackets))
     }
 
     override fun run() {

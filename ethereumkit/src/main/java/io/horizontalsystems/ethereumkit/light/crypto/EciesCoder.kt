@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.light.crypto
 
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils.CURVE
+import io.horizontalsystems.ethereumkit.light.toBytes
 import org.spongycastle.crypto.BufferedBlockCipher
 import org.spongycastle.crypto.InvalidCipherTextException
 import org.spongycastle.crypto.agreement.ECDHBasicAgreement
@@ -11,18 +12,18 @@ import org.spongycastle.crypto.macs.HMac
 import org.spongycastle.crypto.modes.SICBlockCipher
 import org.spongycastle.crypto.params.*
 import org.spongycastle.math.ec.ECPoint
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.math.BigInteger
 import java.security.SecureRandom
 
 object EciesCoder {
 
-    const val KEY_SIZE = 128
-    const val PREFIX_SIZE = 65 + KEY_SIZE / 8 + 32 // 256 bit EC public key, IV, 256 bit MAC
+    private const val KEY_SIZE = 128
+    private const val PREFIX_SIZE = 65 + KEY_SIZE / 8 + 32 // 256 bit EC public key, IV, 256 bit MAC
 
-    fun encrypt(remotePublicKey: ECPoint, msg: ByteArray, macData: ByteArray): ByteArray {
+    fun encrypt(remotePublicKey: ECPoint, msg: ByteArray): ECIESEncryptedMessage {
+        val size = msg.size + EciesCoder.PREFIX_SIZE
+        val prefixBytes = size.toShort().toBytes()
 
         val eGen = ECKeyPairGenerator()
         val random = SecureRandom()
@@ -37,41 +38,25 @@ object EciesCoder {
         val pub = (ephemPair.public as ECPublicKeyParameters).q
         val iesEngine = makeIESEngine(true, remotePublicKey, prv, iv)
 
-        val cipher: ByteArray
-        try {
-            cipher = iesEngine.processBlock(msg, 0, msg.size, macData)
-            val bos = ByteArrayOutputStream()
-            bos.write(pub.getEncoded(false))
-            bos.write(iv)
-            bos.write(cipher)
-            return bos.toByteArray()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        val cipher = iesEngine.processBlock(msg, 0, msg.size, prefixBytes)
 
-        return ByteArray(0)
+        return ECIESEncryptedMessage(prefixBytes,
+                pub.getEncoded(false),
+                iv,
+                cipher.copyOfRange(0, cipher.size - 32),
+                cipher.copyOfRange(cipher.size - 32, cipher.size))
     }
 
     @Throws(IOException::class, InvalidCipherTextException::class)
-    fun decrypt(privKey: BigInteger, cipher: ByteArray, macData: ByteArray?): ByteArray {
+    fun decrypt(privKey: BigInteger, encryptedMessage: ECIESEncryptedMessage): ByteArray {
 
-        val plaintext: ByteArray
+        val ephem = CURVE.curve.decodePoint(encryptedMessage.ephemeralPubKey)
 
-        val inputStream = ByteArrayInputStream(cipher)
-        val ephemBytes = ByteArray(2 * ((CURVE.curve.fieldSize + 7) / 8) + 1)
+        val iesEngine = makeIESEngine(false, ephem, privKey, encryptedMessage.initialVector)
 
-        inputStream.read(ephemBytes)
-        val ephem = CURVE.curve.decodePoint(ephemBytes)
-        val IV = ByteArray(KEY_SIZE / 8)
-        inputStream.read(IV)
-        val cipherBody = ByteArray(inputStream.available())
-        inputStream.read(cipherBody)
+        val cipherBody = encryptedMessage.cipher + encryptedMessage.checkSum
 
-        val iesEngine = makeIESEngine(false, ephem, privKey, IV)
-
-        plaintext = iesEngine.processBlock(cipherBody, 0, cipherBody.size, macData)
-
-        return plaintext
+        return iesEngine.processBlock(cipherBody, 0, cipherBody.size, encryptedMessage.prefixBytes)
     }
 
     private fun makeIESEngine(isEncrypt: Boolean, pub: ECPoint, prv: BigInteger, IV: ByteArray): IESEngine {
