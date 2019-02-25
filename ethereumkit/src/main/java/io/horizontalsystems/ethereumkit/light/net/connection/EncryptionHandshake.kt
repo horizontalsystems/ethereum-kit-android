@@ -1,11 +1,11 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
-import io.horizontalsystems.ethereumkit.light.ByteUtils.xor
 import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.crypto.ICrypto
 import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthAckMessage
 import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthMessage
+import io.horizontalsystems.ethereumkit.light.xor
 import org.spongycastle.crypto.digests.KeccakDigest
 import org.spongycastle.math.ec.ECPoint
 import java.security.SecureRandom
@@ -23,7 +23,7 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
     fun createAuthMessage(): ByteArray {
         val sharedSecret = crypto.ecdhAgree(myKey, remotePublicKeyPoint)
 
-        val toBeSigned = xor(sharedSecret, initiatorNonce)
+        val toBeSigned = sharedSecret.xor(initiatorNonce)
         val signature = crypto.ellipticSign(toBeSigned, ephemeralKey)
 
         val message = AuthMessage(signature, myKey.publicKeyPoint, initiatorNonce)
@@ -50,11 +50,11 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
         val secretsToken = crypto.sha3(sharedSecret)
 
         val secretsEgressMac = KeccakDigest(MAC_SIZE)
-        secretsEgressMac.update(xor(secretsMac, authAckMessage.nonce), 0, secretsMac.size)
+        secretsEgressMac.update(secretsMac.xor(authAckMessage.nonce), 0, secretsMac.size)
         secretsEgressMac.update(authMessagePacket, 0, authMessagePacket.size)
 
         val secretsIngressMac = KeccakDigest(MAC_SIZE)
-        secretsIngressMac.update(xor(secretsMac, initiatorNonce), 0, secretsMac.size)
+        secretsIngressMac.update(secretsMac.xor(initiatorNonce), 0, secretsMac.size)
         secretsIngressMac.update(authAckMessagePacket, 0, authAckMessagePacket.size)
 
         return Secrets(secretsAes, secretsMac, secretsToken, secretsEgressMac, secretsIngressMac)

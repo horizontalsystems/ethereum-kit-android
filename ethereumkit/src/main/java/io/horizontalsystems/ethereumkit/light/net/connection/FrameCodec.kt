@@ -1,10 +1,10 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
-import io.horizontalsystems.ethereumkit.light.ByteUtils.xor
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLP.rlpDecodeInt
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
+import io.horizontalsystems.ethereumkit.light.xor
 import org.spongycastle.crypto.StreamCipher
 import org.spongycastle.crypto.digests.KeccakDigest
 import org.spongycastle.crypto.engines.AESEngine
@@ -154,7 +154,7 @@ class FrameCodec(private val secrets: Secrets) {
 
         val encryptedMacDigest = CryptoUtils.encryptAES(macKey, macDigest)
 
-        mac.update(xor(encryptedMacDigest, data), 0, 16)
+        mac.update(encryptedMacDigest.xor(data), 0, 16)
         KeccakDigest(mac).doFinal(macDigest, 0)
 
         return macDigest.copyOfRange(0, 16) //checksum

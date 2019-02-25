@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.light
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.experimental.xor
 
 fun BigInteger.toBytes(numBytes: Int): ByteArray {
     val bytes = ByteArray(numBytes)
@@ -34,6 +35,14 @@ fun ByteArray?.toLong(): Long {
 
 fun ByteArray?.toBigInteger(): BigInteger {
     return if (this == null || this.isEmpty()) BigInteger.ZERO else BigInteger(1, this)
+}
+
+fun ByteArray.xor(other: ByteArray): ByteArray {
+    val out = ByteArray(this.size)
+    for (i in this.indices) {
+        out[i] = (this[i] xor (other[i % other.size]))
+    }
+    return out
 }
 
 fun Int.toBytesNoLeadZeroes(): ByteArray {

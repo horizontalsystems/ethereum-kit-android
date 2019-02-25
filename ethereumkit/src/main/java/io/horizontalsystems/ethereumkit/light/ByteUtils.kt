@@ -1,7 +1,5 @@
 package io.horizontalsystems.ethereumkit.light
 
-import kotlin.experimental.xor
-
 object ByteUtils {
 
     fun merge(vararg arrays: ByteArray): ByteArray {
@@ -17,13 +15,5 @@ object ByteUtils {
             start += array.size
         }
         return mergedArray
-    }
-
-    fun xor(b1: ByteArray, b2: ByteArray): ByteArray {
-        val out = ByteArray(b1.size)
-        for (i in b1.indices) {
-            out[i] = (b1[i] xor (b2[i % b2.size]))
-        }
-        return out
     }
 }
