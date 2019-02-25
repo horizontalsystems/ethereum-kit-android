@@ -1,7 +1,6 @@
 package io.horizontalsystems.ethereumkit.network
 
 import com.google.gson.GsonBuilder
-import io.horizontalsystems.ethereumkit.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanResponse
 import io.reactivex.Flowable
 import okhttp3.OkHttpClient
@@ -12,17 +11,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-class EtherscanService(networkType: NetworkType, private val apiKey: String) {
+class EtherscanService(baseUrl: String, private val apiKey: String) {
 
     private val service: EtherscanServiceAPI
 
     init {
-        val baseUrl = when (networkType) {
-            NetworkType.MainNet -> "https://api.etherscan.io"
-            NetworkType.Ropsten -> "https://api-ropsten.etherscan.io"
-            NetworkType.Kovan -> "https://api-kovan.etherscan.io"
-            NetworkType.Rinkeby -> "https://api-rinkeby.etherscan.io"
-        }
 
         val logger = HttpLoggingInterceptor()
                 .setLevel(HttpLoggingInterceptor.Level.BASIC)
