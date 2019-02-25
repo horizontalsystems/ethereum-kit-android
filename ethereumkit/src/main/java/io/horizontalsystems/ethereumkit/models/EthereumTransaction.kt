@@ -17,7 +17,7 @@ class EthereumTransaction() {
         from = formatInEip55(etherscanTx.from)
         to = formatInEip55(etherscanTx.to)
         contractAddress = formatInEip55(etherscanTx.contractAddress)
-        blockNumber = etherscanTx.blockNumber.toLongOrNull() ?: 0
+        blockNumber = etherscanTx.blockNumber.toLongOrNull()
         blockHash = etherscanTx.blockHash
         value = etherscanTx.value
         gasLimit = etherscanTx.gas.toIntOrNull() ?: 0
@@ -42,7 +42,7 @@ class EthereumTransaction() {
     var timeStamp: Long = 0
     var contractAddress: String = ""
     var blockHash: String = ""
-    var blockNumber: Long = 0
+    var blockNumber: Long? = null
     var confirmations: Long = 0
     var gasUsed: String = ""
     var cumulativeGasUsed: String = ""

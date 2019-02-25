@@ -98,10 +98,10 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         """
 
         if (lastBlockHeight > 0)
-            value += "\n- Confirmations: ${lastBlockHeight - (tx.blockHeight ?: 0)}"
+            value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it } ?: 0}"
 
-//        if (tx.contractAddress.isNotEmpty())
-//            value += "\n- Contract: ${tx.contractAddress}"
+        if (tx.contractAddress.isNotEmpty())
+            value += "\n- Contract: ${tx.contractAddress}"
 
         summary.text = value.trimIndent()
     }
