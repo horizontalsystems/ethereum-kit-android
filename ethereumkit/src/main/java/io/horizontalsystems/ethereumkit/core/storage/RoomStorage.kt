@@ -21,26 +21,21 @@ class RoomStorage(databaseName: String, context: Context) : IStorage {
                     database.transactionDao().getErc20Transactions(contractAddress)
 
         return single
-                .flatMap { transactions ->
-
-                    var filtered = if (contractAddress.isNullOrEmpty()) {
-                        transactions.filter { it.input == "0x" }
-                    } else {
-                        transactions
-                    }
+                .flatMap { transactionsList ->
+                    var transactions = transactionsList
 
                     fromHash?.let { fromHash ->
                         val tx = transactions.firstOrNull { it.hash == fromHash }
                         tx?.timeStamp?.let { txTimeStamp ->
-                            filtered = filtered.filter { it.timeStamp < txTimeStamp }
+                            transactions = transactions.filter { it.timeStamp < txTimeStamp }
                         }
                     }
 
                     limit?.let {
-                        filtered = filtered.take(it)
+                        transactions = transactions.take(it)
                     }
 
-                    Single.just(filtered)
+                    Single.just(transactions)
                 }
     }
 

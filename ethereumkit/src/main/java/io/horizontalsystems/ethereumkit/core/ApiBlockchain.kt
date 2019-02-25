@@ -229,7 +229,7 @@ class ApiBlockchain(
 
     private fun updateTransactions(ethereumTransactions: List<EthereumTransaction>) {
         storage.saveTransactions(ethereumTransactions)
-        listener?.onUpdateTransactions(ethereumTransactions)
+        listener?.onUpdateTransactions(ethereumTransactions.filter { it.input == "0x" })
     }
 
     private fun updateTransactionsErc20(ethereumTransactions: List<EthereumTransaction>) {

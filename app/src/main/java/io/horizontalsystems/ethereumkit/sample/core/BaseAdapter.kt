@@ -37,7 +37,8 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) : Ethereu
                 amount = amount,
                 timestamp = transaction.timeStamp,
                 from = from,
-                to = to
+                to = to,
+                contractAddress = transaction.contractAddress
         )
     }
 

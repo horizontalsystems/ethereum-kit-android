@@ -10,7 +10,7 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(ethereumTransactions: List<EthereumTransaction>)
 
-    @Query("SELECT * FROM EthereumTransaction ORDER BY timeStamp DESC")
+    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = '' AND input = '0x' ORDER BY timeStamp DESC")
     fun getTransactions(): Single<List<EthereumTransaction>>
 
     @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = :contractAddress ORDER BY timeStamp DESC")
