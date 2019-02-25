@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
+import io.horizontalsystems.ethereumkit.light.crypto.Crypto
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
@@ -45,9 +46,6 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
     @Volatile
     private var isRunning = false
 
-    var connected = false
-    var handshakeSent = false
-
     private lateinit var handshake: EncryptionHandshake
     private lateinit var frameCodec: FrameCodec
 
@@ -79,14 +77,11 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {
-        if (handshakeSent)
-            return
-        handshakeSent = true
+        handshake = EncryptionHandshake(listener.connectionKey(), remotePublicKeyPoint, Crypto())
 
-        handshake = EncryptionHandshake(listener.connectionKey(), remotePublicKeyPoint)
-        handshake.createAuthMessage()
+        val authMessagePackets = handshake.createAuthMessage()
 
-        outputStream.write(handshake.authMessagePacket)
+        outputStream.write(authMessagePackets)
     }
 
     private fun handleAuthAckMessage(inputsStream: InputStream): Secrets {
