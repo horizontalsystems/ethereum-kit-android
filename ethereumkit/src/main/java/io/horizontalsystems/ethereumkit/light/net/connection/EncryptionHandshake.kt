@@ -11,14 +11,18 @@ import org.spongycastle.math.ec.ECPoint
 import java.security.SecureRandom
 
 class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyPoint: ECPoint, private val crypto: ICrypto) {
-    private var initiatorNonce: ByteArray = crypto.randomBytes(32)
-    private var ephemeralKey = crypto.randomKey()
 
-    private var authMessagePacket: ByteArray = ByteArray(0)
+    open class HandshakeError : Exception() {
+        class InvalidAuthAckPayload : HandshakeError()
+    }
 
     companion object {
         const val MAC_SIZE = 256
     }
+
+    private var initiatorNonce: ByteArray = crypto.randomBytes(32)
+    private var ephemeralKey = crypto.randomKey()
+    private var authMessagePacket: ByteArray = ByteArray(0)
 
     fun createAuthMessage(): ByteArray {
         val sharedSecret = crypto.ecdhAgree(myKey, remotePublicKeyPoint)
@@ -36,13 +40,18 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
     fun handleAuthAckMessage(eciesEncryptedMessage: ECIESEncryptedMessage): Secrets {
 
         val decrypted = crypto.eciesDecrypt(myKey.privateKey, eciesEncryptedMessage)
-        val authAckMessage = AuthAckMessage.decode(decrypted)
+
+        val authAckMessage = try {
+            AuthAckMessage(decrypted)
+        } catch (ex: Exception) {
+            throw HandshakeError.InvalidAuthAckPayload()
+        }
 
         return agreeSecret(authAckMessage, eciesEncryptedMessage.encoded())
     }
 
     private fun agreeSecret(authAckMessage: AuthAckMessage, authAckMessagePacket: ByteArray): Secrets {
-        val agreedSecret = crypto.ecdhAgree(ephemeralKey, authAckMessage.publicKeyPoint)
+        val agreedSecret = crypto.ecdhAgree(ephemeralKey, authAckMessage.ephemPublicKeyPoint)
         val sharedSecret = crypto.sha3(agreedSecret + crypto.sha3(authAckMessage.nonce + initiatorNonce))
         val secretsAes = crypto.sha3(agreedSecret + sharedSecret)
 

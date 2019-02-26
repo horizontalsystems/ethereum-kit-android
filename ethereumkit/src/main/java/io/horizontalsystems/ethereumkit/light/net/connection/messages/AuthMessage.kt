@@ -18,6 +18,6 @@ class AuthMessage(val signature: ByteArray, val publicKeyPoint: ECPoint, val non
     }
 
     override fun toString(): String {
-        return "AuthMessage [signature: ${signature.toHexString()}; publicKeyPoint: $publicKeyPoint; nonce: ${nonce.toHexString()}]"
+        return "AuthMessage [signature: ${signature.toHexString()}; ephemPublicKeyPoint: $publicKeyPoint; nonce: ${nonce.toHexString()}]"
     }
 }
