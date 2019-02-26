@@ -104,14 +104,13 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
                     if (it.hasError()) {
                         Flowable.error(Throwable(it.error.message))
                     } else {
-                        val data = Numeric.prependHexPrefix(rawTransaction.data)
                         val pendingTx = EthereumTransaction().apply {
                             hash = it.transactionHash
                             timeStamp = System.currentTimeMillis() / 1000
                             from = fromAddress
                             to = toAddress
                             value = amount
-                            input = data
+                            input = "0x"
                         }
                         Flowable.just(pendingTx)
                     }
