@@ -5,11 +5,12 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.State
-import io.horizontalsystems.ethereumkit.utils.MainThreadExecutor
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Single
 import org.web3j.utils.Convert
 import java.math.BigDecimal
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 class EthereumKit(
         private val blockchain: IBlockchain,
@@ -25,7 +26,7 @@ class EthereumKit(
     }
 
     var listener: Listener? = null
-    private var listenerExecutor: MainThreadExecutor = MainThreadExecutor()
+    var listenerExecutor: Executor = Executors.newSingleThreadExecutor()
 
     init {
         state.balance = storage.getBalance(blockchain.ethereumAddress)
@@ -177,12 +178,18 @@ class EthereumKit(
     }
 
     override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
+        if (ethereumTransactions.isEmpty())
+            return
+
         listenerExecutor.execute {
             listener?.onTransactionsUpdate(ethereumTransactions)
         }
     }
 
     override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: String) {
+        if (ethereumTransactions.isEmpty())
+            return
+
         listenerExecutor.execute {
             state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
         }
