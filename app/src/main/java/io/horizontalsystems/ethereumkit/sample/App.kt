@@ -1,14 +1,17 @@
 package io.horizontalsystems.ethereumkit.sample
 
 import android.app.Application
-import io.horizontalsystems.ethereumkit.EthereumKit
 
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
+    }
 
-        EthereumKit.init(this)
+    companion object {
+        lateinit var instance: App
+            private set
     }
 
 }

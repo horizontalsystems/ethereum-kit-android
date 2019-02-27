@@ -61,7 +61,7 @@ class SendReceiveFragment : Fragment() {
             when {
                 sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
                 sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
-                else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toDouble())
+                else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
         }
 

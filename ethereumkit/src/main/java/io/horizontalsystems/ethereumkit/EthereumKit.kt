@@ -1,530 +1,193 @@
 package io.horizontalsystems.ethereumkit
 
 import android.content.Context
-import android.content.pm.PackageManager
 import io.horizontalsystems.ethereumkit.core.*
-import io.horizontalsystems.ethereumkit.models.Balance
-import io.horizontalsystems.ethereumkit.models.GasPrice
-import io.horizontalsystems.ethereumkit.models.LastBlockHeight
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.network.EtherscanService
-import io.horizontalsystems.hdwalletkit.HDWallet
+import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.State
+import io.horizontalsystems.ethereumkit.utils.MainThreadExecutor
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.reactivex.Flowable
 import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Function5
-import io.reactivex.schedulers.Schedulers
-import io.realm.OrderedCollectionChangeSet
-import io.realm.Realm
-import io.realm.RealmResults
-import io.realm.Sort
-import io.realm.annotations.RealmModule
-import org.web3j.abi.FunctionEncoder
-import org.web3j.abi.TypeReference
-import org.web3j.abi.datatypes.Address
-import org.web3j.abi.datatypes.Function
-import org.web3j.abi.datatypes.Type
-import org.web3j.abi.datatypes.generated.Uint256
-import org.web3j.crypto.RawTransaction
-import org.web3j.crypto.TransactionEncoder
 import org.web3j.utils.Convert
-import org.web3j.utils.Numeric
 import java.math.BigDecimal
-import java.math.BigInteger
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
-@RealmModule(library = true, allClasses = true)
-class EthereumKitModule
-
-class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
+class EthereumKit(
+        private val blockchain: IBlockchain,
+        val storage: IStorage,
+        private val addressValidator: AddressValidator,
+        private val state: State) : IBlockchainListener {
 
     interface Listener {
-        fun onTransactionsUpdate(inserted: List<Transaction>, updated: List<Transaction>, deleted: List<Int>)
-        fun onBalanceUpdate(balance: BigDecimal)
-        fun onLastBlockHeightUpdate(height: Int)
-        fun onKitStateUpdate(state: KitState)
+        fun onTransactionsUpdate(transactions: List<EthereumTransaction>)
+        fun onBalanceUpdate()
+        fun onLastBlockHeightUpdate()
+        fun onSyncStateUpdate()
     }
-
-    interface ListenerERC20 : Listener {
-        val contractAddress: String
-        val decimal: Int
-    }
-
-    val receiveAddress: String
-
-    var balance: BigDecimal = BigDecimal.valueOf(0.0)
-        private set
-
-    var lastBlockHeight: Int? = null
-        private set
 
     var listener: Listener? = null
-    var kitState: KitState = KitState.NotSynced
-        private set(value) {
-            listener?.onKitStateUpdate(value)
-            field = value
-        }
-
-    private val erc20List = ConcurrentHashMap<String, ERC20>()
-
-    private val realmFactory = RealmFactory("ethereumkit-${networkType.name}-$walletId")
-    private val transactionRealmResults: RealmResults<Transaction>
-    private val balanceRealmResults: RealmResults<Balance>
-
-    private val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
-    private val web3j = Web3jInfura(networkType, infuraApiKey)
-    private val etherscanService = EtherscanService(networkType, etherscanApiKey)
-    private val addressValidator = AddressValidator()
-    private val disposables = CompositeDisposable()
-
-    private val timer: Timer
-
-    constructor(words: List<String>, networkType: NetworkType, walletId: String) : this(Mnemonic().toSeed(words), networkType, walletId)
+    private var listenerExecutor: MainThreadExecutor = MainThreadExecutor()
 
     init {
-        val realm = realmFactory.realm
-        receiveAddress = hdWallet.address()
-
-        transactionRealmResults = realm.where(Transaction::class.java).findAll()
-        transactionRealmResults.addChangeListener { t, changeSet ->
-            handleTransactionsUpdate(t, changeSet)
-        }
-
-        getBalance(receiveAddress)?.let {
-            balance = it.balance.toBigDecimal()
-        }
-
-        balanceRealmResults = realm.where(Balance::class.java).findAll()
-        balanceRealmResults.addChangeListener { b, changeSet ->
-            handleUpdateBalance(b, changeSet)
-        }
-
-        timer = Timer(30, object : Timer.Listener {
-            override fun onTimeIsUp() {
-                refresh()
-                erc20List.forEach { refresh(it.key) }
-            }
-        })
+        state.balance = storage.getBalance(blockchain.ethereumAddress)
+        state.lastBlockHeight = storage.getLastBlockHeight()
     }
 
-    //
-    // API methods
-    //
-
     fun start() {
-        timer.start()
-
-        refresh()
+        blockchain.start()
     }
 
     fun stop() {
-        disposables.clear()
-        timer.stop()
-        web3j.shutdown()
+        blockchain.stop()
     }
 
     fun clear() {
-        stop()
-        erc20List.forEach { unregister(it.key) }
-        realmFactory.realm.use { realm ->
-            realm.executeTransaction {
-                it.deleteAll()
-            }
-        }
+        listener = null
+
+        blockchain.clear()
+        state.clear()
+        storage.clear()
     }
 
-    @Synchronized
-    fun refresh() {
-        kitState = KitState.Syncing(0.0)
+    val receiveAddress: String
+        get() {
+            return blockchain.ethereumAddress
+        }
 
-        Flowable.zip(updateBalance(), updateLastBlockHeight(), updateTransactions(), updateTransactions(token = true), updateGasPrice(),
-                Function5<BigDecimal, Int, Int, Int, Double, Unit> { _, _, _, _, _ ->
-                    Unit
-                })
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                .subscribe({
-                    kitState = KitState.Synced
-                }, {
-                    it?.printStackTrace()
-                    kitState = KitState.NotSynced
-                }).let {
-                    disposables.add(it)
-                }
+
+    fun register(contractAddress: String, listener: Listener) {
+        if (state.hasContract(contractAddress)) {
+            return
+        }
+
+        state.add(contractAddress, listener)
+        state.setBalance(storage.getBalance(contractAddress), contractAddress)
+
+        blockchain.register(contractAddress)
+    }
+
+    fun unregister(contractAddress: String) {
+        blockchain.unregister(contractAddress)
+        state.remove(contractAddress)
     }
 
     fun validateAddress(address: String) {
         addressValidator.validate(address)
     }
 
-    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<Transaction>> {
-        return getTransactions(fromHash, limit)
+    fun fee(gasPriceInWei: Long? = null): BigDecimal {
+        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
+
+        return Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
     }
 
-    fun fee(): BigDecimal {
-        realmFactory.realm.use { realm ->
-            val gwei = realm.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
-            val wei = Convert.toWei(BigDecimal.valueOf(gwei
-                    ?: DEFAULT_GAS_PRICE), Convert.Unit.GWEI)
+    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
+        return storage.getTransactions(fromHash, limit, null)
+    }
 
-            return Convert.fromWei(wei.multiply(BigDecimal(GAS_LIMIT)), Convert.Unit.ETHER)
+    fun send(toAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+        return blockchain.send(toAddress, amount, gasPriceInWei)
+    }
+
+    fun debugInfo(): String {
+        val lines = mutableListOf<String>()
+        lines.add("ADDRESS: ${blockchain.ethereumAddress}")
+        return lines.joinToString { "\n" }
+    }
+
+    val balance: String?
+        get() {
+            return state.balance
         }
-    }
 
-    fun send(toAddress: String, amount: BigDecimal, completion: ((Throwable?) -> Unit)? = null) {
-        val value = Convert.toWei(amount, Convert.Unit.ETHER).toBigInteger()
+    val lastBlockHeight: Int?
+        get() {
+            return state.lastBlockHeight
+        }
 
-        broadcastTransaction(toAddress, value)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    completion?.invoke(null)
-                }, {
-                    completion?.invoke(it)
-                }).let {
-                    disposables.add(it)
-                }
-    }
+    val syncState: SyncState
+        get() = blockchain.blockchainSyncState
+
 
     //
     // ERC20
     //
 
-    fun register(token: ListenerERC20) {
-        if (erc20List[token.contractAddress] != null) {
-            return
-        }
+    fun feeERC20(gasPriceInWei: Long? = null): BigDecimal {
+        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
 
-        val holder = ERC20(token)
-        erc20List[token.contractAddress] = holder
-        getBalance(token.contractAddress)?.let {
-            holder.balance = it.balance.toBigDecimal()
-        }
-
-        refresh(token.contractAddress)
+        return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
 
-    fun unregister(contractAddress: String) {
-        erc20List.remove(contractAddress)
+    fun balanceERC20(contractAddress: String): String? {
+        return state.balance(contractAddress)
     }
 
-    @Synchronized
-    fun refresh(contractAddress: String) {
-        val erc20 = erc20List[contractAddress] ?: return
-
-        erc20.kitState = KitState.Syncing(0.0)
-
-        updateBalance(contractAddress, erc20.listener.decimal)
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                .subscribe({
-                    erc20.kitState = KitState.Synced
-                }, {
-                    it?.printStackTrace()
-                    erc20.kitState = KitState.NotSynced
-                }).let {
-                    disposables.add(it)
-                }
+    fun syncStateErc20(contractAddress: String): SyncState {
+        return blockchain.syncState(contractAddress)
     }
 
-    fun feeERC20(): Double {
-        realmFactory.realm.use { realm ->
-            val gwei = realm.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
-            val number = BigDecimal.valueOf(gwei ?: DEFAULT_GAS_PRICE)
-            val wei = Convert.toWei(number, Convert.Unit.GWEI)
-
-            return Convert.fromWei(wei.multiply(BigDecimal(GAS_LIMIT_ERC20)), Convert.Unit.ETHER).toDouble()
-        }
+    fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
+        return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun balanceERC20(contractAddress: String): BigDecimal {
-        return erc20List[contractAddress]?.balance ?: BigDecimal.valueOf(0.0)
-    }
-
-    fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<Transaction>> {
-        return getTransactions(fromHash, limit, contractAddress)
-    }
-
-    fun sendERC20(toAddress: String, contractAddress: String, amount: Double, completion: ((Throwable?) -> Unit)? = null) {
-        val token = erc20List[contractAddress]?.listener
-                ?: throw EthereumKitException.TokenNotFound(contractAddress)
-
-        val value = BigDecimal.valueOf(amount).multiply(BigDecimal.TEN.pow(token.decimal)).toBigInteger()
-
-        broadcastTransaction(toAddress, value, contractAddress)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    completion?.invoke(null)
-                }, {
-                    completion?.invoke(it)
-                }).let {
-                    disposables.add(it)
-                }
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+        return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
     }
 
     //
-    // Private
+    //IBlockchain
     //
 
-    private fun handleTransactionsUpdate(collection: RealmResults<Transaction>, changeSet: OrderedCollectionChangeSet) {
-        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
-            val validTx: (Transaction) -> Boolean = { it.contractAddress.isNotEmpty() || it.input == "0x" }
-
-            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }.filter(validTx)
-            val updates = changeSet.changes.asList().mapNotNull { collection[it] }.filter(validTx)
-            val deletes = changeSet.deletions.asList()
-
-            val ethInserts = inserts.filter { it.contractAddress.isEmpty() }
-            val ethUpdates = updates.filter { it.contractAddress.isEmpty() }
-            if (ethInserts.isNotEmpty() || ethUpdates.isNotEmpty()) {
-                listener?.onTransactionsUpdate(ethInserts, ethUpdates, deletes)
-            }
-
-            erc20List.forEach {
-                val tokenInserts = inserts.filter { item -> item.contractAddress == it.key }
-                val tokenUpdates = updates.filter { item -> item.contractAddress == it.key }
-                if (tokenInserts.isNotEmpty() || tokenUpdates.isNotEmpty()) {
-                    it.value.listener.onTransactionsUpdate(tokenInserts, tokenUpdates, deletes)
-                }
+    override fun onUpdateLastBlockHeight(lastBlockHeight: Int) {
+        state.lastBlockHeight = lastBlockHeight
+        listenerExecutor.execute {
+            listener?.onLastBlockHeightUpdate()
+        }
+        for (erc20Listener in state.erc20Listeners) {
+            listenerExecutor.execute {
+                erc20Listener.onLastBlockHeightUpdate()
             }
         }
     }
 
-    private fun handleUpdateBalance(collection: RealmResults<Balance>, changeSet: OrderedCollectionChangeSet) {
-        if (changeSet.state == OrderedCollectionChangeSet.State.UPDATE) {
-            val inserts = changeSet.insertions.asList().mapNotNull { collection[it] }
-            val updates = changeSet.changes.asList().mapNotNull { collection[it] }
-
-            (inserts + updates).forEach {
-                if (it.address == receiveAddress) {
-                    balance = it.balance.toBigDecimal()
-                    listener?.onBalanceUpdate(it.balance.toBigDecimal())
-                } else {
-                    erc20List[it.address]?.balance = it.balance.toBigDecimal()
-                    erc20List[it.address]?.listener?.onBalanceUpdate(it.balance.toBigDecimal())
-                }
-            }
+    override fun onUpdateState(syncState: SyncState) {
+        listenerExecutor.execute {
+            listener?.onSyncStateUpdate()
         }
     }
 
-    private fun getTransactions(fromHash: String? = null, limit: Int? = null, contractAddress: String = ""): Single<List<Transaction>> {
-        return Single.create { subscriber ->
-            realmFactory.realm.use { realm ->
-                var results = realm.where(Transaction::class.java).equalTo("contractAddress", contractAddress).sort("timeStamp", Sort.DESCENDING)
-                if (contractAddress.isEmpty()) {
-                    results.equalTo("input", "0x")
-                }
-
-                fromHash?.let { fromHash ->
-                    results.equalTo("hash", fromHash)
-                            .findFirst()?.let { fromTransaction ->
-                                results = results.lessThan("timeStamp", fromTransaction.timeStamp)
-                            }
-                }
-
-                limit?.let {
-                    results = results.limit(it.toLong())
-                }
-
-                subscriber.onSuccess(results.findAll().mapNotNull { realm.copyFromRealm(it) })
-            }
+    override fun onUpdateErc20State(syncState: SyncState, contractAddress: String) {
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onSyncStateUpdate()
         }
     }
 
-    private fun broadcastTransaction(toAddress: String, amount: BigInteger, contractAddress: String? = null): Flowable<Unit> {
-        var data = "0x"
-
-        return Flowable.fromCallable {
-            //  get the next available nonce
-            val ethGetTransactionCount = web3j.getTransactionCount(receiveAddress)
-            val nonce = ethGetTransactionCount.transactionCount
-
-            val gasPrice = getGasPrice()
-
-            val rawTransaction = if (contractAddress != null) {
-                val transferFN = Function("transfer",
-                        Arrays.asList<Type<*>>(Address(toAddress), Uint256(amount)),
-                        Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))
-
-                val encodeData = FunctionEncoder.encode(transferFN)
-                RawTransaction.createTransaction(nonce, gasPrice, GAS_LIMIT_ERC20.toBigInteger(), contractAddress, encodeData)
-            } else {
-                RawTransaction.createEtherTransaction(nonce, gasPrice, GAS_LIMIT.toBigInteger(), toAddress, amount)
-            }
-
-            data = Numeric.prependHexPrefix(rawTransaction.data)
-
-            //  sign & send our transaction
-            val signedMessage = TransactionEncoder.signMessage(rawTransaction, hdWallet.credentials())
-            val hexValue = Numeric.toHexString(signedMessage)
-
-            web3j.sendRawTransaction(hexValue)
-        }.map { ethSendTransaction ->
-            val pendingTx = Transaction().apply {
-                hash = ethSendTransaction.transactionHash
-                timeStamp = System.currentTimeMillis() / 1000
-                from = receiveAddress
-                to = toAddress
-                value = amount.toString()
-                input = data
-
-                contractAddress?.let {
-                    this.contractAddress = it
-                }
-            }
-
-            realmFactory.realm.use { realm ->
-                realm.executeTransaction {
-                    it.insertOrUpdate(pendingTx)
-                }
-            }
+    override fun onUpdateBalance(balance: String) {
+        state.balance = balance
+        listenerExecutor.execute {
+            listener?.onBalanceUpdate()
         }
     }
 
-    private fun getGasPrice() = realmFactory.realm.use {
-        val gPrice = it.where(GasPrice::class.java).findFirst()?.gasPriceInGwei
-        val number = BigDecimal.valueOf(gPrice ?: DEFAULT_GAS_PRICE)
-
-        Convert.toWei(number, Convert.Unit.GWEI).toBigInteger()
-    }
-
-    private fun getBalance(address: String): Balance? {
-        realmFactory.realm.use {
-            return it.where(Balance::class.java).equalTo("address", address).findFirst()
+    override fun onUpdateErc20Balance(balance: String, contractAddress: String) {
+        state.setBalance(balance, contractAddress)
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onBalanceUpdate()
         }
     }
 
-    private fun updateGasPrice(): Flowable<Double> {
-        return web3j.getGasPrice()
-                .map { gasPrice ->
-                    realmFactory.realm.use { realm ->
-                        realm.executeTransaction {
-                            it.insertOrUpdate(GasPrice(gasPrice))
-                        }
-                    }
-                    gasPrice
-                }
-                .onErrorReturn {
-                    DEFAULT_GAS_PRICE
-                }
-    }
-
-    private fun updateBalance(contractAddress: String? = null, decimal: Int = ETH_DECIMAL): Flowable<BigDecimal> {
-        val flowable = if (contractAddress == null) {
-            web3j.getBalance(receiveAddress)
-        } else {
-            web3j.getTokenBalance(receiveAddress, contractAddress, decimal)
-        }
-
-        return flowable.map { balance ->
-            realmFactory.realm.use { realm ->
-                realm.executeTransaction {
-                    it.insertOrUpdate(Balance(contractAddress ?: receiveAddress, balance, decimal))
-                }
-            }
-
-            balance
+    override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
+        listenerExecutor.execute {
+            listener?.onTransactionsUpdate(ethereumTransactions)
         }
     }
 
-    private fun updateLastBlockHeight(): Flowable<Int> {
-        return web3j.getBlockNumber()
-                .map { height ->
-                    lastBlockHeight = height
-                    realmFactory.realm.use { realm ->
-                        realm.executeTransaction {
-                            it.insertOrUpdate(LastBlockHeight(height))
-                        }
-                    }
-
-                    listener?.onLastBlockHeightUpdate(height)
-
-                    erc20List.forEach {
-                        it.value.listener.onLastBlockHeightUpdate(height)
-                    }
-
-                    height
-                }
-    }
-
-    private fun updateTransactions(token: Boolean = false): Flowable<Int> {
-
-        val lastBlockHeight = realmFactory.realm.use {
-            var query = it.where(Transaction::class.java)
-            query = if (token) {
-                query.notEqualTo("contractAddress", "")
-                        .notEqualTo("input", "0x")
-            } else {
-                query.equalTo("contractAddress", "")
-                        .equalTo("input", "0x")
-            }
-            query.sort("blockNumber", Sort.DESCENDING)
-                    .findFirst()?.blockNumber?.toInt() ?: 0
-        }
-
-        val flowable = if (token) {
-            etherscanService.getTokenTransactions(receiveAddress, lastBlockHeight + 1)
-        } else {
-            etherscanService.getTransactionList(receiveAddress, lastBlockHeight + 1)
-        }
-
-        return flowable.map { response ->
-            realmFactory.realm.use { realm ->
-                realm.executeTransaction {
-                    response.result
-                            .map { tx -> Transaction(tx) }
-                            .forEach { tx ->
-                                realm.insertOrUpdate(tx)
-                            }
-                }
-            }
-
-            response.result.size
+    override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: String) {
+        listenerExecutor.execute {
+            state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
         }
     }
 
-    companion object {
-        private const val DEFAULT_GAS_PRICE = 10.0 //in GWei
-        private const val ETH_DECIMAL = 18
-        private const val GAS_LIMIT = 21_000
-        private const val GAS_LIMIT_ERC20 = 100_000
-
-        private var infuraApiKey = ""
-        private var etherscanApiKey = ""
-
-        fun init(context: Context) {
-            Realm.init(context)
-
-            try {
-                val applicationInfo = context.packageManager.getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-                val bundle = applicationInfo.metaData
-
-                val infuraKey = bundle.getString("io.horizontalsystems.ethereumkit.infura_api_key")
-                val etherscanKey = bundle.getString("io.horizontalsystems.ethereumkit.etherscan_api_key")
-
-                infuraApiKey = if (infuraKey == null || infuraKey.isBlank()) {
-                    throw EthereumKitException.InfuraApiKeyNotSet()
-                } else {
-                    infuraKey
-                }
-
-                etherscanApiKey = if (etherscanKey == null || etherscanKey.isBlank()) {
-                    throw EthereumKitException.EtherscanApiKeyNotSet()
-                } else {
-                    etherscanKey
-                }
-
-            } catch (e: PackageManager.NameNotFoundException) {
-                throw EthereumKitException.FailedToLoadMetaData(e.message)
-            } catch (e: NullPointerException) {
-                throw EthereumKitException.FailedToLoadMetaData(e.message)
-            }
-        }
-    }
-
-    enum class NetworkType { MainNet, Ropsten, Kovan, Rinkeby }
 
     open class EthereumKitException(msg: String) : Exception(msg) {
         class InfuraApiKeyNotSet : EthereumKitException("Infura API Key is not set!")
@@ -533,11 +196,30 @@ class EthereumKit(seed: ByteArray, networkType: NetworkType, walletId: String) {
         class TokenNotFound(contract: String) : EthereumKitException("ERC20 token not found with contract: $contract")
     }
 
-    sealed class KitState {
-        object Synced : KitState()
-        object NotSynced : KitState()
-        class Syncing(val progress: Double) : KitState()
+    sealed class SyncState {
+        object Synced : SyncState()
+        object NotSynced : SyncState()
+        object Syncing : SyncState()
+    }
+
+
+    companion object {
+        fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
+            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
+        }
+
+        fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
+
+            val storage = RoomStorage("ethereumKit-$testMode-$walletId", context)
+            val blockchain = ApiBlockchain.apiBlockchain(storage, seed, testMode, infuraKey, etherscanKey)
+            val addressValidator = AddressValidator()
+
+            val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())
+            blockchain.listener = ethereumKit
+
+            return ethereumKit
+        }
+
     }
 
 }
-
