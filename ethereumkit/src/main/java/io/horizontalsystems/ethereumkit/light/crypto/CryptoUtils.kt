@@ -1,12 +1,16 @@
 package io.horizontalsystems.ethereumkit.light.crypto
 
 import io.horizontalsystems.ethereumkit.light.ByteUtils
+import io.horizontalsystems.ethereumkit.light.toBytes
 import org.spongycastle.asn1.sec.SECNamedCurves
 import org.spongycastle.asn1.x9.X9IntegerConverter
+import org.spongycastle.crypto.BufferedBlockCipher
 import org.spongycastle.crypto.agreement.ECDHBasicAgreement
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.engines.AESEngine
 import org.spongycastle.crypto.generators.ECKeyPairGenerator
+import org.spongycastle.crypto.macs.HMac
+import org.spongycastle.crypto.modes.SICBlockCipher
 import org.spongycastle.crypto.params.*
 import org.spongycastle.crypto.signers.ECDSASigner
 import org.spongycastle.crypto.signers.HMacDSAKCalculator
@@ -21,13 +25,17 @@ import java.math.BigInteger
 import java.security.*
 import java.util.*
 
-object CryptoUtils {
+object CryptoUtils : ICrypto {
 
     val CURVE: ECDomainParameters
     private val CURVE_SPEC: ECParameterSpec
 
     private val CRYPTO_PROVIDER: Provider
     private val HASH_256_ALGORITHM_NAME: String
+
+    const val SECRET_SIZE = 32
+    private val KEY_SIZE = 128
+    private val ECIES_PREFIX_SIZE = 65 + KEY_SIZE / 8 + 32 // 256 bit EC public key, IV, 256 bit MAC
 
     init {
         val params = SECNamedCurves.getByName("secp256k1")
@@ -39,7 +47,7 @@ object CryptoUtils {
         HASH_256_ALGORITHM_NAME = "ETH-KECCAK-256"
     }
 
-    fun randomECKey(): ECKey {
+    override fun randomECKey(): ECKey {
         val eGen = ECKeyPairGenerator()
         val random = SecureRandom()
         val gParam = ECKeyGenerationParameters(CURVE, random)
@@ -53,29 +61,31 @@ object CryptoUtils {
         return ECKey(prv, pub)
     }
 
-    fun ecKeyFromPrivate(privKey: BigInteger): ECKey {
-        return ECKey(privKey, CURVE.g.multiply(privKey))
+    override fun randomBytes(length: Int): ByteArray {
+        val randomBytes = ByteArray(length)
+        SecureRandom().nextBytes(randomBytes)
+        return randomBytes
     }
 
-    fun keyAgreement(privateKey: BigInteger, publicKeyPoint: ECPoint): BigInteger {
+    override fun ecdhAgree(myKey: ECKey, remotePublicKeyPoint: ECPoint): ByteArray {
         val agreement = ECDHBasicAgreement()
-        agreement.init(ECPrivateKeyParameters((CryptoUtils.privateKeyFromBigInteger(privateKey) as BCECPrivateKey).d, CURVE))
-        return agreement.calculateAgreement(ECPublicKeyParameters(publicKeyPoint, CURVE))
+        agreement.init(ECPrivateKeyParameters((privateKeyFromBigInteger(myKey.privateKey) as BCECPrivateKey).d, CURVE))
+        return agreement.calculateAgreement(ECPublicKeyParameters(remotePublicKeyPoint, CURVE)).toBytes(SECRET_SIZE)
     }
 
-    fun sign(privateKey: BigInteger, input: ByteArray): ByteArray {
+    override fun ellipticSign(messageToSign: ByteArray, key: ECKey): ByteArray {
         val signer = ECDSASigner(HMacDSAKCalculator(SHA256Digest()))
-        val privKeyParams = ECPrivateKeyParameters((privateKeyFromBigInteger(privateKey) as BCECPrivateKey).d, CURVE)
+        val privKeyParams = ECPrivateKeyParameters((privateKeyFromBigInteger(key.privateKey) as BCECPrivateKey).d, CURVE)
         signer.init(true, privKeyParams)
-        val components = signer.generateSignature(input)
+        val components = signer.generateSignature(messageToSign)
 
         val r = components[0]
         val s = components[1]
 
         var recId = -1
-        val thisKey = CURVE.g.multiply(privateKey).getEncoded(false)
+        val thisKey = CURVE.g.multiply(key.privateKey).getEncoded(false)
         for (i in 0..3) {
-            val k = recoverPubBytesFromSignature(i, r, s, input)
+            val k = recoverPubBytesFromSignature(i, r, s, messageToSign)
             if (k != null && Arrays.equals(k, thisKey)) {
                 recId = i
                 break
@@ -92,6 +102,74 @@ object CryptoUtils {
         val sigBytes = ByteUtils.merge(rsigPad, ssigPad, byteArrayOf(recId.toByte()))
 
         return sigBytes
+    }
+
+    override fun eciesDecrypt(privateKey: BigInteger, message: ECIESEncryptedMessage): ByteArray {
+        val ephem = CURVE.curve.decodePoint(message.ephemeralPubKey)
+
+        val iesEngine = makeIESEngine(false, ephem, privateKey, message.initialVector)
+
+        val cipherBody = message.cipher + message.checkSum
+
+        return iesEngine.processBlock(cipherBody, 0, cipherBody.size, message.prefixBytes)
+    }
+
+    override fun eciesEncrypt(remotePublicKey: ECPoint, message: ByteArray): ECIESEncryptedMessage {
+        val size = message.size + ECIES_PREFIX_SIZE
+        val prefixBytes = size.toShort().toBytes()
+
+        val iv = ByteArray(KEY_SIZE / 8)
+        SecureRandom().nextBytes(iv)
+
+        val ephemPair = randomECKey()
+        val iesEngine = makeIESEngine(true, remotePublicKey, ephemPair.privateKey, iv)
+
+        val cipher = iesEngine.processBlock(message, 0, message.size, prefixBytes)
+
+        return ECIESEncryptedMessage(prefixBytes,
+                ephemPair.publicKeyPoint.getEncoded(false),
+                iv,
+                cipher.copyOfRange(0, cipher.size - 32),
+                cipher.copyOfRange(cipher.size - 32, cipher.size))
+    }
+
+    override fun sha3(data: ByteArray): ByteArray {
+        val digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME, CRYPTO_PROVIDER)
+        digest.update(data)
+        return digest.digest()
+    }
+
+    override fun encryptAES(key: ByteArray, data: ByteArray): ByteArray {
+        val result = ByteArray(data.size)
+        val aesEngine = AESEngine()
+        aesEngine.init(true, KeyParameter(key))
+        aesEngine.processBlock(data, 0, result, 0)
+        return result
+    }
+
+    private fun makeIESEngine(isEncrypt: Boolean, pub: ECPoint, prv: BigInteger, IV: ByteArray): IESEngine {
+        val aesFastEngine = AESEngine()
+
+        val iesEngine = IESEngine(
+                ECDHBasicAgreement(),
+                ConcatKDFBytesGenerator(SHA256Digest()),
+                HMac(SHA256Digest()),
+                SHA256Digest(),
+                BufferedBlockCipher(SICBlockCipher(aesFastEngine)))
+
+
+        val d = byteArrayOf()
+        val e = byteArrayOf()
+
+        val p = IESWithCipherParameters(d, e, KEY_SIZE, KEY_SIZE)
+        val parametersWithIV = ParametersWithIV(p, IV)
+
+        iesEngine.init(isEncrypt, ECPrivateKeyParameters(prv, CURVE), ECPublicKeyParameters(pub, CURVE), parametersWithIV)
+        return iesEngine
+    }
+
+    fun ecKeyFromPrivate(privKey: BigInteger): ECKey {
+        return ECKey(privKey, CURVE.g.multiply(privKey))
     }
 
     private fun privateKeyFromBigInteger(priv: BigInteger): PrivateKey {
@@ -128,39 +206,5 @@ object CryptoUtils {
         val compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(CURVE.curve))
         compEnc[0] = (if (yBit) 0x03 else 0x02).toByte()
         return CURVE.curve.decodePoint(compEnc)
-    }
-
-    fun encryptAES(key: ByteArray, data: ByteArray): ByteArray {
-        val result = ByteArray(data.size)
-        val aesEngine = AESEngine()
-        aesEngine.init(true, KeyParameter(key))
-        aesEngine.processBlock(data, 0, result, 0)
-        return result
-    }
-
-    //-----------------Hash Utils------------------------------
-
-    fun sha3(input1: ByteArray, input2: ByteArray): ByteArray {
-        val digest: MessageDigest
-        try {
-            digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME, CRYPTO_PROVIDER)
-            digest.update(input1, 0, input1.size)
-            digest.update(input2, 0, input2.size)
-            return digest.digest()
-        } catch (e: NoSuchAlgorithmException) {
-            throw RuntimeException(e)
-        }
-    }
-
-    fun sha3(input: ByteArray): ByteArray {
-        val digest: MessageDigest
-        try {
-            digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME, CRYPTO_PROVIDER)
-            digest.update(input)
-            return digest.digest()
-        } catch (e: NoSuchAlgorithmException) {
-            throw RuntimeException(e)
-        }
-
     }
 }

@@ -21,7 +21,7 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
     }
 
     private var initiatorNonce: ByteArray = crypto.randomBytes(32)
-    private var ephemeralKey = crypto.randomKey()
+    private var ephemeralKey = crypto.randomECKey()
     private var authMessagePacket: ByteArray = ByteArray(0)
 
     fun createAuthMessage(): ByteArray {

@@ -47,11 +47,11 @@ class EncryptionHandshakeTest {
         encodedAuthECIESMessage = authECIESMessage.encoded()
 
         whenever(crypto.randomBytes(32)).thenReturn(nonce)
-        whenever(crypto.randomKey()).thenReturn(ephemeralKey)
+        whenever(crypto.randomECKey()).thenReturn(ephemeralKey)
 
         encryptionHandshake = EncryptionHandshake(myKey, remoteKeyPoint, crypto)
 
-        verify(crypto).randomKey()
+        verify(crypto).randomECKey()
         verify(crypto).randomBytes(32)
     }
 
