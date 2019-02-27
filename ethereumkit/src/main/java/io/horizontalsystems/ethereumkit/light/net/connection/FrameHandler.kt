@@ -44,27 +44,34 @@ class FrameHandler {
 
         frames.remove(frame)
 
-        if (frame.type in 0..P2P_MAX_MESSAGE_CODE) {
-            return when (frame.type) {
-                HelloMessage.code -> HelloMessage(frame.payload)
-                DisconnectMessage.code -> DisconnectMessage(frame.payload)
-                PingMessage.code -> PingMessage()
-                PongMessage.code -> PongMessage()
-                else -> null
+        var message: IMessage? = null
+
+        try {
+            if (frame.type in 0..P2P_MAX_MESSAGE_CODE) {
+                message = when (frame.type) {
+                    HelloMessage.code -> HelloMessage(frame.payload)
+                    DisconnectMessage.code -> DisconnectMessage(frame.payload)
+                    PingMessage.code -> PingMessage()
+                    PongMessage.code -> PongMessage()
+                    else -> null
+                }
             }
+
+            val lesOffset = offsets[Capability.LES]
+            if (lesOffset != null && frame.type - lesOffset in 0..LES_MAX_MESSAGE_CODE) {
+                message = when (frame.type - lesOffset) {
+                    StatusMessage.code -> StatusMessage(frame.payload)
+                    BlockHeadersMessage.code -> BlockHeadersMessage(frame.payload)
+                    ProofsMessage.code -> ProofsMessage(frame.payload)
+                    else -> null
+                }
+            }
+
+        } catch (ex: Exception) {
+            throw FrameHandlerError.InvalidPayload()
         }
 
-        val lesResolvedCode = frame.type - (offsets[Capability.LES] ?: 0)
-        if (lesResolvedCode in 0..LES_MAX_MESSAGE_CODE) {
-            return when (lesResolvedCode) {
-                StatusMessage.code -> StatusMessage(frame.payload)
-                BlockHeadersMessage.code -> BlockHeadersMessage(frame.payload)
-                ProofsMessage.code -> ProofsMessage(frame.payload)
-                else -> null
-            }
-        }
-
-        return null
+        return message ?: throw FrameHandlerError.UnknownMessageType()
     }
 
     fun getFrames(message: IMessage): List<Frame> {
@@ -79,5 +86,10 @@ class FrameHandler {
         }
 
         return frames
+    }
+
+    open class FrameHandlerError : Exception() {
+        class UnknownMessageType : FrameHandlerError()
+        class InvalidPayload : FrameHandlerError()
     }
 }

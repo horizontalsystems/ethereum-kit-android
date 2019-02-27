@@ -15,11 +15,11 @@ data class Capability(val name: String, val version: Byte) : Comparable<Capabili
     }
 
     override fun compareTo(other: Capability): Int {
-        val cmp = this.name.compareTo(other.name)
+        val cmp = name.compareTo(other.name)
         return if (cmp != 0) {
             cmp
         } else {
-            java.lang.Byte.valueOf(this.version).compareTo(other.version)
+            version.compareTo(other.version)
         }
     }
 
