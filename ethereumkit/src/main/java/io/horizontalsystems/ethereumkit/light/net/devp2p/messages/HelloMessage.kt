@@ -1,29 +1,29 @@
 package io.horizontalsystems.ethereumkit.light.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IP2PMessage
 import io.horizontalsystems.ethereumkit.light.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toInt
 import java.util.*
 
-class HelloMessage : IMessage {
+class HelloMessage : IP2PMessage {
 
     companion object {
         const val code = 0x00
-        val lesCapability = Capability("les", 2)
     }
 
     private var peerId: ByteArray = byteArrayOf()
     private var port: Int = 0
     private var p2pVersion: Byte = 4
     private var clientId: String = "EthereumKit"
-    private var capabilities: MutableList<Capability> = mutableListOf(lesCapability)
+    private var capabilities: List<Capability>
 
-    constructor(peerId: ByteArray, port: Int) {
+    constructor(peerId: ByteArray, port: Int, capabilities: List<Capability>) {
         this.peerId = peerId
         this.port = port
+        this.capabilities = capabilities
     }
 
     constructor(payload: ByteArray) {
@@ -35,7 +35,7 @@ class HelloMessage : IMessage {
         clientId = String(paramsList[1].rlpData ?: byteArrayOf())
 
         val capabilityList = paramsList[2] as RLPList
-        capabilities = ArrayList()
+        val caps = ArrayList<Capability>()
         for (aCapabilityList in capabilityList) {
 
             val capId = (aCapabilityList as RLPList)[0]
@@ -46,8 +46,10 @@ class HelloMessage : IMessage {
             val version = (capVersion.rlpData?.get(0) ?: 0).toByte()
 
             val cap = Capability(name, version)
-            capabilities.add(cap)
+            caps.add(cap)
         }
+
+        capabilities = caps
 
         val peerPortBytes = paramsList[3].rlpData
         port = peerPortBytes.toInt()

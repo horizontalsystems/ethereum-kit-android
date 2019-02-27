@@ -2,14 +2,14 @@ package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.ILESMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import java.math.BigInteger
 
-class GetProofsMessage(requestID: Long, blockHash: ByteArray, key: ByteArray, key2: ByteArray = byteArrayOf(), fromLevel: Int = 0) : IMessage {
+class GetProofsMessage(requestID: Long, blockHash: ByteArray, key: ByteArray, key2: ByteArray = byteArrayOf(), fromLevel: Int = 0) : ILESMessage {
 
     companion object {
-        const val code = 0x1F
+        const val code = 0x0F
     }
 
     private val requestID: Long = requestID

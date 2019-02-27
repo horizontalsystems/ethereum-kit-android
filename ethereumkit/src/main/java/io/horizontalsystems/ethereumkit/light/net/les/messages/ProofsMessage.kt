@@ -3,17 +3,17 @@ package io.horizontalsystems.ethereumkit.light.net.les.messages
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.models.AccountState
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.ILESMessage
 import io.horizontalsystems.ethereumkit.light.net.les.TrieNode
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toBigInteger
 import io.horizontalsystems.ethereumkit.light.toLong
 
-class ProofsMessage(data: ByteArray) : IMessage {
+class ProofsMessage(data: ByteArray) : ILESMessage {
 
     companion object {
-        const val code = 0x20
+        const val code = 0x10
     }
 
     var requestID: Long = 0

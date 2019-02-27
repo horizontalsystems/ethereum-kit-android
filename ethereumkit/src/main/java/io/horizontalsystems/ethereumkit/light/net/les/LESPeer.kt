@@ -2,12 +2,13 @@ package io.horizontalsystems.ethereumkit.light.net.les
 
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.models.BlockHeader
-import io.horizontalsystems.ethereumkit.light.net.devp2p.DevP2PPeer
-import io.horizontalsystems.ethereumkit.light.net.devp2p.IDevP2PPeerListener
+import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.net.INetwork
 import io.horizontalsystems.ethereumkit.light.net.Node
+import io.horizontalsystems.ethereumkit.light.net.devp2p.Capability
+import io.horizontalsystems.ethereumkit.light.net.devp2p.DevP2PPeer
+import io.horizontalsystems.ethereumkit.light.net.devp2p.IDevP2PPeerListener
 import io.horizontalsystems.ethereumkit.light.net.les.messages.*
-import io.horizontalsystems.ethereumkit.light.net.IMessage
 import java.util.*
 
 
@@ -20,7 +21,7 @@ interface IPeerListener {
 class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
 
     private val protocolVersion: Byte = 2
-    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, this)
+    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, Capability( "les", 2), this)
 
 
     var statusSent = false

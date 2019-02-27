@@ -18,7 +18,7 @@ interface IDevP2PPeerListener {
     fun onMessageReceived(message: IMessage)
 }
 
-class DevP2PPeer(val key: ECKey, val node: Node, val listener: IDevP2PPeerListener) : IPeerConnectionListener {
+class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: IDevP2PPeerListener) : IPeerConnectionListener {
 
     private var connection: IPeerConnection = Connection(node, this)
     private val executor = Executors.newSingleThreadExecutor()
@@ -29,13 +29,14 @@ class DevP2PPeer(val key: ECKey, val node: Node, val listener: IDevP2PPeerListen
     private fun proceedHandshake() {
         if (helloSent) {
             if (helloReceived) {
+                connection.register(listOf(capability))
                 listener.onConnectionEstablished()
                 return
             }
         } else {
             var myNodeId = key.publicKeyPoint.getEncoded(false)
             myNodeId = myNodeId.copyOfRange(1, myNodeId.size)
-            val helloMessage = HelloMessage(myNodeId, 30303)
+            val helloMessage = HelloMessage(myNodeId, 30303, listOf(capability))
             connection.send(helloMessage)
             helloSent = true
         }

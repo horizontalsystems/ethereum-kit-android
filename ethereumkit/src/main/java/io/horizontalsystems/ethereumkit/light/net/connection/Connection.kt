@@ -6,6 +6,7 @@ import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
 import io.horizontalsystems.ethereumkit.light.net.IMessage
 import io.horizontalsystems.ethereumkit.light.net.Node
+import io.horizontalsystems.ethereumkit.light.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.light.toShort
 import org.spongycastle.math.ec.ECPoint
 import java.io.IOException
@@ -34,6 +35,7 @@ interface IPeerConnection {
     fun connect()
     fun disconnect(error: Throwable?)
     fun send(message: IMessage)
+    fun register(capabilities: List<Capability>)
 }
 
 class Connection(private val node: Node, override val listener: IPeerConnectionListener) : IPeerConnection, Thread() {
@@ -48,6 +50,7 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
 
     private lateinit var handshake: EncryptionHandshake
     private lateinit var frameCodec: FrameCodec
+    private val frameHandler: FrameHandler = FrameHandler()
 
     private val remotePublicKeyPoint: ECPoint
             by lazy {
@@ -74,6 +77,10 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
         println(">>>>> $message\n")
 
         sendingQueue.put(message)
+    }
+
+    override fun register(capabilities: List<Capability>) {
+        frameHandler.addCapabilities(capabilities)
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {
@@ -121,22 +128,22 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
 
                 val msg = sendingQueue.poll(1, TimeUnit.SECONDS)
                 if (isRunning && msg != null) {
-                    val frame = Frame(msg)
-                    frameCodec.writeFrame(frame, outputStream)
+                    frameHandler.getFrames(msg).forEach { frame ->
+                        frameCodec.writeFrame(frame, outputStream)
+                    }
                 }
 
                 while (isRunning && inputStream.available() > 0) {
-
                     val frame = frameCodec.readFrame(inputStream)
                     if (frame == null) {
                         println("Frame is NULL")
                     } else {
+                        frameHandler.addFrame(frame)
 
-                        val message = Frame.frameToMessage(frame)
-                        if (message == null) {
-                            println("Message is NULL")
-                        } else {
+                        var message = frameHandler.getMessage()
+                        while (message != null) {
                             listener.onMessageReceived(message)
+                            message = frameHandler.getMessage()
                         }
                     }
                 }

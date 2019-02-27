@@ -1,15 +1,15 @@
 package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.light.models.BlockHeader
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.ILESMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toLong
 
-class BlockHeadersMessage(payload: ByteArray) : IMessage {
+class BlockHeadersMessage(payload: ByteArray) : ILESMessage {
 
     companion object {
-        const val code = 0x13
+        const val code = 0x03
     }
 
     var requestID: Long = 0

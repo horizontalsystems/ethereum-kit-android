@@ -1,16 +1,16 @@
 package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.ILESMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import java.math.BigInteger
 
 class GetBlockHeadersMessage(val requestID: Long,
                              val blockHash: ByteArray,
                              val skip: Int = 0,
-                             val reverse: Int = 0) : IMessage {
+                             val reverse: Int = 0) : ILESMessage {
     companion object {
-        const val code = 0x12
+        const val code = 0x02
         const val maxHeaders = 50
     }
 

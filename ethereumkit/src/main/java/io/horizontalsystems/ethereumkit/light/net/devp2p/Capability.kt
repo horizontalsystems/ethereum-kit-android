@@ -3,6 +3,10 @@ package io.horizontalsystems.ethereumkit.light.net.devp2p
 
 data class Capability(val name: String, val version: Byte) : Comparable<Capability> {
 
+    companion object {
+        val LES = "les"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Capability) return false

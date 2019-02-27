@@ -1,10 +1,10 @@
 package io.horizontalsystems.ethereumkit.light.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.IP2PMessage
 
-class PongMessage : IMessage {
-    override var code = PingMessage.code
+class PongMessage : IP2PMessage {
+    override var code = PongMessage.code
 
     override fun encoded(): ByteArray {
         return payload

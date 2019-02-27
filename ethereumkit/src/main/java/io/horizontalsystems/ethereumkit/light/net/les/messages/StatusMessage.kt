@@ -1,17 +1,17 @@
 package io.horizontalsystems.ethereumkit.light.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.light.net.IMessage
+import io.horizontalsystems.ethereumkit.light.net.ILESMessage
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
 import io.horizontalsystems.ethereumkit.light.toBigInteger
 import io.horizontalsystems.ethereumkit.light.toInt
 import java.math.BigInteger
 
-class StatusMessage : IMessage {
+class StatusMessage : ILESMessage {
 
     companion object {
-        const val code = 0x10
+        const val code = 0x00
     }
 
     private var protocolVersion: Byte = 0
