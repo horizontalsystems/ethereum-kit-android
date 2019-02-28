@@ -75,19 +75,19 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
                         result[0].value as BigInteger
                     }
                 }
-                .map{ it.toString() }
+                .map { it.toString() }
                 .firstOrError()
     }
 
     override fun getTransactions(address: String, startBlock: Int): Single<List<EthereumTransaction>> {
         return etherscanService.getTransactionList(address, startBlock)
-                .map { it.result.map { etherscanTransaction -> EthereumTransaction(etherscanTransaction) } }
+                .map { response -> response.result.distinctBy { it.blockHash }.map { etherscanTransaction -> EthereumTransaction(etherscanTransaction) } }
                 .firstOrError()
     }
 
     override fun getTransactionsErc20(address: String, startBlock: Int): Single<List<EthereumTransaction>> {
         return etherscanService.getTokenTransactions(address, startBlock)
-                .map { it.result.map { etherscanTransaction -> EthereumTransaction(etherscanTransaction) } }
+                .map { response -> response.result.distinctBy { it.blockHash }.map { etherscanTransaction -> EthereumTransaction(etherscanTransaction) } }
                 .firstOrError()
     }
 

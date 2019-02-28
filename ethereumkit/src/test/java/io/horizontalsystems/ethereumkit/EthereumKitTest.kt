@@ -16,6 +16,7 @@ import org.junit.Test
 import org.mockito.Mockito.mock
 import org.web3j.utils.Convert
 import java.math.BigDecimal
+import java.util.concurrent.Executor
 
 class EthereumKitTest {
 
@@ -46,6 +47,9 @@ class EthereumKitTest {
         whenever(blockchain.ethereumAddress).thenReturn(ethereumAddress)
         kit = EthereumKit(blockchain, storage, addressValidator, state)
         kit.listener = listener
+        kit.listenerExecutor = Executor {
+            it.run()
+        }
     }
 
     @Test
@@ -386,16 +390,24 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateTransactions() {
-        val transactions = listOf<EthereumTransaction>()
+        val transactions = listOf(EthereumTransaction())
 
         kit.onUpdateTransactions(transactions)
         verify(listener).onTransactionsUpdate(transactions)
     }
 
     @Test
+    fun testOnUpdateTransactions_empty() {
+        val transactions = listOf<EthereumTransaction>()
+
+        kit.onUpdateTransactions(transactions)
+        verify(listener, never()).onTransactionsUpdate(transactions)
+    }
+
+    @Test
     fun testOnUpdateErc20Transactions() {
         val contractAddress = "address"
-        val transactions = listOf<EthereumTransaction>()
+        val transactions = listOf(EthereumTransaction())
 
         kit.onUpdateErc20Transactions(transactions, contractAddress)
         verify(state).listener(contractAddress)?.onTransactionsUpdate(transactions)
