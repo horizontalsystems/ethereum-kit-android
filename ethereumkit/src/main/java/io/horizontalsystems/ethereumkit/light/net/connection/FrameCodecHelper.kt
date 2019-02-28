@@ -1,16 +1,16 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
-import io.horizontalsystems.ethereumkit.light.crypto.ICrypto
+import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.xor
 import org.spongycastle.crypto.digests.KeccakDigest
 
-class FrameCodecHelper(val crypto: ICrypto) {
+class FrameCodecHelper(val cryptoUtils: CryptoUtils) {
 
     fun updateMac(mac: KeccakDigest, macKey: ByteArray, data: ByteArray): ByteArray {
         val macDigest = ByteArray(mac.digestSize)
         KeccakDigest(mac).doFinal(macDigest, 0)
 
-        val encryptedMacDigest = crypto.encryptAES(macKey, macDigest)
+        val encryptedMacDigest = cryptoUtils.encryptAES(macKey, macDigest)
 
         mac.update(encryptedMacDigest.xor(data), 0, 16)
         KeccakDigest(mac).doFinal(macDigest, 0)

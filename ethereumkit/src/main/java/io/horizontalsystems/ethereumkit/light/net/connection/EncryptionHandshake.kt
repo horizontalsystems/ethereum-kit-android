@@ -1,16 +1,16 @@
 package io.horizontalsystems.ethereumkit.light.net.connection
 
+import io.horizontalsystems.ethereumkit.light.RandomUtils
+import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.light.crypto.ECKey
-import io.horizontalsystems.ethereumkit.light.crypto.ICrypto
 import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthAckMessage
 import io.horizontalsystems.ethereumkit.light.net.connection.messages.AuthMessage
 import io.horizontalsystems.ethereumkit.light.xor
 import org.spongycastle.crypto.digests.KeccakDigest
 import org.spongycastle.math.ec.ECPoint
-import java.security.SecureRandom
 
-class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyPoint: ECPoint, private val crypto: ICrypto) {
+class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyPoint: ECPoint, private val cryptoUtils: CryptoUtils, private val randomUtils: RandomUtils) {
 
     open class HandshakeError : Exception() {
         class InvalidAuthAckPayload : HandshakeError()
@@ -20,15 +20,15 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
         const val MAC_SIZE = 256
     }
 
-    private var initiatorNonce: ByteArray = crypto.randomBytes(32)
-    private var ephemeralKey = crypto.randomECKey()
+    private var initiatorNonce: ByteArray = randomUtils.randomBytes(32)
+    private var ephemeralKey = randomUtils.randomECKey()
     private var authMessagePacket: ByteArray = ByteArray(0)
 
     fun createAuthMessage(): ByteArray {
-        val sharedSecret = crypto.ecdhAgree(myKey, remotePublicKeyPoint)
+        val sharedSecret = cryptoUtils.ecdhAgree(myKey, remotePublicKeyPoint)
 
         val toBeSigned = sharedSecret.xor(initiatorNonce)
-        val signature = crypto.ellipticSign(toBeSigned, ephemeralKey)
+        val signature = cryptoUtils.ellipticSign(toBeSigned, ephemeralKey)
 
         val message = AuthMessage(signature, myKey.publicKeyPoint, initiatorNonce)
 
@@ -39,7 +39,7 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
 
     fun handleAuthAckMessage(eciesEncryptedMessage: ECIESEncryptedMessage): Secrets {
 
-        val decrypted = crypto.eciesDecrypt(myKey.privateKey, eciesEncryptedMessage)
+        val decrypted = cryptoUtils.eciesDecrypt(myKey.privateKey, eciesEncryptedMessage)
 
         val authAckMessage = try {
             AuthAckMessage(decrypted)
@@ -51,12 +51,12 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
     }
 
     private fun agreeSecret(authAckMessage: AuthAckMessage, authAckMessagePacket: ByteArray): Secrets {
-        val agreedSecret = crypto.ecdhAgree(ephemeralKey, authAckMessage.ephemPublicKeyPoint)
-        val sharedSecret = crypto.sha3(agreedSecret + crypto.sha3(authAckMessage.nonce + initiatorNonce))
-        val secretsAes = crypto.sha3(agreedSecret + sharedSecret)
+        val agreedSecret = cryptoUtils.ecdhAgree(ephemeralKey, authAckMessage.ephemPublicKeyPoint)
+        val sharedSecret = cryptoUtils.sha3(agreedSecret + cryptoUtils.sha3(authAckMessage.nonce + initiatorNonce))
+        val secretsAes = cryptoUtils.sha3(agreedSecret + sharedSecret)
 
-        val secretsMac = crypto.sha3(agreedSecret + secretsAes)
-        val secretsToken = crypto.sha3(sharedSecret)
+        val secretsMac = cryptoUtils.sha3(agreedSecret + secretsAes)
+        val secretsToken = cryptoUtils.sha3(sharedSecret)
 
         val secretsEgressMac = KeccakDigest(MAC_SIZE)
         secretsEgressMac.update(secretsMac.xor(authAckMessage.nonce), 0, secretsMac.size)
@@ -71,12 +71,11 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
 
     private fun encrypt(message: AuthMessage): ByteArray {
         val encodedMessage = message.encoded() + eip8padding()
-        val encrypted = crypto.eciesEncrypt(remotePublicKeyPoint, encodedMessage)
+        val encrypted = cryptoUtils.eciesEncrypt(remotePublicKeyPoint, encodedMessage)
         return encrypted.encoded()
     }
 
     private fun eip8padding(): ByteArray {
-        val junkLength = SecureRandom().nextInt(200) + 100
-        return crypto.randomBytes(junkLength)
+        return randomUtils.randomBytes(200..300)
     }
 }
