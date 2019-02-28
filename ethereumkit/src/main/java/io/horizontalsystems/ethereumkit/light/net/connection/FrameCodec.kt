@@ -4,31 +4,16 @@ import io.horizontalsystems.ethereumkit.light.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.light.rlp.RLP
 import io.horizontalsystems.ethereumkit.light.rlp.RLP.rlpDecodeInt
 import io.horizontalsystems.ethereumkit.light.rlp.RLPList
-import io.horizontalsystems.ethereumkit.light.xor
-import org.spongycastle.crypto.StreamCipher
 import org.spongycastle.crypto.digests.KeccakDigest
-import org.spongycastle.crypto.engines.AESEngine
-import org.spongycastle.crypto.modes.SICBlockCipher
-import org.spongycastle.crypto.params.KeyParameter
-import org.spongycastle.crypto.params.ParametersWithIV
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
 
-class FrameCodec(private val secrets: Secrets) {
-
-    private val enc: StreamCipher
-    private val dec: StreamCipher
-
-    init {
-        val encAesEngine = AESEngine()
-        enc = SICBlockCipher(encAesEngine)
-        enc.init(true, ParametersWithIV(KeyParameter(secrets.aes), ByteArray(encAesEngine.blockSize)))
-
-        val decAesEngine = AESEngine()
-        dec = SICBlockCipher(decAesEngine)
-        dec.init(false, ParametersWithIV(KeyParameter(secrets.aes), ByteArray(decAesEngine.blockSize)))
-    }
+class FrameCodec(private val secrets: Secrets,
+                 private val frameCodecHelper: FrameCodecHelper = FrameCodecHelper(CryptoUtils),
+                 private val enc: AESCipher = AESCipher(secrets.aes, true),
+                 private val dec: AESCipher = AESCipher(secrets.aes, false)
+) {
 
     fun readFrame(inputStream: InputStream): Frame? {
         val headBuffer = ByteArray(32)
@@ -36,22 +21,19 @@ class FrameCodec(private val secrets: Secrets) {
 
         val header = headBuffer.copyOfRange(0, 16)
         val headerMac = headBuffer.copyOfRange(16, 32)
-        val updatedMac = updateMac(secrets.ingressMac, secrets.mac, header)
+        val updatedMac = frameCodecHelper.updateMac(secrets.ingressMac, secrets.mac, header)
 
         if (!updatedMac.contentEquals(headerMac)) {
-            println("Frame Header MAC mismatch!")
-            return null
+            throw FrameCodecError.HeaderMacMismatch()
         }
 
-        dec.processBytes(headBuffer, 0, 16, headBuffer, 0)
-        var totalBodySize = headBuffer[0].toInt() and 0xFF
-        totalBodySize = (totalBodySize shl 8) + (headBuffer[1].toInt() and 0xFF)
-        totalBodySize = (totalBodySize shl 8) + (headBuffer[2].toInt() and 0xFF)
+        val decryptedHeader = dec.process(header)
 
-        val rlpList = RLP.decode2OneItem(headBuffer, 3) as RLPList
+        val totalBodySize = frameCodecHelper.fromThreeBytes(decryptedHeader.copyOfRange(0, 3))
+        val rlpList = RLP.decode2OneItem(decryptedHeader, 3) as RLPList
 
         val protocol = RLP.rlpDecodeInt(rlpList[0])
-        val contextId: Int
+        var contextId = -1
         var totalFrameSize = -1
 
         if (rlpList.size > 1) {
@@ -79,37 +61,31 @@ class FrameCodec(private val secrets: Secrets) {
         val frameBodyMac = buffer.copyOfRange(frameSize, buffer.size)
 
         secrets.ingressMac.update(frameBodyData, 0, frameSize)
-
-        val decryptedFrame = ByteArray(frameSize)
-        dec.processBytes(frameBodyData, 0, frameSize, decryptedFrame, 0)
+        val decryptedFrame = dec.process(frameBodyData)
 
         var pos = 0
         val type = RLP.decodeLong(decryptedFrame, pos)
-
         pos = RLP.getNextElementIndex(decryptedFrame, pos)
         val payload = decryptedFrame.copyOfRange(pos, totalBodySize)
 
         val ingressMac = ByteArray(secrets.ingressMac.digestSize)
         KeccakDigest(secrets.ingressMac).doFinal(ingressMac, 0)
 
-        val updatedFrameBodyMac = updateMac(secrets.ingressMac, secrets.mac, ingressMac)
+        val updatedFrameBodyMac = frameCodecHelper.updateMac(secrets.ingressMac, secrets.mac, ingressMac)
 
         if (!updatedFrameBodyMac.contentEquals(frameBodyMac)) {
-            println("Frame Body MAC mismatch!")
-            return null
+            throw FrameCodecError.BodyMacMismatch()
         }
 
-        return Frame(type.toInt(), payload)
+        return Frame(type.toInt(), payload, totalFrameSize, contextId)
     }
 
     fun writeFrame(frame: Frame, outputStream: OutputStream) {
-
-        val headBuffer = ByteArray(32)
+        val headBuffer = ByteArray(16)
         val packetType = RLP.encodeInt(frame.type)
         val frameSize = frame.size + packetType.size
-        headBuffer[0] = (frameSize shr 16).toByte()
-        headBuffer[1] = (frameSize shr 8).toByte()
-        headBuffer[2] = frameSize.toByte()
+
+        System.arraycopy(frameCodecHelper.toThreeBytes(frameSize), 0, headBuffer, 0, 3)
 
         val headerDataElements = ArrayList<ByteArray>()
         headerDataElements.add(RLP.encodeInt(0))
@@ -121,42 +97,28 @@ class FrameCodec(private val secrets: Secrets) {
         val headerData = RLP.encodeList(*headerDataElements.toTypedArray())
         System.arraycopy(headerData, 0, headBuffer, 3, headerData.size)
 
-        enc.processBytes(headBuffer, 0, 16, headBuffer, 0)
+        val encryptedHeader = enc.process(headBuffer)
 
-        val headerMac = updateMac(secrets.egressMac, secrets.mac, headBuffer)
-
-        val header = headBuffer.copyOfRange(0, 16) + headerMac //encrypted header + headerMac
+        val headerMac = frameCodecHelper.updateMac(secrets.egressMac, secrets.mac, encryptedHeader)
 
         var frameData = packetType + frame.payload
         if (frameSize % 16 > 0) {
             frameData += ByteArray(16 - frameSize % 16)
         }
 
-        val encryptedFrameData = ByteArray(frameData.size)
-        enc.processBytes(frameData, 0, frameData.size, encryptedFrameData, 0)
-
+        val encryptedFrameData = enc.process(frameData)
         secrets.egressMac.update(encryptedFrameData, 0, encryptedFrameData.size)
 
         val egressMac = ByteArray(secrets.egressMac.digestSize)
         KeccakDigest(secrets.egressMac).doFinal(egressMac, 0)
 
-        val frameMac = updateMac(secrets.egressMac, secrets.mac, egressMac)
+        val frameMac = frameCodecHelper.updateMac(secrets.egressMac, secrets.mac, egressMac)
 
-        frameData = encryptedFrameData + frameMac
-
-        outputStream.write(header)
-        outputStream.write(frameData)
+        outputStream.write(encryptedHeader + headerMac + encryptedFrameData + frameMac)
     }
 
-    private fun updateMac(mac: KeccakDigest, macKey: ByteArray, data: ByteArray): ByteArray {
-        val macDigest = ByteArray(mac.digestSize)
-        KeccakDigest(mac).doFinal(macDigest, 0)
-
-        val encryptedMacDigest = CryptoUtils.encryptAES(macKey, macDigest)
-
-        mac.update(encryptedMacDigest.xor(data), 0, 16)
-        KeccakDigest(mac).doFinal(macDigest, 0)
-
-        return macDigest.copyOfRange(0, 16) //checksum
+    open class FrameCodecError : Exception() {
+        class HeaderMacMismatch : FrameCodecError()
+        class BodyMacMismatch : FrameCodecError()
     }
 }

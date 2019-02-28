@@ -8,6 +8,11 @@ class Frame(var type: Int, var payload: ByteArray) {
     var totalFrameSize = -1
     var contextId = -1
 
+    constructor(type: Int, payload: ByteArray, totalFrameSize: Int, contextId: Int) : this(type, payload) {
+        this.totalFrameSize = totalFrameSize
+        this.contextId = contextId
+    }
+
     init {
         this.size = payload.size
     }
