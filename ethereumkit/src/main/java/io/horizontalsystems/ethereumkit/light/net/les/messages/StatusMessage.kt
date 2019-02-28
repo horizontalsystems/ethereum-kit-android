@@ -38,7 +38,7 @@ class StatusMessage : ILESMessage {
         protocolVersion = (paramsList[0] as RLPList)[1].rlpData?.get(0) ?: 0
         val networkIdBytes = (paramsList[1] as RLPList)[1].rlpData
 
-        networkId = networkIdBytes?.toInt() ?: 0
+        networkId = networkIdBytes.toInt()
         val difficultyBytes = (paramsList[2] as RLPList)[1].rlpData
 
         bestBlockTotalDifficulty = difficultyBytes ?: byteArrayOf()

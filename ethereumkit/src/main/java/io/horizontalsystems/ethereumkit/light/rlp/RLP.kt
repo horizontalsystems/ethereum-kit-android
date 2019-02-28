@@ -430,7 +430,7 @@ object RLP {
 
     fun rlpDecodeInt(elem: RLPElement): Int {
         val b = elem.rlpData
-        return b?.toInt() ?: 0
+        return b.toInt()
     }
 
     fun decodeLong(data: ByteArray, index: Int): Long {

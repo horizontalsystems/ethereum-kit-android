@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.light.crypto
 
-import io.horizontalsystems.ethereumkit.light.ByteUtils
 import io.horizontalsystems.ethereumkit.light.RandomUtils
 import io.horizontalsystems.ethereumkit.light.toBytes
 import org.spongycastle.asn1.sec.SECNamedCurves
@@ -79,7 +78,7 @@ object CryptoUtils {
         val ssig = BigIntegers.asUnsignedByteArray(s)
         System.arraycopy(ssig, 0, ssigPad, ssigPad.size - ssig.size, ssig.size)
 
-        val sigBytes = ByteUtils.merge(rsigPad, ssigPad, byteArrayOf(recId.toByte()))
+        val sigBytes = rsigPad + ssigPad + byteArrayOf(recId.toByte())
 
         return sigBytes
     }
