@@ -10,7 +10,7 @@ import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 
 
-@Database(entities = [EthereumBalance::class, GasPrice::class, LastBlockHeight::class, EthereumTransaction::class], version = 2, exportSchema = true)
+@Database(entities = [EthereumBalance::class, GasPrice::class, LastBlockHeight::class, EthereumTransaction::class], version = 3, exportSchema = true)
 abstract class KitDatabase : RoomDatabase() {
 
     abstract fun balanceDao(): BalanceDao
