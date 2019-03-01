@@ -14,7 +14,7 @@ import org.web3j.crypto.Keys
 import java.util.concurrent.TimeUnit
 
 class ApiBlockchain(
-        private val storage: IStorage,
+        private val storage: IApiStorage,
         private val apiProvider: IApiProvider,
         override val ethereumAddress: String) : IBlockchain {
 
@@ -260,7 +260,7 @@ class ApiBlockchain(
     }
 
     companion object {
-        fun apiBlockchain(storage: IStorage, seed: ByteArray, testMode: Boolean, infuraKey: String, etherscanKey: String, debugPrints: Boolean = false): ApiBlockchain {
+        fun apiBlockchain(storage: IApiStorage, seed: ByteArray, testMode: Boolean, infuraKey: String, etherscanKey: String, debugPrints: Boolean = false): ApiBlockchain {
 
             val hdWallet = HDWallet(seed, if (testMode) 1 else 60)
 

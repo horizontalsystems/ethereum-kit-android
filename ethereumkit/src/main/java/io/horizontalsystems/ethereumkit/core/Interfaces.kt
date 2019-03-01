@@ -1,23 +1,29 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.light.models.BlockHeader
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 
 interface IStorage {
     fun getLastBlockHeight(): Int?
-    fun getGasPriceInWei(): Long?
-
     fun getBalance(address: String): String?
-    fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
+    fun clear()
+}
 
+interface IApiStorage : IStorage {
+    fun getGasPriceInWei(): Long?
+    fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun saveLastBlockHeight(lastBlockHeight: Int)
     fun saveGasPriceInWei(gasPriceInWei: Long)
     fun saveBalance(balance: String, address: String)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
+}
 
-    fun clear()
+interface ISpvStorage : IStorage {
+    fun getLastBlockHeader(): BlockHeader?
+    fun saveBlockHeaders(blockHeaders: List<BlockHeader>)
 }
 
 interface IBlockchain {
