@@ -1,13 +1,10 @@
 package io.horizontalsystems.ethereumkit.models
 
 import android.arch.persistence.room.Entity
-import android.arch.persistence.room.TypeConverters
-import io.horizontalsystems.ethereumkit.core.storage.DatabaseConverters
 import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanTransaction
 import org.web3j.crypto.Keys
 
 @Entity(primaryKeys = ["hash","contractAddress"])
-@TypeConverters(DatabaseConverters::class)
 class EthereumTransaction() {
 
     constructor(etherscanTx: EtherscanTransaction) : this() {
