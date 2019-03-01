@@ -6,10 +6,10 @@ import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import java.math.BigInteger
 
-fun ByteArray.toHexString(): String {
-    return this.joinToString(separator = "") {
+fun ByteArray?.toHexString(): String {
+    return this?.joinToString(separator = "") {
         it.toInt().and(0xff).toString(16).padStart(2, '0')
-    }
+    } ?: ""
 }
 
 @Throws(NumberFormatException::class)
@@ -23,7 +23,7 @@ fun HDWallet.address(): String =
         credentials().address
 
 fun HDWallet.credentials(): Credentials {
-    val accountKey = privateKey(0, HDWallet.Chain.EXTERNAL.ordinal)
+    val accountKey = privateKey(0, 0, HDWallet.Chain.EXTERNAL.ordinal)
     val pubKey = ECKey.pubKeyFromPrivKey(accountKey.privKey, false)
 
     val ecKeyPair = ECKeyPair(accountKey.privKey, BigInteger(1, pubKey.slice(1 until pubKey.size).toByteArray()))

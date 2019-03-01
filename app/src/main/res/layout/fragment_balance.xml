@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="8dp"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                             xmlns:app="http://schemas.android.com/apk/res-auto"
+                                             xmlns:tools="http://schemas.android.com/tools"
+                                             android:layout_width="match_parent"
+                                             android:layout_height="match_parent"
+                                             android:padding="8dp"
     >
 
     <TextView
@@ -29,17 +28,26 @@
         tools:text="100.0"
         />
 
-    <Button
-        android:id="@+id/buttonRefresh"
+    <TextView
+        android:id="@+id/tokenBalanceTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="60dp"
-        android:text="Refresh"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
+        android:text="Token balance:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle"
+        app:layout_constraintTop_toBottomOf="@+id/balanceTitle"
+        />
+
+    <TextView
+        android:id="@+id/tokenBalanceValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="100.0"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toEndOf="@+id/tokenBalanceTitle"
+        app:layout_constraintTop_toTopOf="@+id/tokenBalanceTitle"
         />
 
     <TextView
@@ -50,7 +58,7 @@
         android:text="Fee (in ETH):"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/balanceTitle"
+        app:layout_constraintTop_toBottomOf="@+id/tokenBalanceTitle"
         />
 
     <TextView
@@ -58,7 +66,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text=""
+        android:text="100.0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/feeTitle"
         app:layout_constraintTop_toTopOf="@+id/feeTitle"
@@ -102,10 +110,45 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text="(Synced, Syncing, NotSyncing)"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/kitStateTitle"
         app:layout_constraintTop_toTopOf="@+id/kitStateTitle"
+        tools:text="(Synced, Syncing, NotSyncing)"
+        />
+
+    <TextView
+        android:id="@+id/erc20StateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Erc20State:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle"
+        />
+
+    <TextView
+        android:id="@+id/erc20StateValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        app:layout_constraintStart_toEndOf="@+id/erc20StateTitle"
+        app:layout_constraintTop_toTopOf="@+id/erc20StateTitle"
+        tools:text="(Synced, Syncing, NotSyncing)"
+        />
+
+    <Button
+        android:id="@+id/buttonRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="60dp"
+        android:text="Refresh"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/kitStateTitle"
         />
 
 </android.support.constraint.ConstraintLayout>

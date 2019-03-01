@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample
 
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
+import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -10,13 +11,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import io.horizontalsystems.ethereumkit.R
-import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 
 class TransactionsFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
     private lateinit var transactionsRecyclerView: RecyclerView
+
     private val transactionsAdapter = TransactionsAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,10 +26,16 @@ class TransactionsFragment : Fragment() {
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
 
-            viewModel.transactions.observe(this, Observer {
-                it?.let { transactions ->
+            viewModel.transactions.observe(this, Observer { txs ->
+                txs?.let { transactions ->
                     transactionsAdapter.items = transactions
                     transactionsAdapter.notifyDataSetChanged()
+                }
+            })
+
+            viewModel.lastBlockHeight.observe(this, Observer { height ->
+                height?.let {
+                    transactionsAdapter.lastBlockHeight = height
                 }
             })
         }
@@ -44,11 +51,23 @@ class TransactionsFragment : Fragment() {
         transactionsRecyclerView = view.findViewById(R.id.transactions)
         transactionsRecyclerView.adapter = transactionsAdapter
         transactionsRecyclerView.layoutManager = LinearLayoutManager(context)
+
+        val ethFilter = view.findViewById<TextView>(R.id.ethFilter)
+        val tokenFilter = view.findViewById<TextView>(R.id.tokenFilter)
+
+        ethFilter.setOnClickListener {
+            viewModel.filterTransactions(true)
+        }
+
+        tokenFilter.setOnClickListener {
+            viewModel.filterTransactions(false)
+        }
     }
 }
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    var items = listOf<Transaction>()
+    var items = listOf<TransactionRecord>()
+    var lastBlockHeight: Int = 0
 
     override fun getItemCount() = items.size
 
@@ -57,15 +76,33 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position)
+            is ViewHolderTransaction -> holder.bind(items[position], itemCount - position, lastBlockHeight)
         }
     }
 }
 
-class ViewHolderTransaction(val containerView: View) : RecyclerView.ViewHolder(containerView) {
+class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(transactionInfo: Transaction, index: Int) {
-        summary.text = "#${index} - #${transactionInfo.blockNumber} - From: ${transactionInfo.from}, To: ${transactionInfo.to}, Amount: ${transactionInfo.value}"
+    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Int) {
+        containerView.setBackgroundColor(if (index % 2 == 0)
+            Color.parseColor("#dddddd") else
+            Color.TRANSPARENT
+        )
+
+        var value = """
+            - #$index
+            - From: ${tx.from.address}
+            - To: ${tx.to.address}
+            - Amount: ${tx.amount.stripTrailingZeros()}
+        """
+
+        if (lastBlockHeight > 0)
+            value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it } ?: 0}"
+
+        if (tx.contractAddress.isNotEmpty())
+            value += "\n- Contract: ${tx.contractAddress}"
+
+        summary.text = value.trimIndent()
     }
 }
