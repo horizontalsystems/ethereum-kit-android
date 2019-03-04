@@ -3,10 +3,10 @@ package io.horizontalsystems.ethereumkit
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
-import io.horizontalsystems.ethereumkit.light.core.SpvBlockchain
-import io.horizontalsystems.ethereumkit.light.core.storage.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.State
+import io.horizontalsystems.ethereumkit.spv.core.SPVBlockchain
+import io.horizontalsystems.ethereumkit.spv.core.SPVRoomStorage
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Single
 import org.web3j.utils.Convert
@@ -214,7 +214,7 @@ class EthereumKit(
 
     companion object {
         fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
+            return ethereumKitSpv(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
         }
 
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
@@ -231,8 +231,8 @@ class EthereumKit(
 
         fun ethereumKitSpv(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
 
-            val storage = SpvRoomStorage(context, "ethereumKitSpv-$testMode-$walletId")
-            val blockchain = SpvBlockchain.spvBlockchain(storage, seed, testMode)
+            val storage = SPVRoomStorage(context, "ethereumKitSpv-$testMode-$walletId")
+            val blockchain = SPVBlockchain.spvBlockchain(storage, seed, testMode)
             val addressValidator = AddressValidator()
 
             val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())
