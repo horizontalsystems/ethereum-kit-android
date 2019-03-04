@@ -11,7 +11,7 @@ import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 
 
 @Database(entities = [EthereumBalance::class, GasPrice::class, LastBlockHeight::class, EthereumTransaction::class], version = 3, exportSchema = true)
-abstract class KitDatabase : RoomDatabase() {
+abstract class ApiDatabase : RoomDatabase() {
 
     abstract fun balanceDao(): BalanceDao
     abstract fun gasPriceDao(): GasPriceDao
@@ -20,16 +20,16 @@ abstract class KitDatabase : RoomDatabase() {
 
     companion object {
 
-        @Volatile private var INSTANCE: KitDatabase? = null
+        @Volatile private var INSTANCE: ApiDatabase? = null
 
-        fun getInstance(context: Context, databaseName: String): KitDatabase {
+        fun getInstance(context: Context, databaseName: String): ApiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context, databaseName).also { INSTANCE = it }
             }
         }
 
-        private fun buildDatabase(context: Context, databaseName: String): KitDatabase {
-            return Room.databaseBuilder(context, KitDatabase::class.java, databaseName)
+        private fun buildDatabase(context: Context, databaseName: String): ApiDatabase {
+            return Room.databaseBuilder(context, ApiDatabase::class.java, databaseName)
                     .fallbackToDestructiveMigration()
                     .allowMainThreadQueries()
                     .build()

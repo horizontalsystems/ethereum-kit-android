@@ -2,7 +2,9 @@ package io.horizontalsystems.ethereumkit
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.*
-import io.horizontalsystems.ethereumkit.core.storage.RoomStorage
+import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
+import io.horizontalsystems.ethereumkit.light.core.SpvBlockchain
+import io.horizontalsystems.ethereumkit.light.core.storage.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -217,8 +219,20 @@ class EthereumKit(
 
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
 
-            val storage = RoomStorage("ethereumKit-$testMode-$walletId", context)
+            val storage = ApiRoomStorage("ethereumKit-$testMode-$walletId", context)
             val blockchain = ApiBlockchain.apiBlockchain(storage, seed, testMode, infuraKey, etherscanKey)
+            val addressValidator = AddressValidator()
+
+            val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())
+            blockchain.listener = ethereumKit
+
+            return ethereumKit
+        }
+
+        fun ethereumKitSpv(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
+
+            val storage = SpvRoomStorage(context, "ethereumKitSpv-$testMode-$walletId")
+            val blockchain = SpvBlockchain.spvBlockchain(storage, seed, testMode)
             val addressValidator = AddressValidator()
 
             val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())

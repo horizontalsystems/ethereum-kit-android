@@ -1,16 +1,16 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.content.Context
-import io.horizontalsystems.ethereumkit.core.IStorage
+import io.horizontalsystems.ethereumkit.core.IApiStorage
 import io.horizontalsystems.ethereumkit.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 import io.reactivex.Single
 
-class RoomStorage(databaseName: String, context: Context) : IStorage {
+class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
 
-    private val database: KitDatabase = KitDatabase.getInstance(context, databaseName)
+    private val database: ApiDatabase = ApiDatabase.getInstance(context, databaseName)
 
 
     override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
