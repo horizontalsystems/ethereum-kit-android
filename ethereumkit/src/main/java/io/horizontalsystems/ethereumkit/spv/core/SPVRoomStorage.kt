@@ -29,7 +29,6 @@ class SPVRoomStorage : ISpvStorage {
 
     override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
 
-
         return database.transactionDao().getTransactions()
                 .flatMap { transactionsList ->
                     var transactions = transactionsList

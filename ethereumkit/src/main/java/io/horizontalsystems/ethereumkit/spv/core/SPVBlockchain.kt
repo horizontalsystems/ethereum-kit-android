@@ -6,8 +6,8 @@ import io.horizontalsystems.ethereumkit.core.IBlockchainListener
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.core.address
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.NetworkType
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
+import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.horizontalsystems.ethereumkit.spv.net.PeerGroup
 import io.horizontalsystems.ethereumkit.spv.net.Ropsten
 import io.horizontalsystems.hdwalletkit.HDWallet
@@ -15,8 +15,9 @@ import io.reactivex.Single
 import org.web3j.crypto.Keys
 
 class SPVBlockchain(
-        private val storage: ISpvStorage,
-        override val ethereumAddress: String) : IBlockchain, PeerGroup.Listener {
+        override val ethereumAddress: String,
+        private val network: INetwork,
+        private val storage: ISpvStorage) : IBlockchain, PeerGroup.Listener {
 
     override val gasPriceInWei: Long = 0
     override val gasLimitEthereum: Int = 0
@@ -26,7 +27,7 @@ class SPVBlockchain(
 
     override val blockchainSyncState = EthereumKit.SyncState.Synced
 
-    private val peerGroup: PeerGroup = PeerGroup(Ropsten(), ethereumAddress, storage, this)
+    private val peerGroup: PeerGroup = PeerGroup(network, ethereumAddress, storage, this)
 
     private var started = false
 
@@ -73,12 +74,9 @@ class SPVBlockchain(
 
             val hdWallet = HDWallet(seed, if (testMode) 1 else 60)
 
-            val networkType: NetworkType = if (testMode) NetworkType.Ropsten else NetworkType.MainNet
-
-
             val formattedAddress = Keys.toChecksumAddress(hdWallet.address())
 
-            return SPVBlockchain(storage, formattedAddress)
+            return SPVBlockchain(formattedAddress, Ropsten(), storage)
         }
     }
 }
