@@ -5,7 +5,8 @@ import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
 import io.horizontalsystems.ethereumkit.spv.net.Ropsten
 import org.junit.After
-import org.junit.Assert
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +36,8 @@ class SpvRoomStorageTest {
         blockHeaderDao.insert(blockHeader)
 
         val headerFromDb = blockHeaderDao.getByHashHex(blockHeader.hashHex)
-        Assert.assertNotNull(headerFromDb)
+        assertNotNull(headerFromDb)
+        assertArrayEquals(blockHeader.hashHex, headerFromDb.hashHex)
     }
 
 }
