@@ -214,7 +214,7 @@ class EthereumKit(
 
     companion object {
         fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            return ethereumKitSpv(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
+            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
         }
 
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
