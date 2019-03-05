@@ -3,24 +3,21 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
-import io.horizontalsystems.ethereumkit.spv.net.connection.Connection
-import io.horizontalsystems.ethereumkit.spv.net.connection.IPeerConnection
-import io.horizontalsystems.ethereumkit.spv.net.connection.IPeerConnectionListener
+import io.horizontalsystems.ethereumkit.spv.net.connection.PeerConnection
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
 import java.util.concurrent.Executors
 
-interface IDevP2PPeerListener {
-    fun onConnectionEstablished()
-    fun onDisconnected(error: Throwable?)
-    fun onMessageReceived(message: IMessage)
-}
+class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: Listener) : PeerConnection.Listener {
+    interface Listener {
+        fun onConnectionEstablished()
+        fun onDisconnected(error: Throwable?)
+        fun onMessageReceived(message: IMessage)
+    }
 
-class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: IDevP2PPeerListener) : IPeerConnectionListener {
-
-    private var connection: IPeerConnection = Connection(node, this)
+    private var connection = PeerConnection(node, this)
     private val executor = Executors.newSingleThreadExecutor()
 
     var helloSent = false
@@ -83,7 +80,7 @@ class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val
     }
 
 
-    //-----------IPeerConnectionListener methods------------
+    //-----------PeerConnection.Listener methods------------
 
     override fun connectionKey(): ECKey {
         return key

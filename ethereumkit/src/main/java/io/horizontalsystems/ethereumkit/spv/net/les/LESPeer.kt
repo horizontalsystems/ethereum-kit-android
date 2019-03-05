@@ -7,22 +7,28 @@ import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
-import io.horizontalsystems.ethereumkit.spv.net.devp2p.IDevP2PPeerListener
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 import java.util.*
 
 
-interface IPeerListener {
-    fun connected()
-    fun blocksReceived(blockHeaders: List<BlockHeader>)
-    fun proofReceived(message: ProofsMessage)
-}
+class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: Listener) : DevP2PPeer.Listener {
+    interface Listener {
+        fun connected()
+        fun blocksReceived(blockHeaders: List<BlockHeader>)
+        fun proofReceived(message: ProofsMessage)
+    }
 
-class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
+    companion object {
+        val capability = Capability("les", 2,
+                hashMapOf(0x00 to StatusMessage::class,
+                        0x02 to GetBlockHeadersMessage::class,
+                        0x03 to BlockHeadersMessage::class,
+                        0x0f to GetProofsMessage::class,
+                        0x10 to ProofsMessage::class))
+    }
 
     private val protocolVersion: Byte = 2
-    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, Capability( "les", 2), this)
-
+    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, LESPeer.capability, this)
 
     var statusSent = false
     var statusReceived = false
@@ -92,7 +98,7 @@ class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val no
         devP2PPeer.send(message)
     }
 
-    //-----------IDevP2PPeerListener methods------------
+    //-----------DevP2PPeer.Listener methods------------
 
     override fun onConnectionEstablished() {
         println("Peer -> onConnectionEstablished\n")

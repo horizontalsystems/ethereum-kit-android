@@ -23,25 +23,15 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 
-interface IPeerConnectionListener {
-    fun connectionKey(): ECKey
-    fun onConnectionEstablished()
-    fun onDisconnected(error: Throwable?)
-    fun onMessageReceived(message: IMessage)
-}
+class PeerConnection(private val node: Node, val listener: Listener) : Thread() {
+    interface Listener {
+        fun connectionKey(): ECKey
+        fun onConnectionEstablished()
+        fun onDisconnected(error: Throwable?)
+        fun onMessageReceived(message: IMessage)
+    }
 
-interface IPeerConnection {
-    val listener: IPeerConnectionListener
-    val logName: String
-    fun connect()
-    fun disconnect(error: Throwable?)
-    fun send(message: IMessage)
-    fun register(capabilities: List<Capability>)
-}
-
-class Connection(private val node: Node, override val listener: IPeerConnectionListener) : IPeerConnection, Thread() {
-    override val logName: String = "${node.id}@${node.host}:${node.port}"
-
+    private val logName: String = "${node.id}@${node.host}:${node.port}"
     private val logger = Logger.getLogger("Peer[${node.host}]")
     private val sendingQueue: BlockingQueue<IMessage> = ArrayBlockingQueue(100)
     private val socket = Socket()
@@ -66,22 +56,22 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
         isDaemon = true
     }
 
-    override fun connect() {
+    fun connect() {
         start()
     }
 
-    override fun disconnect(error: Throwable?) {
+    fun disconnect(error: Throwable?) {
         TODO("not implemented")
     }
 
-    override fun send(message: IMessage) {
+    fun send(message: IMessage) {
         println(">>>>> $message\n")
 
         sendingQueue.put(message)
     }
 
-    override fun register(capabilities: List<Capability>) {
-        frameHandler.addCapabilities(capabilities)
+    fun register(capabilities: List<Capability>) {
+        frameHandler.register(capabilities)
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {

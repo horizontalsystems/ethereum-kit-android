@@ -2,25 +2,26 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.spv.net.ILESMessage
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class GetProofsMessage(requestID: Long, blockHash: ByteArray, key: ByteArray, key2: ByteArray = byteArrayOf(), fromLevel: Int = 0) : ILESMessage {
+class GetProofsMessage : IMessage {
 
-    companion object {
-        const val code = 0x0F
+    private var requestID: Long = 0
+    private var proofRequests: List<ProofRequest> = listOf()
+
+    constructor(requestID: Long, blockHash: ByteArray, key: ByteArray, key2: ByteArray = byteArrayOf(), fromLevel: Int = 0) {
+        this.requestID = requestID
+        this.proofRequests = listOf(ProofRequest(blockHash, key, key2, fromLevel))
     }
 
-    private val requestID: Long = requestID
-    private var proofRequests: List<ProofRequest> = listOf(ProofRequest(blockHash, key, key2, fromLevel))
-
-    override var code: Int = Companion.code
+    constructor(payload: ByteArray)
 
     override fun encoded(): ByteArray {
         val reqID = RLP.encodeBigInteger(BigInteger.valueOf(this.requestID))
 
-        val encodedProofs = this.proofRequests.map { it.asRLPEncoded() }
+        val encodedProofs = proofRequests.map { it.asRLPEncoded() }
         val proofsList = RLP.encodeList(*encodedProofs.toTypedArray())
 
         return RLP.encodeList(reqID, proofsList)
