@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.connection
 
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
-import io.horizontalsystems.ethereumkit.spv.net.les.Peer
+import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.StatusMessage
 import org.junit.Assert.*
 import org.junit.Before
@@ -79,7 +79,7 @@ class FrameHandlerTest {
         val helloMessage = HelloMessage(peerId = ByteArray(64) { 0 }, port = 0, capabilities = listOf())
         val statusMessage = StatusMessage(2, 3, ByteArray(0), ByteArray(0), ByteArray(0), BigInteger.valueOf(0))
 
-        frameHandler.register(listOf(Peer.capability))
+        frameHandler.register(listOf(LESPeer.capability))
 
         frameHandler.addFrame(Frame(type = 0, payload = helloMessage.encoded()))
         frameHandler.addFrame(Frame(type = 0x10, payload = statusMessage.encoded()))

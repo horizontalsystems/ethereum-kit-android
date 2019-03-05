@@ -18,7 +18,7 @@ interface IPeerListener {
     fun proofReceived(message: ProofsMessage)
 }
 
-class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
+class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
 
     companion object {
         val capability = Capability("les", 2,
@@ -30,7 +30,7 @@ class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val no
     }
 
     private val protocolVersion: Byte = 2
-    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, Peer.capability, this)
+    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, LESPeer.capability, this)
 
     var statusSent = false
     var statusReceived = false

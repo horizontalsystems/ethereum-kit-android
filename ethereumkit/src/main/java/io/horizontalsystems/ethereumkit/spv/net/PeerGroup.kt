@@ -6,7 +6,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.les.IPeerListener
-import io.horizontalsystems.ethereumkit.spv.net.les.Peer
+import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.ProofsMessage
 import java.math.BigInteger
 
@@ -16,7 +16,7 @@ class PeerGroup(network: INetwork, address: String, private val storage: ISpvSto
         fun onUpdate(state: AccountState)
     }
 
-    private var syncPeer: Peer
+    private var syncPeer: LESPeer
     private var address: ByteArray
 
     init {
@@ -45,7 +45,7 @@ class PeerGroup(network: INetwork, address: String, private val storage: ISpvSto
             network.checkpointBlock
         }
 
-        syncPeer = Peer(network, lastBlockHeader, myKey, node, this)
+        syncPeer = LESPeer(network, lastBlockHeader, myKey, node, this)
     }
 
 
