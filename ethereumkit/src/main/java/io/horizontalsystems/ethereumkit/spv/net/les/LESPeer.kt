@@ -7,18 +7,16 @@ import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
-import io.horizontalsystems.ethereumkit.spv.net.devp2p.IDevP2PPeerListener
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 import java.util.*
 
 
-interface IPeerListener {
-    fun connected()
-    fun blocksReceived(blockHeaders: List<BlockHeader>)
-    fun proofReceived(message: ProofsMessage)
-}
-
-class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
+class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: Listener) : DevP2PPeer.Listener {
+    interface Listener {
+        fun connected()
+        fun blocksReceived(blockHeaders: List<BlockHeader>)
+        fun proofReceived(message: ProofsMessage)
+    }
 
     companion object {
         val capability = Capability("les", 2,
@@ -100,7 +98,7 @@ class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val
         devP2PPeer.send(message)
     }
 
-    //-----------IDevP2PPeerListener methods------------
+    //-----------DevP2PPeer.Listener methods------------
 
     override fun onConnectionEstablished() {
         println("Peer -> onConnectionEstablished\n")
