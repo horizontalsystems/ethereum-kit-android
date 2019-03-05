@@ -3,21 +3,21 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
-import io.horizontalsystems.ethereumkit.spv.net.connection.Connection
+import io.horizontalsystems.ethereumkit.spv.net.connection.PeerConnection
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
 import java.util.concurrent.Executors
 
-class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: Listener) : Connection.Listener {
+class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: Listener) : PeerConnection.Listener {
     interface Listener {
         fun onConnectionEstablished()
         fun onDisconnected(error: Throwable?)
         fun onMessageReceived(message: IMessage)
     }
 
-    private var connection = Connection(node, this)
+    private var connection = PeerConnection(node, this)
     private val executor = Executors.newSingleThreadExecutor()
 
     var helloSent = false
@@ -80,7 +80,7 @@ class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val
     }
 
 
-    //-----------Connection.Listener methods------------
+    //-----------PeerConnection.Listener methods------------
 
     override fun connectionKey(): ECKey {
         return key

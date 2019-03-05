@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 
-class Connection(private val node: Node, val listener: Listener) : Thread() {
+class PeerConnection(private val node: Node, val listener: Listener) : Thread() {
     interface Listener {
         fun connectionKey(): ECKey
         fun onConnectionEstablished()
