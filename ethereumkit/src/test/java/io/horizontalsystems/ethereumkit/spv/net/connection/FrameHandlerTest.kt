@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
-import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
+import io.horizontalsystems.ethereumkit.spv.net.les.Peer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.StatusMessage
 import org.junit.Assert.*
 import org.junit.Before
@@ -20,7 +20,6 @@ class FrameHandlerTest {
 
     @Test
     fun getMessage() {
-
         val message = HelloMessage(peerId = ByteArray(64) { 0 }, port = 0, capabilities = listOf())
 
         frameHandler.addFrame(Frame(type = 0, payload = message.encoded()))
@@ -62,13 +61,11 @@ class FrameHandlerTest {
         val helloMessage = HelloMessage(peerId = ByteArray(64) { 0 }, port = 0, capabilities = listOf())
         val pingMessage = PingMessage()
 
-        frameHandler.addFrame(Frame(type = helloMessage.code, payload = helloMessage.encoded()))
-        frameHandler.addFrame(Frame(type = pingMessage.code, payload = pingMessage.encoded()))
-
+        frameHandler.addFrame(Frame(type = 0, payload = helloMessage.encoded()))
+        frameHandler.addFrame(Frame(type = 2, payload = pingMessage.encoded()))
 
         val firstMessage = frameHandler.getMessage()
         val secondMessage = frameHandler.getMessage()
-
 
         assertEquals(helloMessage::class, firstMessage!!::class)
         assertEquals(pingMessage::class, secondMessage!!::class)
@@ -82,10 +79,10 @@ class FrameHandlerTest {
         val helloMessage = HelloMessage(peerId = ByteArray(64) { 0 }, port = 0, capabilities = listOf())
         val statusMessage = StatusMessage(2, 3, ByteArray(0), ByteArray(0), ByteArray(0), BigInteger.valueOf(0))
 
-        frameHandler.addCapabilities(listOf(Capability("les", 2)))
+        frameHandler.register(listOf(Peer.capability))
 
-        frameHandler.addFrame(Frame(type = helloMessage.code, payload = helloMessage.encoded()))
-        frameHandler.addFrame(Frame(type = statusMessage.code + 0x10, payload = statusMessage.encoded()))
+        frameHandler.addFrame(Frame(type = 0, payload = helloMessage.encoded()))
+        frameHandler.addFrame(Frame(type = 0x10, payload = statusMessage.encoded()))
 
         val firstMessage = frameHandler.getMessage()
         val secondMessage = frameHandler.getMessage()

@@ -1,20 +1,32 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.net.ILESMessage
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class GetBlockHeadersMessage(val requestID: Long,
-                             val blockHash: ByteArray,
-                             val skip: Int = 0,
-                             val reverse: Int = 0) : ILESMessage {
+class GetBlockHeadersMessage : IMessage {
+
     companion object {
-        const val code = 0x02
         const val maxHeaders = 50
     }
 
-    override var code: Int = Companion.code
+    private var requestID: Long = 0
+    private var blockHash: ByteArray = byteArrayOf()
+    private var skip: Int = 0
+    private var reverse: Int = 0
+
+    constructor(requestID: Long,
+                blockHash: ByteArray,
+                skip: Int = 0,
+                reverse: Int = 0) {
+        this.requestID = requestID
+        this.blockHash = blockHash
+        this.skip = skip
+        this.reverse = reverse
+    }
+
+    constructor(payload: ByteArray)
 
     override fun encoded(): ByteArray {
         val reqID = RLP.encodeBigInteger(BigInteger.valueOf(this.requestID))

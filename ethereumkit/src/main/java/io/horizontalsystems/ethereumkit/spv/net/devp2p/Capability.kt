@@ -1,7 +1,9 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import kotlin.reflect.KClass
 
-data class Capability(val name: String, val version: Byte) : Comparable<Capability> {
+data class Capability(val name: String, val version: Byte, val packetTypesMap: Map<Int, KClass<out IMessage>> = mapOf()) : Comparable<Capability> {
 
     companion object {
         val LES = "les"

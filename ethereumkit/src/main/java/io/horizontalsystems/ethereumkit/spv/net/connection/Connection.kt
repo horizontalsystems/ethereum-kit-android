@@ -81,7 +81,7 @@ class Connection(private val node: Node, override val listener: IPeerConnectionL
     }
 
     override fun register(capabilities: List<Capability>) {
-        frameHandler.addCapabilities(capabilities)
+        frameHandler.register(capabilities)
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {

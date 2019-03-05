@@ -20,9 +20,17 @@ interface IPeerListener {
 
 class Peer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: IPeerListener) : IDevP2PPeerListener {
 
-    private val protocolVersion: Byte = 2
-    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, Capability( "les", 2), this)
+    companion object {
+        val capability = Capability("les", 2,
+                hashMapOf(0x00 to StatusMessage::class,
+                        0x02 to GetBlockHeadersMessage::class,
+                        0x03 to BlockHeadersMessage::class,
+                        0x0f to GetProofsMessage::class,
+                        0x10 to ProofsMessage::class))
+    }
 
+    private val protocolVersion: Byte = 2
+    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, Peer.capability, this)
 
     var statusSent = false
     var statusReceived = false

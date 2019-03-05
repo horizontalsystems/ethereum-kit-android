@@ -1,10 +1,11 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.spv.net.IP2PMessage
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 
-class PingMessage : IP2PMessage {
-    override var code = PingMessage.code
+class PingMessage() : IMessage {
+
+    constructor(payload: ByteArray) : this()
 
     override fun encoded(): ByteArray {
         return payload
@@ -15,7 +16,6 @@ class PingMessage : IP2PMessage {
     }
 
     companion object {
-        const val code = 0x02
         val payload = "C0".hexStringToByteArray()
     }
 }

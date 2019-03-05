@@ -1,20 +1,17 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
+import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.net.ILESMessage
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
-import io.horizontalsystems.ethereumkit.spv.core.toLong
 
-class BlockHeadersMessage(payload: ByteArray) : ILESMessage {
+class BlockHeadersMessage(payload: ByteArray) : IMessage {
 
-    companion object {
-        const val code = 0x03
-    }
-
-    var requestID: Long = 0
-    var bv: Long = 0
+    private var requestID: Long = 0
+    private var bv: Long = 0
     var headers: MutableList<BlockHeader> = mutableListOf()
+        private set
 
     init {
         val paramsList = RLP.decode2(payload)[0] as RLPList
@@ -26,8 +23,6 @@ class BlockHeadersMessage(payload: ByteArray) : ILESMessage {
             headers.add(BlockHeader(rlpData))
         }
     }
-
-    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         return byteArrayOf()

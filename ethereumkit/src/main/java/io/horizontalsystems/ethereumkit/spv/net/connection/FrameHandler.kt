@@ -1,37 +1,37 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
-import io.horizontalsystems.ethereumkit.spv.net.ILESMessage
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
-import io.horizontalsystems.ethereumkit.spv.net.IP2PMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
-import io.horizontalsystems.ethereumkit.spv.net.les.messages.BlockHeadersMessage
-import io.horizontalsystems.ethereumkit.spv.net.les.messages.ProofsMessage
-import io.horizontalsystems.ethereumkit.spv.net.les.messages.StatusMessage
+import kotlin.reflect.KClass
 
 class FrameHandler {
-
     companion object {
-        const val P2P_MAX_MESSAGE_CODE = 0x0F
-        const val LES_MAX_MESSAGE_CODE = 0x15 /*TxStatus*/
+        private val devP2PPacketTypesMap: MutableMap<Int, KClass<out IMessage>> = hashMapOf(
+                0x00 to HelloMessage::class,
+                0x01 to DisconnectMessage::class,
+                0x02 to PingMessage::class,
+                0x03 to PongMessage::class)
+
+        private const val devP2PMaxMessageCode = 0x10
     }
 
-    private val offsets: MutableMap<String, Int> = hashMapOf()
     private var frames: MutableList<Frame> = mutableListOf()
-    private val capabilities: MutableList<Capability> = mutableListOf()
+    private var packetTypesMap: MutableMap<Int, KClass<out IMessage>> = devP2PPacketTypesMap
 
-    fun addCapabilities(caps: List<Capability>) {
-        capabilities.addAll(caps)
+    fun register(capabilities: List<Capability>) {
+        packetTypesMap = devP2PPacketTypesMap
 
-        var offset = P2P_MAX_MESSAGE_CODE + 1
-        capabilities.sortedBy { it.name }.forEach { cap ->
-            if (cap.name == Capability.LES) {
-                offsets[Capability.LES] = offset
-                offset += LES_MAX_MESSAGE_CODE + 1
+        var offset = devP2PMaxMessageCode
+
+        capabilities.sortedBy { it.name }.forEach { capability ->
+            capability.packetTypesMap.entries.forEach { entry ->
+                packetTypesMap[offset + entry.key] = entry.value
             }
+            offset = capability.packetTypesMap.keys.max() ?: offset
         }
     }
 
@@ -44,47 +44,24 @@ class FrameHandler {
 
         frames.remove(frame)
 
-        var message: IMessage? = null
+        val messageClass = packetTypesMap[frame.type]
+                ?: throw FrameHandlerError.UnknownMessageType()
 
-        try {
-            if (frame.type in 0..P2P_MAX_MESSAGE_CODE) {
-                message = when (frame.type) {
-                    HelloMessage.code -> HelloMessage(frame.payload)
-                    DisconnectMessage.code -> DisconnectMessage(frame.payload)
-                    PingMessage.code -> PingMessage()
-                    PongMessage.code -> PongMessage()
-                    else -> null
-                }
-            }
-
-            val lesOffset = offsets[Capability.LES]
-            if (lesOffset != null && frame.type - lesOffset in 0..LES_MAX_MESSAGE_CODE) {
-                message = when (frame.type - lesOffset) {
-                    StatusMessage.code -> StatusMessage(frame.payload)
-                    BlockHeadersMessage.code -> BlockHeadersMessage(frame.payload)
-                    ProofsMessage.code -> ProofsMessage(frame.payload)
-                    else -> null
-                }
-            }
-
+        return try {
+            messageClass.java.getConstructor(ByteArray::class.java).newInstance(frame.payload)
         } catch (ex: Exception) {
             throw FrameHandlerError.InvalidPayload()
         }
-
-        return message ?: throw FrameHandlerError.UnknownMessageType()
     }
 
     fun getFrames(message: IMessage): List<Frame> {
-        val frames: MutableList<Frame> = mutableListOf()
-
-        when (message) {
-            is IP2PMessage -> frames.add(Frame(message.code, message.encoded()))
-            is ILESMessage -> {
-                val frameType = message.code + (offsets[Capability.LES] ?: 0)
-                frames.add(Frame(frameType, message.encoded()))
+        val frames = mutableListOf<Frame>()
+        for (entry in packetTypesMap.entries) {
+            if (entry.value == message::class) {
+                frames.add(Frame(entry.key, message.encoded()))
+                break
             }
         }
-
         return frames
     }
 

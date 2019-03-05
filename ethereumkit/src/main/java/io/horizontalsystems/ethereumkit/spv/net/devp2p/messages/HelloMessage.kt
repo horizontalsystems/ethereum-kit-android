@@ -1,24 +1,19 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.net.IP2PMessage
+import io.horizontalsystems.ethereumkit.spv.core.toInt
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
-import io.horizontalsystems.ethereumkit.spv.core.toInt
 import java.util.*
 
-class HelloMessage : IP2PMessage {
-
-    companion object {
-        const val code = 0x00
-    }
-
+class HelloMessage : IMessage {
     private var peerId: ByteArray = byteArrayOf()
     private var port: Int = 0
     private var p2pVersion: Byte = 4
     private var clientId: String = "EthereumKit"
-    private var capabilities: List<Capability>
+    private var capabilities: List<Capability> = listOf()
 
     constructor(peerId: ByteArray, port: Int, capabilities: List<Capability>) {
         this.peerId = peerId
@@ -56,8 +51,6 @@ class HelloMessage : IP2PMessage {
 
         peerId = paramsList[4].rlpData ?: byteArrayOf()
     }
-
-    override var code: Int = HelloMessage.code
 
     override fun encoded(): ByteArray {
         val p2pVersion = RLP.encodeByte(this.p2pVersion)

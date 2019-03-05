@@ -5,23 +5,18 @@ import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
-import io.horizontalsystems.ethereumkit.spv.net.ILESMessage
+import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.les.TrieNode
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class ProofsMessage(data: ByteArray) : ILESMessage {
-
-    companion object {
-        const val code = 0x10
-    }
+class ProofsMessage(data: ByteArray) : IMessage {
 
     var requestID: Long = 0
     var bv: Long = 0
     var nodes: MutableList<TrieNode> = mutableListOf()
 
     init {
-
         val params = RLP.decode2(data)[0] as RLPList
         this.requestID = params[0].rlpData.toLong()
         this.bv = params[1].rlpData.toLong()
@@ -76,8 +71,6 @@ class ProofsMessage(data: ByteArray) : ILESMessage {
 
         return AccountState(address, nonce, balance, storageRoot, codeHash)
     }
-
-    override var code: Int = Companion.code
 
     override fun encoded(): ByteArray {
         return ByteArray(0)
