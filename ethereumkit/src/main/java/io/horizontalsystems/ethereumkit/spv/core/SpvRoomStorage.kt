@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.spv.core.room.SPVDatabase
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
-class SPVRoomStorage : ISpvStorage {
+class SpvRoomStorage : ISpvStorage {
 
     val database: SPVDatabase
 

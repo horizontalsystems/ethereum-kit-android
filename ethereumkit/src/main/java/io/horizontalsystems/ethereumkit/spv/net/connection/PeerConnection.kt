@@ -131,10 +131,8 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
                     } else {
                         frameHandler.addFrame(frame)
 
-                        var message = frameHandler.getMessage()
-                        while (message != null) {
+                        frameHandler.getMessage()?.let { message ->
                             listener.onMessageReceived(message)
-                            message = frameHandler.getMessage()
                         }
                     }
                 }

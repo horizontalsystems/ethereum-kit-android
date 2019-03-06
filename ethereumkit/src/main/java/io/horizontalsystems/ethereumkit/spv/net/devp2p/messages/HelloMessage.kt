@@ -9,11 +9,11 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.util.*
 
 class HelloMessage : IMessage {
-    private var peerId: ByteArray = byteArrayOf()
-    private var port: Int = 0
-    private var p2pVersion: Byte = 4
-    private var clientId: String = "EthereumKit"
-    private var capabilities: List<Capability> = listOf()
+    var peerId: ByteArray = byteArrayOf()
+    var port: Int = 0
+    var p2pVersion: Byte = 4
+    var clientId: String = "EthereumKit"
+    var capabilities: List<Capability> = listOf()
 
     constructor(peerId: ByteArray, port: Int, capabilities: List<Capability>) {
         this.peerId = peerId

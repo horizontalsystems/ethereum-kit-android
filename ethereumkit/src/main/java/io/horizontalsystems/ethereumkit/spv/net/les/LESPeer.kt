@@ -11,7 +11,12 @@ import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 import java.util.*
 
 
-class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val node: Node, val listener: Listener) : DevP2PPeer.Listener {
+class LESPeer(private val network: INetwork,
+              private val bestBlock: BlockHeader,
+              private val key: ECKey,
+              private val node: Node,
+              private val listener: Listener) : DevP2PPeer.Listener {
+
     interface Listener {
         fun connected()
         fun blocksReceived(blockHeaders: List<BlockHeader>)
@@ -30,8 +35,8 @@ class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val
     private val protocolVersion: Byte = 2
     private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, LESPeer.capability, this)
 
-    var statusSent = false
-    var statusReceived = false
+    private var statusSent = false
+    private var statusReceived = false
 
     private fun proceedHandshake() {
         if (statusSent) {
@@ -64,8 +69,24 @@ class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val
 
     private fun handle(message: StatusMessage) {
         statusReceived = true
+        try {
+            validatePeer(message)
+            proceedHandshake()
+        } catch (error: Exception) {
+            disconnect(error)
+        }
+    }
 
-        proceedHandshake()
+    private fun validatePeer(message: StatusMessage) {
+        check(message.networkId == network.id && message.genesisHash.contentEquals(network.genesisBlockHash)) {
+            throw LESPeerError.WrongNetwork()
+        }
+        check(message.bestBlockHeight > 0.toBigInteger()) {
+            throw LESPeerError.InvalidBestBlockHeight()
+        }
+        check(message.bestBlockHeight >= bestBlock.height) {
+            throw LESPeerError.ExpiredBestBlockHeight()
+        }
     }
 
     private fun handle(message: BlockHeadersMessage) {
@@ -112,5 +133,11 @@ class LESPeer(val network: INetwork, val bestBlock: BlockHeader, key: ECKey, val
     override fun onMessageReceived(message: IMessage) {
         println("Peer -> onMessageReceived\n")
         handle(message)
+    }
+
+    open class LESPeerError : Exception() {
+        class WrongNetwork : LESPeerError()
+        class InvalidBestBlockHeight : LESPeerError()
+        class ExpiredBestBlockHeight : LESPeerError()
     }
 }
