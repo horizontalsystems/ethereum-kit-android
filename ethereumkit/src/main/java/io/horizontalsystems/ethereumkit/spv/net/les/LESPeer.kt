@@ -33,10 +33,15 @@ class LESPeer(private val network: INetwork,
     }
 
     private val protocolVersion: Byte = 2
-    private var devP2PPeer: DevP2PPeer = DevP2PPeer(key, node, LESPeer.capability, this)
+    private val devP2PPeer: DevP2PPeer
 
     private var statusSent = false
     private var statusReceived = false
+
+    init {
+        devP2PPeer = DevP2PPeer.getInstance(node, key, capability)
+        devP2PPeer.listener = this
+    }
 
     private fun proceedHandshake() {
         if (statusSent) {

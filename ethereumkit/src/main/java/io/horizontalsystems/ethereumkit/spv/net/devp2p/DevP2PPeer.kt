@@ -2,78 +2,51 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.MessageFactory
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.connection.PeerConnection
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
-import java.util.concurrent.Executors
 
-class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val listener: Listener) : PeerConnection.Listener {
+class DevP2PPeer(val connection: PeerConnection,
+                 val key: ECKey, val capability: Capability,
+                 val messageFactory: MessageFactory) : PeerConnection.Listener {
     interface Listener {
         fun onConnectionEstablished()
         fun onDisconnected(error: Throwable?)
         fun onMessageReceived(message: IMessage)
     }
 
-    private var connection = PeerConnection(node, this)
-    private val executor = Executors.newSingleThreadExecutor()
-
-    var helloSent = false
-    var helloReceived = false
-
-    private fun proceedHandshake() {
-        if (helloSent) {
-            if (helloReceived) {
-                connection.register(listOf(capability))
-                listener.onConnectionEstablished()
-                return
-            }
-        } else {
-            var myNodeId = key.publicKeyPoint.getEncoded(false)
-            myNodeId = myNodeId.copyOfRange(1, myNodeId.size)
-            val helloMessage = HelloMessage(myNodeId, 30303, listOf(capability))
-            connection.send(helloMessage)
-            helloSent = true
-        }
-    }
-
-    private fun handle(message: IMessage) {
-        println("<<<<<<< $message \n")
-        when (message) {
-            is HelloMessage -> handle(message)
-            is DisconnectMessage -> handle(message)
-            is PingMessage -> handle(message)
-            is PongMessage -> handle(message)
-            else -> listener.onMessageReceived(message)
-        }
-    }
+    var listener: Listener? = null
 
     private fun handle(message: HelloMessage) {
-        helloReceived = true
         try {
             validatePeer(message)
-            proceedHandshake()
+            connection.register(listOf(capability))
+            listener?.onConnectionEstablished()
         } catch (error: Exception) {
             disconnect(error)
         }
     }
 
-    private fun validatePeer(message: HelloMessage) {
-        check(message.capabilities.contains(capability)) {
-            throw DevP2PPeerError.PeerDoesNotSupportCapability(capability.name)
-        }
-    }
-
     private fun handle(message: DisconnectMessage) {
+        connection.disconnect(DisconnectMessageReceived())
     }
 
     private fun handle(message: PingMessage) {
-        connection.send(PongMessage())
+        connection.send(messageFactory.pongMessage())
     }
 
     private fun handle(message: PongMessage) {
+
+    }
+
+    private fun validatePeer(message: HelloMessage) {
+        check(message.capabilities.contains(capability)) {
+            throw PeerDoesNotSupportCapability()
+        }
     }
 
     //------------------Public methods----------------------
@@ -90,29 +63,44 @@ class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val
         connection.send(message)
     }
 
-
     //-----------PeerConnection.Listener methods------------
-
-    override fun connectionKey(): ECKey {
-        return key
-    }
 
     override fun onConnectionEstablished() {
         println("DevP2PPeer -> onConnectionEstablished \n")
-        proceedHandshake()
+
+        val helloMessage = messageFactory.helloMessage(key, listOf(capability))
+        connection.send(helloMessage)
     }
 
     override fun onDisconnected(error: Throwable?) {
         println("DevP2PPeer -> onDisconnected")
+
+        listener?.onDisconnected(error)
     }
 
     override fun onMessageReceived(message: IMessage) {
-        executor.execute {
-            handle(message)
+        println("<<<<<<< $message \n")
+        when (message) {
+            is HelloMessage -> handle(message)
+            is DisconnectMessage -> handle(message)
+            is PingMessage -> handle(message)
+            is PongMessage -> handle(message)
+            else -> listener?.onMessageReceived(message)
         }
     }
 
-    open class DevP2PPeerError(message: String) : Exception(message) {
-        class PeerDoesNotSupportCapability(capability: String) : DevP2PPeerError(capability)
+    open class DevP2PPeerError : Exception()
+    class PeerDoesNotSupportCapability : DevP2PPeerError()
+    class DisconnectMessageReceived : DevP2PPeerError()
+
+    companion object {
+
+        fun getInstance(node: Node, key: ECKey, capability: Capability): DevP2PPeer {
+            val connection = PeerConnection(key, node)
+            val devP2PPeer = DevP2PPeer(connection, key, capability, MessageFactory())
+            connection.listener = devP2PPeer
+
+            return devP2PPeer
+        }
     }
 }
