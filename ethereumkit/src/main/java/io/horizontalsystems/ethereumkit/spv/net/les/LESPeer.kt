@@ -69,8 +69,24 @@ class LESPeer(private val network: INetwork,
 
     private fun handle(message: StatusMessage) {
         statusReceived = true
+        try {
+            validatePeer(message)
+            proceedHandshake()
+        } catch (error: Exception) {
+            disconnect(error)
+        }
+    }
 
-        proceedHandshake()
+    private fun validatePeer(message: StatusMessage) {
+        check(message.networkId == network.id && message.genesisHash.contentEquals(network.genesisBlockHash)) {
+            throw LESPeerError.WrongNetwork()
+        }
+        check(message.bestBlockHeight > 0.toBigInteger()) {
+            throw LESPeerError.InvalidBestBlockHeight()
+        }
+        check(message.bestBlockHeight >= bestBlock.height) {
+            throw LESPeerError.ExpiredBestBlockHeight()
+        }
     }
 
     private fun handle(message: BlockHeadersMessage) {
@@ -117,5 +133,11 @@ class LESPeer(private val network: INetwork,
     override fun onMessageReceived(message: IMessage) {
         println("Peer -> onMessageReceived\n")
         handle(message)
+    }
+
+    open class LESPeerError : Exception() {
+        class WrongNetwork : LESPeerError()
+        class InvalidBestBlockHeight : LESPeerError()
+        class ExpiredBestBlockHeight : LESPeerError()
     }
 }

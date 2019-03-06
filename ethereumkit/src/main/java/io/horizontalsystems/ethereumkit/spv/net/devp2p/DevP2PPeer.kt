@@ -52,7 +52,18 @@ class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val
 
     private fun handle(message: HelloMessage) {
         helloReceived = true
-        proceedHandshake()
+        try {
+            validatePeer(message)
+            proceedHandshake()
+        } catch (error: Exception) {
+            disconnect(error)
+        }
+    }
+
+    private fun validatePeer(message: HelloMessage) {
+        check(message.capabilities.contains(capability)) {
+            throw DevP2PPeerError.PeerDoesNotSupportCapability(capability.name)
+        }
     }
 
     private fun handle(message: DisconnectMessage) {
@@ -99,7 +110,9 @@ class DevP2PPeer(val key: ECKey, val node: Node, val capability: Capability, val
         executor.execute {
             handle(message)
         }
+    }
 
-
+    open class DevP2PPeerError(message: String) : Exception(message) {
+        class PeerDoesNotSupportCapability(capability: String) : DevP2PPeerError(capability)
     }
 }
