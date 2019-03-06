@@ -23,13 +23,14 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 
-class PeerConnection(private val node: Node, val listener: Listener) : Thread() {
+class PeerConnection(private val connectionKey: ECKey, private val node: Node) : Thread() {
     interface Listener {
-        fun connectionKey(): ECKey
         fun onConnectionEstablished()
         fun onDisconnected(error: Throwable?)
         fun onMessageReceived(message: IMessage)
     }
+
+    var listener: Listener? = null
 
     private val logName: String = "${node.id}@${node.host}:${node.port}"
     private val logger = Logger.getLogger("Peer[${node.host}]")
@@ -61,7 +62,8 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
     }
 
     fun disconnect(error: Throwable?) {
-        TODO("not implemented")
+        println("disconnect with error: $error")
+        isRunning = false
     }
 
     fun send(message: IMessage) {
@@ -75,7 +77,7 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {
-        handshake = EncryptionHandshake(listener.connectionKey(), remotePublicKeyPoint, CryptoUtils, RandomHelper)
+        handshake = EncryptionHandshake(connectionKey, remotePublicKeyPoint, CryptoUtils, RandomHelper)
 
         val authMessagePackets = handshake.createAuthMessage()
 
@@ -113,7 +115,7 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
 
             frameCodec = FrameCodec(secrets)
 
-            listener.onConnectionEstablished()
+            listener?.onConnectionEstablished()
 
             while (isRunning) {
 
@@ -132,7 +134,7 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
                         frameHandler.addFrame(frame)
 
                         frameHandler.getMessage()?.let { message ->
-                            listener.onMessageReceived(message)
+                            listener?.onMessageReceived(message)
                         }
                     }
                 }
@@ -140,20 +142,20 @@ class PeerConnection(private val node: Node, val listener: Listener) : Thread() 
 
         } catch (e: SocketTimeoutException) {
             logger.warning("Socket timeout exception: ${e.message}")
-            listener.onDisconnected(e)
+            listener?.onDisconnected(e)
         } catch (e: ConnectException) {
             logger.warning("Connect exception: ${e.message}")
-            listener.onDisconnected(e)
+            listener?.onDisconnected(e)
         } catch (e: IOException) {
             logger.warning("IOException: ${e.message}")
-            listener.onDisconnected(e)
+            listener?.onDisconnected(e)
         } catch (e: InterruptedException) {
             logger.warning("Peer connection thread interrupted: ${e.message}")
-            listener.onDisconnected(e)
+            listener?.onDisconnected(e)
         } catch (e: Exception) {
             e.printStackTrace()
             logger.warning("Peer connection exception: ${e.message}")
-            listener.onDisconnected(e)
+            listener?.onDisconnected(e)
         } finally {
             isRunning = false
 
