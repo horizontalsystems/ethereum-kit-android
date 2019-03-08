@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
 import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
@@ -20,11 +21,14 @@ class LESPeerTest {
 
     private val devP2PPeer = Mockito.mock(DevP2PPeer::class.java)
     private val messageFactory = Mockito.mock(MessageFactory::class.java)
-    private val statusHandler = Mockito.mock(StatusHandler::class.java)
+    private val lesPeervalidator = Mockito.mock(LESPeerValidator::class.java)
     private val listener = Mockito.mock(LESPeer.Listener::class.java)
+    private val network = Mockito.mock(INetwork::class.java)
+    private val lastBlockHeader = Mockito.mock(BlockHeader::class.java)
+
     @Before
     fun setUp() {
-        lesPeer = LESPeer(devP2PPeer, messageFactory, statusHandler)
+        lesPeer = LESPeer(devP2PPeer, messageFactory, lesPeervalidator, network, lastBlockHeader)
         lesPeer.listener = listener
     }
 
@@ -69,14 +73,10 @@ class LESPeerTest {
     }
 
     @Test
-    fun onConnectionEstablished() {
+    fun didConnect() {
         val statusMessage = Mockito.mock(StatusMessage::class.java)
-        val network = Mockito.mock(INetwork::class.java)
-        val blockHeader = Mockito.mock(BlockHeader::class.java)
 
-        whenever(statusHandler.network).thenReturn(network)
-        whenever(statusHandler.blockHeader).thenReturn(blockHeader)
-        whenever(messageFactory.statusMessage(network, blockHeader)).thenReturn(statusMessage)
+        whenever(messageFactory.statusMessage(network, lastBlockHeader)).thenReturn(statusMessage)
 
         lesPeer.didConnect()
 
@@ -84,10 +84,10 @@ class LESPeerTest {
     }
 
     @Test
-    fun onStatusReceived() {
+    fun didReceive_statusMessage() {
         val statusMessage = Mockito.mock(StatusMessage::class.java)
 
-        whenever(statusHandler.validate(statusMessage)).then { }
+        whenever(lesPeervalidator.validate(statusMessage, network, lastBlockHeader)).then { }
 
         lesPeer.didReceive(statusMessage)
 
@@ -95,19 +95,21 @@ class LESPeerTest {
     }
 
     @Test
-    fun onStatusReceived_invalid() {
+    fun didReceive_invalidStatusMessage() {
         val statusMessage = Mockito.mock(StatusMessage::class.java)
         val validationError = Exception()
 
-        whenever(statusHandler.validate(statusMessage)).thenThrow(validationError)
+        whenever(lesPeervalidator.validate(statusMessage, network, lastBlockHeader)).thenThrow(validationError)
 
         lesPeer.didReceive(statusMessage)
 
         verify(devP2PPeer).disconnect(validationError)
+        verifyNoMoreInteractions(devP2PPeer)
+        verifyNoMoreInteractions(listener)
     }
 
     @Test
-    fun onBlockHeadersReceived() {
+    fun didReceive_blockHeadersMessage() {
         val blockHeadersMessage = Mockito.mock(BlockHeadersMessage::class.java)
         val blockHeaders = mutableListOf<BlockHeader>()
 

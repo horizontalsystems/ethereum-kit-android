@@ -4,10 +4,10 @@ import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.StatusMessage
 
-class StatusHandler(val network: INetwork, val blockHeader: BlockHeader) {
+class LESPeerValidator {
 
     @Throws(Exception::class)
-    fun validate(message: StatusMessage) {
+    fun validate(message: StatusMessage, network: INetwork, blockHeader: BlockHeader) {
         check(message.networkId == network.id && message.genesisHash.contentEquals(network.genesisBlockHash)) {
             throw LESPeer.LESPeerError.WrongNetwork()
         }

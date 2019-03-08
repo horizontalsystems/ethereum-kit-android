@@ -13,7 +13,9 @@ import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 
 class LESPeer(private val devP2PPeer: DevP2PPeer,
               private val messageFactory: MessageFactory,
-              private val statusHandler: StatusHandler) : DevP2PPeer.Listener {
+              private val lesPeerValidator: LESPeerValidator,
+              private val network: INetwork,
+              private val lastBlockHeader: BlockHeader) : DevP2PPeer.Listener {
 
     interface Listener {
         fun didConnect()
@@ -33,7 +35,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     private fun handle(message: StatusMessage) {
         try {
-            statusHandler.validate(message)
+            lesPeerValidator.validate(message, network, lastBlockHeader)
             listener?.didConnect()
         } catch (error: Exception) {
             disconnect(error)
@@ -72,7 +74,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     override fun didConnect() {
         println("LESPeer -> didConnect\n")
-        val statusMessage = messageFactory.statusMessage(statusHandler.network, statusHandler.blockHeader)
+        val statusMessage = messageFactory.statusMessage(network, lastBlockHeader)
         devP2PPeer.send(statusMessage)
     }
 
@@ -101,8 +103,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
         fun getInstance(network: INetwork, bestBlock: BlockHeader, key: ECKey, node: Node): LESPeer {
             val devP2PPeer = DevP2PPeer.getInstance(key, node, listOf(capability))
-            val statusHandler = StatusHandler(network, bestBlock)
-            val lesPeer = LESPeer(devP2PPeer, MessageFactory(), statusHandler)
+            val lesPeer = LESPeer(devP2PPeer, MessageFactory(), LESPeerValidator(), network, bestBlock)
 
             devP2PPeer.listener = lesPeer
 
