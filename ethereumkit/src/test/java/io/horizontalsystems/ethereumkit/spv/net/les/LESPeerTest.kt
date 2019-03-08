@@ -78,7 +78,7 @@ class LESPeerTest {
         whenever(statusHandler.blockHeader).thenReturn(blockHeader)
         whenever(messageFactory.statusMessage(network, blockHeader)).thenReturn(statusMessage)
 
-        lesPeer.onConnectionEstablished()
+        lesPeer.didConnect()
 
         verify(devP2PPeer).send(statusMessage)
     }
@@ -89,9 +89,9 @@ class LESPeerTest {
 
         whenever(statusHandler.validate(statusMessage)).then { }
 
-        lesPeer.onMessageReceived(statusMessage)
+        lesPeer.didReceive(statusMessage)
 
-        verify(listener).connected()
+        verify(listener).didConnect()
     }
 
     @Test
@@ -101,7 +101,7 @@ class LESPeerTest {
 
         whenever(statusHandler.validate(statusMessage)).thenThrow(validationError)
 
-        lesPeer.onMessageReceived(statusMessage)
+        lesPeer.didReceive(statusMessage)
 
         verify(devP2PPeer).disconnect(validationError)
     }
@@ -113,8 +113,8 @@ class LESPeerTest {
 
         whenever(blockHeadersMessage.headers).thenReturn(blockHeaders)
 
-        lesPeer.onMessageReceived(blockHeadersMessage)
+        lesPeer.didReceive(blockHeadersMessage)
 
-        verify(listener).blocksReceived(blockHeaders)
+        verify(listener).didReceive(blockHeaders)
     }
 }

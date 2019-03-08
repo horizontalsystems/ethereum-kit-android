@@ -16,9 +16,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
               private val statusHandler: StatusHandler) : DevP2PPeer.Listener {
 
     interface Listener {
-        fun connected()
-        fun blocksReceived(blockHeaders: List<BlockHeader>)
-        fun proofReceived(message: ProofsMessage)
+        fun didConnect()
+        fun didReceive(blockHeaders: List<BlockHeader>)
+        fun didReceive(message: ProofsMessage)
     }
 
     var listener: Listener? = null
@@ -34,18 +34,18 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
     private fun handle(message: StatusMessage) {
         try {
             statusHandler.validate(message)
-            listener?.connected()
+            listener?.didConnect()
         } catch (error: Exception) {
             disconnect(error)
         }
     }
 
     private fun handle(message: BlockHeadersMessage) {
-        listener?.blocksReceived(message.headers)
+        listener?.didReceive(message.headers)
     }
 
     private fun handle(message: ProofsMessage) {
-        listener?.proofReceived(message)
+        listener?.didReceive(message)
     }
 
     //------------------Public methods----------------------
@@ -70,18 +70,18 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     //-----------DevP2PPeer.Listener methods------------
 
-    override fun onConnectionEstablished() {
-        println("Peer -> onConnectionEstablished\n")
+    override fun didConnect() {
+        println("LESPeer -> didConnect\n")
         val statusMessage = messageFactory.statusMessage(statusHandler.network, statusHandler.blockHeader)
         devP2PPeer.send(statusMessage)
     }
 
-    override fun onDisconnected(error: Throwable?) {
-        println("Peer -> onDisconnected")
+    override fun didDisconnect(error: Throwable?) {
+        println("LESPeer -> didDisconnect")
     }
 
-    override fun onMessageReceived(message: IMessage) {
-        println("Peer -> onMessageReceived\n")
+    override fun didReceive(message: IMessage) {
+        println("LESPeer -> didReceive")
         handle(message)
     }
 
@@ -100,9 +100,10 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
                         0x10 to ProofsMessage::class))
 
         fun getInstance(network: INetwork, bestBlock: BlockHeader, key: ECKey, node: Node): LESPeer {
-            val devP2PPeer = DevP2PPeer.getInstance(node, key, capability)
+            val devP2PPeer = DevP2PPeer.getInstance(key, node, listOf(capability))
             val statusHandler = StatusHandler(network, bestBlock)
             val lesPeer = LESPeer(devP2PPeer, MessageFactory(), statusHandler)
+
             devP2PPeer.listener = lesPeer
 
             return lesPeer
