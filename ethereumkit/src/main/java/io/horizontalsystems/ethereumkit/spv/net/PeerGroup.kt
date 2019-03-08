@@ -43,7 +43,8 @@ class PeerGroup(network: INetwork,
             network.checkpointBlock
         }
 
-        syncPeer = LESPeer(network, lastBlockHeader, connectionKey, node, this)
+        syncPeer = LESPeer.getInstance(network, lastBlockHeader, connectionKey, node)
+        syncPeer.listener = this
     }
 
 
@@ -59,7 +60,7 @@ class PeerGroup(network: INetwork,
 
     private fun syncBlocks() {
         storage.getLastBlockHeader()?.let {
-            syncPeer.downloadBlocksFrom(it)
+            syncPeer.requestBlockHeadersFrom(it.hashHex)
         }
     }
 
@@ -77,7 +78,7 @@ class PeerGroup(network: INetwork,
             println("blocks synced!\n")
 
             storage.getLastBlockHeader()?.let { lastBlock ->
-                syncPeer.getBalance(address, lastBlock.hashHex)
+                syncPeer.requestProofs(address, lastBlock.hashHex)
             }
 
             return
