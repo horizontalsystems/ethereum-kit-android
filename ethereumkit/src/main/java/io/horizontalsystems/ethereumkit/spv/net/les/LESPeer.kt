@@ -87,11 +87,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         handle(message)
     }
 
-    open class LESPeerError : Exception() {
-        class WrongNetwork : LESPeerError()
-        class InvalidBestBlockHeight : LESPeerError()
-        class ExpiredBestBlockHeight : LESPeerError()
-    }
+    open class LESPeerError : Exception()
+    class WrongNetwork : LESPeerError()
+    class ExpiredBestBlockHeight : LESPeerError()
 
     companion object {
         val capability = Capability("les", 2,

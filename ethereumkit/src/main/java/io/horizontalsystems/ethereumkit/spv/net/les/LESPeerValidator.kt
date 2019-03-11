@@ -9,13 +9,10 @@ class LESPeerValidator {
     @Throws(Exception::class)
     fun validate(message: StatusMessage, network: INetwork, blockHeader: BlockHeader) {
         check(message.networkId == network.id && message.genesisHash.contentEquals(network.genesisBlockHash)) {
-            throw LESPeer.LESPeerError.WrongNetwork()
-        }
-        check(message.bestBlockHeight > 0.toBigInteger()) {
-            throw LESPeer.LESPeerError.InvalidBestBlockHeight()
+            throw LESPeer.WrongNetwork()
         }
         check(message.bestBlockHeight >= blockHeader.height) {
-            throw LESPeer.LESPeerError.ExpiredBestBlockHeight()
+            throw LESPeer.ExpiredBestBlockHeight()
         }
     }
 }
