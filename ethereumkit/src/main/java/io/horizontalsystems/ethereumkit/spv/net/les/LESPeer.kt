@@ -1,26 +1,26 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
+import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
-import io.horizontalsystems.ethereumkit.spv.net.MessageFactory
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 
-
 class LESPeer(private val devP2PPeer: DevP2PPeer,
-              private val messageFactory: MessageFactory,
-              private val lesPeerValidator: LESPeerValidator,
               private val network: INetwork,
-              private val lastBlockHeader: BlockHeader) : DevP2PPeer.Listener {
+              private val lastBlockHeader: BlockHeader,
+              private val randomHelper: RandomHelper,
+              private val requestHolder: LESPeerRequestHolder = LESPeerRequestHolder()) : DevP2PPeer.Listener {
 
     interface Listener {
         fun didConnect()
-        fun didReceive(blockHeaders: List<BlockHeader>)
-        fun didReceive(message: ProofsMessage)
+        fun didReceive(blockHeaders: List<BlockHeader>, blockHash: ByteArray)
+        fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader)
     }
 
     var listener: Listener? = null
@@ -34,20 +34,43 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
     }
 
     private fun handle(message: StatusMessage) {
-        try {
-            lesPeerValidator.validate(message, network, lastBlockHeader)
-            listener?.didConnect()
-        } catch (error: Exception) {
-            disconnect(error)
+        check(message.protocolVersion == LESPeer.capability.version) {
+            throw InvalidProtocolVersion()
         }
+
+        check(message.networkId == network.id) {
+            throw WrongNetwork()
+        }
+
+        check(message.genesisHash.contentEquals(network.genesisBlockHash)) {
+            throw WrongNetwork()
+        }
+
+        check(message.bestBlockHeight >= lastBlockHeader.height) {
+            throw ExpiredBestBlockHeight()
+        }
+
+        listener?.didConnect()
     }
 
     private fun handle(message: BlockHeadersMessage) {
-        listener?.didReceive(message.headers)
+        val request = requestHolder.removeBlockHeaderRequest(message.requestID)
+
+        checkNotNull(request) {
+            throw UnexpectedMessage()
+        }
+
+        listener?.didReceive(message.headers, request.blockHash)
     }
 
     private fun handle(message: ProofsMessage) {
-        listener?.didReceive(message)
+        val request = requestHolder.removeAccountStateRequest(message.requestID)
+
+        checkNotNull(request) {
+            throw UnexpectedMessage()
+        }
+
+        listener?.didReceive(request.getAccountState(message), request.address, request.blockHeader)
     }
 
     //------------------Public methods----------------------
@@ -60,13 +83,19 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         devP2PPeer.disconnect(error)
     }
 
-    fun requestBlockHeadersFrom(blockHash: ByteArray) {
-        val message = messageFactory.getBlockHeadersMessage(blockHash)
+    fun requestBlockHeaders(blockHash: ByteArray) {
+        val requestId = randomHelper.randomLong()
+        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHash), requestId)
+
+        val message = GetBlockHeadersMessage(requestId, blockHash)
         devP2PPeer.send(message)
     }
 
-    fun requestProofs(address: ByteArray, blockHash: ByteArray) {
-        val message = messageFactory.getProofsMessage(address, blockHash)
+    fun requestAccountState(address: ByteArray, blockHeader: BlockHeader) {
+        val requestId = randomHelper.randomLong()
+        requestHolder.setAccountStateRequest(AccountStateRequest(address, blockHeader), requestId)
+
+        val message = GetProofsMessage(requestId, blockHeader.hashHex, address)
         devP2PPeer.send(message)
     }
 
@@ -74,22 +103,29 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     override fun didConnect() {
         println("LESPeer -> didConnect\n")
-        val statusMessage = messageFactory.statusMessage(network, lastBlockHeader)
+        val statusMessage = StatusMessage(
+                protocolVersion = capability.version,
+                networkId = network.id,
+                genesisHash = network.genesisBlockHash,
+                bestBlockTotalDifficulty = lastBlockHeader.totalDifficulty,
+                bestBlockHash = lastBlockHeader.hashHex,
+                bestBlockHeight = lastBlockHeader.height)
+
         devP2PPeer.send(statusMessage)
     }
 
     override fun didDisconnect(error: Throwable?) {
-        println("LESPeer -> didDisconnect")
+        println("LESPeer -> didDisconnect: $error")
     }
 
     override fun didReceive(message: IMessage) {
         println("LESPeer -> didReceive")
-        handle(message)
+        try {
+            handle(message)
+        } catch (error: Exception) {
+            disconnect(error)
+        }
     }
-
-    open class LESPeerError : Exception()
-    class WrongNetwork : LESPeerError()
-    class ExpiredBestBlockHeight : LESPeerError()
 
     companion object {
         val capability = Capability("les", 2,
@@ -101,12 +137,22 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
         fun getInstance(network: INetwork, bestBlock: BlockHeader, key: ECKey, node: Node): LESPeer {
             val devP2PPeer = DevP2PPeer.getInstance(key, node, listOf(capability))
-            val lesPeer = LESPeer(devP2PPeer, MessageFactory(), LESPeerValidator(), network, bestBlock)
-
+            val lesPeer = LESPeer(devP2PPeer, network, bestBlock, RandomHelper)
             devP2PPeer.listener = lesPeer
 
             return lesPeer
         }
 
     }
+
+    open class LESPeerError : Exception()
+
+    open class LESPeerConsistencyError : Exception()
+    class UnexpectedMessage : LESPeerConsistencyError()
+
+    open class LESPeerValidationError : LESPeerError()
+    class InvalidProtocolVersion : LESPeerValidationError()
+    class WrongNetwork : LESPeerValidationError()
+    class ExpiredBestBlockHeight : LESPeerValidationError()
+
 }

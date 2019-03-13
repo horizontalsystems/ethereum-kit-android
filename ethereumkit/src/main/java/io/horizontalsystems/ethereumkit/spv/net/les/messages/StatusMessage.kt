@@ -10,12 +10,12 @@ import java.math.BigInteger
 
 class StatusMessage : IMessage {
 
-    var protocolVersion: Byte = 0
-    var networkId: Int = 0
-    var genesisHash: ByteArray = byteArrayOf()
-    var bestBlockTotalDifficulty: ByteArray = byteArrayOf()
-    var bestBlockHash: ByteArray = byteArrayOf()
-    var bestBlockHeight: BigInteger = BigInteger.ZERO
+    val protocolVersion: Byte
+    val networkId: Int
+    val genesisHash: ByteArray
+    val bestBlockTotalDifficulty: ByteArray
+    val bestBlockHash: ByteArray
+    val bestBlockHeight: BigInteger
 
     constructor(protocolVersion: Byte, networkId: Int,
                 genesisHash: ByteArray, bestBlockTotalDifficulty: ByteArray,

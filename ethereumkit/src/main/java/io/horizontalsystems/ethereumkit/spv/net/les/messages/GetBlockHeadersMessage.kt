@@ -11,8 +11,8 @@ class GetBlockHeadersMessage : IMessage {
         const val maxHeaders = 50
     }
 
-    private var requestID: Long = 0
-    private var blockHash: ByteArray = byteArrayOf()
+    var requestID: Long = 0
+    var blockHash: ByteArray = byteArrayOf()
     private var skip: Int = 0
     private var reverse: Int = 0
 

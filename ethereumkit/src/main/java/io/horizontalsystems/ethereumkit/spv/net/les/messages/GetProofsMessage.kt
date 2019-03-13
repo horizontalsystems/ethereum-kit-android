@@ -8,8 +8,8 @@ import java.math.BigInteger
 
 class GetProofsMessage : IMessage {
 
-    private var requestID: Long = 0
-    private var proofRequests: List<ProofRequest> = listOf()
+    var requestID: Long = 0
+    var proofRequests: List<ProofRequest> = listOf()
 
     constructor(requestID: Long, blockHash: ByteArray, key: ByteArray, key2: ByteArray = byteArrayOf(), fromLevel: Int = 0) {
         this.requestID = requestID
@@ -31,22 +31,17 @@ class GetProofsMessage : IMessage {
         return "GetProofs [requestID: $requestID; proofRequests: [${proofRequests.map { it.toString() }.joinToString(separator = ",")}]]"
     }
 
-    class ProofRequest(blockHash: ByteArray, key: ByteArray, key2: ByteArray, fromLevel: Int) {
+    class ProofRequest(val blockHash: ByteArray, val key: ByteArray, val key2: ByteArray, val fromLevel: Int) {
 
-        private val blockHash: ByteArray
-        private val keyHash: ByteArray
+        private val keyHash: ByteArray = CryptoUtils.sha3(key)
         private val key2Hash: ByteArray
-        private val fromLevel: Int
 
         init {
-            this.blockHash = blockHash
-            this.keyHash = CryptoUtils.sha3(key)
             if (key2.isNotEmpty()) {
                 this.key2Hash = CryptoUtils.sha3(key2)
             } else {
                 this.key2Hash = key2
             }
-            this.fromLevel = fromLevel
         }
 
         fun asRLPEncoded(): ByteArray {
