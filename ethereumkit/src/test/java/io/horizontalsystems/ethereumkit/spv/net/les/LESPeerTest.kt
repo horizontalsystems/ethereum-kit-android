@@ -27,7 +27,7 @@ class LESPeerTest : Spek({
     val protocolVersion = LESPeer.capability.version
     val networkId = 1
     val genesisBlockHash = ByteArray(32) { 1 }
-    val bestBlockTotalDifficulty = ByteArray(32) { 2 }
+    val bestBlockTotalDifficulty = BigInteger("12345")
     val bestBlockHash = ByteArray(32) { 3 }
     val bestBlockHeight = BigInteger.valueOf(100)
 
@@ -75,7 +75,7 @@ class LESPeerTest : Spek({
                         this.protocolVersion == protocolVersion &&
                         this.networkId == networkId &&
                         Arrays.equals(this.genesisHash, genesisBlockHash) &&
-                        Arrays.equals(this.bestBlockTotalDifficulty, bestBlockTotalDifficulty) &&
+                        this.bestBlockTotalDifficulty == bestBlockTotalDifficulty &&
                         Arrays.equals(this.bestBlockHash, bestBlockHash) &&
                         this.bestBlockHeight == bestBlockHeight
             })
@@ -193,7 +193,7 @@ class LESPeerTest : Spek({
                     lesPeer.didReceive(blockHeadersMessage)
                 }
 
-                it("it disconnects with UnexpectedMessage exception") {
+                it("disconnects with UnexpectedMessage exception") {
                     verify(devP2PPeer).disconnect(argThat { this is LESPeer.UnexpectedMessage })
                 }
 
@@ -239,13 +239,30 @@ class LESPeerTest : Spek({
                     lesPeer.didReceive(proofsMessage)
                 }
 
-                it("it disconnects with UnexpectedMessage exception") {
+                it("disconnects with UnexpectedMessage exception") {
                     verify(devP2PPeer).disconnect(argThat { this is LESPeer.UnexpectedMessage })
                 }
 
                 it("does not notify listener") {
                     verifyNoMoreInteractions(listener)
                 }
+            }
+        }
+
+        context("when message is AnnounceMessage") {
+            val announceMessage = mock(AnnounceMessage::class.java)
+            val blockHash = ByteArray(32) { 1 }
+            val blockHeight = BigInteger("1234")
+
+            beforeEach {
+                whenever(announceMessage.blockHash).thenReturn(blockHash)
+                whenever(announceMessage.blockHeight).thenReturn(blockHeight)
+
+                lesPeer.didReceive(announceMessage)
+            }
+
+            it("notifies the listener") {
+                verify(listener).didAnnounce(blockHash, blockHeight)
             }
         }
     }

@@ -10,6 +10,7 @@ import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
+import java.math.BigInteger
 
 class LESPeer(private val devP2PPeer: DevP2PPeer,
               private val network: INetwork,
@@ -21,6 +22,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         fun didConnect()
         fun didReceive(blockHeaders: List<BlockHeader>, blockHash: ByteArray)
         fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader)
+        fun didAnnounce(blockHash: ByteArray, blockHeight: BigInteger)
     }
 
     var listener: Listener? = null
@@ -30,6 +32,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
             is StatusMessage -> handle(message)
             is BlockHeadersMessage -> handle(message)
             is ProofsMessage -> handle(message)
+            is AnnounceMessage -> handle(message)
         }
     }
 
@@ -71,6 +74,10 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         }
 
         listener?.didReceive(request.getAccountState(message), request.address, request.blockHeader)
+    }
+
+    private fun handle(message: AnnounceMessage) {
+        listener?.didAnnounce(message.blockHash, message.blockHeight)
     }
 
     //------------------Public methods----------------------
@@ -119,7 +126,6 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
     }
 
     override fun didReceive(message: IMessage) {
-        println("LESPeer -> didReceive")
         try {
             handle(message)
         } catch (error: Exception) {
@@ -130,6 +136,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
     companion object {
         val capability = Capability("les", 2,
                 hashMapOf(0x00 to StatusMessage::class,
+                        0x01 to AnnounceMessage::class,
                         0x02 to GetBlockHeadersMessage::class,
                         0x03 to BlockHeadersMessage::class,
                         0x0f to GetProofsMessage::class,

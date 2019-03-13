@@ -13,12 +13,12 @@ class StatusMessage : IMessage {
     val protocolVersion: Byte
     val networkId: Int
     val genesisHash: ByteArray
-    val bestBlockTotalDifficulty: ByteArray
+    val bestBlockTotalDifficulty: BigInteger
     val bestBlockHash: ByteArray
     val bestBlockHeight: BigInteger
 
     constructor(protocolVersion: Byte, networkId: Int,
-                genesisHash: ByteArray, bestBlockTotalDifficulty: ByteArray,
+                genesisHash: ByteArray, bestBlockTotalDifficulty: BigInteger,
                 bestBlockHash: ByteArray, bestBlockHeight: BigInteger) {
         this.protocolVersion = protocolVersion
         this.networkId = networkId
@@ -35,9 +35,8 @@ class StatusMessage : IMessage {
         val networkIdBytes = (paramsList[1] as RLPList)[1].rlpData
 
         networkId = networkIdBytes.toInt()
-        val difficultyBytes = (paramsList[2] as RLPList)[1].rlpData
 
-        bestBlockTotalDifficulty = difficultyBytes ?: byteArrayOf()
+        bestBlockTotalDifficulty = (paramsList[2] as RLPList)[1].rlpData.toBigInteger()
         bestBlockHash = (paramsList[3] as RLPList)[1].rlpData ?: byteArrayOf()
         bestBlockHeight = (paramsList[4] as RLPList)[1].rlpData.toBigInteger()
         genesisHash = (paramsList[5] as RLPList)[1].rlpData ?: byteArrayOf()
@@ -46,7 +45,7 @@ class StatusMessage : IMessage {
     override fun encoded(): ByteArray {
         val protocolVersion = RLP.encodeList(RLP.encodeString("protocolVersion"), RLP.encodeByte(this.protocolVersion))
         val networkId = RLP.encodeList(RLP.encodeString("networkId"), RLP.encodeInt(this.networkId))
-        val totalDifficulty = RLP.encodeList(RLP.encodeString("headTd"), RLP.encodeElement(this.bestBlockTotalDifficulty))
+        val totalDifficulty = RLP.encodeList(RLP.encodeString("headTd"), RLP.encodeBigInteger(this.bestBlockTotalDifficulty))
         val bestHash = RLP.encodeList(RLP.encodeString("headHash"), RLP.encodeElement(this.bestBlockHash))
         val bestNum = RLP.encodeList(RLP.encodeString("headNum"), RLP.encodeBigInteger(this.bestBlockHeight))
         val genesisHash = RLP.encodeList(RLP.encodeString("genesisHash"), RLP.encodeElement(this.genesisHash))
@@ -57,7 +56,7 @@ class StatusMessage : IMessage {
 
     override fun toString(): String {
         return "Status [protocolVersion: $protocolVersion; networkId: $networkId; " +
-                "totalDifficulty: ${bestBlockTotalDifficulty.toHexString()}; " +
+                "totalDifficulty: $bestBlockTotalDifficulty; " +
                 "bestHash: ${bestBlockHash.toHexString()}; bestNum: $bestBlockHeight; " +
                 "genesisHash: ${genesisHash.toHexString()}]"
     }

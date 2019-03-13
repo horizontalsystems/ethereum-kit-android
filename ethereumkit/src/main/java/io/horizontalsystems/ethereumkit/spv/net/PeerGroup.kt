@@ -6,6 +6,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
+import java.math.BigInteger
 
 class PeerGroup(network: INetwork,
                 storage: ISpvStorage,
@@ -90,5 +91,9 @@ class PeerGroup(network: INetwork,
     override fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader) {
         listener.onUpdate(accountState)
         println(accountState)
+    }
+
+    override fun didAnnounce(blockHash: ByteArray, blockHeight: BigInteger) {
+
     }
 }
