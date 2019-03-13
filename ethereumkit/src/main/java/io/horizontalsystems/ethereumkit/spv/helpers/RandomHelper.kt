@@ -7,6 +7,7 @@ import org.spongycastle.crypto.params.ECKeyGenerationParameters
 import org.spongycastle.crypto.params.ECPrivateKeyParameters
 import org.spongycastle.crypto.params.ECPublicKeyParameters
 import java.security.SecureRandom
+import java.util.*
 
 object RandomHelper {
     fun randomECKey(): ECKey {
@@ -32,5 +33,9 @@ object RandomHelper {
     fun randomBytes(lengthRange: IntRange): ByteArray {
         val length = SecureRandom().nextInt(lengthRange.last) + lengthRange.first
         return randomBytes(length)
+    }
+
+    fun randomLong(): Long {
+        return Math.abs(Random().nextLong())
     }
 }

@@ -8,12 +8,13 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
 class BlockHeadersMessage(payload: ByteArray) : IMessage {
 
-    private var requestID: Long = 0
+    var requestID: Long = 0
     private var bv: Long = 0
-    var headers: MutableList<BlockHeader> = mutableListOf()
+    var headers: List<BlockHeader> = listOf()
         private set
 
     init {
+        val headers = mutableListOf<BlockHeader>()
         val paramsList = RLP.decode2(payload)[0] as RLPList
         this.requestID = paramsList[0].rlpData.toLong()
         this.bv = paramsList[1].rlpData.toLong()
@@ -22,6 +23,7 @@ class BlockHeadersMessage(payload: ByteArray) : IMessage {
             val rlpData = payloadList[i] as RLPList
             headers.add(BlockHeader(rlpData))
         }
+        this.headers = headers
     }
 
     override fun encoded(): ByteArray {

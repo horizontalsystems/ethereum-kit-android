@@ -6,7 +6,6 @@ import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
-import io.horizontalsystems.ethereumkit.spv.net.les.messages.ProofsMessage
 
 class PeerGroup(network: INetwork,
                 storage: ISpvStorage,
@@ -60,7 +59,7 @@ class PeerGroup(network: INetwork,
 
     private fun syncBlocks() {
         storage.getLastBlockHeader()?.let {
-            syncPeer.requestBlockHeadersFrom(it.hashHex)
+            syncPeer.requestBlockHeaders(it.hashHex)
         }
     }
 
@@ -71,14 +70,14 @@ class PeerGroup(network: INetwork,
         syncBlocks()
     }
 
-    override fun didReceive(blockHeaders: List<BlockHeader>) {
+    override fun didReceive(blockHeaders: List<BlockHeader>, blockHash: ByteArray) {
         println("PeerGroup -> didReceive\n")
 
         if (blockHeaders.size <= 1) {
             println("blocks synced!\n")
 
             storage.getLastBlockHeader()?.let { lastBlock ->
-                syncPeer.requestProofs(address, lastBlock.hashHex)
+                syncPeer.requestAccountState(address, lastBlock)
             }
 
             return
@@ -88,18 +87,8 @@ class PeerGroup(network: INetwork,
         syncBlocks()
     }
 
-    override fun didReceive(message: ProofsMessage) {
-        println("PeerGroup -> didReceive\n")
-
-        storage.getLastBlockHeader()?.let { lastBlock ->
-            try {
-                val state = message.getValidatedState(lastBlock.stateRoot, address)
-                listener.onUpdate(state)
-                println(state)
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-                println("proof error: $ex")
-            }
-        }
+    override fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader) {
+        listener.onUpdate(accountState)
+        println(accountState)
     }
 }
