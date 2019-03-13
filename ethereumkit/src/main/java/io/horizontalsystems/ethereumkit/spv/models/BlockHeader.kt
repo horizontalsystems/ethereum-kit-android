@@ -22,7 +22,7 @@ class BlockHeader {
 
     @PrimaryKey
     val hashHex: ByteArray
-    var totalDifficulty: ByteArray = byteArrayOf() // Scalar value corresponding to the sum of difficulty values of all previous blocks
+    var totalDifficulty: BigInteger = BigInteger.ZERO // Scalar value corresponding to the sum of difficulty values of all previous blocks
     val parentHash: ByteArray         // 256-bit Keccak-256 hash of parent block
     val unclesHash: ByteArray         // 256-bit Keccak-256 hash of uncles portion of this block
     val coinbase: ByteArray           // 160-bit address for fees collected from successful mining
@@ -48,7 +48,7 @@ class BlockHeader {
 
     constructor(
             hashHex: ByteArray,
-            totalDifficulty: ByteArray, // Scalar value corresponding to the sum of difficulty values of all previous blocks
+            totalDifficulty: BigInteger, // Scalar value corresponding to the sum of difficulty values of all previous blocks
             parentHash: ByteArray,         // 256-bit Keccak-256 hash of parent block
             unclesHash: ByteArray,         // 256-bit Keccak-256 hash of uncles portion of this block
             coinbase: ByteArray,           // 160-bit address for fees collected from successful mining

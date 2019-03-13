@@ -13,7 +13,7 @@ class Ropsten : INetwork {
 
     override val checkpointBlock =
             BlockHeader(hashHex = "8e979e196f08a06ecd3e7bbbf83b387a5e429b43a6694df7b01b9402a272eec6".hexStringToByteArray(),
-                    totalDifficulty = "18284610994619994".hexStringToByteArray(),
+                    totalDifficulty = BigInteger("18284610994619994"),
                     parentHash = "91690d0990e80aa73341926434746bb532194204d81b0736cc5f147a60c0824f".hexStringToByteArray(),
                     unclesHash = "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".hexStringToByteArray(),
                     coinbase = "b17fc44dd79d21cd7f4d8c9686c98ae9039b3909".hexStringToByteArray(),

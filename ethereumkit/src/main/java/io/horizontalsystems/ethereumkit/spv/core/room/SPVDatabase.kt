@@ -7,7 +7,7 @@ import android.content.Context
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 
-@Database(entities = [BlockHeader::class, EthereumTransaction::class], version = 2, exportSchema = true)
+@Database(entities = [BlockHeader::class, EthereumTransaction::class], version = 3, exportSchema = true)
 abstract class SPVDatabase : RoomDatabase() {
 
     abstract fun blockHeaderDao(): BlockHeaderDao
