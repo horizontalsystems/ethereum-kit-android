@@ -6,9 +6,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.spv.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
-import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import org.spongycastle.math.ec.ECPoint
 import java.io.IOException
 import java.io.InputStream
@@ -23,18 +21,18 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 
 
-class PeerConnection(private val connectionKey: ECKey, private val node: Node) : Thread() {
+class Connection(private val connectionKey: ECKey, private val node: Node) : Thread() {
     interface Listener {
-        fun onConnectionEstablished()
-        fun onDisconnected(error: Throwable?)
-        fun onMessageReceived(message: IMessage)
+        fun didConnect()
+        fun didDisconnect(error: Throwable?)
+        fun didReceive(frame: Frame)
     }
 
     var listener: Listener? = null
 
     private val logName: String = "${node.id}@${node.host}:${node.port}"
     private val logger = Logger.getLogger("Peer[${node.host}]")
-    private val sendingQueue: BlockingQueue<IMessage> = ArrayBlockingQueue(100)
+    private val sendingQueue: BlockingQueue<Frame> = ArrayBlockingQueue(100)
     private val socket = Socket()
 
     @Volatile
@@ -42,7 +40,6 @@ class PeerConnection(private val connectionKey: ECKey, private val node: Node) :
 
     private lateinit var handshake: EncryptionHandshake
     private lateinit var frameCodec: FrameCodec
-    private val frameHandler: FrameHandler = FrameHandler()
 
     private val remotePublicKeyPoint: ECPoint
             by lazy {
@@ -66,14 +63,8 @@ class PeerConnection(private val connectionKey: ECKey, private val node: Node) :
         isRunning = false
     }
 
-    fun send(message: IMessage) {
-        println(">>>>> $message\n")
-
-        sendingQueue.put(message)
-    }
-
-    fun register(capabilities: List<Capability>) {
-        frameHandler.register(capabilities)
+    fun send(frame: Frame) {
+        sendingQueue.put(frame)
     }
 
     private fun initiateHandshake(outputStream: OutputStream) {
@@ -107,7 +98,7 @@ class PeerConnection(private val connectionKey: ECKey, private val node: Node) :
 
         try {
 
-            logger.info("Socket ${node.host} connected.")
+            logger.info("Socket ${node.host} didConnect.")
 
             initiateHandshake(outputStream)
 
@@ -115,47 +106,42 @@ class PeerConnection(private val connectionKey: ECKey, private val node: Node) :
 
             frameCodec = FrameCodec(secrets)
 
-            listener?.onConnectionEstablished()
+            listener?.didConnect()
 
             while (isRunning) {
 
-                val msg = sendingQueue.poll(1, TimeUnit.SECONDS)
-                if (isRunning && msg != null) {
-                    frameHandler.getFrames(msg).forEach { frame ->
-                        frameCodec.writeFrame(frame, outputStream)
-                    }
+                val frameToSend = sendingQueue.poll(1, TimeUnit.SECONDS)
+                if (isRunning && frameToSend != null) {
+                    frameCodec.writeFrame(frameToSend, outputStream)
                 }
 
                 while (isRunning && inputStream.available() > 0) {
-                    val frame = frameCodec.readFrame(inputStream)
-                    if (frame == null) {
+                    val frameReceived = frameCodec.readFrame(inputStream)
+
+                    if (frameReceived == null) {
                         println("Frame is NULL")
                     } else {
-                        frameHandler.addFrame(frame)
-
-                        frameHandler.getMessage()?.let { message ->
-                            listener?.onMessageReceived(message)
-                        }
+                        listener?.didReceive(frameReceived)
                     }
                 }
             }
 
         } catch (e: SocketTimeoutException) {
             logger.warning("Socket timeout exception: ${e.message}")
-            listener?.onDisconnected(e)
+            listener?.didDisconnect(e)
         } catch (e: ConnectException) {
             logger.warning("Connect exception: ${e.message}")
-            listener?.onDisconnected(e)
+            listener?.didDisconnect(e)
         } catch (e: IOException) {
             logger.warning("IOException: ${e.message}")
-            listener?.onDisconnected(e)
+            listener?.didDisconnect(e)
         } catch (e: InterruptedException) {
             logger.warning("Peer connection thread interrupted: ${e.message}")
-            listener?.onDisconnected(e)
+            listener?.didDisconnect(e)
         } catch (e: Exception) {
             e.printStackTrace()
             logger.warning("Peer connection exception: ${e.message}")
-            listener?.onDisconnected(e)
+            listener?.didDisconnect(e)
         } finally {
             isRunning = false
 
