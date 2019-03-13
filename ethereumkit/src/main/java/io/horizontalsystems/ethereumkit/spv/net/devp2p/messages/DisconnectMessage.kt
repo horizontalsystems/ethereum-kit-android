@@ -1,16 +1,11 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p.messages
 
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class DisconnectMessage(payload: ByteArray) : IMessage {
+class DisconnectMessage(payload: ByteArray) : IInMessage {
     private var reason: ReasonCode = ReasonCode.UNKNOWN
-
-    override fun encoded(): ByteArray {
-        val encodedReason = RLP.encodeByte(this.reason.asByte())
-        return RLP.encodeList(encodedReason)
-    }
 
     init {
         val paramsList = RLP.decode2(payload)[0] as RLPList

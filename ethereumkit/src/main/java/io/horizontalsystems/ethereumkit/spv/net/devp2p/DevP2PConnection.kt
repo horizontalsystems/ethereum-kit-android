@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.connection.FrameConnection
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
@@ -74,7 +75,7 @@ class DevP2PConnection(private val frameConnection: FrameConnection,
         frameConnection.disconnect(error)
     }
 
-    fun send(message: IMessage) {
+    fun send(message: IOutMessage) {
         println(">>>>>>>> $message \n")
         for (entry in packetTypesMap.entries) {
             if (entry.value == message::class) {

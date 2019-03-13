@@ -2,12 +2,12 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.math.BigInteger
 
-class AnnounceMessage(payload: ByteArray) : IMessage {
+class AnnounceMessage(payload: ByteArray) : IInMessage {
 
     val blockHash: ByteArray
     val blockHeight: BigInteger
@@ -20,10 +20,6 @@ class AnnounceMessage(payload: ByteArray) : IMessage {
         blockHeight = params[1].rlpData.toBigInteger()
         blockTotalDifficulty = params[2].rlpData.toBigInteger()
         reorganizationDepth = params[3].rlpData.toBigInteger()
-    }
-
-    override fun encoded(): ByteArray {
-        return ByteArray(0)
     }
 
     override fun toString(): String {

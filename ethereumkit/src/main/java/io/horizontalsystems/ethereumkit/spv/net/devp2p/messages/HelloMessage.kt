@@ -2,13 +2,14 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.toInt
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.util.*
 
-class HelloMessage : IMessage {
+class HelloMessage : IInMessage, IOutMessage {
     var peerId: ByteArray = byteArrayOf()
     var port: Int = 0
     var p2pVersion: Byte = 4

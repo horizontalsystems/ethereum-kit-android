@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.MessageFactory
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
@@ -51,7 +52,7 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
         devP2PConnection.disconnect(error)
     }
 
-    fun send(message: IMessage) {
+    fun send(message: IOutMessage) {
         devP2PConnection.send(message)
     }
 
