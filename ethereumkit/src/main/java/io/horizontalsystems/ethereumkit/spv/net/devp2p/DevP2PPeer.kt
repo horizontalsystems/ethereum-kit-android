@@ -58,15 +58,11 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
     //-----------Connection.Listener methods------------
 
     override fun didConnect() {
-        println("DevP2PPeer -> didConnect \n")
-
         val helloMessage = messageFactory.helloMessage(key, devP2PConnection.myCapabilities)
         devP2PConnection.send(helloMessage)
     }
 
     override fun didDisconnect(error: Throwable?) {
-        println("DevP2PPeer -> didDisconnect")
-
         listener?.didDisconnect(error)
     }
 
