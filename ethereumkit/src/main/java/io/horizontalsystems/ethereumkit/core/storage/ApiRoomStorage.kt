@@ -55,16 +55,16 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
         }
     }
 
-    override fun getGasPriceInWei(): Long? {
-        return database.gasPriceDao().getGasPrice()?.gasPriceInWei
+    override fun getGasPriceInWei(): GasPrice? {
+        return database.gasPriceDao().getGasPrice()
     }
 
     override fun saveLastBlockHeight(lastBlockHeight: Int) {
         database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
     }
 
-    override fun saveGasPriceInWei(gasPriceInWei: Long) {
-        database.gasPriceDao().insert(GasPrice(gasPriceInWei))
+    override fun saveGasPriceInWei(gasPriceInWei: GasPrice) {
+        database.gasPriceDao().insert(gasPriceInWei)
     }
 
     override fun saveBalance(balance: String, address: String) {

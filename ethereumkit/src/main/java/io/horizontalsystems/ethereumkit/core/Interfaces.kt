@@ -1,8 +1,9 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
 interface IStorage {
@@ -13,10 +14,10 @@ interface IStorage {
 }
 
 interface IApiStorage : IStorage {
-    fun getGasPriceInWei(): Long?
+    fun getGasPriceInWei(): GasPrice?
     fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun saveLastBlockHeight(lastBlockHeight: Int)
-    fun saveGasPriceInWei(gasPriceInWei: Long)
+    fun saveGasPriceInWei(gasPriceInWei: GasPrice)
     fun saveBalance(balance: String, address: String)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
 }

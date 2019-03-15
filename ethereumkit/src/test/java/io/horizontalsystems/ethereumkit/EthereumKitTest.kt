@@ -149,7 +149,7 @@ class EthereumKitTest {
     @Test
     fun testFee() {
         val gasLimit = 21_000
-        val gasPrice = 123L
+        val gasPrice = 2_000_000_000L
 
         whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)

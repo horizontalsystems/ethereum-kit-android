@@ -15,6 +15,4 @@ interface GasPriceDao {
     @Delete
     fun delete(gasPrice: GasPrice)
 
-    @Query("DELETE FROM GasPrice")
-    fun deleteAll()
 }
