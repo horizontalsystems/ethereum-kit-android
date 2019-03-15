@@ -12,6 +12,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.BiFunction
+import io.reactivex.schedulers.Schedulers
 import org.web3j.crypto.Keys
 import java.util.concurrent.TimeUnit
 
@@ -52,30 +53,24 @@ class ApiBlockchain(
             gasPriceInWei = it.mediumPriority
         }
 
-        Flowable.interval(gasPriceRefreshInterval, TimeUnit.SECONDS)
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    apiGasPrice.getGasPrice()
-                            .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe({
-                                        updateGasPrice(it)
-                                    }, {
-                                        //error
-                                    })?.let { disposables.add(it) }
-                }?.let { disposables.add(it) }
-
         Flowable.interval(refreshInterval, TimeUnit.SECONDS)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     refreshAll()
                 }?.let { disposables.add(it) }
+
+        Flowable.interval(gasPriceRefreshInterval, TimeUnit.SECONDS)
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    refreshGasPrice()
+                }?.let { disposables.add(it) }
     }
 
     override fun start() {
         refreshAll()
+        refreshGasPrice()
     }
 
     override fun stop() {
@@ -155,6 +150,17 @@ class ApiBlockchain(
                     disposables.add(it)
                 }
 
+    }
+
+    private fun refreshGasPrice() {
+        apiGasPrice.getGasPrice()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    updateGasPrice(it)
+                }, {
+                    //error
+                })?.let { disposables.add(it) }
     }
 
     private fun refreshTransactions() {

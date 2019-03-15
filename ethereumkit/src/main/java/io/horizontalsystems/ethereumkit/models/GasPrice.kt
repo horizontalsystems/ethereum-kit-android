@@ -12,8 +12,8 @@ data class GasPrice(val lowPriority: Long, val mediumPriority: Long, val highPri
     companion object {
         val defaultGasPrice = GasPrice(
                 lowPriority = 1_000_000_000,
-                mediumPriority = 2_000_000_000,
-                highPriority = 3_000_000_000,
+                mediumPriority = 3_000_000_000,
+                highPriority = 9_000_000_000,
                 date = 1543211299660
         )
     }
