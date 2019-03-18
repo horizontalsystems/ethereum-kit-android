@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.NetworkType
 import io.horizontalsystems.ethereumkit.network.ApiGasPrice
@@ -24,7 +25,7 @@ class ApiBlockchain(
     private var erc20Contracts = HashMap<String, Erc20Contract>()
     private val disposables = CompositeDisposable()
 
-    override var gasPriceInWei: Long = GasPrice.defaultGasPrice.mediumPriority
+    override var gasPriceData: GasPrice = GasPrice.defaultGasPrice
         private set
 
     override val gasLimitEthereum: Int = 21_000
@@ -50,7 +51,7 @@ class ApiBlockchain(
 
     init {
         storage.getGasPriceInWei()?.let {
-            gasPriceInWei = it.mediumPriority
+            gasPriceData = it
         }
 
         Flowable.interval(refreshInterval, TimeUnit.SECONDS)
@@ -100,22 +101,20 @@ class ApiBlockchain(
         erc20Contracts.remove(contractAddress)
     }
 
-    override fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    override fun send(toAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
-                    apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei
-                            ?: this.gasPriceInWei, gasLimitEthereum)
+                    apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei(feePriority), gasLimitEthereum)
                 }
                 .doAfterSuccess {
                     updateTransactions(listOf(it))
                 }
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
-                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei
-                            ?: this.gasPriceInWei, gasLimitErc20)
+                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei(feePriority), gasLimitErc20)
                 }
                 .doAfterSuccess {
                     updateTransactionsErc20(listOf(it))
@@ -150,6 +149,20 @@ class ApiBlockchain(
                     disposables.add(it)
                 }
 
+    }
+
+    override fun gasPriceInWei(feePriority: FeePriority): Long {
+        return when(feePriority) {
+            FeePriority.LOWEST -> gasPriceData.lowPriority
+            FeePriority.LOW -> {
+                (gasPriceData.lowPriority + gasPriceData.mediumPriority) / 2
+            }
+            FeePriority.MEDIUM -> gasPriceData.mediumPriority
+            FeePriority.HIGH -> {
+                (gasPriceData.mediumPriority + gasPriceData.highPriority) / 2
+            }
+            FeePriority.HIGHEST -> gasPriceData.highPriority
+        }
     }
 
     private fun refreshGasPrice() {
@@ -233,9 +246,9 @@ class ApiBlockchain(
         listener?.onUpdateLastBlockHeight(height)
     }
 
-    private fun updateGasPrice(gasPriceInWei: GasPrice) {
-        this.gasPriceInWei = gasPriceInWei.mediumPriority
-        storage.saveGasPriceInWei(gasPriceInWei)
+    private fun updateGasPrice(gasPrice: GasPrice) {
+        gasPriceData = gasPrice
+        storage.saveGasPriceInWei(gasPrice)
     }
 
     private fun updateBalance(balance: String) {
