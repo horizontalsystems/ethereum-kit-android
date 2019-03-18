@@ -14,7 +14,7 @@ data class GasPrice(val lowPriority: Long, val mediumPriority: Long, val highPri
                 lowPriority = 1_000_000_000,
                 mediumPriority = 3_000_000_000,
                 highPriority = 9_000_000_000,
-                date = 1543211299660
+                date = 1552901940000
         )
     }
 }
