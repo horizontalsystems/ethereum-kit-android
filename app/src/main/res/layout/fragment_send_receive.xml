@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<android.support.v4.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:scrollbars="vertical"
     >
 
     <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:padding="8dp"
         >
 
@@ -96,29 +97,33 @@
         </android.support.design.widget.TextInputLayout>
 
         <LinearLayout
-            android:id="@+id/feePrioritySelect"
-            android:layout_width="match_parent"
+            android:id="@+id/feePriorityRadioSelect"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:padding="5dp"
+            android:background="#e6ee9c"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sendAmountLayout"
+            app:layout_constraintWidth_percent="0.5"
             >
 
             <TextView
+                android:id="@+id/feePriorityTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="15sp"
-                android:textColor="#8a8a8f"
-                android:fontFamily="sans-serif-medium"
                 android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
                 android:text="Select fee priority:"
+                android:textSize="15sp"
                 />
 
             <RadioGroup
                 android:id="@+id/radioGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
                 android:layout_marginStart="15dp"
+                android:layout_marginTop="3dp"
                 >
 
                 <RadioButton
@@ -160,6 +165,34 @@
             </RadioGroup>
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            android:padding="5dp"
+            android:background="#b3bc6d"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/feePriorityRadioSelect"
+            app:layout_constraintTop_toTopOf="@+id/feePriorityRadioSelect"
+            app:layout_constraintBottom_toBottomOf="@+id/feePriorityRadioSelect"
+            app:layout_constraintWidth_percent="0.5"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Or enter custom gas price in Gwei:"
+                android:fontFamily="sans-serif-medium"
+                android:textSize="15sp"
+                />
+
+            <EditText
+                android:id="@+id/customFeePriority"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                />
+        </LinearLayout>
+
         <Button
             android:id="@+id/sendButton"
             android:layout_width="wrap_content"
@@ -171,7 +204,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/feePrioritySelect"
+            app:layout_constraintTop_toBottomOf="@+id/feePriorityRadioSelect"
             />
 
         <Button
@@ -187,6 +220,5 @@
             app:layout_constraintTop_toTopOf="@+id/sendButton"
             />
 
-
     </android.support.constraint.ConstraintLayout>
-</ScrollView>
+</android.support.v4.widget.NestedScrollView>

@@ -27,7 +27,7 @@ class MainViewModel : ViewModel() {
     private var ethereumKit: EthereumKit
     private val erc20Adapter: Erc20Adapter
     private val ethereumAdapter: EthereumAdapter
-    var feePriority = FeePriority.MEDIUM
+    var feePriority: FeePriority  = FeePriority.Medium
 
 
 
