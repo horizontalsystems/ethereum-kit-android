@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.State
 import io.reactivex.Single
 import org.junit.Assert
@@ -147,11 +148,11 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testFee() {
+    fun testFee_defaultPriority() {
         val gasLimit = 21_000
-        val gasPrice = 123L
+        val gasPrice = 2_000_000_000L
 
-        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
+        whenever(blockchain.gasPriceInWei(FeePriority.Medium)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
         val gas = BigDecimal.valueOf(gasPrice)
@@ -163,13 +164,32 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testFee_customGasPrice() {
+    fun testFee_highestGasPrice() {
         val gasLimit = 21_000
-        val customGasPrice = 23L
+        val highestFee = 9_000_000_000
+        val highestGasPrice = FeePriority.Highest
 
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
+        whenever(blockchain.gasPriceInWei(highestGasPrice)).thenReturn(highestFee)
 
-        val gas = BigDecimal.valueOf(customGasPrice)
+        val gas = BigDecimal.valueOf(highestFee)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+
+        val fee = kit.fee(highestGasPrice)
+
+        Assert.assertEquals(expectedFee, fee)
+    }
+
+    @Test
+    fun testFee_customGasPrice() {
+        val gasLimit = 21_000
+        val gasPrice = 21_000_000_000
+        val customGasPrice = FeePriority.Custom(gasPrice)
+
+        whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
+        whenever(blockchain.gasPriceInWei(customGasPrice)).thenReturn(gasPrice)
+
+        val gas = BigDecimal.valueOf(gasPrice)
         val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.fee(customGasPrice)
@@ -193,29 +213,29 @@ class EthereumKitTest {
     @Test
     fun testSend_gasPriceNull() {
         val amount = "23.4"
-        val gasPrice = null
+        val feePriority = FeePriority.Medium
         val toAddress = "address"
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.send(toAddress, amount, feePriority)).thenReturn(expectedResult)
 
-        val result = kit.send(toAddress, amount, gasPrice)
+        val result = kit.send(toAddress, amount, feePriority)
 
         Assert.assertEquals(expectedResult, result)
     }
 
     @Test
-    fun testSend_withCustomGasPrice() {
+    fun testSend_withLowGasPrice() {
         val amount = "23.4"
-        val gasPrice = 34L
         val toAddress = "address"
+        val feePriority = FeePriority.Low
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.send(toAddress, amount, feePriority)).thenReturn(expectedResult)
 
-        val result = kit.send(toAddress, amount, gasPrice)
+        val result = kit.send(toAddress, amount, feePriority)
 
         Assert.assertEquals(expectedResult, result)
     }
@@ -245,15 +265,16 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee() {
         val erc20GasLimit = 100_000
-        val gasPrice = 1230000000L
+        val gasPrice = 1_230_000_000L
+        val feePriority = FeePriority.Medium
 
-        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
+        whenever(blockchain.gasPriceInWei(feePriority)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
         val gas = BigDecimal.valueOf(gasPrice)
         val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
-        val fee = kit.feeERC20()
+        val fee = kit.feeERC20(feePriority)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -261,14 +282,16 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee_customGasPrice() {
         val erc20GasLimit = 100_000
-        val customGasPrice = 23L
+        val gasPrice = 1_230_000_000L
+        val feePriority = FeePriority.Medium
 
+        whenever(blockchain.gasPriceInWei(feePriority)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
-        val gas = BigDecimal.valueOf(customGasPrice)
+        val gas = BigDecimal.valueOf(gasPrice)
         val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
-        val fee = kit.feeERC20(customGasPrice)
+        val fee = kit.feeERC20(feePriority)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -310,15 +333,15 @@ class EthereumKitTest {
     @Test
     fun testErc20Send_gasPriceNull() {
         val amount = "23.4"
-        val gasPrice = null
         val toAddress = "address"
         val contractAddress = "contAddress"
+        val feePriority = FeePriority.Medium
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, feePriority)).thenReturn(expectedResult)
 
-        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
+        val result = kit.sendERC20(toAddress, contractAddress, amount, feePriority)
 
         Assert.assertEquals(expectedResult, result)
     }
@@ -326,15 +349,15 @@ class EthereumKitTest {
     @Test
     fun testErc20Send_withCustomGasPrice() {
         val amount = "23.4"
-        val gasPrice = 234L
         val toAddress = "address"
         val contractAddress = "contAddress"
+        val feePriority = FeePriority.Medium
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, feePriority)).thenReturn(expectedResult)
 
-        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
+        val result = kit.sendERC20(toAddress, contractAddress, amount, feePriority)
 
         Assert.assertEquals(expectedResult, result)
     }

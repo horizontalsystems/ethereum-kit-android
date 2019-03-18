@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
@@ -26,6 +27,7 @@ class MainViewModel : ViewModel() {
     private var ethereumKit: EthereumKit
     private val erc20Adapter: Erc20Adapter
     private val ethereumAdapter: EthereumAdapter
+    var feePriority: FeePriority  = FeePriority.Medium
 
 
 
@@ -138,7 +140,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(address: String, amount: BigDecimal) {
-        ethereumAdapter.sendSingle(address, amount)
+        ethereumAdapter.sendSingle(address, amount, feePriority)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -156,7 +158,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(address: String, amount: BigDecimal) {
-        erc20Adapter.sendSingle(address, amount)
+        erc20Adapter.sendSingle(address, amount, feePriority)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({

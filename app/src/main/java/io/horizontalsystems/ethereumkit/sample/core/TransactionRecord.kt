@@ -9,6 +9,7 @@ class TransactionRecord (
     val timestamp: Long,
     var from: TransactionAddress,
     var to: TransactionAddress,
-    val contractAddress: String)
+    val contractAddress: String,
+    val gasPriceInWei: Long)
 
 class TransactionAddress (val address: String, val mine: Boolean)

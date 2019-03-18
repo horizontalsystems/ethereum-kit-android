@@ -4,6 +4,7 @@ import android.content.Context
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
@@ -77,9 +78,8 @@ class EthereumKit(
         addressValidator.validate(address)
     }
 
-    fun fee(gasPriceInWei: Long? = null): BigDecimal {
-        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
-
+    fun fee(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
+        val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
         return Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
     }
 
@@ -87,8 +87,8 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
-        return blockchain.send(toAddress, amount, gasPriceInWei)
+    fun send(toAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
+        return blockchain.send(toAddress, amount, feePriority)
     }
 
     fun debugInfo(): String {
@@ -115,9 +115,8 @@ class EthereumKit(
     // ERC20
     //
 
-    fun feeERC20(gasPriceInWei: Long? = null): BigDecimal {
-        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
-
+    fun feeERC20(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
+        val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
         return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
 
@@ -133,8 +132,8 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
-        return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
+        return blockchain.sendErc20(toAddress, contractAddress, amount, feePriority)
     }
 
     //
@@ -214,7 +213,7 @@ class EthereumKit(
 
     companion object {
         fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            return ethereumKitSpv(context, Mnemonic().toSeed(words), walletId, testMode)
+            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
         }
 
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {

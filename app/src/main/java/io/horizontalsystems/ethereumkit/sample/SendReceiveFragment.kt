@@ -4,13 +4,13 @@ import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import io.horizontalsystems.ethereumkit.models.FeePriority
 
 class SendReceiveFragment : Fragment() {
 
@@ -63,6 +63,33 @@ class SendReceiveFragment : Fragment() {
                 sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
                 else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
+        }
+
+        val customFeePriority = view.findViewById<EditText>(R.id.customFeePriority)
+        customFeePriority.addTextChangedListener(object: TextWatcher {
+            override fun afterTextChanged(s: Editable) {
+                val gasPriceInGwei = s.toString().toLongOrNull()
+                gasPriceInGwei?.let {
+                    val gasInWei = gasPriceInGwei * 1_000_000_000
+                    viewModel.feePriority = FeePriority.Custom(gasInWei)
+                }
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        })
+
+        val radioGroup = view.findViewById<RadioGroup>(R.id.radioGroup)
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            val feePriority = when (checkedId) {
+                R.id.radioLowest ->  FeePriority.Lowest
+                R.id.radioLow ->  FeePriority.Low
+                R.id.radioMedium ->  FeePriority.Medium
+                R.id.radioHigh ->  FeePriority.High
+                else ->  FeePriority.Highest
+            }
+            customFeePriority.setText("")
+            viewModel.feePriority = feePriority
         }
 
         viewModel.sendStatus.observe(this, Observer { sendError ->

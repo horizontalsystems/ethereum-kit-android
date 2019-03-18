@@ -6,6 +6,8 @@ import io.horizontalsystems.ethereumkit.core.IBlockchainListener
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.core.address
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.net.PeerGroup
@@ -17,7 +19,7 @@ import org.web3j.crypto.Keys
 class SpvBlockchain(private val peerGroup: PeerGroup,
                     override val ethereumAddress: String) : IBlockchain, PeerGroup.Listener {
 
-    override val gasPriceInWei: Long = 0
+    override val gasPriceData: GasPrice = GasPrice.defaultGasPrice
     override val gasLimitEthereum: Int = 0
     override val gasLimitErc20: Int = 0
 
@@ -36,6 +38,10 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     override fun clear() {
     }
 
+    override fun gasPriceInWei(feePriority: FeePriority): Long {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun syncState(contractAddress: String): EthereumKit.SyncState {
         return EthereumKit.SyncState.Synced
     }
@@ -46,12 +52,12 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     override fun unregister(contractAddress: String) {
     }
 
-    override fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
-        TODO("not implemented")
+    override fun send(toAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
-        TODO("not implemented")
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onUpdate(state: AccountState) {

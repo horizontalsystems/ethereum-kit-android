@@ -1,8 +1,10 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
 interface IStorage {
@@ -13,10 +15,10 @@ interface IStorage {
 }
 
 interface IApiStorage : IStorage {
-    fun getGasPriceInWei(): Long?
+    fun getGasPriceInWei(): GasPrice?
     fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun saveLastBlockHeight(lastBlockHeight: Int)
-    fun saveGasPriceInWei(gasPriceInWei: Long)
+    fun saveGasPriceInWei(gasPriceInWei: GasPrice)
     fun saveBalance(balance: String, address: String)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
 }
@@ -28,7 +30,7 @@ interface ISpvStorage : IStorage {
 
 interface IBlockchain {
     val ethereumAddress: String
-    val gasPriceInWei: Long
+    val gasPriceData: GasPrice
     val gasLimitEthereum: Int
     val gasLimitErc20: Int
 
@@ -39,12 +41,13 @@ interface IBlockchain {
     fun stop()
     fun clear()
 
+    fun gasPriceInWei(feePriority: FeePriority): Long
     fun syncState(contractAddress: String): EthereumKit.SyncState
     fun register(contractAddress: String)
     fun unregister(contractAddress: String)
 
-    fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction>
-    fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction>
+    fun send(toAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction>
+    fun sendErc20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction>
 }
 
 interface IBlockchainListener {
