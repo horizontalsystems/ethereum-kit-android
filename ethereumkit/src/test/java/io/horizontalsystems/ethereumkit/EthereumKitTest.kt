@@ -152,7 +152,7 @@ class EthereumKitTest {
         val gasLimit = 21_000
         val gasPrice = 2_000_000_000L
 
-        whenever(blockchain.gasPriceInWei(FeePriority.MEDIUM)).thenReturn(gasPrice)
+        whenever(blockchain.gasPriceInWei(FeePriority.Medium)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
         val gas = BigDecimal.valueOf(gasPrice)
@@ -167,7 +167,7 @@ class EthereumKitTest {
     fun testFee_highestGasPrice() {
         val gasLimit = 21_000
         val highestFee = 9_000_000_000
-        val highestGasPrice = FeePriority.HIGHEST
+        val highestGasPrice = FeePriority.Highest
 
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
         whenever(blockchain.gasPriceInWei(highestGasPrice)).thenReturn(highestFee)
@@ -176,6 +176,23 @@ class EthereumKitTest {
         val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.fee(highestGasPrice)
+
+        Assert.assertEquals(expectedFee, fee)
+    }
+
+    @Test
+    fun testFee_customGasPrice() {
+        val gasLimit = 21_000
+        val gasPrice = 21_000_000_000
+        val customGasPrice = FeePriority.Custom(gasPrice)
+
+        whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
+        whenever(blockchain.gasPriceInWei(customGasPrice)).thenReturn(gasPrice)
+
+        val gas = BigDecimal.valueOf(gasPrice)
+        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+
+        val fee = kit.fee(customGasPrice)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -196,7 +213,7 @@ class EthereumKitTest {
     @Test
     fun testSend_gasPriceNull() {
         val amount = "23.4"
-        val feePriority = FeePriority.MEDIUM
+        val feePriority = FeePriority.Medium
         val toAddress = "address"
 
         val expectedResult = Single.just(transaction)
@@ -212,7 +229,7 @@ class EthereumKitTest {
     fun testSend_withLowGasPrice() {
         val amount = "23.4"
         val toAddress = "address"
-        val feePriority = FeePriority.LOW
+        val feePriority = FeePriority.Low
 
         val expectedResult = Single.just(transaction)
 
@@ -249,7 +266,7 @@ class EthereumKitTest {
     fun testErc20Fee() {
         val erc20GasLimit = 100_000
         val gasPrice = 1_230_000_000L
-        val feePriority = FeePriority.LOW
+        val feePriority = FeePriority.Medium
 
         whenever(blockchain.gasPriceInWei(feePriority)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
@@ -266,7 +283,7 @@ class EthereumKitTest {
     fun testErc20Fee_customGasPrice() {
         val erc20GasLimit = 100_000
         val gasPrice = 1_230_000_000L
-        val feePriority = FeePriority.LOW
+        val feePriority = FeePriority.Medium
 
         whenever(blockchain.gasPriceInWei(feePriority)).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
@@ -318,7 +335,7 @@ class EthereumKitTest {
         val amount = "23.4"
         val toAddress = "address"
         val contractAddress = "contAddress"
-        val feePriority = FeePriority.LOW
+        val feePriority = FeePriority.Medium
 
         val expectedResult = Single.just(transaction)
 
@@ -334,7 +351,7 @@ class EthereumKitTest {
         val amount = "23.4"
         val toAddress = "address"
         val contractAddress = "contAddress"
-        val feePriority = FeePriority.LOW
+        val feePriority = FeePriority.Medium
 
         val expectedResult = Single.just(transaction)
 

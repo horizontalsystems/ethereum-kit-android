@@ -78,7 +78,7 @@ class EthereumKit(
         addressValidator.validate(address)
     }
 
-    fun fee(feePriority: FeePriority = FeePriority.MEDIUM): BigDecimal {
+    fun fee(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
         val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
         return Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
     }
@@ -87,7 +87,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: String, feePriority: FeePriority = FeePriority.MEDIUM): Single<EthereumTransaction> {
+    fun send(toAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
         return blockchain.send(toAddress, amount, feePriority)
     }
 
@@ -115,7 +115,7 @@ class EthereumKit(
     // ERC20
     //
 
-    fun feeERC20(feePriority: FeePriority = FeePriority.MEDIUM): BigDecimal {
+    fun feeERC20(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
         val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
         return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
@@ -132,7 +132,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority = FeePriority.MEDIUM): Single<EthereumTransaction> {
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
         return blockchain.sendErc20(toAddress, contractAddress, amount, feePriority)
     }
 

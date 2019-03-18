@@ -66,11 +66,11 @@ class SendReceiveFragment : Fragment() {
         val radioGroup = view.findViewById<RadioGroup>(R.id.radioGroup)
         radioGroup.setOnCheckedChangeListener { _, checkedId ->
             val feePriority = when (checkedId) {
-                R.id.radioLowest ->  FeePriority.LOWEST
-                R.id.radioLow ->  FeePriority.LOW
-                R.id.radioMedium ->  FeePriority.MEDIUM
-                R.id.radioHigh ->  FeePriority.HIGH
-                else ->  FeePriority.HIGHEST
+                R.id.radioLowest ->  FeePriority.Lowest
+                R.id.radioLow ->  FeePriority.Low
+                R.id.radioMedium ->  FeePriority.Medium
+                R.id.radioHigh ->  FeePriority.High
+                else ->  FeePriority.Highest
             }
             viewModel.feePriority = feePriority
         }

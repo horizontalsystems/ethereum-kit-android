@@ -153,15 +153,16 @@ class ApiBlockchain(
 
     override fun gasPriceInWei(feePriority: FeePriority): Long {
         return when(feePriority) {
-            FeePriority.LOWEST -> gasPriceData.lowPriority
-            FeePriority.LOW -> {
+            FeePriority.Lowest -> gasPriceData.lowPriority
+            FeePriority.Low -> {
                 (gasPriceData.lowPriority + gasPriceData.mediumPriority) / 2
             }
-            FeePriority.MEDIUM -> gasPriceData.mediumPriority
-            FeePriority.HIGH -> {
+            FeePriority.Medium -> gasPriceData.mediumPriority
+            FeePriority.High -> {
                 (gasPriceData.mediumPriority + gasPriceData.highPriority) / 2
             }
-            FeePriority.HIGHEST -> gasPriceData.highPriority
+            FeePriority.Highest -> gasPriceData.highPriority
+            is FeePriority.Custom -> feePriority.valueInWei
         }
     }
 
