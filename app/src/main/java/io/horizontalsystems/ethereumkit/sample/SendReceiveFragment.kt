@@ -7,10 +7,8 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import io.horizontalsystems.ethereumkit.models.FeePriority
 
 class SendReceiveFragment : Fragment() {
 
@@ -63,6 +61,18 @@ class SendReceiveFragment : Fragment() {
                 sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
                 else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
+        }
+
+        val radioGroup = view.findViewById<RadioGroup>(R.id.radioGroup)
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            val feePriority = when (checkedId) {
+                R.id.radioLowest ->  FeePriority.LOWEST
+                R.id.radioLow ->  FeePriority.LOW
+                R.id.radioMedium ->  FeePriority.MEDIUM
+                R.id.radioHigh ->  FeePriority.HIGH
+                else ->  FeePriority.HIGHEST
+            }
+            viewModel.feePriority = feePriority
         }
 
         viewModel.sendStatus.observe(this, Observer { sendError ->

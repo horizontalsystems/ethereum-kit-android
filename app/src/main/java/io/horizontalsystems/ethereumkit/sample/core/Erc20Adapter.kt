@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.reactivex.Single
 
 class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String, decimal: Int): BaseAdapter(ethereumKit, decimal) {
@@ -17,11 +18,12 @@ class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String
     override val balanceString: String?
         get() = ethereumKit.balanceERC20(contractAddress)
 
-    override fun sendSingle(address: String, amount: String): Single<Unit> {
+    override fun sendSingle(address: String, amount: String, feePriority: FeePriority): Single<Unit> {
         return ethereumKit.sendERC20(
                 toAddress = address,
                 contractAddress = contractAddress,
-                amount = amount).map { Unit }
+                amount = amount,
+                feePriority = feePriority).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {

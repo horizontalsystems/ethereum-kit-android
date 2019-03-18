@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigDecimal
@@ -38,7 +39,8 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) : Ethereu
                 timestamp = transaction.timeStamp,
                 from = from,
                 to = to,
-                contractAddress = transaction.contractAddress
+                contractAddress = transaction.contractAddress,
+                gasPriceInWei = transaction.gasPriceInWei
         )
     }
 
@@ -57,14 +59,14 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) : Ethereu
             return null
         }
 
-    open fun sendSingle(address: String, amount: BigDecimal): Single<Unit> {
+    open fun sendSingle(address: String, amount: BigDecimal, feePriority: FeePriority): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
-        return sendSingle(address, noScaleDecimal.toPlainString())
+        return sendSingle(address, noScaleDecimal.toPlainString(), feePriority)
     }
 
-    open fun sendSingle(address: String, amount: String): Single<Unit> {
+    open fun sendSingle(address: String, amount: String, feePriority: FeePriority): Single<Unit> {
         return Single.just(Unit)
     }
 
