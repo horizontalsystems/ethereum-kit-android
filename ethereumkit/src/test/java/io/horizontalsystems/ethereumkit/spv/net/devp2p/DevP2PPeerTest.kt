@@ -1,138 +1,184 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
-import com.nhaarman.mockito_kotlin.argThat
-import com.nhaarman.mockito_kotlin.verify
-import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
-import com.nhaarman.mockito_kotlin.whenever
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
-import io.horizontalsystems.ethereumkit.spv.net.MessageFactory
+import com.nhaarman.mockito_kotlin.*
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.spekframework.spek2.Spek
+import org.spekframework.spek2.style.specification.describe
 
-class DevP2PPeerTest {
+class DevP2PPeerTest : Spek({
 
-    private lateinit var devP2PPeer: DevP2PPeer
+    lateinit var devP2PPeer: DevP2PPeer
 
-    private val devP2PConnection = Mockito.mock(DevP2PConnection::class.java)
-    private val key = Mockito.mock(ECKey::class.java)
-    private val capability = Mockito.mock(Capability::class.java)
-    private val messageFactory = Mockito.mock(MessageFactory::class.java)
-    private val listener = Mockito.mock(DevP2PPeer.Listener::class.java)
+    val devP2PConnection = mock(DevP2PConnection::class.java)
+    val capabilityHelper = mock(CapabilityHelper::class.java)
+    val myCapabilities = listOf(Capability("les", 2))
+    val myNodeId = ByteArray(64) { 3 }
+    val port = 30303
+    val listener = mock(DevP2PPeer.Listener::class.java)
 
-    @Before
-    fun setUp() {
-        devP2PPeer = DevP2PPeer(devP2PConnection, messageFactory, key)
+    beforeEachTest {
+        devP2PPeer = DevP2PPeer(devP2PConnection, capabilityHelper, myCapabilities, myNodeId, port)
         devP2PPeer.listener = listener
     }
 
-    @After
-    fun tearDown() {
-        verifyNoMoreInteractions(listener)
+    afterEachTest {
+        reset(devP2PConnection, capabilityHelper, listener)
     }
 
-    @Test
-    fun connect() {
-        devP2PPeer.connect()
+    describe("#connect") {
+        beforeEach {
+            devP2PPeer.connect()
+        }
 
-        verify(devP2PConnection).connect()
+        it("connects devP2P connection") {
+            verify(devP2PConnection).connect()
+        }
     }
 
-    @Test
-    fun disconnect() {
-        val error = Mockito.mock(Throwable::class.java)
-        devP2PPeer.disconnect(error)
+    describe("#disconnect") {
+        val error = Exception()
+        beforeEach {
+            devP2PPeer.disconnect(error)
+        }
 
-        verify(devP2PConnection).disconnect(error)
+        it("disconnects devP2P connection") {
+            verify(devP2PConnection).disconnect(error)
+        }
     }
 
-    @Test
-    fun send() {
-        val message = Mockito.mock(IMessage::class.java)
-        devP2PPeer.send(message)
+    describe("#sendMessage") {
+        val message = mock(IOutMessage::class.java)
+        beforeEach {
+            devP2PPeer.send(message)
+        }
 
-        verify(devP2PConnection).send(message)
+        it("sends message using devP2P connection") {
+            verify(devP2PConnection).send(message)
+        }
     }
 
-    @Test
-    fun onConnectionEstablished() {
-        val helloMessage = Mockito.mock(HelloMessage::class.java)
+    describe("#didConnect") {
+        beforeEach {
+            devP2PPeer.didConnect()
+        }
 
-        whenever(devP2PConnection.myCapabilities).thenReturn(listOf(capability))
-        whenever(messageFactory.helloMessage(key, listOf(capability))).thenReturn(helloMessage)
-
-        devP2PPeer.didConnect()
-
-        verify(devP2PConnection).send(helloMessage)
+        it("sends HelloMessage using devP2P connection") {
+            verify(devP2PConnection).send(argThat {
+                this is HelloMessage &&
+                        this.nodeId.contentEquals(myNodeId) &&
+                        this.port == port &&
+                        this.capabilities == myCapabilities
+            })
+        }
     }
 
-    @Test
-    fun onDisconnected() {
-        val error = Mockito.mock(Throwable::class.java)
+    describe("#didDisconnect") {
+        val error = Exception()
+        beforeEach {
+            devP2PPeer.didDisconnect(error)
+        }
 
-        devP2PPeer.didDisconnect(error)
-
-        verify(listener).didDisconnect(error)
+        it("notifies listener") {
+            verify(listener).didDisconnect(error)
+        }
     }
 
-    @Test
-    fun onHelloReceived() {
-        val message = Mockito.mock(HelloMessage::class.java)
-        val capabilities = listOf(capability)
-        whenever(message.capabilities).thenReturn(capabilities)
+    describe("#didReceiveMessage") {
 
-        devP2PPeer.didReceive(message)
+        context("when message is HelloMessage") {
+            val helloMessage = mock(HelloMessage::class.java)
+            val nodeCapabilities = listOf(Capability("eth", 63))
+            beforeEach {
+                whenever(helloMessage.capabilities).thenReturn(nodeCapabilities)
+            }
 
-        verify(devP2PConnection).register(capabilities)
-        verify(listener).didConnect()
+            context("when has no shared capabilities") {
+                beforeEach {
+                    whenever(capabilityHelper.sharedCapabilities(myCapabilities, nodeCapabilities)).thenReturn(listOf())
+
+                    devP2PPeer.didReceive(helloMessage)
+                }
+
+                it("disconnects with NoSharedCapabilities error") {
+                    verify(devP2PConnection).disconnect(argThat {
+                        this is DevP2PPeer.NoSharedCapabilities
+                    })
+                }
+            }
+
+            context("when has shared capabilities") {
+                val sharedCapabilities = listOf(myCapabilities[0])
+
+                beforeEach {
+                    whenever(capabilityHelper.sharedCapabilities(myCapabilities, nodeCapabilities)).thenReturn(sharedCapabilities)
+
+                    devP2PPeer.didReceive(helloMessage)
+                }
+
+                it("registers shared capabilities to connection") {
+                    verify(devP2PConnection).register(sharedCapabilities)
+                }
+
+                it("notifies listener that did connect") {
+                    verify(listener).didConnect()
+                }
+            }
+        }
+
+        context("when message is DisconnectMessage") {
+            val disconnectMessage = mock(DisconnectMessage::class.java)
+
+            beforeEach {
+                devP2PPeer.didReceive(disconnectMessage)
+            }
+
+            it("disconnects with disconnectMessageReceived error") {
+                verify(devP2PConnection).disconnect(argThat { this is DevP2PPeer.DisconnectMessageReceived })
+            }
+        }
+
+        context("when message is PingMessage") {
+            val pingMessage = mock(PingMessage::class.java)
+
+            beforeEach {
+                devP2PPeer.didReceive(pingMessage)
+            }
+
+            it("sends PongMessage to devP2P connection") {
+                verify(devP2PConnection).send(argThat { this is PongMessage })
+            }
+        }
+
+        context("when message is PongMessage") {
+            val pongMessage = mock(PongMessage::class.java)
+
+            beforeEach {
+                devP2PPeer.didReceive(pongMessage)
+            }
+
+            it("does not notify delegate") {
+                verifyNoMoreInteractions(listener)
+            }
+        }
+
+        context("when message is another message") {
+            val message = mock(IInMessage::class.java)
+
+            beforeEach {
+                devP2PPeer.didReceive(message)
+            }
+
+            it("notifies delegate that message is received") {
+                verify(listener).didReceive(message)
+            }
+        }
     }
 
-    @Test
-    fun onHelloReceived_NoCapability() {
-        val message = Mockito.mock(HelloMessage::class.java)
-        val capabilities = listOf<Capability>()
 
-        whenever(message.capabilities).thenReturn(capabilities)
-        whenever(devP2PConnection.register(capabilities)).thenThrow(DevP2PConnection.NoCommonCapabilities())
-
-        devP2PPeer.didReceive(message)
-
-        verify(devP2PConnection).disconnect(argThat { this is DevP2PConnection.NoCommonCapabilities })
-    }
-
-    @Test
-    fun onDisconnectReceived() {
-        val message = Mockito.mock(DisconnectMessage::class.java)
-
-        devP2PPeer.didReceive(message)
-
-        verify(devP2PConnection).disconnect(argThat { this is DevP2PPeer.DisconnectMessageReceived })
-    }
-
-    @Test
-    fun onPingReceived() {
-        val pingMessage = Mockito.mock(PingMessage::class.java)
-        val pongMessage = Mockito.mock(PongMessage::class.java)
-        whenever(messageFactory.pongMessage()).thenReturn(pongMessage)
-
-        devP2PPeer.didReceive(pingMessage)
-
-        verify(devP2PConnection).send(pongMessage)
-    }
-
-    @Test
-    fun onPongReceived() {
-        val message = Mockito.mock(PongMessage::class.java)
-
-        devP2PPeer.didReceive(message)
-
-        verifyNoMoreInteractions(devP2PConnection)
-        verifyNoMoreInteractions(listener)
-    }
-}
+})

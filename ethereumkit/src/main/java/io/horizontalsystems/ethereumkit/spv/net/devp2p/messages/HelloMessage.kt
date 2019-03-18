@@ -10,14 +10,14 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.util.*
 
 class HelloMessage : IInMessage, IOutMessage {
-    var peerId: ByteArray = byteArrayOf()
+    var nodeId: ByteArray = byteArrayOf()
     var port: Int = 0
     var p2pVersion: Byte = 4
     var clientId: String = "EthereumKit"
     var capabilities: List<Capability> = listOf()
 
-    constructor(peerId: ByteArray, port: Int, capabilities: List<Capability>) {
-        this.peerId = peerId
+    constructor(nodeId: ByteArray, port: Int, capabilities: List<Capability>) {
+        this.nodeId = nodeId
         this.port = port
         this.capabilities = capabilities
     }
@@ -50,7 +50,7 @@ class HelloMessage : IInMessage, IOutMessage {
         val peerPortBytes = paramsList[3].rlpData
         port = peerPortBytes.toInt()
 
-        peerId = paramsList[4].rlpData ?: byteArrayOf()
+        nodeId = paramsList[4].rlpData ?: byteArrayOf()
     }
 
     override fun encoded(): ByteArray {
@@ -66,7 +66,7 @@ class HelloMessage : IInMessage, IOutMessage {
         val capabilityList = RLP.encodeList(*capabilities.mapNotNull { it }.toTypedArray())
 
         val peerPort = RLP.encodeInt(this.port)
-        val peerId = RLP.encodeElement(this.peerId)
+        val peerId = RLP.encodeElement(this.nodeId)
 
         return RLP.encodeList(p2pVersion, clientId, capabilityList, peerPort, peerId)
     }
@@ -74,6 +74,6 @@ class HelloMessage : IInMessage, IOutMessage {
     override fun toString(): String {
         return "Hello [version: $p2pVersion; clientId: $clientId; " +
                 "capabilities: ${capabilities.joinToString { "${it.name}/${it.version}" }}; " +
-                "peerId: ${peerId.toHexString()}; port: $port]"
+                "nodeId: ${nodeId.toHexString()}; port: $port]"
     }
 }

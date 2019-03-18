@@ -8,7 +8,7 @@ import java.math.BigInteger
 class GetBlockHeadersMessage : IOutMessage {
 
     companion object {
-        const val maxHeaders = 10
+        const val maxHeaders = 50
     }
 
     var requestID: Long = 0
