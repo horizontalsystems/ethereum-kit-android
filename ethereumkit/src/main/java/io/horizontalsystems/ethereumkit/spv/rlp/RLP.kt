@@ -22,6 +22,15 @@ class RLPItem(initValue: ByteArray?) : RLPElement {
 
 class RLPList : ArrayList<RLPElement>(), RLPElement {
     override var rlpData: ByteArray? = null
+
+    fun valueElement(name: String): RLPElement? {
+        for (rlpElement in this) {
+            if (rlpElement is RLPList && String(rlpElement[0].rlpData ?: byteArrayOf()) == name) {
+                return rlpElement[1]
+            }
+        }
+        return null
+    }
 }
 
 object RLP {

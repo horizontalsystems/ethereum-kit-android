@@ -26,18 +26,18 @@ class LESPeerTest : Spek({
 
     val protocolVersion = LESPeer.capability.version
     val networkId = 1
-    val genesisBlockHash = ByteArray(32) { 1 }
-    val bestBlockTotalDifficulty = BigInteger("12345")
-    val bestBlockHash = ByteArray(32) { 3 }
-    val bestBlockHeight = BigInteger.valueOf(100)
+    val genesisHash = ByteArray(32) { 1 }
+    val headTotalDifficulty = BigInteger("12345")
+    val headHash = ByteArray(32) { 3 }
+    val headHeight = BigInteger.valueOf(100)
 
     beforeEachTest {
         whenever(network.id).thenReturn(networkId)
-        whenever(network.genesisBlockHash).thenReturn(genesisBlockHash)
+        whenever(network.genesisBlockHash).thenReturn(genesisHash)
 
-        whenever(lastBlockHeader.totalDifficulty).thenReturn(bestBlockTotalDifficulty)
-        whenever(lastBlockHeader.hashHex).thenReturn(bestBlockHash)
-        whenever(lastBlockHeader.height).thenReturn(bestBlockHeight)
+        whenever(lastBlockHeader.totalDifficulty).thenReturn(headTotalDifficulty)
+        whenever(lastBlockHeader.hashHex).thenReturn(headHash)
+        whenever(lastBlockHeader.height).thenReturn(headHeight)
 
         lesPeer = LESPeer(devP2PPeer, network, lastBlockHeader, randomHelper, requestHolder)
         lesPeer.listener = listener
@@ -74,10 +74,10 @@ class LESPeerTest : Spek({
                 this is StatusMessage &&
                         this.protocolVersion == protocolVersion &&
                         this.networkId == networkId &&
-                        Arrays.equals(this.genesisHash, genesisBlockHash) &&
-                        this.bestBlockTotalDifficulty == bestBlockTotalDifficulty &&
-                        Arrays.equals(this.bestBlockHash, bestBlockHash) &&
-                        this.bestBlockHeight == bestBlockHeight
+                        Arrays.equals(this.genesisHash, genesisHash) &&
+                        this.headTotalDifficulty == headTotalDifficulty &&
+                        Arrays.equals(this.headHash, headHash) &&
+                        this.headHeight == headHeight
             })
         }
     }
@@ -93,8 +93,8 @@ class LESPeerTest : Spek({
             beforeEach {
                 whenever(statusMessage.protocolVersion).thenReturn(protocolVersion)
                 whenever(statusMessage.networkId).thenReturn(networkId)
-                whenever(statusMessage.genesisHash).thenReturn(genesisBlockHash)
-                whenever(statusMessage.bestBlockHeight).thenReturn(bestBlockHeight)
+                whenever(statusMessage.genesisHash).thenReturn(genesisHash)
+                whenever(statusMessage.headHeight).thenReturn(headHeight)
             }
 
             context("when valid") {
@@ -143,9 +143,9 @@ class LESPeerTest : Spek({
                     }
                 }
 
-                context("bestBlockHeight") {
+                context("headHeight") {
                     beforeEach {
-                        whenever(statusMessage.bestBlockHeight).thenReturn(BigInteger.valueOf(99))
+                        whenever(statusMessage.headHeight).thenReturn(BigInteger.valueOf(99))
                         lesPeer.didReceive(statusMessage)
                     }
 

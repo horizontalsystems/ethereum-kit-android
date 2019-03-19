@@ -5,8 +5,14 @@ class CapabilityHelper {
         val sharedCapabilities = mutableListOf<Capability>()
 
         myCapabilities.forEach { myCapability ->
-            if (nodeCapabilities.contains(myCapability))
-                sharedCapabilities.add(myCapability)
+            if (nodeCapabilities.contains(myCapability)) {
+                val indexOfOlderVersion = sharedCapabilities.indexOfFirst { it.name == myCapability.name && it.version <= myCapability.version }
+                if (indexOfOlderVersion != -1) {
+                    sharedCapabilities[indexOfOlderVersion] = myCapability
+                } else {
+                    sharedCapabilities.add(myCapability)
+                }
+            }
         }
 
         return sharedCapabilities.sorted()

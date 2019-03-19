@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
+import io.horizontalsystems.ethereumkit.spv.rlp.RLPElement
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -35,6 +36,21 @@ fun ByteArray?.toLong(): Long {
 
 fun ByteArray?.toBigInteger(): BigInteger {
     return if (this == null || this.isEmpty()) BigInteger.ZERO else BigInteger(1, this)
+}
+
+fun RLPElement?.toInt(): Int {
+    val rlpData = this?.rlpData
+    return if (this == null || rlpData == null || rlpData.isEmpty()) 0 else BigInteger(1, rlpData).toInt()
+}
+
+fun RLPElement?.toLong(): Long {
+    val rlpData = this?.rlpData
+    return if (this == null || rlpData == null || rlpData.isEmpty()) 0 else BigInteger(1, rlpData).toLong()
+}
+
+fun RLPElement?.toBigInteger(): BigInteger {
+    val rlpData = this?.rlpData
+    return if (this == null || rlpData == null || rlpData.isEmpty())  BigInteger.ZERO else BigInteger(1, rlpData)
 }
 
 fun ByteArray.xor(other: ByteArray): ByteArray {

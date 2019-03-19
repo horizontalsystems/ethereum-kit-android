@@ -39,7 +39,7 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     }
 
     override fun gasPriceInWei(feePriority: FeePriority): Long {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return GasPrice.defaultGasPrice.mediumPriority
     }
 
     override fun syncState(contractAddress: String): EthereumKit.SyncState {
