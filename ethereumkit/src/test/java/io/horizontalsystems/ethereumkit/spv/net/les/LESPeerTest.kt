@@ -172,17 +172,17 @@ class LESPeerTest : Spek({
 
             context("when request exists in holder") {
                 val blockHeaderRequest = mock(BlockHeaderRequest::class.java)
-                val blockHash = ByteArray(10) { 1 }
+                val blockHeight = 12345.toBigInteger()
 
                 beforeEach {
                     whenever(requestHolder.removeBlockHeaderRequest(requestId)).thenReturn(blockHeaderRequest)
-                    whenever(blockHeaderRequest.blockHash).thenReturn(blockHash)
+                    whenever(blockHeaderRequest.blockHeight).thenReturn(blockHeight)
 
                     lesPeer.didReceive(blockHeadersMessage)
                 }
 
                 it("notifies listener") {
-                    verify(listener).didReceive(headers, blockHash)
+                    verify(listener).didReceive(headers, blockHeight)
                 }
             }
 
@@ -268,25 +268,25 @@ class LESPeerTest : Spek({
     }
 
     describe("#requestBlockHeaders") {
-        val blockHash = ByteArray(32) { 9 }
+        val blockHeight = 123456.toBigInteger()
         val requestId = 123L
         val limit = 100
 
         beforeEach {
             whenever(randomHelper.randomLong()).thenReturn(requestId)
 
-            lesPeer.requestBlockHeaders(blockHash, limit)
+            lesPeer.requestBlockHeaders(blockHeight, limit)
         }
 
         it("sets request to holder") {
-            verify(requestHolder).setBlockHeaderRequest(argThat { this.blockHash.contentEquals(blockHash) }, eq(requestId))
+            verify(requestHolder).setBlockHeaderRequest(argThat { this.blockHeight == blockHeight }, eq(requestId))
         }
 
         it("sends message to devP2PPeer") {
             verify(devP2PPeer).send(argThat {
                 this is GetBlockHeadersMessage &&
                         this.requestID == requestId &&
-                        this.blockHash.contentEquals(blockHash) &&
+                        this.blockHeight === blockHeight &&
                         this.maxHeaders == limit
             })
         }

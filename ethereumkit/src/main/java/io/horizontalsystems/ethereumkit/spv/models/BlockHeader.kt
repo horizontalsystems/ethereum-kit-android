@@ -21,6 +21,7 @@ class BlockHeader {
     }
 
     @PrimaryKey
+    val height: BigInteger
     val hashHex: ByteArray
     var totalDifficulty: BigInteger = BigInteger.ZERO // Scalar value corresponding to the sum of difficulty values of all previous blocks
     val parentHash: ByteArray         // 256-bit Keccak-256 hash of parent block
@@ -35,7 +36,7 @@ class BlockHeader {
     val difficulty: ByteArray         /* A scalar value corresponding to the difficulty level of this block.
                                * This can be calculated from the previous block’s difficulty level
                                * and the timestamp */
-    val height: BigInteger
+
     val gasLimit: ByteArray         // A scalar value equal to the current limit of gas expenditure per block
     val gasUsed: Long             // A scalar value equal to the total gas used in transactions in this block
     val timestamp: Long           // A scalar value equal to the reasonable output of Unix's time() at this block's inception

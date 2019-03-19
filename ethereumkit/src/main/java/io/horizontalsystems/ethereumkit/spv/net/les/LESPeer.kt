@@ -20,7 +20,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     interface Listener {
         fun didConnect()
-        fun didReceive(blockHeaders: List<BlockHeader>, blockHash: ByteArray)
+        fun didReceive(blockHeaders: List<BlockHeader>, blockHeight: BigInteger)
         fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader)
         fun didAnnounce(blockHash: ByteArray, blockHeight: BigInteger)
     }
@@ -63,7 +63,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
             throw UnexpectedMessage()
         }
 
-        listener?.didReceive(message.headers, request.blockHash)
+        listener?.didReceive(message.headers, request.blockHeight)
     }
 
     private fun handle(message: ProofsMessage) {
@@ -90,11 +90,11 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         devP2PPeer.disconnect(error)
     }
 
-    fun requestBlockHeaders(blockHash: ByteArray, limit: Int) {
+    fun requestBlockHeaders(blockHeight: BigInteger, limit: Int) {
         val requestId = randomHelper.randomLong()
-        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHash), requestId)
+        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHeight), requestId)
 
-        val message = GetBlockHeadersMessage(requestId, blockHash, limit)
+        val message = GetBlockHeadersMessage(requestId, blockHeight, limit)
         devP2PPeer.send(message)
     }
 

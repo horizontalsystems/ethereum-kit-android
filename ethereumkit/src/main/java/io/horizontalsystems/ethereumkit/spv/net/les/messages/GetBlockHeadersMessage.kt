@@ -1,12 +1,11 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
 class GetBlockHeadersMessage(var requestID: Long,
-                             var blockHash: ByteArray,
+                             var blockHeight: BigInteger,
                              var maxHeaders: Int,
                              private var skip: Int = 0,
                              private var reverse: Int = 0) : IOutMessage {
@@ -16,7 +15,7 @@ class GetBlockHeadersMessage(var requestID: Long,
         val maxHeaders = RLP.encodeInt(maxHeaders)
         val skipBlocks = RLP.encodeInt(skip)
         val reverse = RLP.encodeByte(reverse.toByte())
-        val hash = RLP.encodeElement(this.blockHash)
+        val hash = RLP.encodeBigInteger(this.blockHeight)
 
         var encoded = RLP.encodeList(hash, maxHeaders, skipBlocks, reverse)
         encoded = RLP.encodeList(reqID, encoded)
@@ -25,6 +24,6 @@ class GetBlockHeadersMessage(var requestID: Long,
     }
 
     override fun toString(): String {
-        return "GetHeaders [requestId: $requestID; blockHash: ${blockHash.toHexString()}; maxHeaders: $maxHeaders; skip: $skip; reverse: $reverse]"
+        return "GetHeaders [requestId: $requestID; blockHeight: ${blockHeight}; maxHeaders: $maxHeaders; skip: $skip; reverse: $reverse]"
     }
 }
