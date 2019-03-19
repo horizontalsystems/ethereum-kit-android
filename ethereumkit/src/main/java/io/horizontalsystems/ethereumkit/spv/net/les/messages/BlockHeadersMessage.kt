@@ -2,11 +2,11 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class BlockHeadersMessage(payload: ByteArray) : IMessage {
+class BlockHeadersMessage(payload: ByteArray) :  IInMessage {
 
     var requestID: Long = 0
     private var bv: Long = 0
@@ -24,10 +24,6 @@ class BlockHeadersMessage(payload: ByteArray) : IMessage {
             headers.add(BlockHeader(rlpData))
         }
         this.headers = headers
-    }
-
-    override fun encoded(): ByteArray {
-        return byteArrayOf()
     }
 
     override fun toString(): String {

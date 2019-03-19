@@ -1,5 +1,9 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-interface IMessage {
+interface IMessage
+
+interface IInMessage : IMessage
+
+interface IOutMessage : IMessage {
     fun encoded(): ByteArray
 }

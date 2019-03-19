@@ -3,12 +3,13 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.core.toInt
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.math.BigInteger
 
-class StatusMessage : IMessage {
+class StatusMessage : IInMessage, IOutMessage {
 
     val protocolVersion: Byte
     val networkId: Int

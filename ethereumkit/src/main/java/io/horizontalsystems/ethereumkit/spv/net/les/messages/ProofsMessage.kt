@@ -1,12 +1,12 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.spv.core.toLong
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.les.TrieNode
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class ProofsMessage(data: ByteArray) : IMessage {
+class ProofsMessage(data: ByteArray) : IInMessage {
 
     var requestID: Long = 0
     var bv: Long = 0
@@ -22,10 +22,6 @@ class ProofsMessage(data: ByteArray) : IMessage {
                 nodes.add(TrieNode(rlpNode as RLPList))
             }
         }
-    }
-
-    override fun encoded(): ByteArray {
-        return ByteArray(0)
     }
 
     override fun toString(): String {

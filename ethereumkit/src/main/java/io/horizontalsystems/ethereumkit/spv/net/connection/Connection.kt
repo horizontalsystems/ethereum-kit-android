@@ -115,7 +115,7 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
                     frameCodec.writeFrame(frameToSend, outputStream)
                 }
 
-                while (isRunning && inputStream.available() > 0) {
+                if (isRunning && inputStream.available() > 0) {
                     val frameReceived = frameCodec.readFrame(inputStream)
 
                     if (frameReceived == null) {

@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.connection.FrameConnection
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
@@ -10,8 +11,7 @@ import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
 import kotlin.reflect.KClass
 
-class DevP2PConnection(private val frameConnection: FrameConnection,
-                       val myCapabilities: List<Capability>) : FrameConnection.Listener {
+class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConnection.Listener {
 
     interface Listener {
         fun didConnect()
@@ -28,9 +28,9 @@ class DevP2PConnection(private val frameConnection: FrameConnection,
 
         private const val devP2PMaxMessageCode = 0x10
 
-        fun getInstance(myCapabilities: List<Capability>, connectionKey: ECKey, node: Node): DevP2PConnection {
+        fun getInstance(connectionKey: ECKey, node: Node): DevP2PConnection {
             val frameConnection = FrameConnection.getInstance(connectionKey, node)
-            val devP2PConnection = DevP2PConnection(frameConnection, myCapabilities)
+            val devP2PConnection = DevP2PConnection(frameConnection)
 
             frameConnection.listener = devP2PConnection
 
@@ -42,23 +42,11 @@ class DevP2PConnection(private val frameConnection: FrameConnection,
     private var packetTypesMap: MutableMap<Int, KClass<out IMessage>> = devP2PPacketTypesMap
 
     @Throws(Exception::class)
-    fun register(nodeCapabilities: List<Capability>) {
-
-        val sharedCapabilities = mutableListOf<Capability>()
-
-        myCapabilities.forEach { myCapability ->
-            if (nodeCapabilities.contains(myCapability))
-                sharedCapabilities.add(myCapability)
-        }
-
-        check(sharedCapabilities.isNotEmpty()) {
-            throw NoCommonCapabilities()
-        }
-
+    fun register(sharedCapabilities: List<Capability>) {
         packetTypesMap = devP2PPacketTypesMap
         var offset = devP2PMaxMessageCode
 
-        sharedCapabilities.sorted().forEach { capability ->
+        sharedCapabilities.forEach { capability ->
             capability.packetTypesMap.entries.forEach { entry ->
                 packetTypesMap[offset + entry.key] = entry.value
             }
@@ -74,7 +62,7 @@ class DevP2PConnection(private val frameConnection: FrameConnection,
         frameConnection.disconnect(error)
     }
 
-    fun send(message: IMessage) {
+    fun send(message: IOutMessage) {
         println(">>>>>>>> $message \n")
         for (entry in packetTypesMap.entries) {
             if (entry.value == message::class) {
@@ -108,9 +96,6 @@ class DevP2PConnection(private val frameConnection: FrameConnection,
             disconnect(InvalidPayload())
         }
     }
-
-    open class CapabilityError : Exception()
-    class NoCommonCapabilities : CapabilityError()
 
     open class DeserializeError : Exception()
     class UnknownMessageType : DeserializeError()

@@ -2,11 +2,11 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class GetProofsMessage : IMessage {
+class GetProofsMessage : IOutMessage {
 
     var requestID: Long = 0
     var proofRequests: List<ProofRequest> = listOf()

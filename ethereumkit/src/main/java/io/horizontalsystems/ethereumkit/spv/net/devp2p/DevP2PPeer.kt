@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
-import io.horizontalsystems.ethereumkit.spv.net.MessageFactory
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
@@ -10,8 +10,11 @@ import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
 
 class DevP2PPeer(val devP2PConnection: DevP2PConnection,
-                 val messageFactory: MessageFactory,
-                 val key: ECKey) : DevP2PConnection.Listener {
+                 val capabilityHelper: CapabilityHelper,
+                 val myCapabilities: List<Capability>,
+                 val myNodeId: ByteArray,
+                 val port: Int) : DevP2PConnection.Listener {
+
     interface Listener {
         fun didConnect()
         fun didDisconnect(error: Throwable?)
@@ -21,12 +24,15 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
     var listener: Listener? = null
 
     private fun handle(message: HelloMessage) {
-        try {
-            devP2PConnection.register(nodeCapabilities = message.capabilities)
-            listener?.didConnect()
-        } catch (error: Exception) {
-            disconnect(error)
+        val sharedCapabilities = capabilityHelper.sharedCapabilities(myCapabilities, message.capabilities)
+
+        check(sharedCapabilities.isNotEmpty()) {
+            throw NoSharedCapabilities()
         }
+
+        devP2PConnection.register(sharedCapabilities)
+
+        listener?.didConnect()
     }
 
     private fun handle(message: DisconnectMessage) {
@@ -34,7 +40,8 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
     }
 
     private fun handle(message: PingMessage) {
-        devP2PConnection.send(messageFactory.pongMessage())
+        val pongMessage = PongMessage()
+        devP2PConnection.send(pongMessage)
     }
 
     private fun handle(message: PongMessage) {
@@ -51,14 +58,14 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
         devP2PConnection.disconnect(error)
     }
 
-    fun send(message: IMessage) {
+    fun send(message: IOutMessage) {
         devP2PConnection.send(message)
     }
 
     //-----------Connection.Listener methods------------
 
     override fun didConnect() {
-        val helloMessage = messageFactory.helloMessage(key, devP2PConnection.myCapabilities)
+        val helloMessage = HelloMessage(myNodeId, port, myCapabilities)
         devP2PConnection.send(helloMessage)
     }
 
@@ -68,23 +75,30 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
 
     override fun didReceive(message: IMessage) {
         println("<<<<<<< $message \n")
-        when (message) {
-            is HelloMessage -> handle(message)
-            is DisconnectMessage -> handle(message)
-            is PingMessage -> handle(message)
-            is PongMessage -> handle(message)
-            else -> listener?.didReceive(message)
+        try {
+            when (message) {
+                is HelloMessage -> handle(message)
+                is DisconnectMessage -> handle(message)
+                is PingMessage -> handle(message)
+                is PongMessage -> handle(message)
+                else -> listener?.didReceive(message)
+            }
+        } catch (ex: Exception) {
+            disconnect(ex)
         }
     }
 
     open class DevP2PPeerError : Exception()
     class DisconnectMessageReceived : DevP2PPeerError()
+    class NoSharedCapabilities : DevP2PPeerError()
 
     companion object {
-
         fun getInstance(key: ECKey, node: Node, capabilities: List<Capability>): DevP2PPeer {
-            val devP2PConnection = DevP2PConnection.getInstance(capabilities, key, node)
-            val devP2PPeer = DevP2PPeer(devP2PConnection, MessageFactory(), key)
+            val devP2PConnection = DevP2PConnection.getInstance(key, node)
+            var nodeId = key.publicKeyPoint.getEncoded(false)
+            nodeId = nodeId.copyOfRange(1, nodeId.size)
+
+            val devP2PPeer = DevP2PPeer(devP2PConnection, CapabilityHelper(), capabilities, nodeId, 30303)
 
             devP2PConnection.listener = devP2PPeer
 

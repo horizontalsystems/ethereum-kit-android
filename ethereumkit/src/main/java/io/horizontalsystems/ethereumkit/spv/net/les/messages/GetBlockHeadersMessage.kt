@@ -1,11 +1,11 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class GetBlockHeadersMessage : IMessage {
+class GetBlockHeadersMessage : IOutMessage {
 
     companion object {
         const val maxHeaders = 50
