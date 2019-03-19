@@ -270,11 +270,12 @@ class LESPeerTest : Spek({
     describe("#requestBlockHeaders") {
         val blockHash = ByteArray(32) { 9 }
         val requestId = 123L
+        val limit = 100
 
         beforeEach {
             whenever(randomHelper.randomLong()).thenReturn(requestId)
 
-            lesPeer.requestBlockHeaders(blockHash)
+            lesPeer.requestBlockHeaders(blockHash, limit)
         }
 
         it("sets request to holder") {
@@ -285,7 +286,8 @@ class LESPeerTest : Spek({
             verify(devP2PPeer).send(argThat {
                 this is GetBlockHeadersMessage &&
                         this.requestID == requestId &&
-                        this.blockHash.contentEquals(blockHash)
+                        this.blockHash.contentEquals(blockHash) &&
+                        this.maxHeaders == limit
             })
         }
     }
