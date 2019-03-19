@@ -90,11 +90,11 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         devP2PPeer.disconnect(error)
     }
 
-    fun requestBlockHeaders(blockHash: ByteArray) {
+    fun requestBlockHeaders(blockHash: ByteArray, limit: Int) {
         val requestId = randomHelper.randomLong()
         requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHash), requestId)
 
-        val message = GetBlockHeadersMessage(requestId, blockHash)
+        val message = GetBlockHeadersMessage(requestId, blockHash, limit)
         devP2PPeer.send(message)
     }
 

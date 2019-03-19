@@ -5,28 +5,11 @@ import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class GetBlockHeadersMessage : IOutMessage {
-
-    companion object {
-        const val maxHeaders = 50
-    }
-
-    var requestID: Long = 0
-    var blockHash: ByteArray = byteArrayOf()
-    private var skip: Int = 0
-    private var reverse: Int = 0
-
-    constructor(requestID: Long,
-                blockHash: ByteArray,
-                skip: Int = 0,
-                reverse: Int = 0) {
-        this.requestID = requestID
-        this.blockHash = blockHash
-        this.skip = skip
-        this.reverse = reverse
-    }
-
-    constructor(payload: ByteArray)
+class GetBlockHeadersMessage(var requestID: Long,
+                             var blockHash: ByteArray,
+                             var maxHeaders: Int,
+                             private var skip: Int = 0,
+                             private var reverse: Int = 0) : IOutMessage {
 
     override fun encoded(): ByteArray {
         val reqID = RLP.encodeBigInteger(BigInteger.valueOf(this.requestID))

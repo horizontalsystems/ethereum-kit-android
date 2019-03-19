@@ -27,6 +27,6 @@ class BlockHeadersMessage(payload: ByteArray) :  IInMessage {
     }
 
     override fun toString(): String {
-        return "Headers [requestId: $requestID; bv: $bv; headers (${headers.size}): [${headers.joinToString(separator = ", ")}}] ]"
+        return "Headers [requestId: $requestID; bv: $bv; headers (${headers.size}): [${headers.joinToString(separator = ", ")}] ]"
     }
 }

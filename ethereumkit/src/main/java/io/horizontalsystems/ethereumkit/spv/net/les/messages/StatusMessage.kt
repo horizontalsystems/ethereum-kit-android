@@ -82,7 +82,7 @@ class StatusMessage : IInMessage, IOutMessage {
                 "serveStateSince: $serveStateSince; " +
                 "flowControlBL: ${String.format("%,d", flowControlBL)}; " +
                 "flowControlMRR: ${String.format("%,d", flowControlMRR)}; " +
-                "flowControlMRC: \n${flowControlMRC.joinToString(separator = ", ") { "$it\n" }}" +
+                "flowControlMRC: \n${flowControlMRC.joinToString(separator = ",\n ") { "$it" }}" +
                 "]"
     }
 }
