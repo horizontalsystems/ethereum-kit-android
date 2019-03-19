@@ -3,7 +3,6 @@ package io.horizontalsystems.ethereumkit.spv.net.connection
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.spv.crypto.AESCipher
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import org.junit.Assert.*
@@ -13,7 +12,6 @@ import org.mockito.Mockito
 import org.spongycastle.crypto.digests.KeccakDigest
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
 
 class FrameCodecTest {
 
@@ -49,15 +47,6 @@ class FrameCodecTest {
         whenever(frameCodecHelper.updateMac(secrets.ingressMac, secrets.mac, updatedEgressDigest)).thenReturn(bodyMac)
 
         frameCodec = FrameCodec(secrets, frameCodecHelper, aesEncryptor, aesDecryptor)
-    }
-
-    @Test
-    fun tmp() {
-        val hex = "fffffffff5f3d95a".hexStringToByteArray()
-        val bb = ByteBuffer.wrap(hex)
-        val l = bb.long
-
-        println(l)
     }
 
     @Test

@@ -3,8 +3,10 @@ package io.horizontalsystems.ethereumkit.spv.net.les.messages
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.core.toInt
+import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
+import io.horizontalsystems.ethereumkit.spv.net.les.MaxCost
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.math.BigInteger
@@ -13,42 +15,57 @@ class StatusMessage : IInMessage, IOutMessage {
 
     val protocolVersion: Byte
     val networkId: Int
+    val headTotalDifficulty: BigInteger
+    val headHash: ByteArray
+    val headHeight: BigInteger
     val genesisHash: ByteArray
-    val bestBlockTotalDifficulty: BigInteger
-    val bestBlockHash: ByteArray
-    val bestBlockHeight: BigInteger
+
+    var serveHeaders: Boolean = false
+    var serveChainSince: BigInteger? = null
+    var serveStateSince: BigInteger? = null
+
+    var flowControlBL: Long = 0
+    var flowControlMRR: Long = 0
+    var flowControlMRC: List<MaxCost> = listOf()
 
     constructor(protocolVersion: Byte, networkId: Int,
-                genesisHash: ByteArray, bestBlockTotalDifficulty: BigInteger,
-                bestBlockHash: ByteArray, bestBlockHeight: BigInteger) {
+                genesisHash: ByteArray, headTotalDifficulty: BigInteger,
+                headHash: ByteArray, headHeight: BigInteger) {
         this.protocolVersion = protocolVersion
         this.networkId = networkId
+        this.headTotalDifficulty = headTotalDifficulty
+        this.headHash = headHash
+        this.headHeight = headHeight
         this.genesisHash = genesisHash
-        this.bestBlockTotalDifficulty = bestBlockTotalDifficulty
-        this.bestBlockHash = bestBlockHash
-        this.bestBlockHeight = bestBlockHeight
     }
 
     constructor(payload: ByteArray) {
-        val paramsList = RLP.decode2(payload)[0] as RLPList
+        val params = RLP.decode2(payload)[0] as RLPList
 
-        protocolVersion = (paramsList[0] as RLPList)[1].rlpData?.get(0) ?: 0
-        val networkIdBytes = (paramsList[1] as RLPList)[1].rlpData
+        protocolVersion = params.valueElement("protocolVersion")?.rlpData?.get(0) ?: 0
+        networkId = params.valueElement("networkId").toInt()
+        headTotalDifficulty = params.valueElement("headTd").toBigInteger()
+        headHash = params.valueElement("headHash")?.rlpData ?: byteArrayOf()
+        headHeight = params.valueElement("headNum").toBigInteger()
+        genesisHash = params.valueElement("genesisHash")?.rlpData ?: byteArrayOf()
 
-        networkId = networkIdBytes.toInt()
+        serveHeaders = params.valueElement("serveHeaders") != null
+        serveChainSince = params.valueElement("serveChainSince")?.toBigInteger()
+        serveStateSince = params.valueElement("serveStateSince")?.toBigInteger()
 
-        bestBlockTotalDifficulty = (paramsList[2] as RLPList)[1].rlpData.toBigInteger()
-        bestBlockHash = (paramsList[3] as RLPList)[1].rlpData ?: byteArrayOf()
-        bestBlockHeight = (paramsList[4] as RLPList)[1].rlpData.toBigInteger()
-        genesisHash = (paramsList[5] as RLPList)[1].rlpData ?: byteArrayOf()
+        flowControlBL = params.valueElement("flowControl/BL").toLong()
+        flowControlMRR = params.valueElement("flowControl/MRR").toLong()
+        flowControlMRC = (params.valueElement("flowControl/MRC") as RLPList).map {
+            MaxCost(it as RLPList)
+        }
     }
 
     override fun encoded(): ByteArray {
         val protocolVersion = RLP.encodeList(RLP.encodeString("protocolVersion"), RLP.encodeByte(this.protocolVersion))
         val networkId = RLP.encodeList(RLP.encodeString("networkId"), RLP.encodeInt(this.networkId))
-        val totalDifficulty = RLP.encodeList(RLP.encodeString("headTd"), RLP.encodeBigInteger(this.bestBlockTotalDifficulty))
-        val bestHash = RLP.encodeList(RLP.encodeString("headHash"), RLP.encodeElement(this.bestBlockHash))
-        val bestNum = RLP.encodeList(RLP.encodeString("headNum"), RLP.encodeBigInteger(this.bestBlockHeight))
+        val totalDifficulty = RLP.encodeList(RLP.encodeString("headTd"), RLP.encodeBigInteger(this.headTotalDifficulty))
+        val bestHash = RLP.encodeList(RLP.encodeString("headHash"), RLP.encodeElement(this.headHash))
+        val bestNum = RLP.encodeList(RLP.encodeString("headNum"), RLP.encodeBigInteger(this.headHeight))
         val genesisHash = RLP.encodeList(RLP.encodeString("genesisHash"), RLP.encodeElement(this.genesisHash))
         val announceType = RLP.encodeList(RLP.encodeString("announceType"), RLP.encodeByte(1.toByte()))
 
@@ -57,8 +74,15 @@ class StatusMessage : IInMessage, IOutMessage {
 
     override fun toString(): String {
         return "Status [protocolVersion: $protocolVersion; networkId: $networkId; " +
-                "totalDifficulty: $bestBlockTotalDifficulty; " +
-                "bestHash: ${bestBlockHash.toHexString()}; bestNum: $bestBlockHeight; " +
-                "genesisHash: ${genesisHash.toHexString()}]"
+                "totalDifficulty: $headTotalDifficulty; " +
+                "bestHash: ${headHash.toHexString()}; bestNum: $headHeight; " +
+                "genesisHash: ${genesisHash.toHexString()} " +
+                "serveHeaders: $serveHeaders; " +
+                "serveChainSince: $serveChainSince; " +
+                "serveStateSince: $serveStateSince; " +
+                "flowControlBL: ${String.format("%,d", flowControlBL)}; " +
+                "flowControlMRR: ${String.format("%,d", flowControlMRR)}; " +
+                "flowControlMRC: \n${flowControlMRC.joinToString(separator = ", ") { "$it\n" }}" +
+                "]"
     }
 }

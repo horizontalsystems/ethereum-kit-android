@@ -49,7 +49,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
             throw WrongNetwork()
         }
 
-        check(message.bestBlockHeight >= lastBlockHeader.height) {
+        check(message.headHeight >= lastBlockHeader.height) {
             throw ExpiredBestBlockHeight()
         }
 
@@ -114,9 +114,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
                 protocolVersion = capability.version,
                 networkId = network.id,
                 genesisHash = network.genesisBlockHash,
-                bestBlockTotalDifficulty = lastBlockHeader.totalDifficulty,
-                bestBlockHash = lastBlockHeader.hashHex,
-                bestBlockHeight = lastBlockHeader.height)
+                headTotalDifficulty = lastBlockHeader.totalDifficulty,
+                headHash = lastBlockHeader.hashHex,
+                headHeight = lastBlockHeader.height)
 
         devP2PPeer.send(statusMessage)
     }
