@@ -43,8 +43,8 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
         return database.balanceDao().getBalance(address)?.balance
     }
 
-    override fun getLastBlockHeight(): Int? {
-        return database.lastBlockHeightDao().getLastBlockHeight()?.height
+    override fun getLastBlockHeight(): Long? {
+        return database.lastBlockHeightDao().getLastBlockHeight()?.height?.toLong()
     }
 
     override fun getLastTransactionBlockHeight(isErc20: Boolean): Int? {

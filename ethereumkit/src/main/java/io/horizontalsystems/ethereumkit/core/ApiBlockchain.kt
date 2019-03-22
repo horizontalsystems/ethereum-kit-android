@@ -152,7 +152,7 @@ class ApiBlockchain(
     }
 
     override fun gasPriceInWei(feePriority: FeePriority): Long {
-        return when(feePriority) {
+        return when (feePriority) {
             FeePriority.Lowest -> gasPriceData.lowPriority
             FeePriority.Low -> {
                 (gasPriceData.lowPriority + gasPriceData.mediumPriority) / 2
@@ -244,7 +244,7 @@ class ApiBlockchain(
 
     private fun updateLastBlockHeight(height: Int) {
         storage.saveLastBlockHeight(height)
-        listener?.onUpdateLastBlockHeight(height)
+        listener?.onUpdateLastBlockHeight(height.toLong())
     }
 
     private fun updateGasPrice(gasPrice: GasPrice) {

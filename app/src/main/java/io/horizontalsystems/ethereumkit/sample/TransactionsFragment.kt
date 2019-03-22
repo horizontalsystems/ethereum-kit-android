@@ -67,7 +67,7 @@ class TransactionsFragment : Fragment() {
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     var items = listOf<TransactionRecord>()
-    var lastBlockHeight: Int = 0
+    var lastBlockHeight: Long = 0
 
     override fun getItemCount() = items.size
 
@@ -84,7 +84,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Int) {
+    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Long) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT

@@ -5,7 +5,6 @@ import android.arch.persistence.room.PrimaryKey
 import android.arch.persistence.room.TypeConverters
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.room.RoomTypeConverters
-import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
@@ -21,7 +20,7 @@ class BlockHeader {
     }
 
     @PrimaryKey
-    val height: BigInteger
+    val height: Long
     val hashHex: ByteArray
     var totalDifficulty: BigInteger = BigInteger.ZERO // Scalar value corresponding to the sum of difficulty values of all previous blocks
     val parentHash: ByteArray         // 256-bit Keccak-256 hash of parent block
@@ -62,7 +61,7 @@ class BlockHeader {
             difficulty: ByteArray,         /* A scalar value corresponding to the difficulty level of this block.
                                * This can be calculated from the previous block’s difficulty level
                                * and the timestamp */
-            height: BigInteger,
+            height: Long,
             gasLimit: ByteArray,         // A scalar value equal to the current limit of gas expenditure per block
             gasUsed: Long,             // A scalar value equal to the total gas used in transactions in this block
             timestamp: Long,           // A scalar value equal to the reasonable output of Unix's time() at this block's inception
@@ -108,7 +107,7 @@ class BlockHeader {
 
         this.logsBloom = rlpHeader[6].rlpData ?: byteArrayOf()
         this.difficulty = rlpHeader[7].rlpData ?: byteArrayOf()
-        this.height = rlpHeader[8].rlpData.toBigInteger()
+        this.height = rlpHeader[8].rlpData.toLong()
         this.gasLimit = rlpHeader[9].rlpData ?: byteArrayOf()
         this.gasUsed = rlpHeader[10].rlpData.toLong()
         this.timestamp = rlpHeader[11].rlpData.toLong()

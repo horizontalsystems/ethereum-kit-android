@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
 class GetBlockHeadersMessage(var requestID: Long,
-                             var blockHeight: BigInteger,
+                             var blockHeight: Long,
                              var maxHeaders: Int,
                              private var skip: Int = 0,
                              private var reverse: Int = 0) : IOutMessage {
@@ -15,9 +15,9 @@ class GetBlockHeadersMessage(var requestID: Long,
         val maxHeaders = RLP.encodeInt(maxHeaders)
         val skipBlocks = RLP.encodeInt(skip)
         val reverse = RLP.encodeByte(reverse.toByte())
-        val hash = RLP.encodeBigInteger(this.blockHeight)
+        val height = RLP.encodeLong(this.blockHeight)
 
-        var encoded = RLP.encodeList(hash, maxHeaders, skipBlocks, reverse)
+        var encoded = RLP.encodeList(height, maxHeaders, skipBlocks, reverse)
         encoded = RLP.encodeList(reqID, encoded)
 
         return encoded

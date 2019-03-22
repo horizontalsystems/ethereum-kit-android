@@ -19,8 +19,8 @@ class SpvRoomStorage : ISpvStorage {
         this.database = SPVDatabase.getInstance(context, databaseName)
     }
 
-    override fun getLastBlockHeight(): Int? {
-        return getLastBlockHeader()?.height?.toInt()
+    override fun getLastBlockHeight(): Long? {
+        return getLastBlockHeader()?.height
     }
 
     override fun getBalance(address: String): String? {

@@ -17,7 +17,7 @@ class StatusMessage : IInMessage, IOutMessage {
     val networkId: Int
     val headTotalDifficulty: BigInteger
     val headHash: ByteArray
-    val headHeight: BigInteger
+    val headHeight: Long
     val genesisHash: ByteArray
 
     var serveHeaders: Boolean = false
@@ -30,7 +30,7 @@ class StatusMessage : IInMessage, IOutMessage {
 
     constructor(protocolVersion: Byte, networkId: Int,
                 genesisHash: ByteArray, headTotalDifficulty: BigInteger,
-                headHash: ByteArray, headHeight: BigInteger) {
+                headHash: ByteArray, headHeight: Long) {
         this.protocolVersion = protocolVersion
         this.networkId = networkId
         this.headTotalDifficulty = headTotalDifficulty
@@ -46,7 +46,7 @@ class StatusMessage : IInMessage, IOutMessage {
         networkId = params.valueElement("networkId").toInt()
         headTotalDifficulty = params.valueElement("headTd").toBigInteger()
         headHash = params.valueElement("headHash")?.rlpData ?: byteArrayOf()
-        headHeight = params.valueElement("headNum").toBigInteger()
+        headHeight = params.valueElement("headNum").toLong()
         genesisHash = params.valueElement("genesisHash")?.rlpData ?: byteArrayOf()
 
         serveHeaders = params.valueElement("serveHeaders") != null
@@ -65,7 +65,7 @@ class StatusMessage : IInMessage, IOutMessage {
         val networkId = RLP.encodeList(RLP.encodeString("networkId"), RLP.encodeInt(this.networkId))
         val totalDifficulty = RLP.encodeList(RLP.encodeString("headTd"), RLP.encodeBigInteger(this.headTotalDifficulty))
         val bestHash = RLP.encodeList(RLP.encodeString("headHash"), RLP.encodeElement(this.headHash))
-        val bestNum = RLP.encodeList(RLP.encodeString("headNum"), RLP.encodeBigInteger(this.headHeight))
+        val bestNum = RLP.encodeList(RLP.encodeString("headNum"), RLP.encodeLong(this.headHeight))
         val genesisHash = RLP.encodeList(RLP.encodeString("genesisHash"), RLP.encodeElement(this.genesisHash))
         val announceType = RLP.encodeList(RLP.encodeString("announceType"), RLP.encodeByte(1.toByte()))
 
@@ -85,4 +85,5 @@ class StatusMessage : IInMessage, IOutMessage {
                 "flowControlMRC: \n${flowControlMRC.joinToString(separator = ",\n ") { "$it" }}" +
                 "]"
     }
+
 }

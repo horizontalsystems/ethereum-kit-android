@@ -8,7 +8,7 @@ import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
 interface IStorage {
-    fun getLastBlockHeight(): Int?
+    fun getLastBlockHeight(): Long?
     fun getBalance(address: String): String?
     fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
     fun clear()
@@ -51,7 +51,7 @@ interface IBlockchain {
 }
 
 interface IBlockchainListener {
-    fun onUpdateLastBlockHeight(lastBlockHeight: Int)
+    fun onUpdateLastBlockHeight(lastBlockHeight: Long)
 
     fun onUpdateState(syncState: EthereumKit.SyncState)
     fun onUpdateErc20State(syncState: EthereumKit.SyncState, contractAddress: String)

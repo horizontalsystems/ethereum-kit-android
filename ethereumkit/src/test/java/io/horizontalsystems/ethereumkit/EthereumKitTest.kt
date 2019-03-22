@@ -56,7 +56,7 @@ class EthereumKitTest {
     @Test
     fun testInit_balance() {
         val balance = "123.45"
-        val lastBlockHeight = 123
+        val lastBlockHeight = 123L
 
         whenever(storage.getBalance(ethereumAddress)).thenReturn(balance)
         whenever(storage.getLastBlockHeight()).thenReturn(lastBlockHeight)
@@ -364,7 +364,7 @@ class EthereumKitTest {
 
     @Test
     fun testOnUpdateLastBlockHeight() {
-        val height = 34
+        val height = 34L
         val erc20Listener = mock(EthereumKit.Listener::class.java)
 
         whenever(state.erc20Listeners).thenReturn(listOf(erc20Listener))
