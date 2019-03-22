@@ -102,7 +102,7 @@ class EthereumKit(
             return state.balance
         }
 
-    val lastBlockHeight: Int?
+    val lastBlockHeight: Long?
         get() {
             return state.lastBlockHeight
         }
@@ -140,7 +140,7 @@ class EthereumKit(
     //IBlockchain
     //
 
-    override fun onUpdateLastBlockHeight(lastBlockHeight: Int) {
+    override fun onUpdateLastBlockHeight(lastBlockHeight: Long) {
         state.lastBlockHeight = lastBlockHeight
         listenerExecutor.execute {
             listener?.onLastBlockHeightUpdate()

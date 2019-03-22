@@ -34,7 +34,7 @@ class MainViewModel : ViewModel() {
     val transactions = MutableLiveData<List<TransactionRecord>>()
     val balance = MutableLiveData<BigDecimal>()
     val fee = MutableLiveData<BigDecimal>()
-    val lastBlockHeight = MutableLiveData<Int>()
+    val lastBlockHeight = MutableLiveData<Long>()
     val etherState = MutableLiveData<SyncState>()
     val erc20State = MutableLiveData<SyncState>()
 
