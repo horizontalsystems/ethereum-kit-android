@@ -1,31 +1,24 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
+import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
-import io.horizontalsystems.ethereumkit.spv.net.INetwork
-import io.horizontalsystems.ethereumkit.spv.net.Node
+import io.horizontalsystems.ethereumkit.spv.net.*
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
-import java.math.BigInteger
 
 class LESPeer(private val devP2PPeer: DevP2PPeer,
               private val network: INetwork,
               private val lastBlockHeader: BlockHeader,
               private val randomHelper: RandomHelper,
-              private val requestHolder: LESPeerRequestHolder = LESPeerRequestHolder()) : DevP2PPeer.Listener {
+              private val requestHolder: LESPeerRequestHolder = LESPeerRequestHolder()) : IPeer, DevP2PPeer.Listener {
 
-    interface Listener {
-        fun didConnect()
-        fun didReceive(blockHeaders: List<BlockHeader>, blockHash: ByteArray)
-        fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader)
-        fun didAnnounce(blockHash: ByteArray, blockHeight: BigInteger)
-    }
+    override var listener: IPeerListener? = null
 
-    var listener: Listener? = null
+    override val syncState: EthereumKit.SyncState
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
     private fun handle(message: IMessage) {
         when (message) {
@@ -63,7 +56,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
             throw UnexpectedMessage()
         }
 
-        listener?.didReceive(message.headers, request.blockHash)
+        listener?.didReceive(message.headers, request.blockHeader, request.reversed)
     }
 
     private fun handle(message: ProofsMessage) {
@@ -82,23 +75,23 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     //------------------Public methods----------------------
 
-    fun connect() {
+    override fun connect() {
         devP2PPeer.connect()
     }
 
-    fun disconnect(error: Throwable?) {
+    override fun disconnect(error: Throwable?) {
         devP2PPeer.disconnect(error)
     }
 
-    fun requestBlockHeaders(blockHash: ByteArray, limit: Int) {
+    override fun requestBlockHeaders(blockHeader: BlockHeader, limit: Int, reversed: Boolean) {
         val requestId = randomHelper.randomLong()
-        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHash), requestId)
+        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHeader, reversed), requestId)
 
-        val message = GetBlockHeadersMessage(requestId, blockHash, limit)
+        val message = GetBlockHeadersMessage(requestId, blockHeader.height, limit)
         devP2PPeer.send(message)
     }
 
-    fun requestAccountState(address: ByteArray, blockHeader: BlockHeader) {
+    override fun requestAccountState(address: ByteArray, blockHeader: BlockHeader) {
         val requestId = randomHelper.randomLong()
         requestHolder.setAccountStateRequest(AccountStateRequest(address, blockHeader), requestId)
 
@@ -123,6 +116,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
 
     override fun didDisconnect(error: Throwable?) {
         println("LESPeer -> didDisconnect: $error")
+        listener?.didDisconnect(error)
     }
 
     override fun didReceive(message: IMessage) {

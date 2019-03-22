@@ -74,6 +74,13 @@ object RLP {
         else -> byteArrayOf((OFFSET_SHORT_ITEM + 4).toByte(), singleInt.ushr(24).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
     }
 
+    fun encodeLong(singleInt: Long) = when (singleInt) {
+        singleInt and 0xFF -> encodeByte(singleInt.toByte())
+        singleInt and 0xFFFF -> encodeShort(singleInt.toShort())
+        singleInt and 0xFFFFFF -> byteArrayOf((OFFSET_SHORT_ITEM + 3).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
+        else -> byteArrayOf((OFFSET_SHORT_ITEM + 4).toByte(), singleInt.ushr(24).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
+    }
+
     fun encodeByte(singleByte: Byte) = when {
         (singleByte.toInt() and 0xFF) == 0 -> byteArrayOf(OFFSET_SHORT_ITEM.toByte())
         (singleByte.toInt() and 0xFF) <= 0x7F -> byteArrayOf(singleByte)

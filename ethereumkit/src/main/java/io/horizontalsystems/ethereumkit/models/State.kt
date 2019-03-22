@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class State {
     var balance: String? = null
-    var lastBlockHeight: Int? = null
+    var lastBlockHeight: Long? = null
 
     val erc20List = ConcurrentHashMap<String, ERC20>()
 

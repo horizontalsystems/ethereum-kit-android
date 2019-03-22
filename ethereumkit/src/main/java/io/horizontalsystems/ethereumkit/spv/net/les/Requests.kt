@@ -10,7 +10,7 @@ import io.horizontalsystems.ethereumkit.spv.net.les.messages.ProofsMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class BlockHeaderRequest(val blockHash: ByteArray)
+class BlockHeaderRequest(val blockHeader: BlockHeader, val reversed: Boolean)
 
 class AccountStateRequest(val address: ByteArray, val blockHeader: BlockHeader) {
 

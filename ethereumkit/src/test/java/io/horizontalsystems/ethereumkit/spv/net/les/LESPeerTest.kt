@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
+import io.horizontalsystems.ethereumkit.spv.net.IPeerListener
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 import org.mockito.Mockito.mock
@@ -22,14 +23,14 @@ class LESPeerTest : Spek({
     val lastBlockHeader = mock(BlockHeader::class.java)
     val randomHelper = mock(RandomHelper::class.java)
     val requestHolder = mock(LESPeerRequestHolder::class.java)
-    val listener = mock(LESPeer.Listener::class.java)
+    val listener = mock(IPeerListener::class.java)
 
     val protocolVersion = LESPeer.capability.version
     val networkId = 1
     val genesisHash = ByteArray(32) { 1 }
     val headTotalDifficulty = BigInteger("12345")
     val headHash = ByteArray(32) { 3 }
-    val headHeight = BigInteger.valueOf(100)
+    val headHeight = 100L
 
     beforeEachTest {
         whenever(network.id).thenReturn(networkId)
@@ -83,7 +84,12 @@ class LESPeerTest : Spek({
     }
 
     describe("#didDisconnect") {
+        it("notifies listener") {
+            val error = mock(Throwable::class.java)
+            lesPeer.didDisconnect(error)
 
+            verify(listener).didDisconnect(error)
+        }
     }
 
     describe("#didReceive") {
@@ -145,7 +151,7 @@ class LESPeerTest : Spek({
 
                 context("headHeight") {
                     beforeEach {
-                        whenever(statusMessage.headHeight).thenReturn(BigInteger.valueOf(99))
+                        whenever(statusMessage.headHeight).thenReturn(99L)
                         lesPeer.didReceive(statusMessage)
                     }
 
@@ -172,17 +178,31 @@ class LESPeerTest : Spek({
 
             context("when request exists in holder") {
                 val blockHeaderRequest = mock(BlockHeaderRequest::class.java)
-                val blockHash = ByteArray(10) { 1 }
+                val blockHeader = mock(BlockHeader::class.java)
 
                 beforeEach {
                     whenever(requestHolder.removeBlockHeaderRequest(requestId)).thenReturn(blockHeaderRequest)
-                    whenever(blockHeaderRequest.blockHash).thenReturn(blockHash)
-
-                    lesPeer.didReceive(blockHeadersMessage)
+                    whenever(blockHeaderRequest.blockHeader).thenReturn(blockHeader)
                 }
 
-                it("notifies listener") {
-                    verify(listener).didReceive(headers, blockHash)
+                context("when in reversed order") {
+                    beforeEach {
+                        whenever(blockHeaderRequest.reversed).thenReturn(true)
+                    }
+                    it("notifies listener with reversed flag true") {
+                        lesPeer.didReceive(blockHeadersMessage)
+                        verify(listener).didReceive(headers, blockHeader, true)
+                    }
+                }
+
+                context("when in not reversed order") {
+                    beforeEach {
+                        whenever(blockHeaderRequest.reversed).thenReturn(false)
+                    }
+                    it("notifies listener with reversed flag true") {
+                        lesPeer.didReceive(blockHeadersMessage)
+                        verify(listener).didReceive(headers, blockHeader, false)
+                    }
                 }
             }
 
@@ -252,7 +272,7 @@ class LESPeerTest : Spek({
         context("when message is AnnounceMessage") {
             val announceMessage = mock(AnnounceMessage::class.java)
             val blockHash = ByteArray(32) { 1 }
-            val blockHeight = BigInteger("1234")
+            val blockHeight = 1234L
 
             beforeEach {
                 whenever(announceMessage.blockHash).thenReturn(blockHash)
@@ -268,25 +288,27 @@ class LESPeerTest : Spek({
     }
 
     describe("#requestBlockHeaders") {
-        val blockHash = ByteArray(32) { 9 }
+        val blockHeader = mock(BlockHeader::class.java)
+        val blockHeight = 123456L
         val requestId = 123L
         val limit = 100
 
         beforeEach {
+            whenever(blockHeader.height).thenReturn(blockHeight)
             whenever(randomHelper.randomLong()).thenReturn(requestId)
 
-            lesPeer.requestBlockHeaders(blockHash, limit)
+            lesPeer.requestBlockHeaders(blockHeader, limit)
         }
 
         it("sets request to holder") {
-            verify(requestHolder).setBlockHeaderRequest(argThat { this.blockHash.contentEquals(blockHash) }, eq(requestId))
+            verify(requestHolder).setBlockHeaderRequest(argThat { this.blockHeader == blockHeader }, eq(requestId))
         }
 
         it("sends message to devP2PPeer") {
             verify(devP2PPeer).send(argThat {
                 this is GetBlockHeadersMessage &&
                         this.requestID == requestId &&
-                        this.blockHash.contentEquals(blockHash) &&
+                        this.blockHeight == blockHeight &&
                         this.maxHeaders == limit
             })
         }
