@@ -59,4 +59,8 @@ class SpvRoomStorage : ISpvStorage {
     override fun saveBlockHeaders(blockHeaders: List<BlockHeader>) {
         return database.blockHeaderDao().insertAll(blockHeaders)
     }
+
+    override fun getBlockHeadersReversed(fromBlockHeight: Long, limit: Int): List<BlockHeader> {
+        return database.blockHeaderDao().getByBlockHeightRange(fromBlockHeight - limit, fromBlockHeight)
+    }
 }

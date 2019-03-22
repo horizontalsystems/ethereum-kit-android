@@ -26,6 +26,7 @@ interface IApiStorage : IStorage {
 interface ISpvStorage : IStorage {
     fun getLastBlockHeader(): BlockHeader?
     fun saveBlockHeaders(blockHeaders: List<BlockHeader>)
+    fun getBlockHeadersReversed(fromBlockHeight: Long, limit: Int): List<BlockHeader>
 }
 
 interface IBlockchain {

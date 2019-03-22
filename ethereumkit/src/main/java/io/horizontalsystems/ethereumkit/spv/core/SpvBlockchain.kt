@@ -1,17 +1,13 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IBlockchain
-import io.horizontalsystems.ethereumkit.core.IBlockchainListener
-import io.horizontalsystems.ethereumkit.core.ISpvStorage
-import io.horizontalsystems.ethereumkit.core.address
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
-import io.horizontalsystems.ethereumkit.spv.net.PeerGroup
-import io.horizontalsystems.ethereumkit.spv.net.Ropsten
+import io.horizontalsystems.ethereumkit.spv.net.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.reactivex.Single
 import org.web3j.crypto.Keys
@@ -60,8 +56,12 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onUpdate(state: AccountState) {
-        listener?.onUpdateBalance(state.balance.toString())
+    override fun onUpdate(accountState: AccountState) {
+        listener?.onUpdateBalance(accountState.balance.toString())
+    }
+
+    override fun onUpdate(syncState: EthereumKit.SyncState) {
+        listener?.onUpdateState(syncState)
     }
 
     companion object {
@@ -70,8 +70,13 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
             val hdWallet = HDWallet(seed, if (testMode) 1 else 60)
             val formattedAddress = Keys.toChecksumAddress(hdWallet.address())
 
-            val myKey = CryptoUtils.ecKeyFromPrivate(hdWallet.privateKey(100, 100, true).privKey)
-            val peerGroup = PeerGroup(Ropsten(), storage, myKey, formattedAddress.substring(2))
+            val network = Ropsten()
+            val myKey = CryptoUtils.ecKeyFromPrivate(hdWallet.privateKey(102, 102, true).privKey)
+            val peerProvider = PeerProvider(myKey, storage, network)
+            val blockValidator = BlockValidator()
+            val blockHelper = BlockHelper(storage, network)
+            val address = formattedAddress.substring(2).hexStringToByteArray()
+            val peerGroup = PeerGroup(storage, peerProvider, blockValidator, blockHelper, PeerGroupState(), address)
 
             val spvBlockchain = SpvBlockchain(peerGroup, formattedAddress)
 

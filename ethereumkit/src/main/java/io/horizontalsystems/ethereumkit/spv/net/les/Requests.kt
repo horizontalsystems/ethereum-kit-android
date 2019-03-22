@@ -9,9 +9,8 @@ import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.ProofsMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
-import java.math.BigInteger
 
-class BlockHeaderRequest(val blockHeight: BigInteger)
+class BlockHeaderRequest(val blockHeader: BlockHeader, val reversed: Boolean)
 
 class AccountStateRequest(val address: ByteArray, val blockHeader: BlockHeader) {
 

@@ -19,4 +19,7 @@ interface BlockHeaderDao {
 
     @Query("SELECT * FROM BlockHeader ORDER BY height DESC")
     fun getAll(): List<BlockHeader>
+
+    @Query("SELECT * FROM BlockHeader WHERE height BETWEEN :startHeight AND :endHeight ORDER BY height ASC")
+    fun getByBlockHeightRange(startHeight: Long, endHeight: Long): List<BlockHeader>
 }
