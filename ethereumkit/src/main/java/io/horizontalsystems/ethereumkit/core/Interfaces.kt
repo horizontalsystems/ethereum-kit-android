@@ -4,32 +4,42 @@ import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
-interface IStorage {
+
+interface IApiStorage {
     fun getLastBlockHeight(): Long?
     fun getBalance(address: String): String?
     fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
-    fun clear()
-}
 
-interface IApiStorage : IStorage {
     fun getGasPriceInWei(): GasPrice?
     fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun saveLastBlockHeight(lastBlockHeight: Int)
     fun saveGasPriceInWei(gasPriceInWei: GasPrice)
     fun saveBalance(balance: String, address: String)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
+
+    fun clear()
 }
 
-interface ISpvStorage : IStorage {
+interface ISpvStorage {
     fun getLastBlockHeader(): BlockHeader?
     fun saveBlockHeaders(blockHeaders: List<BlockHeader>)
     fun getBlockHeadersReversed(fromBlockHeight: Long, limit: Int): List<BlockHeader>
+
+    fun getAccountState(): AccountState?
+    fun saveAccountSate(accountState: AccountState)
+
+    fun clear()
 }
 
 interface IBlockchain {
+    fun getLastBlockHeight(): Long?
+    fun getBalance(address: String): String?
+    fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
+
     val ethereumAddress: String
     val gasPriceData: GasPrice
     val gasLimitEthereum: Int

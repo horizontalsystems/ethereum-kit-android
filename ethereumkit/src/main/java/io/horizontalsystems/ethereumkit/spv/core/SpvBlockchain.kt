@@ -13,6 +13,8 @@ import io.reactivex.Single
 import org.web3j.crypto.Keys
 
 class SpvBlockchain(private val peerGroup: PeerGroup,
+                    private val storage: ISpvStorage,
+                    private val network: INetwork,
                     override val ethereumAddress: String) : IBlockchain, PeerGroup.Listener {
 
     override val gasPriceData: GasPrice = GasPrice.defaultGasPrice
@@ -57,11 +59,24 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     }
 
     override fun onUpdate(accountState: AccountState) {
+        storage.saveAccountSate(accountState)
         listener?.onUpdateBalance(accountState.balance.toString())
     }
 
     override fun onUpdate(syncState: EthereumKit.SyncState) {
         listener?.onUpdateState(syncState)
+    }
+
+    override fun getLastBlockHeight(): Long? {
+        return storage.getLastBlockHeader()?.height
+    }
+
+    override fun getBalance(address: String): String? {
+        return storage.getAccountState()?.balance?.toString()
+    }
+
+    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
+        TODO("not implemented")
     }
 
     companion object {
@@ -78,7 +93,7 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
             val address = formattedAddress.substring(2).hexStringToByteArray()
             val peerGroup = PeerGroup(storage, peerProvider, blockValidator, blockHelper, PeerGroupState(), address)
 
-            val spvBlockchain = SpvBlockchain(peerGroup, formattedAddress)
+            val spvBlockchain = SpvBlockchain(peerGroup, storage, network, formattedAddress)
 
             peerGroup.listener = spvBlockchain
 

@@ -1,7 +1,10 @@
 package io.horizontalsystems.ethereumkit
 
 import android.content.Context
-import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.AddressValidator
+import io.horizontalsystems.ethereumkit.core.ApiBlockchain
+import io.horizontalsystems.ethereumkit.core.IBlockchain
+import io.horizontalsystems.ethereumkit.core.IBlockchainListener
 import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.FeePriority
@@ -17,7 +20,6 @@ import java.util.concurrent.Executors
 
 class EthereumKit(
         private val blockchain: IBlockchain,
-        val storage: IStorage,
         private val addressValidator: AddressValidator,
         private val state: State) : IBlockchainListener {
 
@@ -32,8 +34,8 @@ class EthereumKit(
     var listenerExecutor: Executor = Executors.newSingleThreadExecutor()
 
     init {
-        state.balance = storage.getBalance(blockchain.ethereumAddress)
-        state.lastBlockHeight = storage.getLastBlockHeight()
+        state.balance = blockchain.getBalance(blockchain.ethereumAddress)
+        state.lastBlockHeight = blockchain.getLastBlockHeight()
     }
 
     fun start() {
@@ -49,7 +51,6 @@ class EthereumKit(
 
         blockchain.clear()
         state.clear()
-        storage.clear()
     }
 
     val receiveAddress: String
@@ -64,7 +65,7 @@ class EthereumKit(
         }
 
         state.add(contractAddress, listener)
-        state.setBalance(storage.getBalance(contractAddress), contractAddress)
+        state.setBalance(blockchain.getBalance(contractAddress), contractAddress)
 
         blockchain.register(contractAddress)
     }
@@ -84,7 +85,7 @@ class EthereumKit(
     }
 
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, null)
+        return blockchain.getTransactions(fromHash, limit, null)
     }
 
     fun send(toAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
@@ -129,7 +130,7 @@ class EthereumKit(
     }
 
     fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, contractAddress)
+        return blockchain.getTransactions(fromHash, limit, contractAddress)
     }
 
     fun sendERC20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
@@ -221,7 +222,7 @@ class EthereumKit(
             val blockchain = ApiBlockchain.apiBlockchain(storage, seed, testMode, infuraKey, etherscanKey)
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())
+            val ethereumKit = EthereumKit(blockchain, addressValidator, State())
             blockchain.listener = ethereumKit
 
             return ethereumKit
@@ -232,7 +233,7 @@ class EthereumKit(
             val blockchain = SpvBlockchain.spvBlockchain(storage, seed, testMode)
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, storage, addressValidator, State())
+            val ethereumKit = EthereumKit(blockchain, addressValidator, State())
             blockchain.listener = ethereumKit
 
             return ethereumKit

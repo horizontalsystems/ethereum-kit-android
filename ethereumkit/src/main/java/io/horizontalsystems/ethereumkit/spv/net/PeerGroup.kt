@@ -11,7 +11,7 @@ class PeerGroup(val storage: ISpvStorage,
                 val blockHelper: BlockHelper,
                 val state: PeerGroupState,
                 val address: ByteArray,
-                val headersLimit: Int = 75) : IPeerListener {
+                val headersLimit: Int = 150) : IPeerListener {
 
     interface Listener {
         fun onUpdate(accountState: AccountState)
