@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.reactivex.Single
 
-class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String, decimal: Int): BaseAdapter(ethereumKit, decimal) {
+class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String, decimal: Int) : BaseAdapter(ethereumKit, decimal) {
 
     init {
         ethereumKit.register(contractAddress, this)
@@ -23,7 +23,7 @@ class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String
                 toAddress = address,
                 contractAddress = contractAddress,
                 amount = amount,
-                feePriority = feePriority).map { Unit }
+                gasPrice = 5_000_000_000).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {

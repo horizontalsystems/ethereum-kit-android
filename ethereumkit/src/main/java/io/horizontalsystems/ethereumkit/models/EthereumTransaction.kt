@@ -9,7 +9,7 @@ class EthereumTransaction() {
 
     constructor(etherscanTx: EtherscanTransaction) : this() {
         hash =  etherscanTx.hash
-        nonce = etherscanTx.nonce.toIntOrNull() ?: 0
+        nonce = etherscanTx.nonce.toLongOrNull() ?: 0
         input = etherscanTx.input
         from = formatInEip55(etherscanTx.from)
         to = formatInEip55(etherscanTx.to)
@@ -17,7 +17,7 @@ class EthereumTransaction() {
         blockNumber = etherscanTx.blockNumber.toLongOrNull()
         blockHash = etherscanTx.blockHash
         value = etherscanTx.value
-        gasLimit = etherscanTx.gas.toIntOrNull() ?: 0
+        gasLimit = etherscanTx.gas.toLongOrNull() ?: 0
         gasPriceInWei = etherscanTx.gasPrice.toLongOrNull() ?: 0L
         timeStamp = etherscanTx.timeStamp.toLongOrNull() ?: 0
         transactionIndex = etherscanTx.transactionIndex
@@ -29,12 +29,12 @@ class EthereumTransaction() {
     }
 
     var hash: String = ""
-    var nonce: Int = 0
+    var nonce: Long = 0
     var input: String = ""
     var from: String = ""
     var to: String = ""
     var value: String = ""
-    var gasLimit: Int = 0
+    var gasLimit: Long = 0
     var gasPriceInWei: Long = 0
     var timeStamp: Long = 0
     var contractAddress: String = ""

@@ -4,7 +4,6 @@ import android.content.Context
 import io.horizontalsystems.ethereumkit.core.IApiStorage
 import io.horizontalsystems.ethereumkit.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.LastBlockHeight
 import io.reactivex.Single
 
@@ -55,16 +54,8 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
         }
     }
 
-    override fun getGasPriceInWei(): GasPrice? {
-        return database.gasPriceDao().getGasPrice()
-    }
-
     override fun saveLastBlockHeight(lastBlockHeight: Int) {
         database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
-    }
-
-    override fun saveGasPriceInWei(gasPriceInWei: GasPrice) {
-        database.gasPriceDao().insert(gasPriceInWei)
     }
 
     override fun saveBalance(balance: String, address: String) {

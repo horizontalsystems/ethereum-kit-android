@@ -27,8 +27,7 @@ class MainViewModel : ViewModel() {
     private var ethereumKit: EthereumKit
     private val erc20Adapter: Erc20Adapter
     private val ethereumAdapter: EthereumAdapter
-    var feePriority: FeePriority  = FeePriority.Medium
-
+    var feePriority: FeePriority = FeePriority.Medium
 
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
@@ -42,6 +41,8 @@ class MainViewModel : ViewModel() {
     val sendStatus = SingleLiveEvent<Throwable?>()
 
 
+    val gasPrice: Long = 5_000_000_000
+
     init {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
@@ -53,7 +54,7 @@ class MainViewModel : ViewModel() {
         ethereumKit.start()
 
 
-        fee.value = ethereumKit.fee()
+        fee.value = ethereumKit.fee(gasPrice)
         updateBalance()
         updateErc20Balance()
         updateState()
@@ -132,7 +133,7 @@ class MainViewModel : ViewModel() {
 
     fun refresh() {
         ethereumKit.start()
-        fee.postValue(ethereumKit.fee())
+        fee.postValue(ethereumKit.fee(gasPrice))
     }
 
     fun receiveAddress(): String {

@@ -18,7 +18,7 @@ class EthereumAdapter(ethereumKit: EthereumKit): BaseAdapter(ethereumKit, 18) {
         get() = ethereumKit.balance
 
     override fun sendSingle(address: String, amount: String, feePriority: FeePriority): Single<Unit> {
-        return ethereumKit.send(address, amount, feePriority).map { Unit }
+        return ethereumKit.send(address, amount, 5_000_000_000).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {

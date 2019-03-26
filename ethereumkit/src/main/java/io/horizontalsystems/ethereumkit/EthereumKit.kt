@@ -7,13 +7,11 @@ import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IBlockchainListener
 import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.State
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.Single
-import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -33,8 +31,11 @@ class EthereumKit(
     var listener: Listener? = null
     var listenerExecutor: Executor = Executors.newSingleThreadExecutor()
 
+    private val gasLimit: Long = 21_000
+    private val gasLimitErc20: Long = 100_000
+
     init {
-        state.balance = blockchain.getBalance(blockchain.ethereumAddress)
+        state.balance = blockchain.balance
         state.lastBlockHeight = blockchain.getLastBlockHeight()
     }
 
@@ -55,7 +56,7 @@ class EthereumKit(
 
     val receiveAddress: String
         get() {
-            return blockchain.ethereumAddress
+            return blockchain.address
         }
 
 
@@ -65,7 +66,7 @@ class EthereumKit(
         }
 
         state.add(contractAddress, listener)
-        state.setBalance(blockchain.getBalance(contractAddress), contractAddress)
+        state.setBalance(blockchain.getBalanceErc20(contractAddress), contractAddress)
 
         blockchain.register(contractAddress)
     }
@@ -79,22 +80,21 @@ class EthereumKit(
         addressValidator.validate(address)
     }
 
-    fun fee(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
-        val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
-        return Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+    fun fee(gasPrice: Long): BigDecimal {
+        return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
         return blockchain.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
-        return blockchain.send(toAddress, amount, feePriority)
+    fun send(toAddress: String, amount: String, gasPrice: Long): Single<EthereumTransaction> {
+        return blockchain.send(toAddress, amount, gasPrice, gasLimit)
     }
 
     fun debugInfo(): String {
         val lines = mutableListOf<String>()
-        lines.add("ADDRESS: ${blockchain.ethereumAddress}")
+        lines.add("ADDRESS: ${blockchain.address}")
         return lines.joinToString { "\n" }
     }
 
@@ -109,16 +109,15 @@ class EthereumKit(
         }
 
     val syncState: SyncState
-        get() = blockchain.blockchainSyncState
+        get() = blockchain.syncState
 
 
     //
     // ERC20
     //
 
-    fun feeERC20(feePriority: FeePriority = FeePriority.Medium): BigDecimal {
-        val gas = BigDecimal.valueOf(blockchain.gasPriceInWei(feePriority))
-        return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
+    fun feeERC20(gasPrice: Long): BigDecimal {
+        return BigDecimal(gasPrice).multiply(gasLimitErc20.toBigDecimal())
     }
 
     fun balanceERC20(contractAddress: String): String? {
@@ -126,15 +125,15 @@ class EthereumKit(
     }
 
     fun syncStateErc20(contractAddress: String): SyncState {
-        return blockchain.syncState(contractAddress)
+        return blockchain.syncStateErc20(contractAddress)
     }
 
     fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
         return blockchain.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority = FeePriority.Medium): Single<EthereumTransaction> {
-        return blockchain.sendErc20(toAddress, contractAddress, amount, feePriority)
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPrice: Long): Single<EthereumTransaction> {
+        return blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice, gasLimitErc20)
     }
 
     //

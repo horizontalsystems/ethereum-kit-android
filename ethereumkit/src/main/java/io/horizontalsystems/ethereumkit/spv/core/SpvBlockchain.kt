@@ -3,8 +3,6 @@ package io.horizontalsystems.ethereumkit.spv.core
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.FeePriority
-import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
@@ -17,15 +15,11 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
                     private val storage: ISpvStorage,
                     private val network: INetwork,
                     private val transactionSigner: TransactionSigner,
-                    override val ethereumAddress: String) : IBlockchain, PeerGroup.Listener {
-
-    override val gasPriceData: GasPrice = GasPrice.defaultGasPrice
-    override val gasLimitEthereum: Int = 21_000
-    override val gasLimitErc20: Int = 100_000
+                    override val address: String) : IBlockchain, PeerGroup.Listener {
 
     override var listener: IBlockchainListener? = null
 
-    override val blockchainSyncState = EthereumKit.SyncState.Synced
+    override val syncState = EthereumKit.SyncState.Synced
 
     override fun start() {
         peerGroup.start()
@@ -38,11 +32,7 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     override fun clear() {
     }
 
-    override fun gasPriceInWei(feePriority: FeePriority): Long {
-        return GasPrice.defaultGasPrice.mediumPriority
-    }
-
-    override fun syncState(contractAddress: String): EthereumKit.SyncState {
+    override fun syncStateErc20(contractAddress: String): EthereumKit.SyncState {
         return EthereumKit.SyncState.Synced
     }
 
@@ -52,12 +42,14 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     override fun unregister(contractAddress: String) {
     }
 
+    override val balance: String?
+        get() = storage.getAccountState()?.balance?.toString()
 
-    private fun send(toAddress: String, amount: String, gasPrice: Long): EthereumTransaction {
+    private fun sendInternal(toAddress: String, amount: String, gasPrice: Long, gasLimit: Long): EthereumTransaction {
         val accountState = storage.getAccountState() ?: throw NoAccountState()
         val nonce = accountState.nonce
 
-        val rawTransaction = RawTransaction(nonce.toBigInteger(), gasPrice.toBigInteger(), gasLimitEthereum.toBigInteger(), toAddress, amount.toBigInteger())
+        val rawTransaction = RawTransaction(nonce.toBigInteger(), gasPrice.toBigInteger(), gasLimit.toBigInteger(), toAddress, amount.toBigInteger())
         val signature = transactionSigner.sign(rawTransaction)
 
         peerGroup.send(rawTransaction, signature)
@@ -65,11 +57,11 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         val txHash = transactionSigner.hash(rawTransaction, signature)
         val transaction = EthereumTransaction().apply {
             this.hash = txHash.toHexString()
-            this.nonce = nonce.toInt()
-            this.from = ethereumAddress
+            this.nonce = nonce
+            this.from = address
             this.to = toAddress
             this.value = amount
-            this.gasLimit = gasLimitEthereum
+            this.gasLimit = gasLimit
             this.gasPriceInWei = gasPrice
         }
 
@@ -78,10 +70,10 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         return transaction
     }
 
-    override fun send(toAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
+    override fun send(toAddress: String, amount: String, gasPrice: Long, gasLimit: Long): Single<EthereumTransaction> {
         return Single.create {
             try {
-                val transaction = send(toAddress, amount, GasPrice.defaultGasPrice.mediumPriority)
+                val transaction = sendInternal(toAddress, amount, gasPrice, gasLimit)
                 it.onSuccess(transaction)
             } catch (ex: Exception) {
                 ex.printStackTrace()
@@ -90,7 +82,7 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         }
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPrice: Long, gasLimit: Long): Single<EthereumTransaction> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -107,8 +99,8 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         return storage.getLastBlockHeader()?.height
     }
 
-    override fun getBalance(address: String): String? {
-        return storage.getAccountState()?.balance?.toString()
+    override fun getBalanceErc20(contractAddress: String): String? {
+        return null
     }
 
     override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {

@@ -91,7 +91,7 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
                 .firstOrError()
     }
 
-    override fun send(fromAddress: String, toAddress: String, nonce: Int, amount: String, gasPriceInWei: Long, gasLimit: Int): Single<EthereumTransaction> {
+    override fun send(fromAddress: String, toAddress: String, nonce: Int, amount: String, gasPriceInWei: Long, gasLimit: Long): Single<EthereumTransaction> {
         val rawTransaction = RawTransaction.createEtherTransaction(nonce.toBigInteger(), gasPriceInWei.toBigInteger(), gasLimit.toBigInteger(), toAddress, amount.toBigInteger())
 
         //  sign & send our transaction
@@ -118,7 +118,7 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
                 .firstOrError()
     }
 
-    override fun sendErc20(contractAddress: String, fromAddress: String, toAddress: String, nonce: Int, amount: String, gasPriceInWei: Long, gasLimit: Int): Single<EthereumTransaction> {
+    override fun sendErc20(contractAddress: String, fromAddress: String, toAddress: String, nonce: Int, amount: String, gasPriceInWei: Long, gasLimit: Long): Single<EthereumTransaction> {
         val transferFN = Function("transfer",
                 Arrays.asList<Type<*>>(Address(toAddress), Uint256(amount.toBigInteger())),
                 Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {}))

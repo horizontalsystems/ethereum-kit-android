@@ -2,10 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.FeePriority
-import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.NetworkType
-import io.horizontalsystems.ethereumkit.network.ApiGasPrice
 import io.horizontalsystems.ethereumkit.network.Configuration
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.reactivex.Flowable
@@ -13,35 +10,28 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.BiFunction
-import io.reactivex.schedulers.Schedulers
 import org.web3j.crypto.Keys
 import java.util.concurrent.TimeUnit
 
 class ApiBlockchain(
         private val storage: IApiStorage,
         private val apiProvider: IApiProvider,
-        override val ethereumAddress: String) : IBlockchain {
+        override val address: String) : IBlockchain {
 
     private var erc20Contracts = HashMap<String, Erc20Contract>()
     private val disposables = CompositeDisposable()
 
-    override var gasPriceData: GasPrice = GasPrice.defaultGasPrice
-        private set
-
-    override val gasLimitEthereum: Int = 21_000
-    override val gasLimitErc20: Int = 100_000
-
     override var listener: IBlockchainListener? = null
-
-    override val blockchainSyncState: EthereumKit.SyncState
-        get() = syncState
 
     override fun getLastBlockHeight(): Long? {
         return storage.getLastBlockHeight()
     }
 
-    override fun getBalance(address: String): String? {
-        return storage.getBalance(address)
+    override val balance: String?
+        get() = storage.getBalance(address)
+
+    override fun getBalanceErc20(contractAddress: String): String? {
+        return storage.getBalance(contractAddress)
     }
 
     override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
@@ -49,23 +39,16 @@ class ApiBlockchain(
     }
 
     private val refreshInterval: Long = 30
-    private val gasPriceRefreshInterval: Long = 180
 
-    private var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
-        set(value) {
+    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
+        private set(value) {
             if (field != value) {
                 field = value
                 listener?.onUpdateState(value)
             }
         }
 
-    private val apiGasPrice = ApiGasPrice()
-
     init {
-        storage.getGasPriceInWei()?.let {
-            gasPriceData = it
-        }
-
         Flowable.interval(refreshInterval, TimeUnit.SECONDS)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -73,17 +56,10 @@ class ApiBlockchain(
                     refreshAll()
                 }?.let { disposables.add(it) }
 
-        Flowable.interval(gasPriceRefreshInterval, TimeUnit.SECONDS)
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    refreshGasPrice()
-                }?.let { disposables.add(it) }
     }
 
     override fun start() {
         refreshAll()
-        refreshGasPrice()
     }
 
     override fun stop() {
@@ -96,7 +72,7 @@ class ApiBlockchain(
         storage.clear()
     }
 
-    override fun syncState(contractAddress: String): EthereumKit.SyncState {
+    override fun syncStateErc20(contractAddress: String): EthereumKit.SyncState {
         return erc20Contracts[contractAddress]?.syncState ?: EthereumKit.SyncState.NotSynced
     }
 
@@ -114,20 +90,20 @@ class ApiBlockchain(
         erc20Contracts.remove(contractAddress)
     }
 
-    override fun send(toAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
-        return apiProvider.getTransactionCount(ethereumAddress)
+    override fun send(toAddress: String, amount: String, gasPrice: Long, gasLimit: Long): Single<EthereumTransaction> {
+        return apiProvider.getTransactionCount(address)
                 .flatMap { nonce ->
-                    apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei(feePriority), gasLimitEthereum)
+                    apiProvider.send(address, toAddress, nonce, amount, gasPrice, gasLimit)
                 }
                 .doAfterSuccess {
                     updateTransactions(listOf(it))
                 }
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, feePriority: FeePriority): Single<EthereumTransaction> {
-        return apiProvider.getTransactionCount(ethereumAddress)
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPrice: Long, gasLimit: Long): Single<EthereumTransaction> {
+        return apiProvider.getTransactionCount(address)
                 .flatMap { nonce ->
-                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei(feePriority), gasLimitErc20)
+                    apiProvider.sendErc20(contractAddress, address, toAddress, nonce, amount, gasPrice, gasLimit)
                 }
                 .doAfterSuccess {
                     updateTransactionsErc20(listOf(it))
@@ -148,7 +124,7 @@ class ApiBlockchain(
 
         Single.zip(
                 apiProvider.getLastBlockHeight(),
-                apiProvider.getBalance(ethereumAddress),
+                apiProvider.getBalance(address),
                 BiFunction<Int, String, Pair<Int, String>> { t1, t2 -> Pair(t1, t2) })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ result ->
@@ -164,36 +140,10 @@ class ApiBlockchain(
 
     }
 
-    override fun gasPriceInWei(feePriority: FeePriority): Long {
-        return when (feePriority) {
-            FeePriority.Lowest -> gasPriceData.lowPriority
-            FeePriority.Low -> {
-                (gasPriceData.lowPriority + gasPriceData.mediumPriority) / 2
-            }
-            FeePriority.Medium -> gasPriceData.mediumPriority
-            FeePriority.High -> {
-                (gasPriceData.mediumPriority + gasPriceData.highPriority) / 2
-            }
-            FeePriority.Highest -> gasPriceData.highPriority
-            is FeePriority.Custom -> feePriority.valueInWei
-        }
-    }
-
-    private fun refreshGasPrice() {
-        apiGasPrice.getGasPrice()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    updateGasPrice(it)
-                }, {
-                    //error
-                })?.let { disposables.add(it) }
-    }
-
     private fun refreshTransactions() {
         val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight(false) ?: 0
 
-        apiProvider.getTransactions(ethereumAddress, (lastTransactionBlockHeight + 1))
+        apiProvider.getTransactions(address, (lastTransactionBlockHeight + 1))
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactions(transactions)
@@ -210,7 +160,7 @@ class ApiBlockchain(
 
         val erc20LastTransactionBlockHeight = storage.getLastTransactionBlockHeight(true) ?: 0
 
-        apiProvider.getTransactionsErc20(ethereumAddress, (erc20LastTransactionBlockHeight + 1))
+        apiProvider.getTransactionsErc20(address, (erc20LastTransactionBlockHeight + 1))
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactionsErc20(transactions)
@@ -226,7 +176,7 @@ class ApiBlockchain(
 
     private fun refreshErc20Balances() {
         erc20Contracts.values.forEach { contract ->
-            apiProvider.getBalanceErc20(ethereumAddress, contract.address)
+            apiProvider.getBalanceErc20(address, contract.address)
                     .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                     .subscribe({ balance ->
                         updateErc20Balance(balance, contract.address)
@@ -260,13 +210,8 @@ class ApiBlockchain(
         listener?.onUpdateLastBlockHeight(height.toLong())
     }
 
-    private fun updateGasPrice(gasPrice: GasPrice) {
-        gasPriceData = gasPrice
-        storage.saveGasPriceInWei(gasPrice)
-    }
-
     private fun updateBalance(balance: String) {
-        storage.saveBalance(balance, ethereumAddress)
+        storage.saveBalance(balance, address)
         listener?.onUpdateBalance(balance)
     }
 
