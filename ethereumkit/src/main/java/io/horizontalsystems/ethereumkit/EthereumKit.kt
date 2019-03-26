@@ -196,20 +196,11 @@ class EthereumKit(
         }
     }
 
-
-    open class EthereumKitException(msg: String) : Exception(msg) {
-        class InfuraApiKeyNotSet : EthereumKitException("Infura API Key is not set!")
-        class EtherscanApiKeyNotSet : EthereumKitException("Etherscan API Key is not set!")
-        class FailedToLoadMetaData(errMsg: String?) : EthereumKitException("Failed to load meta-data, NameNotFound: $errMsg")
-        class TokenNotFound(contract: String) : EthereumKitException("ERC20 token not found with contract: $contract")
-    }
-
     sealed class SyncState {
         object Synced : SyncState()
         object NotSynced : SyncState()
         object Syncing : SyncState()
     }
-
 
     companion object {
         fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
