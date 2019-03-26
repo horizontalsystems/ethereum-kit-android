@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.models.etherscan
+package io.horizontalsystems.ethereumkit.api.models.etherscan
 
 data class EtherscanResponse(
   val status: String,

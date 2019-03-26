@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader

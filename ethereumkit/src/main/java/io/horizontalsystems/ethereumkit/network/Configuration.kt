@@ -1,7 +1,5 @@
 package io.horizontalsystems.ethereumkit.network
 
-import io.horizontalsystems.ethereumkit.models.NetworkType
-
 class Configuration(val networkType: NetworkType, val infuraKey: String, val etherscanAPIKey: String, val debugPrints: Boolean) {
     val etherScanUrl: String
         get() {

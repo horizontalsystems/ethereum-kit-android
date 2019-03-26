@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
 import com.nhaarman.mockito_kotlin.*
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader

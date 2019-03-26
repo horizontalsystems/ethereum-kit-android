@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils

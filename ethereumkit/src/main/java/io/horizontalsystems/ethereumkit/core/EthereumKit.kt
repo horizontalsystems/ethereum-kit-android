@@ -1,13 +1,10 @@
-package io.horizontalsystems.ethereumkit
+package io.horizontalsystems.ethereumkit.core
 
 import android.content.Context
-import io.horizontalsystems.ethereumkit.core.AddressValidator
-import io.horizontalsystems.ethereumkit.core.ApiBlockchain
-import io.horizontalsystems.ethereumkit.core.IBlockchain
-import io.horizontalsystems.ethereumkit.core.IBlockchainListener
+import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.State
+import io.horizontalsystems.ethereumkit.api.models.State
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -204,7 +201,7 @@ class EthereumKit(
 
     companion object {
         fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            return ethereumKit(context, Mnemonic().toSeed(words), walletId, testMode, infuraKey, etherscanKey)
+            return ethereumKitSpv(context, Mnemonic().toSeed(words), walletId, testMode)
         }
 
         fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {

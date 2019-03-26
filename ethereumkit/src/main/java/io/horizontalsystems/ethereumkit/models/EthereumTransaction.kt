@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.models
 
 import android.arch.persistence.room.Entity
-import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanTransaction
+import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanTransaction
 import org.web3j.crypto.Keys
 
 @Entity(primaryKeys = ["hash","contractAddress"])

@@ -4,9 +4,8 @@ import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Log
 import android.widget.Toast
-import io.horizontalsystems.ethereumkit.EthereumKit
-import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.FeePriority
+import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord

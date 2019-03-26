@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction

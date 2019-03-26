@@ -1,6 +1,6 @@
-package io.horizontalsystems.ethereumkit.models
+package io.horizontalsystems.ethereumkit.api.models
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ERC20
 import java.util.concurrent.ConcurrentHashMap
 

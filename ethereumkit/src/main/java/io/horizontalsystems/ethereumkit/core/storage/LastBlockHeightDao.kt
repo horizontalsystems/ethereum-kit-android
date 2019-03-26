@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.arch.persistence.room.*
-import io.horizontalsystems.ethereumkit.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 
 @Dao
 interface LastBlockHeightDao {

@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
 
 class PeerGroupState {

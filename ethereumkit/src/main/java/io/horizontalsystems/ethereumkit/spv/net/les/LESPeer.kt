@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader

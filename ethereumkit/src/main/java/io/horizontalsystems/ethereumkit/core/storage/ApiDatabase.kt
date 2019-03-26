@@ -4,9 +4,9 @@ import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
-import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 
 
 @Database(entities = [EthereumBalance::class, LastBlockHeight::class, EthereumTransaction::class], version = 4, exportSchema = true)

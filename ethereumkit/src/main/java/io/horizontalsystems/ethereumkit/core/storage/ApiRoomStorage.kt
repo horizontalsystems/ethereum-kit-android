@@ -2,9 +2,9 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.core.IApiStorage
-import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 import io.reactivex.Single
 
 class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {

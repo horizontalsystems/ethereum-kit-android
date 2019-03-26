@@ -7,7 +7,8 @@ import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.State
+import io.horizontalsystems.ethereumkit.api.models.State
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.reactivex.Single
 import org.junit.Assert
 import org.junit.Before

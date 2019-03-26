@@ -1,6 +1,5 @@
-package io.horizontalsystems.ethereumkit.spv.core
+package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature

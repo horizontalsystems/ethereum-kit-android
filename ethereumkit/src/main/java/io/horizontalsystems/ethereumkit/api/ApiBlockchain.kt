@@ -1,8 +1,9 @@
-package io.horizontalsystems.ethereumkit.core
+package io.horizontalsystems.ethereumkit.api
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.NetworkType
+import io.horizontalsystems.ethereumkit.network.NetworkType
 import io.horizontalsystems.ethereumkit.network.Configuration
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.reactivex.Flowable

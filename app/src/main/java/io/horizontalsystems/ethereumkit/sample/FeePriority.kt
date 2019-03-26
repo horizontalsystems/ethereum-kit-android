@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.models
+package io.horizontalsystems.ethereumkit.sample
 
 sealed class FeePriority {
     object Lowest : FeePriority()

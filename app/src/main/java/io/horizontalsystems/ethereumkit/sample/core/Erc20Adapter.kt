@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.FeePriority
+import io.horizontalsystems.ethereumkit.sample.FeePriority
 import io.reactivex.Single
 
 class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String, decimal: Int) : BaseAdapter(ethereumKit, decimal) {
