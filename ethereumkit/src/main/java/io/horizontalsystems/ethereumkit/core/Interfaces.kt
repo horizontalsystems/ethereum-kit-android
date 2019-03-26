@@ -32,6 +32,9 @@ interface ISpvStorage {
     fun getAccountState(): AccountState?
     fun saveAccountSate(accountState: AccountState)
 
+    fun saveTransactions(transactions: List<EthereumTransaction>)
+    fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
+
     fun clear()
 }
 

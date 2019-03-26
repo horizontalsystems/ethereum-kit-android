@@ -4,6 +4,8 @@ import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
+import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 
 class PeerGroup(val storage: ISpvStorage,
                 val peerProvider: PeerProvider,
@@ -39,6 +41,10 @@ class PeerGroup(val storage: ISpvStorage,
 
     fun stop() {
 //        syncPeer.disconnect(null)
+    }
+
+    fun send(rawTransaction: RawTransaction, signature: Signature) {
+        state.syncPeer?.send(rawTransaction, signature)
     }
 
 //-----------------LESPeer.Listener methods----------------
@@ -90,7 +96,10 @@ class PeerGroup(val storage: ISpvStorage,
                 is InvalidPeer -> state.syncPeer?.disconnect(error)
                 is BlockValidator.InvalidChain -> state.syncPeer?.disconnect(error)
                 is BlockValidator.InvalidProofOfWork -> state.syncPeer?.disconnect(error)
-                is BlockValidator.ForkDetected -> state.syncPeer?.requestBlockHeaders(blockHeader, headersLimit, true)
+                is BlockValidator.ForkDetected -> {
+                    println("Fork Detected!!")
+                    state.syncPeer?.requestBlockHeaders(blockHeader, headersLimit, true)
+                }
             }
         }
     }

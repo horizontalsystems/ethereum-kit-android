@@ -6,12 +6,11 @@ import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 
-class BlockHeadersMessage(payload: ByteArray) :  IInMessage {
+class BlockHeadersMessage(payload: ByteArray) : IInMessage {
 
-    var requestID: Long = 0
-    private var bv: Long = 0
-    var headers: List<BlockHeader> = listOf()
-        private set
+    val requestID: Long
+    val bv: Long
+    val headers: List<BlockHeader>
 
     init {
         val headers = mutableListOf<BlockHeader>()
