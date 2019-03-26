@@ -36,6 +36,18 @@ class ApiBlockchain(
     override val blockchainSyncState: EthereumKit.SyncState
         get() = syncState
 
+    override fun getLastBlockHeight(): Long? {
+        return storage.getLastBlockHeight()
+    }
+
+    override fun getBalance(address: String): String? {
+        return storage.getBalance(address)
+    }
+
+    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
+        return storage.getTransactions(fromHash, limit, contractAddress)
+    }
+
     private val refreshInterval: Long = 30
     private val gasPriceRefreshInterval: Long = 180
 
@@ -81,6 +93,7 @@ class ApiBlockchain(
     override fun clear() {
         erc20Contracts.clear()
         disposables.clear()
+        storage.clear()
     }
 
     override fun syncState(contractAddress: String): EthereumKit.SyncState {

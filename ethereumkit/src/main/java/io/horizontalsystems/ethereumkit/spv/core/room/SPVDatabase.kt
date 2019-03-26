@@ -5,13 +5,15 @@ import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 
-@Database(entities = [BlockHeader::class, EthereumTransaction::class], version = 4, exportSchema = true)
+@Database(entities = [BlockHeader::class, EthereumTransaction::class, AccountState::class], version = 5, exportSchema = true)
 abstract class SPVDatabase : RoomDatabase() {
 
     abstract fun blockHeaderDao(): BlockHeaderDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun accountStateDao(): AccountStateDao
 
     companion object {
 

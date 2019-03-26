@@ -50,7 +50,12 @@ fun RLPElement?.toLong(): Long {
 
 fun RLPElement?.toBigInteger(): BigInteger {
     val rlpData = this?.rlpData
-    return if (this == null || rlpData == null || rlpData.isEmpty())  BigInteger.ZERO else BigInteger(1, rlpData)
+    return if (this == null || rlpData == null || rlpData.isEmpty()) BigInteger.ZERO else BigInteger(1, rlpData)
+}
+
+fun RLPElement?.asString(): String {
+    val rlpData = this?.rlpData
+    return if (this == null || rlpData == null || rlpData.isEmpty()) "" else String(rlpData)
 }
 
 fun ByteArray.xor(other: ByteArray): ByteArray {

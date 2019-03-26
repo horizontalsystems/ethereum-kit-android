@@ -87,8 +87,8 @@ object RLP {
         else -> byteArrayOf((OFFSET_SHORT_ITEM + 1).toByte(), singleByte)
     }
 
-    fun encodeString(srcString: String): ByteArray {
-        return encodeElement(srcString.toByteArray())
+    fun encodeString(srcString: String?): ByteArray {
+        return encodeElement(srcString?.toByteArray())
     }
 
     fun encodeBigInteger(srcBigInteger: BigInteger): ByteArray {

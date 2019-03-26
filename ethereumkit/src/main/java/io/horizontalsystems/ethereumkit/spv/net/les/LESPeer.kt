@@ -4,6 +4,8 @@ import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
+import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.net.*
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
@@ -87,7 +89,7 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         val requestId = randomHelper.randomLong()
         requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHeader, reversed), requestId)
 
-        val message = GetBlockHeadersMessage(requestId, blockHeader.height, limit)
+        val message = GetBlockHeadersMessage(requestId, blockHeader.height, limit, reverse = if (reversed) 1 else 0)
         devP2PPeer.send(message)
     }
 
@@ -96,6 +98,13 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         requestHolder.setAccountStateRequest(AccountStateRequest(address, blockHeader), requestId)
 
         val message = GetProofsMessage(requestId, blockHeader.hashHex, address)
+        devP2PPeer.send(message)
+    }
+
+    override fun send(rawTransaction: RawTransaction, signature: Signature) {
+        val requestId = randomHelper.randomLong()
+        val message = SendTransactionMessage(requestId, rawTransaction, signature)
+
         devP2PPeer.send(message)
     }
 
@@ -134,7 +143,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
                         0x02 to GetBlockHeadersMessage::class,
                         0x03 to BlockHeadersMessage::class,
                         0x0f to GetProofsMessage::class,
-                        0x10 to ProofsMessage::class))
+                        0x10 to ProofsMessage::class,
+                        0x13 to SendTransactionMessage::class,
+                        0x15 to TransactionStatusMessage::class))
 
         fun getInstance(network: INetwork, bestBlock: BlockHeader, key: ECKey, node: Node): LESPeer {
             val devP2PPeer = DevP2PPeer.getInstance(key, node, listOf(capability))

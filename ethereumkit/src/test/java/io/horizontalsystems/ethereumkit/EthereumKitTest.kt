@@ -6,7 +6,6 @@ import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.core.AddressValidator
 import io.horizontalsystems.ethereumkit.core.IBlockchain
-import io.horizontalsystems.ethereumkit.core.IStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.FeePriority
 import io.horizontalsystems.ethereumkit.models.State
@@ -22,7 +21,6 @@ import java.util.concurrent.Executor
 class EthereumKitTest {
 
     private val blockchain = mock(IBlockchain::class.java)
-    private val storage = mock(IStorage::class.java)
     private val addressValidator = mock(AddressValidator::class.java)
     private val state = mock(State::class.java)
     private val listener = mock(EthereumKit.Listener::class.java)
@@ -44,9 +42,9 @@ class EthereumKitTest {
     fun setUp() {
         RxBaseTest.setup()
 
-        whenever(storage.getBalance(any())).thenReturn(null)
+        whenever(blockchain.getBalance(any())).thenReturn(null)
         whenever(blockchain.ethereumAddress).thenReturn(ethereumAddress)
-        kit = EthereumKit(blockchain, storage, addressValidator, state)
+        kit = EthereumKit(blockchain, addressValidator, state)
         kit.listener = listener
         kit.listenerExecutor = Executor {
             it.run()
@@ -58,10 +56,10 @@ class EthereumKitTest {
         val balance = "123.45"
         val lastBlockHeight = 123L
 
-        whenever(storage.getBalance(ethereumAddress)).thenReturn(balance)
-        whenever(storage.getLastBlockHeight()).thenReturn(lastBlockHeight)
+        whenever(blockchain.getBalance(ethereumAddress)).thenReturn(balance)
+        whenever(blockchain.getLastBlockHeight()).thenReturn(lastBlockHeight)
 
-        kit = EthereumKit(blockchain, storage, addressValidator, state)
+        kit = EthereumKit(blockchain, addressValidator, state)
 
         verify(state).balance = balance
         verify(state).lastBlockHeight = lastBlockHeight
@@ -84,7 +82,6 @@ class EthereumKitTest {
         kit.clear()
         verify(blockchain).clear()
         verify(state).clear()
-        verify(storage).clear()
     }
 
     @Test
@@ -99,7 +96,7 @@ class EthereumKitTest {
         val address = "address"
         val balance = "123"
         val listenerMock = mock(EthereumKit.Listener::class.java)
-        whenever(storage.getBalance(address)).thenReturn(balance)
+        whenever(blockchain.getBalance(address)).thenReturn(balance)
         whenever(state.hasContract(address)).thenReturn(false)
         kit.register(address, listenerMock)
 
@@ -203,7 +200,7 @@ class EthereumKitTest {
         val limit = 5
         val expectedResult = Single.just(listOf<EthereumTransaction>())
 
-        whenever(storage.getTransactions(fromHash, limit, null)).thenReturn(expectedResult)
+        whenever(blockchain.getTransactions(fromHash, limit, null)).thenReturn(expectedResult)
 
         val result = kit.transactions(fromHash, limit)
 
@@ -323,7 +320,7 @@ class EthereumKitTest {
         val limit = 5
         val expectedResult = Single.just(listOf<EthereumTransaction>())
 
-        whenever(storage.getTransactions(fromHash, limit, address)).thenReturn(expectedResult)
+        whenever(blockchain.getTransactions(fromHash, limit, address)).thenReturn(expectedResult)
 
         val result = kit.transactionsERC20(address, fromHash, limit)
 

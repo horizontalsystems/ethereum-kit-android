@@ -3,6 +3,8 @@ package io.horizontalsystems.ethereumkit.spv.net
 import io.horizontalsystems.ethereumkit.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
+import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 
 interface IPeerListener {
     fun didConnect()
@@ -20,4 +22,6 @@ interface IPeer {
     fun disconnect(error: Throwable?)
     fun requestBlockHeaders(blockHeader: BlockHeader, limit: Int, reversed: Boolean = false)
     fun requestAccountState(address: ByteArray, blockHeader: BlockHeader)
+
+    fun send(rawTransaction: RawTransaction, signature: Signature)
 }

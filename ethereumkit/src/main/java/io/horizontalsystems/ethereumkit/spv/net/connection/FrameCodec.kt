@@ -52,9 +52,13 @@ class FrameCodec(private val secrets: Secrets,
             paddingSize = 0
         val macSize = 16
 
-        val buffer = ByteArray(totalBodySize + paddingSize + macSize) // body || padding || body-mac
+        val bytesToRead = totalBodySize + paddingSize + macSize
+        val buffer = ByteArray(bytesToRead) // body || padding || body-mac
+        var bytesRead = 0
 
-        inputStream.read(buffer)
+        while (bytesRead < bytesToRead) {
+            bytesRead += inputStream.read(buffer, bytesRead, bytesToRead - bytesRead)
+        }
 
         val frameSize = buffer.size - macSize
 
