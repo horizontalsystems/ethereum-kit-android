@@ -1,15 +1,17 @@
-package io.horizontalsystems.ethereumkit.core.storage
+package io.horizontalsystems.ethereumkit.api.storage
 
 import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
+import android.arch.persistence.room.TypeConverters
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 
 
-@Database(entities = [EthereumBalance::class, LastBlockHeight::class, EthereumTransaction::class], version = 4, exportSchema = true)
+@Database(entities = [EthereumBalance::class, LastBlockHeight::class, EthereumTransaction::class], version = 5, exportSchema = true)
+@TypeConverters(RoomTypeConverters::class)
 abstract class ApiDatabase : RoomDatabase() {
 
     abstract fun balanceDao(): BalanceDao

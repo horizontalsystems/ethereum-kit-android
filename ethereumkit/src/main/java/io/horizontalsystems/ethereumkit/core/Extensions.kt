@@ -14,9 +14,22 @@ fun ByteArray?.toHexString(): String {
 
 @Throws(NumberFormatException::class)
 fun String.hexStringToByteArray(): ByteArray {
-    return ByteArray(this.length / 2) {
-        this.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+    val hexWithoutPrefix = this.stripHexPrefix()
+    return ByteArray(hexWithoutPrefix.length / 2) {
+        hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
     }
+}
+
+fun String.stripHexPrefix(): String {
+    return if (this.startsWith("0x", true)) {
+        this.substring(2)
+    } else {
+        this
+    }
+}
+
+fun String.addHexPrefix(): String {
+    return "0x$this"
 }
 
 fun HDWallet.address(): String =

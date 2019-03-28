@@ -43,8 +43,8 @@ class PeerGroup(val storage: ISpvStorage,
 //        syncPeer.disconnect(null)
     }
 
-    fun send(rawTransaction: RawTransaction, signature: Signature) {
-        state.syncPeer?.send(rawTransaction, signature)
+    fun send(rawTransaction: RawTransaction, nonce: Long, signature: Signature) {
+        state.syncPeer?.send(rawTransaction, nonce, signature)
     }
 
 //-----------------LESPeer.Listener methods----------------

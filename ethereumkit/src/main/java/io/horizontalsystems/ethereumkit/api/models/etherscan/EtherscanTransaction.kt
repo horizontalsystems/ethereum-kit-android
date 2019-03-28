@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.api.models.etherscan
 
 data class EtherscanTransaction(
         val blockNumber: String,
-        val timeStamp: String,
+        val timestamp: String,
         val hash: String,
         val nonce: String,
         val blockHash: String,

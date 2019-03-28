@@ -1,11 +1,13 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.sample.FeePriority
 import io.reactivex.Single
+import java.math.BigInteger
 
-class EthereumAdapter(ethereumKit: EthereumKit): BaseAdapter(ethereumKit, 18) {
+class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
 
     init {
         ethereumKit.listener = this
@@ -15,14 +17,14 @@ class EthereumAdapter(ethereumKit: EthereumKit): BaseAdapter(ethereumKit, 18) {
         get() = ethereumKit.syncState
 
     override val balanceString: String?
-        get() = ethereumKit.balance
+        get() = ethereumKit.balance?.toString()
 
     override fun sendSingle(address: String, amount: String, feePriority: FeePriority): Single<Unit> {
-        return ethereumKit.send(address, amount, 5_000_000_000).map { Unit }
+        return ethereumKit.send(address.hexStringToByteArray(), BigInteger(amount), 5_000_000_000).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {
-        return ethereumKit.transactions(hashFrom, limit)
+        return ethereumKit.transactions(hashFrom?.hexStringToByteArray(), limit)
     }
 
 }

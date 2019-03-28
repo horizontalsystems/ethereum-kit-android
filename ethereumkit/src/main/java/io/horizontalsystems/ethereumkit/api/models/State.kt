@@ -1,14 +1,15 @@
 package io.horizontalsystems.ethereumkit.api.models
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ERC20
+import io.horizontalsystems.ethereumkit.core.EthereumKit
+import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 
 class State {
-    var balance: String? = null
+    var balance: BigInteger? = null
     var lastBlockHeight: Long? = null
 
-    val erc20List = ConcurrentHashMap<String, ERC20>()
+    val erc20List = ConcurrentHashMap<ByteArray, ERC20>()
 
     val erc20Listeners: List<EthereumKit.Listener>
         get() {
@@ -25,27 +26,27 @@ class State {
         erc20List.clear()
     }
 
-    fun add(contractAddress: String, listener: EthereumKit.Listener) {
+    fun add(contractAddress: ByteArray, listener: EthereumKit.Listener) {
         erc20List[contractAddress] = ERC20(contractAddress, listener)
     }
 
-    fun hasContract(contractAddress: String): Boolean {
+    fun hasContract(contractAddress: ByteArray): Boolean {
         return erc20List.containsKey(contractAddress)
     }
 
-    fun remove(contractAddress: String) {
+    fun remove(contractAddress: ByteArray) {
         erc20List.remove(contractAddress)
     }
 
-    fun balance(contractAddress: String): String? {
+    fun balance(contractAddress: ByteArray): BigInteger? {
         return erc20List[contractAddress]?.balance
     }
 
-    fun listener(contractAddress: String): EthereumKit.Listener? {
+    fun listener(contractAddress: ByteArray): EthereumKit.Listener? {
         return erc20List[contractAddress]?.listener
     }
 
-    fun setBalance(balance: String?, contractAddress: String) {
+    fun setBalance(balance: BigInteger?, contractAddress: ByteArray) {
         erc20List[contractAddress]?.balance = balance
     }
 

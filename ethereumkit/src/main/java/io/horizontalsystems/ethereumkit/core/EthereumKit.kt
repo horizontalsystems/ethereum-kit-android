@@ -2,21 +2,24 @@ package io.horizontalsystems.ethereumkit.core
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.ApiBlockchain
-import io.horizontalsystems.ethereumkit.core.storage.ApiRoomStorage
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.api.models.State
+import io.horizontalsystems.ethereumkit.api.storage.ApiRoomStorage
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
-import io.horizontalsystems.hdwalletkit.Mnemonic
+import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.reactivex.Single
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 class EthereumKit(
         private val blockchain: IBlockchain,
         private val addressValidator: AddressValidator,
-        private val state: State) : IBlockchainListener {
+        private val transactionBuilder: TransactionBuilder,
+        private val state: State = State()) : IBlockchainListener {
 
     interface Listener {
         fun onTransactionsUpdate(transactions: List<EthereumTransaction>)
@@ -51,13 +54,12 @@ class EthereumKit(
         state.clear()
     }
 
-    val receiveAddress: String
+    val receiveAddress: ByteArray
         get() {
             return blockchain.address
         }
 
-
-    fun register(contractAddress: String, listener: Listener) {
+    fun register(contractAddress: ByteArray, listener: Listener) {
         if (state.hasContract(contractAddress)) {
             return
         }
@@ -68,7 +70,7 @@ class EthereumKit(
         blockchain.register(contractAddress)
     }
 
-    fun unregister(contractAddress: String) {
+    fun unregister(contractAddress: ByteArray) {
         blockchain.unregister(contractAddress)
         state.remove(contractAddress)
     }
@@ -81,12 +83,14 @@ class EthereumKit(
         return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
-    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return blockchain.getTransactions(fromHash, limit, null)
+    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
+        return blockchain.getTransactions(fromHash, limit)
     }
 
-    fun send(toAddress: String, amount: String, gasPrice: Long): Single<EthereumTransaction> {
-        return blockchain.send(toAddress, amount, gasPrice, gasLimit)
+    fun send(toAddress: ByteArray, amount: BigInteger, gasPrice: Long): Single<EthereumTransaction> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, amount)
+
+        return blockchain.send(rawTransaction)
     }
 
     fun debugInfo(): String {
@@ -95,7 +99,7 @@ class EthereumKit(
         return lines.joinToString { "\n" }
     }
 
-    val balance: String?
+    val balance: BigInteger?
         get() {
             return state.balance
         }
@@ -108,7 +112,6 @@ class EthereumKit(
     val syncState: SyncState
         get() = blockchain.syncState
 
-
     //
     // ERC20
     //
@@ -117,20 +120,22 @@ class EthereumKit(
         return BigDecimal(gasPrice).multiply(gasLimitErc20.toBigDecimal())
     }
 
-    fun balanceERC20(contractAddress: String): String? {
+    fun balanceERC20(contractAddress: ByteArray): BigInteger? {
         return state.balance(contractAddress)
     }
 
-    fun syncStateErc20(contractAddress: String): SyncState {
-        return blockchain.syncStateErc20(contractAddress)
+    fun syncStateErc20(contractAddress: ByteArray): SyncState {
+        return blockchain.getSyncStateErc20(contractAddress)
     }
 
-    fun transactionsERC20(contractAddress: String, fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return blockchain.getTransactions(fromHash, limit, contractAddress)
+    fun transactionsERC20(contractAddress: ByteArray, fromHash: ByteArray? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
+        return blockchain.getTransactionsErc20(contractAddress, fromHash, limit)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPrice: Long): Single<EthereumTransaction> {
-        return blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice, gasLimitErc20)
+    fun sendERC20(toAddress: ByteArray, contractAddress: ByteArray, amount: BigInteger, gasPrice: Long): Single<EthereumTransaction> {
+        val rawTransaction = transactionBuilder.rawErc20Transaction(contractAddress, gasPrice, gasLimitErc20, toAddress, amount)
+
+        return blockchain.send(rawTransaction)
     }
 
     //
@@ -149,26 +154,26 @@ class EthereumKit(
         }
     }
 
-    override fun onUpdateState(syncState: SyncState) {
+    override fun onUpdateSyncState(syncState: SyncState) {
         listenerExecutor.execute {
             listener?.onSyncStateUpdate()
         }
     }
 
-    override fun onUpdateErc20State(syncState: SyncState, contractAddress: String) {
+    override fun onUpdateErc20SyncState(syncState: SyncState, contractAddress: ByteArray) {
         listenerExecutor.execute {
             state.listener(contractAddress)?.onSyncStateUpdate()
         }
     }
 
-    override fun onUpdateBalance(balance: String) {
+    override fun onUpdateBalance(balance: BigInteger) {
         state.balance = balance
         listenerExecutor.execute {
             listener?.onBalanceUpdate()
         }
     }
 
-    override fun onUpdateErc20Balance(balance: String, contractAddress: String) {
+    override fun onUpdateErc20Balance(balance: BigInteger, contractAddress: ByteArray) {
         state.setBalance(balance, contractAddress)
         listenerExecutor.execute {
             state.listener(contractAddress)?.onBalanceUpdate()
@@ -184,7 +189,7 @@ class EthereumKit(
         }
     }
 
-    override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: String) {
+    override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: ByteArray) {
         if (ethereumTransactions.isEmpty())
             return
 
@@ -200,32 +205,53 @@ class EthereumKit(
     }
 
     companion object {
-        fun ethereumKit(context: Context, words: List<String>, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            return ethereumKitSpv(context, Mnemonic().toSeed(words), walletId, testMode)
-        }
+        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType, walletId: String): EthereumKit {
+            val blockchain: IBlockchain
 
-        fun ethereumKit(context: Context, seed: ByteArray, walletId: String, testMode: Boolean, infuraKey: String, etherscanKey: String): EthereumKit {
-            val storage = ApiRoomStorage("ethereumKit-$testMode-$walletId", context)
-            val blockchain = ApiBlockchain.apiBlockchain(storage, seed, testMode, infuraKey, etherscanKey)
+            val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
+            val address = CryptoUtils.sha3(publicKey).takeLast(20).toByteArray()
+
+            val network = networkType.getNetwork()
+            val transactionSigner = TransactionSigner(network, privateKey)
+            val transactionBuilder = TransactionBuilder()
+
+            when (syncMode) {
+                is SyncMode.ApiSyncMode -> {
+                    val storage = ApiRoomStorage("api-$walletId-${networkType.name}", context)
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, address)
+                }
+                is SyncMode.SpvSyncMode -> {
+                    val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
+                    val storage = SpvRoomStorage(context, "spv-$walletId-${networkType.name}")
+
+                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, network, address, nodeKey)
+                }
+            }
+
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, addressValidator, State())
+            val ethereumKit = EthereumKit(blockchain, addressValidator, transactionBuilder)
+
             blockchain.listener = ethereumKit
 
             return ethereumKit
         }
+    }
 
-        fun ethereumKitSpv(context: Context, seed: ByteArray, walletId: String, testMode: Boolean): EthereumKit {
-            val storage = SpvRoomStorage(context, "ethereumKitSpv-$testMode-$walletId")
-            val blockchain = SpvBlockchain.spvBlockchain(storage, seed, testMode)
-            val addressValidator = AddressValidator()
+    sealed class SyncMode {
+        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
+        class ApiSyncMode(val infuraKey: String, val etherscanKey: String) : SyncMode()
+    }
 
-            val ethereumKit = EthereumKit(blockchain, addressValidator, State())
-            blockchain.listener = ethereumKit
+    enum class NetworkType {
+        MainNet,
+        Ropsten,
+        Kovan,
+        Rinkeby;
 
-            return ethereumKit
+        fun getNetwork(): INetwork {
+            return io.horizontalsystems.ethereumkit.spv.net.Ropsten()
         }
-
     }
 
 }

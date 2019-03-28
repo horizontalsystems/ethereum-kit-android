@@ -44,7 +44,7 @@ class SpvRoomStorage : ISpvStorage {
         database.accountStateDao().insert(accountState)
     }
 
-    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
+    override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
         return database.transactionDao().getTransactions()
     }
 

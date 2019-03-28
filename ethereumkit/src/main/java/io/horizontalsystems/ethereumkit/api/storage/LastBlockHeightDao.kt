@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.core.storage
+package io.horizontalsystems.ethereumkit.api.storage
 
 import android.arch.persistence.room.*
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight

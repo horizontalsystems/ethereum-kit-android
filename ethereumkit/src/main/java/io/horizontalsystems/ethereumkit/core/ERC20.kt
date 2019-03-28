@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
+import java.math.BigInteger
 
-class ERC20(var contractAddress: String, var listener: EthereumKit.Listener) {
+class ERC20(var contractAddress: ByteArray, var listener: EthereumKit.Listener) {
 
-    var balance: String? = null
+    var balance: BigInteger? = null
 }

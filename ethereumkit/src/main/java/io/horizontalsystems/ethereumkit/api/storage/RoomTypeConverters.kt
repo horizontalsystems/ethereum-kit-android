@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.core.room
+package io.horizontalsystems.ethereumkit.api.storage
 
 import android.arch.persistence.room.TypeConverter
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray

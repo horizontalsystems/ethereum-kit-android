@@ -1,18 +1,19 @@
-package io.horizontalsystems.ethereumkit.core.storage
+package io.horizontalsystems.ethereumkit.api.storage
 
 import android.content.Context
-import io.horizontalsystems.ethereumkit.core.IApiStorage
 import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
+import io.horizontalsystems.ethereumkit.core.IApiStorage
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
+import java.math.BigInteger
 
 class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
 
     private val database: ApiDatabase = ApiDatabase.getInstance(context, databaseName)
 
 
-    override fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>> {
+    override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
         val single =
                 if (contractAddress == null)
                     database.transactionDao().getTransactions()
@@ -24,9 +25,9 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
                     var transactions = transactionsList
 
                     fromHash?.let { fromHash ->
-                        val tx = transactions.firstOrNull { it.hash == fromHash }
-                        tx?.timeStamp?.let { txTimeStamp ->
-                            transactions = transactions.filter { it.timeStamp < txTimeStamp }
+                        val tx = transactions.firstOrNull { it.hash.contentEquals(fromHash) }
+                        tx?.timestamp?.let { txTimeStamp ->
+                            transactions = transactions.filter { it.timestamp < txTimeStamp }
                         }
                     }
 
@@ -38,7 +39,7 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
                 }
     }
 
-    override fun getBalance(address: String): String? {
+    override fun getBalance(address: ByteArray): BigInteger? {
         return database.balanceDao().getBalance(address)?.balance
     }
 
@@ -46,19 +47,19 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
         return database.lastBlockHeightDao().getLastBlockHeight()?.height?.toLong()
     }
 
-    override fun getLastTransactionBlockHeight(isErc20: Boolean): Int? {
-        if (isErc20) {
-            return database.transactionDao().getTokenLastTransaction()?.blockNumber?.toInt()
+    override fun getLastTransactionBlockHeight(isErc20: Boolean): Long? {
+        return if (isErc20) {
+            database.transactionDao().getTokenLastTransaction()?.blockNumber
         } else {
-            return database.transactionDao().getLastTransaction()?.blockNumber?.toInt()
+            database.transactionDao().getLastTransaction()?.blockNumber
         }
     }
 
-    override fun saveLastBlockHeight(lastBlockHeight: Int) {
+    override fun saveLastBlockHeight(lastBlockHeight: Long) {
         database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
     }
 
-    override fun saveBalance(balance: String, address: String) {
+    override fun saveBalance(balance: BigInteger, address: ByteArray) {
         database.balanceDao().insert(EthereumBalance(address, balance))
     }
 

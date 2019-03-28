@@ -2,10 +2,11 @@ package io.horizontalsystems.ethereumkit.api.models
 
 import android.arch.persistence.room.Entity
 import android.arch.persistence.room.PrimaryKey
+import java.math.BigInteger
 
 @Entity
-data class EthereumBalance(
+class EthereumBalance(
         @PrimaryKey
-        val address: String,
-        val balance: String
+        val address: ByteArray,
+        val balance: BigInteger
 )

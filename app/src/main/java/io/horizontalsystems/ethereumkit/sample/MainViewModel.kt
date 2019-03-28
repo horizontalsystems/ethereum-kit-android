@@ -5,10 +5,15 @@ import android.arch.lifecycle.ViewModel
 import android.util.Log
 import android.widget.Toast
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import io.horizontalsystems.hdwalletkit.HDWallet
+import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import java.math.BigDecimal
@@ -46,9 +51,14 @@ class MainViewModel : ViewModel() {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
-        ethereumKit = EthereumKit.ethereumKit(App.instance, words, "unique-wallet-id", testMode, infuraKey = infuraKey, etherscanKey = etherscanKey)
+        val seed = Mnemonic().toSeed(words)
+        val hdWallet = HDWallet(seed, if (testMode) 1 else 60)
+        val privateKey = hdWallet.privateKey(0, 0, true).privKey
+        val nodePrivateKey = hdWallet.privateKey(102, 102, true).privKey
+
+        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.SpvSyncMode(nodePrivateKey), NetworkType.Ropsten, "unique-wallet-id")
         ethereumAdapter = EthereumAdapter(ethereumKit)
-        erc20Adapter = Erc20Adapter(ethereumKit, contractAddress, contractDecimal)
+        erc20Adapter = Erc20Adapter(ethereumKit, contractAddress.hexStringToByteArray(), contractDecimal)
 
         ethereumKit.start()
 
@@ -136,7 +146,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun receiveAddress(): String {
-        return ethereumKit.receiveAddress
+        return ethereumKit.receiveAddress.toHexString()
     }
 
     fun send(address: String, amount: BigDecimal) {

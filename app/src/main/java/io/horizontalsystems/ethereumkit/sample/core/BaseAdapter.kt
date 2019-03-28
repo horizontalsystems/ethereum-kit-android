@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.sample.FeePriority
 import io.reactivex.Single
@@ -19,13 +20,13 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) : Ethereu
     fun transactionRecord(transaction: EthereumTransaction): TransactionRecord {
         val mineAddress = ethereumKit.receiveAddress
 
-        val from = TransactionAddress(transaction.from, transaction.from == mineAddress)
+        val from = TransactionAddress(transaction.from.toHexString(), transaction.from.contentEquals(mineAddress))
 
-        val to = TransactionAddress(transaction.to, transaction.to == mineAddress)
+        val to = TransactionAddress(transaction.to.toHexString(), transaction.to.contentEquals(mineAddress))
 
         var amount: BigDecimal = BigDecimal.valueOf(0.0)
 
-        transaction.value.toBigDecimalOrNull()?.let {
+        transaction.value.toBigDecimal().let {
             amount = it.movePointLeft(decimal)
             if (from.mine) {
                 amount = -amount
@@ -33,14 +34,13 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) : Ethereu
         }
 
         return TransactionRecord(
-                transactionHash = transaction.hash,
+                transactionHash = transaction.hash.toHexString(),
                 blockHeight = transaction.blockNumber,
                 amount = amount,
-                timestamp = transaction.timeStamp,
+                timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                contractAddress = transaction.contractAddress,
-                gasPriceInWei = transaction.gasPriceInWei
+                gasPriceInWei = transaction.gasPrice
         )
     }
 

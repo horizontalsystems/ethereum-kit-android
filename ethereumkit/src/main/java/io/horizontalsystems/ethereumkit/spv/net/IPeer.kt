@@ -23,5 +23,5 @@ interface IPeer {
     fun requestBlockHeaders(blockHeader: BlockHeader, limit: Int, reversed: Boolean = false)
     fun requestAccountState(address: ByteArray, blockHeader: BlockHeader)
 
-    fun send(rawTransaction: RawTransaction, signature: Signature)
+    fun send(rawTransaction: RawTransaction, nonce: Long, signature: Signature)
 }
