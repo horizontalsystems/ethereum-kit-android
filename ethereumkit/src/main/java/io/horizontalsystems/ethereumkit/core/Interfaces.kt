@@ -75,7 +75,6 @@ interface IBlockchainListener {
 }
 
 interface IApiProvider {
-    fun getGasPriceInWei(): Single<Long>
     fun getLastBlockHeight(): Single<Long>
     fun getTransactionCount(address: ByteArray): Single<Long>
 

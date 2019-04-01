@@ -48,7 +48,7 @@ class EthereumTransaction {
         value = BigInteger(etherscanTx.value)
         gasLimit = etherscanTx.gas.toLongOrNull() ?: 0
         gasPrice = etherscanTx.gasPrice.toLongOrNull() ?: 0L
-        timestamp = etherscanTx.timestamp.toLongOrNull() ?: 0
+        timestamp = etherscanTx.timeStamp.toLongOrNull() ?: 0
 
         blockHash = etherscanTx.blockHash.hexStringToByteArray()
         blockNumber = etherscanTx.blockNumber.toLongOrNull()

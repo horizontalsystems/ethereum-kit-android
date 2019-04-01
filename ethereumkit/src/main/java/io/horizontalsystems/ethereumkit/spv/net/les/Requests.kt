@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
-import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
@@ -52,7 +52,7 @@ class AccountStateRequest(val address: ByteArray, val blockHeader: BlockHeader) 
 
         val addressHash = CryptoUtils.sha3(address)
 
-        check(addressHash.toHexString() == path) {
+        check(addressHash.toRawHexString() == path) {
             throw ProofsMessage.ProofError.PathDoesNotMatchAddressHash()
         }
 

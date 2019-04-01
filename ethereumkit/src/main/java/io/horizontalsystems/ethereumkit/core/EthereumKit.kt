@@ -218,7 +218,7 @@ class EthereumKit(
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
                     val storage = ApiRoomStorage("api-$walletId-${networkType.name}", context)
-                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, address)
+                    blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, syncMode.infuraKey, syncMode.etherscanKey)
                 }
                 is SyncMode.SpvSyncMode -> {
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)

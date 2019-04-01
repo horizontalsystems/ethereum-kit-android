@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Flowable
@@ -257,11 +258,14 @@ class ApiBlockchain(
 
     companion object {
         fun getInstance(storage: IApiStorage,
+                        networkType: NetworkType,
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
-                        address: ByteArray): ApiBlockchain {
+                        address: ByteArray,
+                        infuraApiKey: String,
+                        etherscanApiKey: String): ApiBlockchain {
 
-            val apiProvider = NewApiProvider()
+            val apiProvider = ApiProvider.getInstance(networkType, infuraApiKey, etherscanApiKey)
 
             return ApiBlockchain(storage, apiProvider, transactionSigner, transactionBuilder, address)
         }

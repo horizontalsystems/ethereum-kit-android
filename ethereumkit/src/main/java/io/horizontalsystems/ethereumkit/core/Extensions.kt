@@ -6,10 +6,15 @@ import org.web3j.crypto.Credentials
 import org.web3j.crypto.ECKeyPair
 import java.math.BigInteger
 
-fun ByteArray?.toHexString(): String {
+fun ByteArray?.toRawHexString(): String {
     return this?.joinToString(separator = "") {
         it.toInt().and(0xff).toString(16).padStart(2, '0')
     } ?: ""
+}
+
+fun ByteArray?.toHexString(): String {
+    val rawHex = this?.toRawHexString() ?: return ""
+    return "0x$rawHex"
 }
 
 @Throws(NumberFormatException::class)
@@ -26,10 +31,6 @@ fun String.stripHexPrefix(): String {
     } else {
         this
     }
-}
-
-fun String.addHexPrefix(): String {
-    return "0x$this"
 }
 
 fun HDWallet.address(): String =
