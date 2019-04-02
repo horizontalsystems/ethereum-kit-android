@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.utils
 
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.stripHexPrefix
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 
 object EIP55 {
@@ -13,7 +13,7 @@ object EIP55 {
 
     fun format(address: String): String {
         val lowercaseAddress = address.stripHexPrefix().toLowerCase()
-        val addressHash = CryptoUtils.sha3(lowercaseAddress.hexStringToByteArray()).toHexString()
+        val addressHash = CryptoUtils.sha3(lowercaseAddress.toByteArray()).toRawHexString()
 
         val result = StringBuilder(lowercaseAddress.length + 2)
 

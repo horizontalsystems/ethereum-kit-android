@@ -1,22 +1,37 @@
 package io.horizontalsystems.ethereumkit.core
 
-import org.web3j.crypto.Keys
-import org.web3j.crypto.WalletUtils
-import org.web3j.utils.Numeric
+import io.horizontalsystems.ethereumkit.utils.EIP55
+import java.math.BigInteger
 
 class AddressValidator {
 
-    class AddressValidationException(msg: String) : Exception(msg)
+    open class AddressValidationException(msg: String) : Exception(msg)
+    class InvalidAddressLength(msg: String) : AddressValidationException(msg)
+    class InvalidAddressHex(msg: String) : AddressValidationException(msg)
+    class InvalidAddressChecksum(msg: String) : AddressValidationException(msg)
+
+    companion object {
+        const val ADDRESS_LENGTH_IN_HEX = 40
+    }
 
     @Throws(AddressValidationException::class)
     fun validate(address: String) {
+        val cleanAddress = address.stripHexPrefix()
 
-        check(WalletUtils.isValidAddress(address)) {
-            throw(AddressValidationException("Invalid address format!"))
+        check(cleanAddress.length == ADDRESS_LENGTH_IN_HEX) {
+            throw InvalidAddressLength("address: $address")
         }
-        if (isMixedCase(Numeric.cleanHexPrefix(address))) {
-            check(Keys.toChecksumAddress(address) == address) {
-                throw(AddressValidationException("Invalid checksum!"))
+
+        try {
+            BigInteger(cleanAddress, 16)
+        } catch (ex: NumberFormatException) {
+            throw InvalidAddressHex("address: $address")
+        }
+
+        if (isMixedCase(cleanAddress)) {
+            val checksumAddress = EIP55.format(cleanAddress).stripHexPrefix()
+            check(checksumAddress == cleanAddress) {
+                throw InvalidAddressChecksum("address: $address")
             }
         }
     }
