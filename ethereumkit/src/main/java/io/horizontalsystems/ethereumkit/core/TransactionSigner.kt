@@ -5,10 +5,6 @@ import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
-import io.horizontalsystems.hdwalletkit.ECKey
-import org.web3j.crypto.ECKeyPair
-import org.web3j.crypto.Sign
-import org.web3j.crypto.TransactionEncoder
 import java.math.BigInteger
 
 class TransactionSigner(private val network: INetwork, private val privateKey: BigInteger) {
@@ -28,13 +24,14 @@ class TransactionSigner(private val network: INetwork, private val privateKey: B
                 RLP.encodeElement(EMPTY_BYTE_ARRAY))
 
         val rawTransactionHash = CryptoUtils.sha3(encodedTransaction)
+        val signature = CryptoUtils.ellipticSign(rawTransactionHash, privateKey)
 
-        val pubKey = ECKey.pubKeyFromPrivKey(privateKey, false)
-        val ecKeyPair = ECKeyPair(privateKey, BigInteger(1, pubKey.slice(1 until pubKey.size).toByteArray()))
+        return calculateVRS(signature)
+    }
 
-        val signatureData = Sign.signMessage(rawTransactionHash, ecKeyPair, false)
-        val signature = TransactionEncoder.createEip155SignatureData(signatureData, network.id.toByte())
-
-        return Signature(signature.v, signature.r, signature.s)
+    private fun calculateVRS(signature: ByteArray): Signature {
+        return Signature(v = (signature[64] + if (network.id == 0) 27 else (35 + 2 * network.id)).toByte(),
+                r = signature.copyOfRange(0, 32),
+                s = signature.copyOfRange(32, 64))
     }
 }

@@ -13,20 +13,21 @@ import org.spongycastle.crypto.modes.SICBlockCipher
 import org.spongycastle.crypto.params.*
 import org.spongycastle.crypto.signers.ECDSASigner
 import org.spongycastle.crypto.signers.HMacDSAKCalculator
-import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
 import org.spongycastle.jce.spec.ECParameterSpec
-import org.spongycastle.jce.spec.ECPrivateKeySpec
 import org.spongycastle.math.ec.ECAlgorithms
 import org.spongycastle.math.ec.ECCurve
 import org.spongycastle.math.ec.ECPoint
 import org.spongycastle.util.BigIntegers
 import java.math.BigInteger
-import java.security.*
+import java.security.MessageDigest
+import java.security.Provider
+import java.security.Security
 import java.util.*
 
 object CryptoUtils {
 
     val CURVE: ECDomainParameters
+    val HALF_CURVE_ORDER: BigInteger
     private val CURVE_SPEC: ECParameterSpec
 
     private val CRYPTO_PROVIDER: Provider
@@ -40,6 +41,7 @@ object CryptoUtils {
         val params = SECNamedCurves.getByName("secp256k1")
         CURVE = ECDomainParameters(params.curve, params.g, params.n, params.h)
         CURVE_SPEC = ECParameterSpec(params.curve, params.g, params.n, params.h)
+        HALF_CURVE_ORDER = params.n.shiftRight(1)
 
         Security.addProvider(SpongyCastleProvider.getInstance())
         CRYPTO_PROVIDER = Security.getProvider("SC")
@@ -48,21 +50,24 @@ object CryptoUtils {
 
     fun ecdhAgree(myKey: ECKey, remotePublicKeyPoint: ECPoint): ByteArray {
         val agreement = ECDHBasicAgreement()
-        agreement.init(ECPrivateKeyParameters((privateKeyFromBigInteger(myKey.privateKey) as BCECPrivateKey).d, CURVE))
+        agreement.init(ECPrivateKeyParameters(myKey.privateKey, CURVE))
         return agreement.calculateAgreement(ECPublicKeyParameters(remotePublicKeyPoint, CURVE)).toBytes(SECRET_SIZE)
     }
 
-    fun ellipticSign(messageToSign: ByteArray, key: ECKey): ByteArray {
+    fun ellipticSign(messageToSign: ByteArray, privateKey: BigInteger): ByteArray {
         val signer = ECDSASigner(HMacDSAKCalculator(SHA256Digest()))
-        val privKeyParams = ECPrivateKeyParameters((privateKeyFromBigInteger(key.privateKey) as BCECPrivateKey).d, CURVE)
+        val privKeyParams = ECPrivateKeyParameters(privateKey, CURVE)
         signer.init(true, privKeyParams)
         val components = signer.generateSignature(messageToSign)
 
         val r = components[0]
-        val s = components[1]
+        var s = components[1]
+
+        //canonicalize s
+        s = if (s <= HALF_CURVE_ORDER) s else CURVE.n.subtract(s)
 
         var recId = -1
-        val thisKey = CURVE.g.multiply(key.privateKey).getEncoded(false)
+        val thisKey = CURVE.g.multiply(privateKey).getEncoded(false)
         for (i in 0..3) {
             val k = recoverPubBytesFromSignature(i, r, s, messageToSign)
             if (k != null && Arrays.equals(k, thisKey)) {
@@ -148,11 +153,6 @@ object CryptoUtils {
 
         iesEngine.init(isEncrypt, ECPrivateKeyParameters(prv, CURVE), ECPublicKeyParameters(pub, CURVE), parametersWithIV)
         return iesEngine
-    }
-
-    private fun privateKeyFromBigInteger(priv: BigInteger): PrivateKey {
-        return KeyFactory.getInstance("EC", SpongyCastleProvider.getInstance())
-                .generatePrivate(ECPrivateKeySpec(priv, CURVE_SPEC))
     }
 
     private fun recoverPubBytesFromSignature(recId: Int, r: BigInteger, s: BigInteger, messageHash: ByteArray?): ByteArray? {
