@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
-import io.horizontalsystems.ethereumkit.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -101,9 +101,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         devP2PPeer.send(message)
     }
 
-    override fun send(rawTransaction: RawTransaction, signature: Signature) {
+    override fun send(rawTransaction: RawTransaction, nonce: Long, signature: Signature) {
         val requestId = randomHelper.randomLong()
-        val message = SendTransactionMessage(requestId, rawTransaction, signature)
+        val message = SendTransactionMessage(requestId, rawTransaction, nonce, signature)
 
         devP2PPeer.send(message)
     }

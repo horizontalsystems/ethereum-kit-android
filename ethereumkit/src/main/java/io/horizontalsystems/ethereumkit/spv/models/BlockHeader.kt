@@ -2,9 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.models
 
 import android.arch.persistence.room.Entity
 import android.arch.persistence.room.PrimaryKey
-import android.arch.persistence.room.TypeConverters
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.core.room.RoomTypeConverters
 import io.horizontalsystems.ethereumkit.spv.core.toLong
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
@@ -12,7 +10,6 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.math.BigInteger
 
 @Entity
-@TypeConverters(RoomTypeConverters::class)
 class BlockHeader {
 
     companion object {

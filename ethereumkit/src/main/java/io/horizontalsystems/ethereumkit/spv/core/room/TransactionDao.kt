@@ -10,7 +10,7 @@ import io.reactivex.Single
 @Dao
 interface TransactionDao {
 
-    @Query("SELECT * FROM EthereumTransaction WHERE contractAddress = '' AND input = '0x' ORDER BY timeStamp DESC")
+    @Query("SELECT * FROM EthereumTransaction WHERE input = '0x' ORDER BY timestamp DESC")
     fun getTransactions(): Single<List<EthereumTransaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

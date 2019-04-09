@@ -1,53 +1,61 @@
 package io.horizontalsystems.ethereumkit.models
 
 import android.arch.persistence.room.Entity
-import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanTransaction
-import org.web3j.crypto.Keys
+import android.arch.persistence.room.PrimaryKey
+import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanTransaction
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import java.math.BigInteger
 
-@Entity(primaryKeys = ["hash","contractAddress"])
-class EthereumTransaction() {
+@Entity
+class EthereumTransaction {
+    @PrimaryKey
+    val hash: ByteArray
+    val nonce: Long
+    val input: ByteArray
+    val from: ByteArray
+    val to: ByteArray
+    val value: BigInteger
+    val gasLimit: Long
+    val gasPrice: Long
+    val timestamp: Long
 
-    constructor(etherscanTx: EtherscanTransaction) : this() {
-        hash =  etherscanTx.hash
-        nonce = etherscanTx.nonce.toIntOrNull() ?: 0
-        input = etherscanTx.input
-        from = formatInEip55(etherscanTx.from)
-        to = formatInEip55(etherscanTx.to)
-        contractAddress = formatInEip55(etherscanTx.contractAddress)
-        blockNumber = etherscanTx.blockNumber.toLongOrNull()
-        blockHash = etherscanTx.blockHash
-        value = etherscanTx.value
-        gasLimit = etherscanTx.gas.toIntOrNull() ?: 0
-        gasPriceInWei = etherscanTx.gasPrice.toLongOrNull() ?: 0L
-        timeStamp = etherscanTx.timeStamp.toLongOrNull() ?: 0
-        transactionIndex = etherscanTx.transactionIndex
-        iserror = etherscanTx.isError ?: ""
-        txReceiptStatus = etherscanTx.txreceipt_status ?: ""
-        cumulativeGasUsed = etherscanTx.cumulativeGasUsed
-        gasUsed = etherscanTx.gasUsed
-        confirmations = etherscanTx.confirmations.toLongOrNull() ?: 0
+    var blockHash: ByteArray? = null
+    var blockNumber: Long? = null
+    var gasUsed: Long? = null
+    var cumulativeGasUsed: Long? = null
+    var iserror: Int? = null
+    var transactionIndex: Int? = null
+    var txReceiptStatus: Int? = null
+
+    constructor(hash: ByteArray, nonce: Long, input: ByteArray, from: ByteArray, to: ByteArray, value: BigInteger, gasLimit: Long, gasPrice: Long, timestamp: Long) {
+        this.hash = hash
+        this.nonce = nonce
+        this.input = input
+        this.from = from
+        this.to = to
+        this.value = value
+        this.gasLimit = gasLimit
+        this.gasPrice = gasPrice
+        this.timestamp = timestamp
     }
 
-    var hash: String = ""
-    var nonce: Int = 0
-    var input: String = ""
-    var from: String = ""
-    var to: String = ""
-    var value: String = ""
-    var gasLimit: Int = 0
-    var gasPriceInWei: Long = 0
-    var timeStamp: Long = 0
-    var contractAddress: String = ""
-    var blockHash: String = ""
-    var blockNumber: Long? = null
-    var confirmations: Long = 0
-    var gasUsed: String = ""
-    var cumulativeGasUsed: String = ""
-    var iserror: String = ""
-    var transactionIndex: String = ""
-    var txReceiptStatus: String = ""
+    constructor(etherscanTx: EtherscanTransaction) {
+        hash = etherscanTx.hash.hexStringToByteArray()
+        nonce = etherscanTx.nonce.toLongOrNull() ?: 0
+        input = etherscanTx.input.hexStringToByteArray()
+        from = etherscanTx.from.hexStringToByteArray()
+        to = etherscanTx.to.hexStringToByteArray()
+        value = BigInteger(etherscanTx.value)
+        gasLimit = etherscanTx.gas.toLongOrNull() ?: 0
+        gasPrice = etherscanTx.gasPrice.toLongOrNull() ?: 0L
+        timestamp = etherscanTx.timeStamp.toLongOrNull() ?: 0
 
-    private fun formatInEip55(textString: String) =
-            if (textString.isEmpty()) "" else Keys.toChecksumAddress(textString)
-
+        blockHash = etherscanTx.blockHash.hexStringToByteArray()
+        blockNumber = etherscanTx.blockNumber.toLongOrNull()
+        gasUsed = etherscanTx.gasUsed.toLongOrNull()
+        cumulativeGasUsed = etherscanTx.cumulativeGasUsed.toLongOrNull()
+        iserror = etherscanTx.isError?.toIntOrNull()
+        transactionIndex = etherscanTx.transactionIndex.toIntOrNull()
+        txReceiptStatus = etherscanTx.txreceipt_status?.toIntOrNull()
+    }
 }

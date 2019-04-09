@@ -64,7 +64,7 @@ class EncryptionHandshakeTest {
         whenever(randomHelper.randomBytes(200..300)).thenReturn(junkData)
         whenever(cryptoUtils.eciesEncrypt(remoteKeyPoint, authMessage.encoded() + junkData)).thenReturn(authECIESMessage)
         whenever(cryptoUtils.ecdhAgree(myKey, remoteKeyPoint)).thenReturn(sharedSecret)
-        whenever(cryptoUtils.ellipticSign(sharedSecret.xor(nonce), ephemeralKey)).thenReturn(signature)
+        whenever(cryptoUtils.ellipticSign(sharedSecret.xor(nonce), ephemeralKey.privateKey)).thenReturn(signature)
 
         PowerMockito.whenNew(AuthMessage::class.java)
                 .withArguments(signature, myKey.publicKeyPoint, nonce)
@@ -73,7 +73,7 @@ class EncryptionHandshakeTest {
         val authMessagePacket = encryptionHandshake.createAuthMessage()
 
         verify(cryptoUtils).ecdhAgree(myKey, remoteKeyPoint)
-        verify(cryptoUtils).ellipticSign(sharedSecret.xor(nonce), ephemeralKey)
+        verify(cryptoUtils).ellipticSign(sharedSecret.xor(nonce), ephemeralKey.privateKey)
         verify(randomHelper).randomBytes(200..300)
         verify(cryptoUtils).eciesEncrypt(remoteKeyPoint, authMessage.encoded() + junkData)
 

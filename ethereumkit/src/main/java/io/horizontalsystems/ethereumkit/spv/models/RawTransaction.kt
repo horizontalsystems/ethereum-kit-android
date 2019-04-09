@@ -1,15 +1,15 @@
 package io.horizontalsystems.ethereumkit.spv.models
 
+import io.horizontalsystems.ethereumkit.core.toHexString
 import java.math.BigInteger
 
-class RawTransaction(val nonce: BigInteger,
-                     val gasPrice: BigInteger,
-                     val gasLimit: BigInteger,
-                     val to: String,
+class RawTransaction(val gasPrice: Long,
+                     val gasLimit: Long,
+                     val to: ByteArray,
                      val value: BigInteger,
-                     var data: String? = null) {
+                     var data: ByteArray = ByteArray(0)) {
 
     override fun toString(): String {
-        return "RawTransaction [nonce: $nonce; gasPrice: $gasPrice; gasLimit: $gasLimit; to: $to; value: $value; data: $data]"
+        return "RawTransaction [gasPrice: $gasPrice; gasLimit: $gasLimit; to: $to; value: $value; data: ${data.toHexString()}]"
     }
 }

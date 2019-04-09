@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import java.util.*
@@ -41,27 +42,27 @@ class TrieNode(rlpList: RLPList) {
             when (nibble.toInt()) {
                 0 -> {
                     this.nodeType = NodeType.EXTENSION
-                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toHexString()
+                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toRawHexString()
                 }
 
                 1 -> {
                     this.nodeType = NodeType.EXTENSION
-                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toHexString()
+                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toRawHexString()
                     val firstByte = ((((first[0].toInt() and 0xFF) shl 4) and 0xFF) shr 4).toByte()
-                    val firstByteString = byteArrayOf(firstByte).toHexString()
+                    val firstByteString = byteArrayOf(firstByte).toRawHexString()
                     encodedPath = firstByteString.substring(1) + encodedPath
                 }
 
                 2 -> {
                     this.nodeType = NodeType.LEAF
-                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toHexString()
+                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toRawHexString()
                 }
 
                 3 -> {
                     this.nodeType = NodeType.LEAF
-                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toHexString()
+                    encodedPath = Arrays.copyOfRange(first, 1, first.size).toRawHexString()
                     val firstByte = ((((first[0].toInt() and 0xFF) shl 4) and 0xFF) shr 4).toByte()
-                    val firstByteString = byteArrayOf(firstByte).toHexString()
+                    val firstByteString = byteArrayOf(firstByte).toRawHexString()
                     encodedPath = firstByteString.substring(1) + encodedPath
                 }
             }
@@ -86,6 +87,6 @@ class TrieNode(rlpList: RLPList) {
     }
 
     override fun toString(): String {
-        return "(${elements.map { it.toHexString() }.joinToString(separator = " | ")})"
+        return "(${elements.joinToString(separator = " | ") { it.toHexString() }})"
     }
 }

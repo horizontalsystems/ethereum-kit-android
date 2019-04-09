@@ -28,7 +28,7 @@ class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyP
         val sharedSecret = cryptoUtils.ecdhAgree(myKey, remotePublicKeyPoint)
 
         val toBeSigned = sharedSecret.xor(initiatorNonce)
-        val signature = cryptoUtils.ellipticSign(toBeSigned, ephemeralKey)
+        val signature = cryptoUtils.ellipticSign(toBeSigned, ephemeralKey.privateKey)
 
         val message = AuthMessage(signature, myKey.publicKeyPoint, initiatorNonce)
 

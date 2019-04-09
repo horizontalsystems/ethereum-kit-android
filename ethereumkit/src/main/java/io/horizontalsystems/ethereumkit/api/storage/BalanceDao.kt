@@ -1,7 +1,7 @@
-package io.horizontalsystems.ethereumkit.core.storage
+package io.horizontalsystems.ethereumkit.api.storage
 
 import android.arch.persistence.room.*
-import io.horizontalsystems.ethereumkit.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 
 @Dao
 interface BalanceDao {
@@ -10,7 +10,7 @@ interface BalanceDao {
     fun insert(ethereumBalance: EthereumBalance)
 
     @Query("SELECT * FROM EthereumBalance WHERE address = :address")
-    fun getBalance(address: String): EthereumBalance?
+    fun getBalance(address: ByteArray): EthereumBalance?
 
     @Delete
     fun delete(rate: EthereumBalance)

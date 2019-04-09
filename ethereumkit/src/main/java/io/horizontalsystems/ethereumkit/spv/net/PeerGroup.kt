@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-import io.horizontalsystems.ethereumkit.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -43,8 +43,8 @@ class PeerGroup(val storage: ISpvStorage,
 //        syncPeer.disconnect(null)
     }
 
-    fun send(rawTransaction: RawTransaction, signature: Signature) {
-        state.syncPeer?.send(rawTransaction, signature)
+    fun send(rawTransaction: RawTransaction, nonce: Long, signature: Signature) {
+        state.syncPeer?.send(rawTransaction, nonce, signature)
     }
 
 //-----------------LESPeer.Listener methods----------------
