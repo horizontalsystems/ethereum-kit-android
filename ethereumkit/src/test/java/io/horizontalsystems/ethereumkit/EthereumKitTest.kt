@@ -15,7 +15,6 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
 import org.web3j.utils.Convert
-import java.math.BigDecimal
 import java.util.concurrent.Executor
 
 class EthereumKitTest {
@@ -149,15 +148,14 @@ class EthereumKitTest {
     @Test
     fun testFee() {
         val gasLimit = 21_000
-        val gasPrice = 123L
+        val gasPriceInGWei = 5L
 
-        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
-        val gas = BigDecimal.valueOf(gasPrice)
-        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+        val gasInWei = Convert.toWei(gasPriceInGWei.toBigDecimal(), Convert.Unit.GWEI)
+        val expectedFee = Convert.fromWei(gasInWei.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
-        val fee = kit.fee()
+        val fee = kit.fee(gasPriceInGWei)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -169,8 +167,8 @@ class EthereumKitTest {
 
         whenever(blockchain.gasLimitEthereum).thenReturn(gasLimit)
 
-        val gas = BigDecimal.valueOf(customGasPrice)
-        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+        val gasInWei = Convert.toWei(customGasPrice.toBigDecimal(), Convert.Unit.GWEI)
+        val expectedFee = Convert.fromWei(gasInWei.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
 
         val fee = kit.fee(customGasPrice)
 
@@ -191,31 +189,17 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testSend_gasPriceNull() {
-        val amount = "23.4"
-        val gasPrice = null
-        val toAddress = "address"
-
-        val expectedResult = Single.just(transaction)
-
-        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
-
-        val result = kit.send(toAddress, amount, gasPrice)
-
-        Assert.assertEquals(expectedResult, result)
-    }
-
-    @Test
     fun testSend_withCustomGasPrice() {
         val amount = "23.4"
-        val gasPrice = 34L
+        val gasPriceInGWei = 34L
         val toAddress = "address"
+        val gasInWei = Convert.toWei(gasPriceInGWei.toBigDecimal(), Convert.Unit.GWEI)
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.send(toAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.send(toAddress, amount, gasInWei.toLong())).thenReturn(expectedResult)
 
-        val result = kit.send(toAddress, amount, gasPrice)
+        val result = kit.send(toAddress, amount, gasPriceInGWei)
 
         Assert.assertEquals(expectedResult, result)
     }
@@ -245,15 +229,14 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee() {
         val erc20GasLimit = 100_000
-        val gasPrice = 1230000000L
+        val gasPriceInGWei = 1230000000L
 
-        whenever(blockchain.gasPriceInWei).thenReturn(gasPrice)
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
-        val gas = BigDecimal.valueOf(gasPrice)
-        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
+        val gasInWei = Convert.toWei(gasPriceInGWei.toBigDecimal(), Convert.Unit.GWEI)
+        val expectedFee = Convert.fromWei(gasInWei.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
-        val fee = kit.feeERC20()
+        val fee = kit.feeERC20(gasPriceInGWei)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -261,14 +244,14 @@ class EthereumKitTest {
     @Test
     fun testErc20Fee_customGasPrice() {
         val erc20GasLimit = 100_000
-        val customGasPrice = 23L
+        val customGasPriceInGwei = 23L
+        val gasInWei = Convert.toWei(customGasPriceInGwei.toBigDecimal(), Convert.Unit.GWEI)
 
         whenever(blockchain.gasLimitErc20).thenReturn(erc20GasLimit)
 
-        val gas = BigDecimal.valueOf(customGasPrice)
-        val expectedFee = Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
+        val expectedFee = Convert.fromWei(gasInWei.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
 
-        val fee = kit.feeERC20(customGasPrice)
+        val fee = kit.feeERC20(customGasPriceInGwei)
 
         Assert.assertEquals(expectedFee, fee)
     }
@@ -308,33 +291,18 @@ class EthereumKitTest {
     }
 
     @Test
-    fun testErc20Send_gasPriceNull() {
-        val amount = "23.4"
-        val gasPrice = null
-        val toAddress = "address"
-        val contractAddress = "contAddress"
-
-        val expectedResult = Single.just(transaction)
-
-        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
-
-        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
-
-        Assert.assertEquals(expectedResult, result)
-    }
-
-    @Test
     fun testErc20Send_withCustomGasPrice() {
         val amount = "23.4"
-        val gasPrice = 234L
+        val gasPriceInGWei = 234L
         val toAddress = "address"
         val contractAddress = "contAddress"
+        val gasInWei = Convert.toWei(gasPriceInGWei.toBigDecimal(), Convert.Unit.GWEI)
 
         val expectedResult = Single.just(transaction)
 
-        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasPrice)).thenReturn(expectedResult)
+        whenever(blockchain.sendErc20(toAddress, contractAddress, amount, gasInWei.toLong())).thenReturn(expectedResult)
 
-        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPrice)
+        val result = kit.sendERC20(toAddress, contractAddress, amount, gasPriceInGWei)
 
         Assert.assertEquals(expectedResult, result)
     }

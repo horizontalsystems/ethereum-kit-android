@@ -38,6 +38,7 @@ class MainViewModel : ViewModel() {
 
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
+    val gasPriceInWei = 5L
 
 
     init {
@@ -51,7 +52,7 @@ class MainViewModel : ViewModel() {
         ethereumKit.start()
 
 
-        fee.value = ethereumKit.fee()
+        fee.value = ethereumKit.fee(gasPriceInWei)
         updateBalance()
         updateErc20Balance()
         updateState()
@@ -130,7 +131,7 @@ class MainViewModel : ViewModel() {
 
     fun refresh() {
         ethereumKit.start()
-        fee.postValue(ethereumKit.fee())
+        fee.postValue(ethereumKit.fee(gasPriceInWei))
     }
 
     fun receiveAddress(): String {

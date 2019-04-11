@@ -21,7 +21,8 @@ class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String
         return ethereumKit.sendERC20(
                 toAddress = address,
                 contractAddress = contractAddress,
-                amount = amount).map { Unit }
+                amount = amount,
+                gasPriceInGWei = 5L).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {
