@@ -75,17 +75,15 @@ class EthereumKit(
         addressValidator.validate(address)
     }
 
-    fun fee(gasPriceInWei: Long? = null): BigDecimal {
-        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
-
-        return Convert.fromWei(gas.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+    fun fee(gasPriceInWei: Long): BigDecimal {
+        return Convert.fromWei(gasPriceInWei.toBigDecimal().multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
     }
 
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+    fun send(toAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return blockchain.send(toAddress, amount, gasPriceInWei)
     }
 
@@ -113,10 +111,8 @@ class EthereumKit(
     // ERC20
     //
 
-    fun feeERC20(gasPriceInWei: Long? = null): BigDecimal {
-        val gas = BigDecimal.valueOf(gasPriceInWei ?: blockchain.gasPriceInWei)
-
-        return Convert.fromWei(gas.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
+    fun feeERC20(gasPriceInWei: Long): BigDecimal {
+        return Convert.fromWei(gasPriceInWei.toBigDecimal().multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
 
     fun balanceERC20(contractAddress: String): String? {
@@ -131,7 +127,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long? = null): Single<EthereumTransaction> {
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
     }
 
@@ -194,7 +190,6 @@ class EthereumKit(
             state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
         }
     }
-
 
     open class EthereumKitException(msg: String) : Exception(msg) {
         class InfuraApiKeyNotSet : EthereumKitException("Infura API Key is not set!")

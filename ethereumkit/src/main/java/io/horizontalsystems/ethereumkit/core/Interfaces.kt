@@ -6,14 +6,12 @@ import io.reactivex.Single
 
 interface IStorage {
     fun getLastBlockHeight(): Int?
-    fun getGasPriceInWei(): Long?
 
     fun getBalance(address: String): String?
     fun getLastTransactionBlockHeight(isErc20: Boolean): Int?
     fun getTransactions(fromHash: String?, limit: Int?, contractAddress: String?): Single<List<EthereumTransaction>>
 
     fun saveLastBlockHeight(lastBlockHeight: Int)
-    fun saveGasPriceInWei(gasPriceInWei: Long)
     fun saveBalance(balance: String, address: String)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
 
@@ -22,7 +20,6 @@ interface IStorage {
 
 interface IBlockchain {
     val ethereumAddress: String
-    val gasPriceInWei: Long
     val gasLimitEthereum: Int
     val gasLimitErc20: Int
 
@@ -37,8 +34,8 @@ interface IBlockchain {
     fun register(contractAddress: String)
     fun unregister(contractAddress: String)
 
-    fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction>
-    fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction>
+    fun send(toAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction>
+    fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction>
 }
 
 interface IBlockchainListener {
@@ -55,7 +52,6 @@ interface IBlockchainListener {
 }
 
 interface IApiProvider {
-    fun getGasPriceInWei(): Single<Long>
     fun getLastBlockHeight(): Single<Int>
     fun getTransactionCount(address: String): Single<Int>
 

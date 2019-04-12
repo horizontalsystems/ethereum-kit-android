@@ -28,15 +28,6 @@ class ApiProvider(configuration: Configuration, private val hdWallet: HDWallet) 
     private val web3j: Web3j = Web3j.build(HttpService(configuration.infuraUrl))
     private val etherscanService = EtherscanService(configuration.etherScanUrl, configuration.etherscanAPIKey)
 
-    override fun getGasPriceInWei(): Single<Long> {
-        return web3j.ethGasPrice()
-                .flowable()
-                .map {
-                    it.gasPrice.toLong()
-                }
-                .firstOrError()
-    }
-
     override fun getLastBlockHeight(): Single<Int> {
         return web3j.ethBlockNumber()
                 .flowable()

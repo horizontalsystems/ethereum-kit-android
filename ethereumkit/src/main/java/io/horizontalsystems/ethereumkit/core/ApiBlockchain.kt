@@ -9,7 +9,7 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Function3
+import io.reactivex.functions.BiFunction
 import org.web3j.crypto.Keys
 import java.util.concurrent.TimeUnit
 
@@ -21,8 +21,6 @@ class ApiBlockchain(
     private var erc20Contracts = HashMap<String, Erc20Contract>()
     private val disposables = CompositeDisposable()
 
-    override var gasPriceInWei: Long = 10_000_000_000
-        private set
     override val gasLimitEthereum: Int = 21_000
     override val gasLimitErc20: Int = 100_000
 
@@ -42,10 +40,6 @@ class ApiBlockchain(
         }
 
     init {
-        storage.getGasPriceInWei()?.let {
-            gasPriceInWei = it
-        }
-
         Flowable.interval(refreshInterval, TimeUnit.SECONDS)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -85,22 +79,20 @@ class ApiBlockchain(
         erc20Contracts.remove(contractAddress)
     }
 
-    override fun send(toAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    override fun send(toAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
-                    apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei
-                            ?: this.gasPriceInWei, gasLimitEthereum)
+                    apiProvider.send(ethereumAddress, toAddress, nonce, amount, gasPriceInWei, gasLimitEthereum)
                 }
                 .doAfterSuccess {
                     updateTransactions(listOf(it))
                 }
     }
 
-    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long?): Single<EthereumTransaction> {
+    override fun sendErc20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return apiProvider.getTransactionCount(ethereumAddress)
                 .flatMap { nonce ->
-                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei
-                            ?: this.gasPriceInWei, gasLimitErc20)
+                    apiProvider.sendErc20(contractAddress, ethereumAddress, toAddress, nonce, amount, gasPriceInWei, gasLimitErc20)
                 }
                 .doAfterSuccess {
                     updateTransactionsErc20(listOf(it))
@@ -121,16 +113,14 @@ class ApiBlockchain(
 
         Single.zip(
                 apiProvider.getLastBlockHeight(),
-                apiProvider.getGasPriceInWei(),
                 apiProvider.getBalance(ethereumAddress),
-                Function3<Int, Long, String, Triple<Int, Long, String>> { t1, t2, t3 ->
-                    Triple(t1, t2, t3)
+                BiFunction<Int, String, Pair<Int, String>> { t1, t2 ->
+                    Pair(t1, t2)
                 })
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ result ->
                     updateLastBlockHeight(result.first)
-                    updateGasPrice(result.second)
-                    updateBalance(result.third)
+                    updateBalance(result.second)
 
                     refreshTransactions()
                 }, {
@@ -139,7 +129,6 @@ class ApiBlockchain(
                 }).let {
                     disposables.add(it)
                 }
-
     }
 
     private fun refreshTransactions() {
@@ -210,11 +199,6 @@ class ApiBlockchain(
     private fun updateLastBlockHeight(height: Int) {
         storage.saveLastBlockHeight(height)
         listener?.onUpdateLastBlockHeight(height)
-    }
-
-    private fun updateGasPrice(gasPriceInWei: Long) {
-        this.gasPriceInWei = gasPriceInWei
-        storage.saveGasPriceInWei(gasPriceInWei)
     }
 
     private fun updateBalance(balance: String) {
