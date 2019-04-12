@@ -75,17 +75,15 @@ class EthereumKit(
         addressValidator.validate(address)
     }
 
-    fun fee(gasPriceInGWei: Long): BigDecimal {
-        val gasPriceInWei = priceInWei(gasPriceInGWei)
-        return Convert.fromWei(gasPriceInWei.multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
+    fun fee(gasPriceInWei: Long): BigDecimal {
+        return Convert.fromWei(gasPriceInWei.toBigDecimal().multiply(blockchain.gasLimitEthereum.toBigDecimal()), Convert.Unit.ETHER)
     }
 
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    fun send(toAddress: String, amount: String, gasPriceInGWei: Long): Single<EthereumTransaction> {
-        val gasPriceInWei = priceInWei(gasPriceInGWei).toLong()
+    fun send(toAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return blockchain.send(toAddress, amount, gasPriceInWei)
     }
 
@@ -113,10 +111,8 @@ class EthereumKit(
     // ERC20
     //
 
-    fun feeERC20(gasPriceInGWei: Long): BigDecimal {
-        val gasPriceInWei = priceInWei(gasPriceInGWei)
-
-        return Convert.fromWei(gasPriceInWei.multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
+    fun feeERC20(gasPriceInWei: Long): BigDecimal {
+        return Convert.fromWei(gasPriceInWei.toBigDecimal().multiply(blockchain.gasLimitErc20.toBigDecimal()), Convert.Unit.ETHER)
     }
 
     fun balanceERC20(contractAddress: String): String? {
@@ -131,8 +127,7 @@ class EthereumKit(
         return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
-    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInGWei: Long): Single<EthereumTransaction> {
-        val gasPriceInWei = priceInWei(gasPriceInGWei).toLong()
+    fun sendERC20(toAddress: String, contractAddress: String, amount: String, gasPriceInWei: Long): Single<EthereumTransaction> {
         return blockchain.sendErc20(toAddress, contractAddress, amount, gasPriceInWei)
     }
 
@@ -194,10 +189,6 @@ class EthereumKit(
         listenerExecutor.execute {
             state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
         }
-    }
-
-    private fun priceInWei(gasPriceInGWei: Long): BigDecimal {
-        return Convert.toWei(gasPriceInGWei.toBigDecimal(), Convert.Unit.GWEI)
     }
 
     open class EthereumKitException(msg: String) : Exception(msg) {

@@ -38,7 +38,7 @@ class MainViewModel : ViewModel() {
 
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
-    val gasPriceInWei = 5L
+    val gasPriceInWei = 3000000000L
 
 
     init {

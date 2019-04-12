@@ -22,7 +22,7 @@ class Erc20Adapter(ethereumKit: EthereumKit, private val contractAddress: String
                 toAddress = address,
                 contractAddress = contractAddress,
                 amount = amount,
-                gasPriceInGWei = 5L).map { Unit }
+                gasPriceInWei = 3000000000L).map { Unit }
     }
 
     override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {
