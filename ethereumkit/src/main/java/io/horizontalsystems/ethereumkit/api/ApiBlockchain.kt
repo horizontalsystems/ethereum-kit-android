@@ -2,6 +2,8 @@ package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.models.Block
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Flowable
@@ -9,24 +11,25 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.BiFunction
+import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 
 class ApiBlockchain(
         private val storage: IApiStorage,
-        private val apiProvider: IApiProvider,
+        private val transactionsProvider: ITransactionsProvider,
+        private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
         private val transactionBuilder: TransactionBuilder,
         override val address: ByteArray
 ) : IBlockchain {
 
     private val refreshInterval: Long = 30
-    private var erc20Contracts = HashMap<ByteArray, Erc20Contract>()
     private val disposables = CompositeDisposable()
 
     init {
         Flowable.interval(refreshInterval, TimeUnit.SECONDS)
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     refreshAll()
@@ -35,23 +38,14 @@ class ApiBlockchain(
 
     override var listener: IBlockchainListener? = null
 
-    override fun getLastBlockHeight(): Long? {
-        return storage.getLastBlockHeight()
-    }
+    override val lastBlockHeight: Long?
+        get() = storage.getLastBlockHeight()
 
     override val balance: BigInteger?
         get() = storage.getBalance(address)
 
-    override fun getBalanceErc20(contractAddress: ByteArray): BigInteger? {
-        return storage.getBalance(contractAddress)
-    }
-
     override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
         return storage.getTransactions(fromHash, limit, null)
-    }
-
-    override fun getTransactionsErc20(contractAddress: ByteArray?, fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, contractAddress)
     }
 
     override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
@@ -71,31 +65,12 @@ class ApiBlockchain(
     }
 
     override fun clear() {
-        erc20Contracts.clear()
         disposables.clear()
         storage.clear()
     }
 
-    override fun getSyncStateErc20(contractAddress: ByteArray): EthereumKit.SyncState {
-        return erc20Contracts[contractAddress]?.syncState ?: EthereumKit.SyncState.NotSynced
-    }
-
-    override fun register(contractAddress: ByteArray) {
-        if (erc20Contracts[contractAddress] != null) {
-            return
-        }
-
-        erc20Contracts[contractAddress] = (Erc20Contract(contractAddress, EthereumKit.SyncState.NotSynced))
-
-        refreshAll()
-    }
-
-    override fun unregister(contractAddress: ByteArray) {
-        erc20Contracts.remove(contractAddress)
-    }
-
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
-        return apiProvider.getTransactionCount(address)
+        return rpcApiProvider.getTransactionCount(address)
                 .flatMap { nonce ->
                     send(rawTransaction, nonce)
                 }.doOnSuccess { transaction ->
@@ -108,29 +83,71 @@ class ApiBlockchain(
         val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature, address)
         val encoded = transactionBuilder.encode(rawTransaction, nonce, signature)
 
-        return apiProvider.send(signedTransaction = encoded)
+        return rpcApiProvider.send(signedTransaction = encoded)
                 .map {
                     transaction
                 }
+    }
+
+    override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+        return rpcApiProvider.getLogs(address, fromBlock, toBlock, topics)
+                .flatMap { logs ->
+                    if (pullTimestamps)
+                        pullTransactionTimestamps(logs)
+                    else {
+                        Single.just(logs)
+                    }
+                }
+    }
+
+    private fun pullTransactionTimestamps(ethereumLogs: List<EthereumLog>): Single<List<EthereumLog>> {
+        val logsByBlockNumber: MutableMap<Long, MutableList<EthereumLog>> = mutableMapOf()
+
+        for (log in ethereumLogs) {
+            val logs: MutableList<EthereumLog> = logsByBlockNumber[log.blockNumber]
+                    ?: mutableListOf()
+            logs.add(log)
+            logsByBlockNumber[log.blockNumber] = logs
+        }
+
+        val requestSingles: MutableList<Single<Block>> = mutableListOf()
+
+        for ((blockNumber, _) in logsByBlockNumber) {
+            requestSingles.add(rpcApiProvider.getBlock(blockNumber))
+        }
+
+        return Single.merge(requestSingles).toList().map { blocks ->
+            val resultLogs: MutableList<EthereumLog> = mutableListOf()
+
+            for (block in blocks) {
+                val logsOfBlock = logsByBlockNumber[block.number] ?: continue
+
+                for (log in logsOfBlock) {
+                    log.timestamp = block.timestamp
+                    resultLogs.add(log)
+                }
+            }
+            resultLogs
+        }
+    }
+
+    override fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+        return rpcApiProvider.getStorageAt(contractAddress, position.toHexString(), blockNumber)
+                .map { it.hexStringToByteArray() }
     }
 
     private fun refreshAll() {
         if (syncState == EthereumKit.SyncState.Syncing) {
             return
         }
-        erc20Contracts.values.forEach {
-            if (it.syncState == EthereumKit.SyncState.Syncing) {
-                return
-            }
-        }
 
         changeAllSyncStates(EthereumKit.SyncState.Syncing)
 
         Single.zip(
-                apiProvider.getLastBlockHeight(),
-                apiProvider.getBalance(address),
+                rpcApiProvider.getLastBlockHeight(),
+                rpcApiProvider.getBalance(address),
                 BiFunction<Long, BigInteger, Pair<Long, BigInteger>> { t1, t2 -> Pair(t1, t2) })
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
                     updateLastBlockHeight(result.first)
                     updateBalance(result.second)
@@ -147,8 +164,8 @@ class ApiBlockchain(
     private fun refreshTransactions() {
         val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight(false) ?: 0
 
-        apiProvider.getTransactions(address, (lastTransactionBlockHeight + 1))
-                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+        transactionsProvider.getTransactions(address, (lastTransactionBlockHeight + 1))
+                .subscribeOn(Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactions(transactions)
                     syncState = EthereumKit.SyncState.Synced
@@ -158,13 +175,13 @@ class ApiBlockchain(
                     disposables.add(it)
                 }
 
-        if (erc20Contracts.isEmpty()) {
+        /*if (erc20Contracts.isEmpty()) {
             return
         }
 
         val erc20LastTransactionBlockHeight = storage.getLastTransactionBlockHeight(true) ?: 0
 
-        apiProvider.getTransactionsErc20(address, (erc20LastTransactionBlockHeight + 1))
+        rpcApiProvider.getTransactionsErc20(address, (erc20LastTransactionBlockHeight + 1))
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactionsErc20(transactions)
@@ -175,31 +192,32 @@ class ApiBlockchain(
                     }
                 })?.let {
                     disposables.add(it)
-                }
+                }*/
     }
 
     private fun refreshErc20Balances() {
-        erc20Contracts.values.forEach { contract ->
-            apiProvider.getBalanceErc20(address, contract.address)
-                    .subscribeOn(io.reactivex.schedulers.Schedulers.io())
-                    .subscribe({ balance ->
-                        updateErc20Balance(balance, contract.address)
-                        updateSyncState(EthereumKit.SyncState.Synced, contract.address)
-                    }, {
-                        updateSyncState(EthereumKit.SyncState.NotSynced, contract.address)
-                    })?.let {
-                        disposables.add(it)
-                    }
-        }
+        /* erc20Contracts.values.forEach { contract ->
+             rpcApiProvider.getBalanceErc20(address, contract.address)
+                     .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                     .subscribe({ balance ->
+                         updateErc20Balance(balance, contract.address)
+                         updateSyncState(EthereumKit.SyncState.Synced, contract.address)
+                     }, {
+                         updateSyncState(EthereumKit.SyncState.NotSynced, contract.address)
+                     })?.let {
+                         disposables.add(it)
+                     }
+         }*/
     }
 
     private fun changeAllSyncStates(state: EthereumKit.SyncState) {
         syncState = state
-        erc20Contracts.values.forEach {
-            updateSyncState(state, it.address)
-        }
+//        erc20Contracts.values.forEach {
+//            updateSyncState(state, it.address)
+//        }
     }
 
+/*
     private fun updateSyncState(syncState: EthereumKit.SyncState, contractAddress: ByteArray) {
         if (erc20Contracts[contractAddress]?.syncState == syncState) {
             return
@@ -208,6 +226,7 @@ class ApiBlockchain(
         erc20Contracts[contractAddress]?.syncState = syncState
         listener?.onUpdateErc20SyncState(syncState, contractAddress)
     }
+*/
 
     private fun updateLastBlockHeight(height: Long) {
         storage.saveLastBlockHeight(height)
@@ -219,18 +238,20 @@ class ApiBlockchain(
         listener?.onUpdateBalance(balance)
     }
 
+/*
     private fun updateErc20Balance(balance: BigInteger, contractAddress: ByteArray) {
         storage.saveBalance(balance, contractAddress)
         listener?.onUpdateErc20Balance(balance, contractAddress)
     }
+*/
 
     private fun updateTransactions(ethereumTransactions: List<EthereumTransaction>) {
         storage.saveTransactions(ethereumTransactions)
         listener?.onUpdateTransactions(ethereumTransactions.filter { it.input.isEmpty() })
     }
 
-    private fun updateTransactionsErc20(ethereumTransactions: List<EthereumTransaction>) {
-        storage.saveTransactions(ethereumTransactions)
+//    private fun updateTransactionsErc20(ethereumTransactions: List<EthereumTransaction>) {
+//        storage.saveTransactions(ethereumTransactions)
 
 //        val contractTransactions = HashMap<String, MutableList<EthereumTransaction>>()
 //
@@ -247,9 +268,9 @@ class ApiBlockchain(
 //                listener?.onUpdateErc20Transactions(transactions, contractAddress)
 //            }
 //        }
-    }
+//    }
 
-    class Erc20Contract(var address: ByteArray, var syncState: EthereumKit.SyncState)
+//    class Erc20Contract(var address: ByteArray, var syncState: EthereumKit.SyncState)
 
     sealed class ApiException : Exception() {
         object ContractNotRegistered : ApiException()
@@ -265,9 +286,10 @@ class ApiBlockchain(
                         infuraApiKey: String,
                         etherscanApiKey: String): ApiBlockchain {
 
-            val apiProvider = ApiProvider.getInstance(networkType, infuraApiKey, etherscanApiKey)
+            val rpcProvider = RpcApiProvider.getInstance(networkType, infuraApiKey)
+            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanApiKey)
 
-            return ApiBlockchain(storage, apiProvider, transactionSigner, transactionBuilder, address)
+            return ApiBlockchain(storage, transactionsProvider, rpcProvider, transactionSigner, transactionBuilder, address)
         }
     }
 

@@ -8,7 +8,6 @@ class TransactionRecord (
     val amount: BigDecimal,
     val timestamp: Long,
     var from: TransactionAddress,
-    var to: TransactionAddress,
-    val gasPriceInWei: Long)
+    var to: TransactionAddress)
 
 class TransactionAddress (val address: String, val mine: Boolean)

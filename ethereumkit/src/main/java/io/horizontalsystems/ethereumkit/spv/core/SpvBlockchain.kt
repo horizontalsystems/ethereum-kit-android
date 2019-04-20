@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
@@ -30,15 +31,6 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     override fun clear() {
     }
 
-    override fun getSyncStateErc20(contractAddress: ByteArray): EthereumKit.SyncState {
-        return EthereumKit.SyncState.Synced
-    }
-
-    override fun register(contractAddress: ByteArray) {
-    }
-
-    override fun unregister(contractAddress: ByteArray) {
-    }
 
     override val balance: BigInteger?
         get() = storage.getAccountState()?.balance
@@ -78,20 +70,20 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         listener?.onUpdateSyncState(syncState)
     }
 
-    override fun getLastBlockHeight(): Long? {
-        return storage.getLastBlockHeader()?.height
-    }
+    override val lastBlockHeight: Long?
+        get() = storage.getLastBlockHeader()?.height
 
-    override fun getBalanceErc20(contractAddress: ByteArray): BigInteger? {
-        return null
-    }
 
     override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
         return storage.getTransactions(fromHash, limit, null)
     }
 
-    override fun getTransactionsErc20(contractAddress: ByteArray?, fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, contractAddress)
+    override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+        TODO("not implemented")
+    }
+
+    override fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+        TODO("not implemented")
     }
 
     companion object {

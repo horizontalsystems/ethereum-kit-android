@@ -9,8 +9,8 @@ import java.math.BigInteger
 
 class TransactionBuilder {
 
-    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: ByteArray, value: BigInteger): RawTransaction {
-        return RawTransaction(gasPrice, gasLimit, to, value)
+    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: ByteArray, value: BigInteger, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
+        return RawTransaction(gasPrice, gasLimit, to, value, transactionInput)
     }
 
     fun rawErc20Transaction(contractAddress: ByteArray, gasPrice: Long, gasLimit: Long, to: ByteArray, value: BigInteger): RawTransaction {
