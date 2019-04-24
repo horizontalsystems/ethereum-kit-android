@@ -2,21 +2,18 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
+import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
 import java.math.BigInteger
 
-class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18), EthereumKit.Listener {
-
-    init {
-        ethereumKit.addListener(this)
-    }
+class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
 
     override val syncState: EthereumKit.SyncState
         get() = ethereumKit.syncState
 
-    override val balanceString: String?
-        get() = ethereumKit.balance?.toString()
+    override val balanceBigInteger: BigInteger?
+        get() = ethereumKit.balance
 
     override fun sendSingle(address: String, amount: String): Single<Unit> {
         return ethereumKit.send(address, BigInteger(amount), 5_000_000_000).map { Unit }
@@ -56,24 +53,16 @@ class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18), 
         }
     }
 
-    override fun onTransactionsUpdate(transactions: List<TransactionInfo>) {
-        transactionSubject.onNext(Unit)
-    }
+    val lastBlockHeightFlowable: Flowable<Unit>
+        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
 
-    override fun onClear() {
-        TODO("not implemented")
-    }
+    val syncStateFlowable: Flowable<Unit>
+        get() = ethereumKit.syncStateFlowable.map { Unit }
 
-    override fun onBalanceUpdate() {
-        balanceSubject.onNext(Unit)
-    }
+    val balanceFlowable: Flowable<Unit>
+        get() = ethereumKit.balanceFlowable.map { Unit }
 
-    override fun onLastBlockHeightUpdate() {
-        lastBlockHeightSubject.onNext(Unit)
-    }
-
-    override fun onSyncStateUpdate() {
-        syncStateUpdateSubject.onNext(Unit)
-    }
+    val transactionsFlowable: Flowable<Unit>
+        get() = ethereumKit.transactionsFlowable.map { Unit }
 
 }

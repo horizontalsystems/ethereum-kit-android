@@ -4,13 +4,8 @@ import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.reactivex.Single
+import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
-
-interface IErc20TokenListener {
-    fun onUpdate(transactions: List<TransactionInfo>)
-    fun onUpdateBalance()
-    fun onUpdateSyncState()
-}
 
 interface ITransactionManagerListener {
     fun onSyncSuccess(transactions: List<Transaction>)
@@ -51,8 +46,11 @@ interface ITokenHolder {
     fun balance(contractAddress: ByteArray): TokenBalance
     fun balancePosition(contractAddress: ByteArray): Int
 
-    fun listener(contractAddress: ByteArray): IErc20TokenListener?
-    fun register(contractAddress: ByteArray, balancePosition: Int, balance: TokenBalance, listener: IErc20TokenListener)
+    fun syncStateSubject(contractAddress: ByteArray): PublishSubject<Erc20Kit.SyncState>
+    fun balanceSubject(contractAddress: ByteArray): PublishSubject<BigInteger>
+    fun transactionsSubject(contractAddress: ByteArray): PublishSubject<List<TransactionInfo>>
+
+    fun register(contractAddress: ByteArray, balancePosition: Int, balance: TokenBalance)
     fun unregister(contractAddress: ByteArray)
     fun set(syncState: Erc20Kit.SyncState, contractAddress: ByteArray)
     fun set(balance: TokenBalance, contractAddress: ByteArray)

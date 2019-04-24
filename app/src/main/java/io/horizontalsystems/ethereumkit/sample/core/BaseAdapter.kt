@@ -2,19 +2,14 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.reactivex.Single
-import io.reactivex.subjects.PublishSubject
 import java.math.BigDecimal
+import java.math.BigInteger
 
 open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) {
 
-    val transactionSubject = PublishSubject.create<Unit>()
-    val balanceSubject = PublishSubject.create<Unit>()
-    val lastBlockHeightSubject = PublishSubject.create<Unit>()
-    val syncStateUpdateSubject = PublishSubject.create<Unit>()
-
     open val syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
 
-    open val balanceString: String?
+    open val balanceBigInteger: BigInteger?
         get() {
             return null
         }
@@ -29,7 +24,7 @@ open class BaseAdapter(val ethereumKit: EthereumKit, val decimal: Int) {
 
     val balance: BigDecimal
         get() {
-            balanceString?.toBigDecimalOrNull()?.let {
+            balanceBigInteger?.toBigDecimal()?.let {
                 val converted = it.movePointLeft(decimal)
                 return converted.stripTrailingZeros()
             }

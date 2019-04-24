@@ -11,11 +11,12 @@ import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.subjects.PublishSubject
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 class EthereumKit(
         private val blockchain: IBlockchain,
@@ -23,17 +24,10 @@ class EthereumKit(
         private val transactionBuilder: TransactionBuilder,
         private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener {
 
-    interface Listener {
-        fun onClear() {}
-
-        fun onTransactionsUpdate(transactions: List<TransactionInfo>) {}
-        fun onBalanceUpdate() {}
-        fun onLastBlockHeightUpdate() {}
-        fun onSyncStateUpdate() {}
-    }
-
-    private var listeners: MutableList<Listener> = mutableListOf()
-    private var listenerExecutor: Executor = Executors.newSingleThreadExecutor()
+    private val lastBlockHeightSubject = PublishSubject.create<Long>()
+    private val syncStateSubject = PublishSubject.create<SyncState>()
+    private val balanceSubject = PublishSubject.create<BigInteger>()
+    private val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
 
     private val gasLimit: Long = 21_000
 
@@ -51,8 +45,7 @@ class EthereumKit(
     }
 
     fun clear() {
-        listeners.clear()
-
+        blockchain.stop()
         blockchain.clear()
         state.clear()
     }
@@ -111,41 +104,47 @@ class EthereumKit(
         return lines.joinToString { "\n" }
     }
 
-    fun addListener(listener: Listener) {
-        listeners.add(listener)
-    }
+    val lastBlockHeightFlowable: Flowable<Long>
+        get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val syncStateFlowable: Flowable<SyncState>
+        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val balanceFlowable: Flowable<BigInteger>
+        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val transactionsFlowable: Flowable<List<TransactionInfo>>
+        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     //
     //IBlockchain
     //
 
     override fun onUpdateLastBlockHeight(lastBlockHeight: Long) {
+        if (state.lastBlockHeight == lastBlockHeight)
+            return
+
         state.lastBlockHeight = lastBlockHeight
-        listenerExecutor.execute {
-            listeners.forEach { it.onLastBlockHeightUpdate() }
-        }
+        lastBlockHeightSubject.onNext(lastBlockHeight)
     }
 
     override fun onUpdateSyncState(syncState: SyncState) {
-        listenerExecutor.execute {
-            listeners.forEach { it.onSyncStateUpdate() }
-        }
+        syncStateSubject.onNext(syncState)
     }
 
     override fun onUpdateBalance(balance: BigInteger) {
+        if (state.balance == balance)
+            return
+
         state.balance = balance
-        listenerExecutor.execute {
-            listeners.forEach { it.onBalanceUpdate() }
-        }
+        balanceSubject.onNext(balance)
     }
 
     override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
         if (ethereumTransactions.isEmpty())
             return
 
-        listenerExecutor.execute {
-            listeners.forEach { it.onTransactionsUpdate(ethereumTransactions.map { tx -> TransactionInfo(tx) }) }
-        }
+        transactionsSubject.onNext(ethereumTransactions.map { tx -> TransactionInfo(tx) })
     }
 
     sealed class SyncState {

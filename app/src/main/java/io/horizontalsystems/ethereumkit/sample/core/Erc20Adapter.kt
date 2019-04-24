@@ -1,21 +1,22 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.erc20kit.core.Erc20Kit
-import io.horizontalsystems.erc20kit.core.IErc20TokenListener
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
+import java.math.BigInteger
 
 class Erc20Adapter(private val erc20Kit: Erc20Kit,
                    ethereumKit: EthereumKit,
                    private val contractAddress: String,
                    position: Int,
-                   decimal: Int) : BaseAdapter(ethereumKit, decimal), IErc20TokenListener {
+                   decimal: Int) : BaseAdapter(ethereumKit, decimal) {
 
     init {
-        erc20Kit.register(contractAddress, position, this)
+        erc20Kit.register(contractAddress, position)
     }
 
     override val syncState: EthereumKit.SyncState
@@ -25,7 +26,7 @@ class Erc20Adapter(private val erc20Kit: Erc20Kit,
             Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing
         }
 
-    override val balanceString: String?
+    override val balanceBigInteger: BigInteger?
         get() = erc20Kit.balance(contractAddress)
 
     override fun sendSingle(address: String, amount: String): Single<Unit> {
@@ -73,19 +74,12 @@ class Erc20Adapter(private val erc20Kit: Erc20Kit,
                 }
     }
 
+    val syncStateFlowable: Flowable<Unit>
+        get() = erc20Kit.syncStateFlowable(contractAddress).map { Unit }
 
-    // IErc20TokenListener
+    val balanceFlowable: Flowable<Unit>
+        get() = erc20Kit.balanceFlowable(contractAddress).map { Unit }
 
-    override fun onUpdate(transactions: List<TransactionInfo>) {
-        transactionSubject.onNext(Unit)
-    }
-
-    override fun onUpdateBalance() {
-        balanceSubject.onNext(Unit)
-    }
-
-    override fun onUpdateSyncState() {
-        syncStateUpdateSubject.onNext(Unit)
-    }
-
+    val transactionsFlowable: Flowable<Unit>
+        get() = erc20Kit.transactionsFlowable(contractAddress).map { Unit }
 }

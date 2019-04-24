@@ -7,15 +7,21 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 import java.math.BigDecimal
+import java.math.BigInteger
 
 class Erc20Kit(private val ethereumKit: EthereumKit,
                private val transactionManager: ITransactionManager,
                private val balanceManager: IBalanceManager,
-               private val tokenHolder: ITokenHolder = TokenHolder()) : EthereumKit.Listener, ITransactionManagerListener, IBalanceManagerListener {
+               private val tokenHolder: ITokenHolder = TokenHolder()) : ITransactionManagerListener, IBalanceManagerListener {
 
     private val gasLimit: Long = 100_000
+    private val disposables = CompositeDisposable()
 
     sealed class SyncState {
         object Synced : SyncState()
@@ -23,9 +29,41 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         object Syncing : SyncState()
     }
 
+    init {
+        ethereumKit.syncStateFlowable
+                .subscribeOn(Schedulers.io())
+                .subscribe { syncState ->
+                    onSyncStateUpdate(syncState)
+                }.let {
+                    disposables.add(it)
+                }
+
+        ethereumKit.lastBlockHeightFlowable
+                .subscribeOn(Schedulers.io())
+                .subscribe {
+                    onLastBlockHeightUpdate()
+                }.let {
+                    disposables.add(it)
+                }
+    }
+
+    private fun onLastBlockHeightUpdate() {
+        if (ethereumKit.syncState == EthereumKit.SyncState.Synced) {
+            transactionManager.sync()
+        }
+    }
+
+    private fun onSyncStateUpdate(syncState: EthereumKit.SyncState) {
+        when (syncState) {
+            EthereumKit.SyncState.NotSynced -> setAll(NotSynced)
+            EthereumKit.SyncState.Syncing -> setAll(Syncing)
+            EthereumKit.SyncState.Synced -> transactionManager.sync()
+        }
+    }
+
     private fun set(syncState: SyncState, contractAddress: ByteArray) {
         tokenHolder.set(syncState, contractAddress)
-        tokenHolder.listener(contractAddress)?.onUpdateSyncState()
+        tokenHolder.syncStateSubject(contractAddress).onNext(syncState)
     }
 
     private fun setAll(syncState: SyncState) {
@@ -38,8 +76,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         return tokenHolder.syncState(contractAddress.hexStringToByteArray())
     }
 
-    fun balance(contractAddress: String): String {
-        return tokenHolder.balance(contractAddress.hexStringToByteArray()).value.toString(10)
+    fun balance(contractAddress: String): BigInteger {
+        return tokenHolder.balance(contractAddress.hexStringToByteArray()).value
     }
 
     fun fee(gasPrice: Int): BigDecimal {
@@ -53,7 +91,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
                 gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
-                    tokenHolder.listener(contractAddress.hexStringToByteArray())?.onUpdate(listOf(txInfo))
+                    tokenHolder.transactionsSubject(contractAddress.hexStringToByteArray()).onNext(listOf(txInfo))
                 }
     }
 
@@ -66,11 +104,23 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
                 }
     }
 
-    fun register(contractAddress: String, balancePosition: Int, listener: IErc20TokenListener) {
+    fun register(contractAddress: String, balancePosition: Int) {
         val contractAddr = contractAddress.hexStringToByteArray()
         val balance = balanceManager.balance(contractAddr)
 
-        tokenHolder.register(contractAddr, balancePosition, balance, listener)
+        tokenHolder.register(contractAddr, balancePosition, balance)
+    }
+
+    fun syncStateFlowable(contractAddress: String): Flowable<SyncState> {
+        return tokenHolder.syncStateSubject(contractAddress.hexStringToByteArray()).toFlowable(BackpressureStrategy.BUFFER)
+    }
+
+    fun balanceFlowable(contractAddress: String): Flowable<BigInteger> {
+        return tokenHolder.balanceSubject(contractAddress.hexStringToByteArray()).toFlowable(BackpressureStrategy.BUFFER)
+    }
+
+    fun transactionsFlowable(contractAddress: String): Flowable<List<TransactionInfo>> {
+        return tokenHolder.transactionsSubject(contractAddress.hexStringToByteArray()).toFlowable(BackpressureStrategy.BUFFER)
     }
 
     fun unregister(contractAddress: String) {
@@ -81,26 +131,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         tokenHolder.clear()
         transactionManager.clear()
         balanceManager.clear()
-    }
-
-    // EthereumKit.Listener methods
-
-    override fun onClear() {
-        clear()
-    }
-
-    override fun onLastBlockHeightUpdate() {
-        if (ethereumKit.syncState == EthereumKit.SyncState.Synced) {
-            transactionManager.sync()
-        }
-    }
-
-    override fun onSyncStateUpdate() {
-        when (ethereumKit.syncState) {
-            EthereumKit.SyncState.NotSynced -> setAll(NotSynced)
-            EthereumKit.SyncState.Syncing -> setAll(Syncing)
-            EthereumKit.SyncState.Synced -> transactionManager.sync()
-        }
+        disposables.clear()
     }
 
     // ITransactionManagerListener
@@ -109,7 +140,12 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         val transactionsMap = transactions.groupBy { it.contractAddress }
 
         for ((contractAddress, transactionsList) in transactionsMap) {
-            tokenHolder.listener(contractAddress)?.onUpdate(transactionsList.map { TransactionInfo(it) })
+            val transactionsSubject = try {
+                tokenHolder.transactionsSubject(contractAddress)
+            } catch (ex: NotRegisteredToken) {
+                continue
+            }
+            transactionsSubject.onNext(transactionsList.map { TransactionInfo(it) })
         }
 
         for (contractAddress in tokenHolder.contractAddresses) {
@@ -137,7 +173,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
     override fun onBalanceUpdate(balance: TokenBalance, contractAddress: ByteArray) {
         tokenHolder.set(balance, contractAddress)
-        tokenHolder.listener(contractAddress)?.onUpdateBalance()
+        tokenHolder.balanceSubject(contractAddress).onNext(balance.value)
     }
 
     override fun onSyncBalanceSuccess(contractAddress: ByteArray) {
@@ -172,8 +208,6 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
             transactionManager.listener = erc20Kit
             balanceManager.listener = erc20Kit
-
-            ethereumKit.addListener(erc20Kit)
 
             return erc20Kit
         }

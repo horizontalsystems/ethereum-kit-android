@@ -2,8 +2,11 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState
 import io.horizontalsystems.erc20kit.models.TokenBalance
+import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.reactivex.subjects.PublishSubject
+import java.math.BigInteger
 
 class TokenHolder : ITokenHolder {
 
@@ -11,7 +14,10 @@ class TokenHolder : ITokenHolder {
                 val balancePosition: Int,
                 var balance: TokenBalance) {
         var syncState: SyncState = SyncState.NotSynced
-        var listener: IErc20TokenListener? = null
+
+        val syncStateSubject = PublishSubject.create<SyncState>()
+        val balanceSubject = PublishSubject.create<BigInteger>()
+        val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
     }
 
     private val tokensMap = HashMap<String, Token>()
@@ -35,17 +41,20 @@ class TokenHolder : ITokenHolder {
         return token(contractAddress).balancePosition
     }
 
-    override fun listener(contractAddress: ByteArray): IErc20TokenListener? {
-        return try {
-            token(contractAddress).listener
-        } catch (ex: Erc20Kit.NotRegisteredToken) {
-            null
-        }
+    override fun syncStateSubject(contractAddress: ByteArray): PublishSubject<SyncState> {
+        return token(contractAddress).syncStateSubject
     }
 
-    override fun register(contractAddress: ByteArray, balancePosition: Int, balance: TokenBalance, listener: IErc20TokenListener) {
+    override fun balanceSubject(contractAddress: ByteArray): PublishSubject<BigInteger> {
+        return token(contractAddress).balanceSubject
+    }
+
+    override fun transactionsSubject(contractAddress: ByteArray): PublishSubject<List<TransactionInfo>> {
+        return token(contractAddress).transactionsSubject
+    }
+
+    override fun register(contractAddress: ByteArray, balancePosition: Int, balance: TokenBalance) {
         val token = Token(contractAddress, balancePosition, balance)
-        token.listener = listener
 
         tokensMap[contractAddress.toHexString()] = token
     }

@@ -60,9 +60,6 @@ class MainViewModel : ViewModel() {
         erc20Kit = Erc20Kit.getInstance(App.instance, ethereumKit)
         erc20Adapter = Erc20Adapter(erc20Kit, ethereumKit, contractAddress, 6, contractDecimal)
 
-        ethereumKit.start()
-
-
         fee.value = ethereumKit.fee(gasPrice)
         updateBalance()
         updateErc20Balance()
@@ -73,48 +70,50 @@ class MainViewModel : ViewModel() {
         //
         // Ethereum
         //
-        ethereumAdapter.transactionSubject.subscribe {
-            updateTransactions()
-        }.let {
-            disposables.add(it)
-        }
 
-        ethereumAdapter.balanceSubject.subscribe {
-            updateBalance()
-        }.let {
-            disposables.add(it)
-        }
-
-        ethereumAdapter.lastBlockHeightSubject.subscribe {
+        ethereumAdapter.lastBlockHeightFlowable.subscribe {
             updateLastBlockHeight()
         }.let {
             disposables.add(it)
         }
 
-        ethereumAdapter.syncStateUpdateSubject.subscribe {
+        ethereumAdapter.transactionsFlowable.subscribe {
+            updateTransactions()
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.balanceFlowable.subscribe {
+            updateBalance()
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.syncStateFlowable.subscribe {
             updateState()
         }.let {
             disposables.add(it)
         }
 
-        erc20Adapter.syncStateUpdateSubject.subscribe {
-            updateErc20State()
-        }.let {
-            disposables.add(it)
-        }
 
         //
         // ERC20
         //
 
-        erc20Adapter.balanceSubject.subscribe {
+        erc20Adapter.transactionsFlowable.subscribe {
+            updateErc20Transactions()
+        }.let {
+            disposables.add(it)
+        }
+
+        erc20Adapter.balanceFlowable.subscribe {
             updateErc20Balance()
         }.let {
             disposables.add(it)
         }
 
-        erc20Adapter.transactionSubject.subscribe {
-            updateErc20Transactions()
+        erc20Adapter.syncStateFlowable.subscribe {
+            updateErc20State()
         }.let {
             disposables.add(it)
         }
@@ -141,6 +140,27 @@ class MainViewModel : ViewModel() {
     private fun updateErc20Balance() {
         erc20TokenBalance.postValue(erc20Adapter.balance)
     }
+
+    private fun updateTransactions() {
+        ethereumAdapter.transactionsSingle()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { list: List<TransactionRecord> ->
+                    transactions.value = list
+                }.let {
+                    disposables.add(it)
+                }
+    }
+
+    private fun updateErc20Transactions() {
+        erc20Adapter.transactionsSingle()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { list: List<TransactionRecord> ->
+                    transactions.value = list
+                }.let {
+                    disposables.add(it)
+                }
+    }
+
 
     //
     // Ethereum
@@ -193,30 +213,6 @@ class MainViewModel : ViewModel() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { txList: List<TransactionRecord> ->
                     transactions.value = txList
-                }.let {
-                    disposables.add(it)
-                }
-    }
-
-    //
-    // Private
-    //
-
-    private fun updateTransactions() {
-        ethereumAdapter.transactionsSingle()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { list: List<TransactionRecord> ->
-                    transactions.value = list
-                }.let {
-                    disposables.add(it)
-                }
-    }
-
-    private fun updateErc20Transactions() {
-        erc20Adapter.transactionsSingle()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { list: List<TransactionRecord> ->
-                    transactions.value = list
                 }.let {
                     disposables.add(it)
                 }

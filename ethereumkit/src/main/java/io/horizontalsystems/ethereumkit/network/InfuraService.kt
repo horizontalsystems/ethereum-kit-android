@@ -31,7 +31,7 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
     init {
         val logger = HttpLoggingInterceptor()
-                .setLevel(HttpLoggingInterceptor.Level.BASIC)
+                .setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(logger)

@@ -75,6 +75,7 @@ class ApiBlockchain(
                     send(rawTransaction, nonce)
                 }.doOnSuccess { transaction ->
                     updateTransactions(listOf(transaction))
+                    refreshAll()
                 }
     }
 
