@@ -5,6 +5,7 @@ import io.horizontalsystems.erc20kit.core.room.Erc20KitDatabase
 import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.reactivex.Single
+import java.math.BigInteger
 
 class RoomStorage(context: Context, databaseName: String) : ITransactionStorage, ITokenBalanceStorage {
 
@@ -16,12 +17,9 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
     override val lastTransactionBlockHeight: Long?
         get() = database.transactionDao.getLastTransaction()?.blockNumber
 
-    override fun lastTransactionBlockHeight(contractAddress: ByteArray): Long? {
-        return database.transactionDao.getLastTransaction(contractAddress)?.blockNumber
-    }
 
-    override fun getTransactions(contractAddress: ByteArray, hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
-        return database.transactionDao.getAllTransactions(contractAddress).flatMap { transactionsList ->
+    override fun getTransactions(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
+        return database.transactionDao.getAllTransactions().flatMap { transactionsList ->
             var transactions = transactionsList
 
             hashFrom?.let { hashFrom ->
@@ -42,10 +40,6 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
         database.transactionDao.insert(transactions)
     }
 
-    override fun update(transaction: Transaction) {
-        database.transactionDao.update(transaction)
-    }
-
     override fun clearTransactions() {
         database.transactionDao.deleteAll()
     }
@@ -53,15 +47,15 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
 
     // ITokenBalanceStorage
 
-    override fun getTokenBalance(contractAddress: ByteArray): TokenBalance? {
-        return database.tokenBalanceDao.getTokenBalance(contractAddress)
+    override fun getBalance(): BigInteger? {
+        return database.tokenBalanceDao.getBalance()?.value
     }
 
-    override fun save(tokenBalance: TokenBalance) {
-        database.tokenBalanceDao.insert(tokenBalance)
+    override fun save(balance: BigInteger) {
+        database.tokenBalanceDao.insert(TokenBalance(balance))
     }
 
-    override fun clearTokenBalances() {
+    override fun clearBalance() {
         database.tokenBalanceDao.deleteAll()
     }
 }

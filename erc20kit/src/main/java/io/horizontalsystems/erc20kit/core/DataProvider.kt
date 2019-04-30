@@ -3,26 +3,25 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.core.toBytesNoLeadZeroes
 import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.network.ERC20
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.reactivex.Single
 import java.math.BigInteger
 
-class DataProvider(val ethereumKit: EthereumKit) : IDataProvider {
+class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
 
     override val lastBlockHeight: Long
         get() = ethereumKit.lastBlockHeight ?: 0
 
-    override fun getTransactions(from: Long, to: Long, address: ByteArray): Single<List<Transaction>> {
+    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>> {
         val addressTopic = ByteArray(12) { 0 } + address
 
         val outgoingTopics = listOf(Transaction.transferEventTopic, addressTopic)
         val incomingTopics = listOf(Transaction.transferEventTopic, null, addressTopic)
 
-        val outgoingLogsRequest = ethereumKit.getLogs(null, outgoingTopics, from, to, true)
-        val incomingLogsRequest = ethereumKit.getLogs(null, incomingTopics, from, to, true)
+        val outgoingLogsRequest = ethereumKit.getLogs(contractAddress, outgoingTopics, from, to, true)
+        val incomingLogsRequest = ethereumKit.getLogs(contractAddress, incomingTopics, from, to, true)
 
         return Single.merge(outgoingLogsRequest, incomingLogsRequest).toList()
                 .map { results ->
@@ -41,17 +40,11 @@ class DataProvider(val ethereumKit: EthereumKit) : IDataProvider {
                 }
     }
 
-    override fun getStorageValue(contractAddress: ByteArray, position: Int, address: ByteArray, blockHeight: Long): Single<BigInteger> {
-        val positionByteArray = position.toBytesNoLeadZeroes()
+    override fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger> {
+        val balanceOfData = ERC20.encodeFunctionBalanceOf(address)
 
-        var positionKeyData = ByteArray(12) + address
-        positionKeyData += ByteArray(32 - positionByteArray.size) + positionByteArray
-
-        val positionData = CryptoUtils.sha3(positionKeyData)
-
-        return ethereumKit.getStorageAt(contractAddress, positionData, blockHeight).map {
-            it.toBigInteger()
-        }
+        return ethereumKit.call(contractAddress, balanceOfData)
+                .map { it.toBigInteger() }
     }
 
     override fun sendSingle(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray> {

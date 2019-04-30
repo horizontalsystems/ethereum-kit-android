@@ -43,6 +43,7 @@ interface IBlockchain {
     val address: ByteArray
 
     fun start()
+    fun refresh()
     fun stop()
     fun clear()
 
@@ -55,6 +56,7 @@ interface IBlockchain {
 
     fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
     fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray>
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray>
 }
 
 interface IBlockchainListener {
@@ -76,6 +78,7 @@ interface IRpcApiProvider {
     fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String>
     fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>>
     fun getBlock(blockNumber: Long): Single<Block>
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
 }
 
 interface ITransactionsProvider {

@@ -1,14 +1,13 @@
 package io.horizontalsystems.erc20kit.core
 
-import android.util.Log
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 
-class TransactionManager(private val address: ByteArray,
+class TransactionManager(private val contractAddress: ByteArray,
+                         private val address: ByteArray,
                          private val storage: ITransactionStorage,
                          private val dataProvider: IDataProvider,
                          private val transactionBuilder: ITransactionBuilder) : ITransactionManager {
@@ -17,19 +16,18 @@ class TransactionManager(private val address: ByteArray,
 
     override var listener: ITransactionManagerListener? = null
 
-    override fun lastTransactionBlockHeight(contractAddress: ByteArray): Long? {
-        return storage.lastTransactionBlockHeight
-    }
+    override val lastTransactionBlockHeight: Long?
+        get() = storage.lastTransactionBlockHeight
 
-    override fun transactionsSingle(contractAddress: ByteArray, hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
-        return storage.getTransactions(contractAddress, hashFrom, indexFrom, limit)
+    override fun transactionsSingle(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
+        return storage.getTransactions(hashFrom, indexFrom, limit)
     }
 
     override fun sync() {
         val lastBlockHeight = dataProvider.lastBlockHeight
         val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
 
-        dataProvider.getTransactions(lastTransactionBlockHeight + 1, lastBlockHeight, address)
+        dataProvider.getTransactions(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ transactions ->
                     storage.save(transactions)
@@ -42,7 +40,7 @@ class TransactionManager(private val address: ByteArray,
                 }
     }
 
-    override fun sendSingle(contractAddress: ByteArray, to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
+    override fun sendSingle(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         val transactionInput = transactionBuilder.transferTransactionInput(to, value)
 
         return dataProvider.sendSingle(contractAddress, transactionInput, gasPrice, gasLimit)

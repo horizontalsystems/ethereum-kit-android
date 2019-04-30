@@ -9,8 +9,8 @@ import io.horizontalsystems.erc20kit.models.TokenBalance
 @Dao
 interface TokenBalanceDao {
 
-    @Query("SELECT * FROM TokenBalance WHERE contractAddress = :contractAddress")
-    fun getTokenBalance(contractAddress: ByteArray): TokenBalance?
+    @Query("SELECT * FROM TokenBalance LIMIT 1")
+    fun getBalance(): TokenBalance?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(balance: TokenBalance)

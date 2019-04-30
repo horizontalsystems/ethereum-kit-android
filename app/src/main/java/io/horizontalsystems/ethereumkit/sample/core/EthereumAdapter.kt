@@ -5,18 +5,56 @@ import io.horizontalsystems.ethereumkit.models.TransactionInfo
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
-import java.math.BigInteger
 
-class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
+class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
+
+    private val decimal = 18
+
+    override val name: String
+        get() = "Ether"
+
+    override val coin: String
+        get() = "ETH"
+
+    override val lastBlockHeight: Long?
+        get() = ethereumKit.lastBlockHeight
 
     override val syncState: EthereumKit.SyncState
         get() = ethereumKit.syncState
 
-    override val balanceBigInteger: BigInteger?
-        get() = ethereumKit.balance
+    override val balance: BigDecimal
+        get() = ethereumKit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
 
-    override fun sendSingle(address: String, amount: String): Single<Unit> {
-        return ethereumKit.send(address, BigInteger(amount), 5_000_000_000).map { Unit }
+    override val receiveAddress: String
+        get() = ethereumKit.receiveAddress
+
+    override val lastBlockHeightFlowable: Flowable<Unit>
+        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
+
+    override val syncStateFlowable: Flowable<Unit>
+        get() = ethereumKit.syncStateFlowable.map { Unit }
+
+    override val balanceFlowable: Flowable<Unit>
+        get() = ethereumKit.syncStateFlowable.map { Unit }
+
+    override val transactionsFlowable: Flowable<Unit>
+        get() = ethereumKit.transactionsFlowable.map { Unit }
+
+    override fun validateAddress(address: String) {
+        ethereumKit.validateAddress(address)
+    }
+
+    override fun send(address: String, amount: BigDecimal): Single<Unit> {
+        val poweredDecimal = amount.scaleByPowerOfTen(decimal)
+        val noScaleDecimal = poweredDecimal.setScale(0)
+
+        return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
+    }
+
+    override fun transactions(fromHash: String?, fromIndex: Int?, limit: Int?): Single<List<TransactionRecord>> {
+        return ethereumKit.transactions(fromHash, limit).map { transactions ->
+            transactions.map { transactionRecord(it) }
+        }
     }
 
     private fun transactionRecord(transaction: TransactionInfo): TransactionRecord {
@@ -39,6 +77,7 @@ class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
 
         return TransactionRecord(
                 transactionHash = transaction.hash,
+                index = 0,
                 blockHeight = transaction.blockNumber,
                 amount = amount,
                 timestamp = transaction.timestamp,
@@ -46,23 +85,5 @@ class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
                 to = to
         )
     }
-
-    override fun transactionsSingle(hashFrom: String?, limit: Int?): Single<List<TransactionRecord>> {
-        return ethereumKit.transactions(hashFrom, limit).map { transactions ->
-            transactions.map { transactionRecord(it) }
-        }
-    }
-
-    val lastBlockHeightFlowable: Flowable<Unit>
-        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
-
-    val syncStateFlowable: Flowable<Unit>
-        get() = ethereumKit.syncStateFlowable.map { Unit }
-
-    val balanceFlowable: Flowable<Unit>
-        get() = ethereumKit.balanceFlowable.map { Unit }
-
-    val transactionsFlowable: Flowable<Unit>
-        get() = ethereumKit.transactionsFlowable.map { Unit }
-
 }
+

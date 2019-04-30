@@ -1,11 +1,11 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 
-class BalanceManager(private val address: ByteArray,
+class BalanceManager(private val contractAddress: ByteArray,
+                     private val address: ByteArray,
                      private val storage: ITokenBalanceStorage,
                      private val dataProvider: IDataProvider) : IBalanceManager {
 
@@ -13,29 +13,25 @@ class BalanceManager(private val address: ByteArray,
 
     override var listener: IBalanceManagerListener? = null
 
-    override fun balance(contractAddress: ByteArray): TokenBalance {
-        return storage.getTokenBalance(contractAddress)
-                ?: TokenBalance(contractAddress, BigInteger.ZERO, 0)
-    }
+    override val balance: BigInteger?
+        get() = storage.getBalance()
 
-    override fun sync(blockHeight: Long, contractAddress: ByteArray, balancePosition: Int) {
-        dataProvider.getStorageValue(contractAddress, balancePosition, address, blockHeight)
+    override fun sync() {
+        dataProvider.getBalance(contractAddress, address)
                 .subscribeOn(Schedulers.io())
-                .subscribe({ value ->
-                    val balance = TokenBalance(contractAddress, value, blockHeight)
-
+                .subscribe({ balance ->
                     storage.save(balance)
-                    listener?.onBalanceUpdate(balance, contractAddress)
-                    listener?.onSyncBalanceSuccess(contractAddress)
+                    listener?.onSyncBalanceSuccess(balance)
                 }, {
-                    listener?.onSyncBalanceError(contractAddress)
-                }).let {
+
+                })
+                .let {
                     disposables.add(it)
                 }
     }
 
     override fun clear() {
-        storage.clearTokenBalances()
+        storage.clearBalance()
         disposables.clear()
     }
 }

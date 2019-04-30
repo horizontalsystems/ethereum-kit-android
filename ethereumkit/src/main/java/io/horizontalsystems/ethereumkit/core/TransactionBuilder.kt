@@ -13,14 +13,6 @@ class TransactionBuilder {
         return RawTransaction(gasPrice, gasLimit, to, value, transactionInput)
     }
 
-    fun rawErc20Transaction(contractAddress: ByteArray, gasPrice: Long, gasLimit: Long, to: ByteArray, value: BigInteger): RawTransaction {
-        val data = ByteArray(0)
-
-        // todo: create data for erc20 transfer
-
-        return RawTransaction(gasPrice, gasLimit, contractAddress, value, data)
-    }
-
     fun transaction(rawTransaction: RawTransaction, nonce: Long, signature: Signature, address: ByteArray): EthereumTransaction {
         val transactionHash = CryptoUtils.sha3(encode(rawTransaction, nonce, signature))
 

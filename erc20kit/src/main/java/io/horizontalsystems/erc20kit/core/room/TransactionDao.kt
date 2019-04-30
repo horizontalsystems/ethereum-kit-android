@@ -16,9 +16,6 @@ interface TransactionDao {
     @Query("SELECT * FROM `Transaction` ORDER BY blockNumber DESC, logIndex DESC")
     fun getAllTransactions(): Single<List<Transaction>>
 
-    @Query("SELECT * FROM `Transaction` WHERE contractAddress = :contractAddress ORDER BY blockNumber DESC, logIndex DESC")
-    fun getAllTransactions(contractAddress: ByteArray): Single<List<Transaction>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transactions: List<Transaction>)
 

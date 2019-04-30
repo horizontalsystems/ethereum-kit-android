@@ -124,6 +124,13 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
         }
     }
 
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+        val request = Request("eth_call", listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
+        return service.makeRequestForString(request).flatMap {
+            returnResultOrError(it)
+        }
+    }
+
     private fun <T> returnResultOrError(response: Response<T>): Single<T> {
         return if (response.error != null) {
             Single.error(Exception(response.error.message))

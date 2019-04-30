@@ -44,6 +44,10 @@ class EthereumKit(
         blockchain.stop()
     }
 
+    fun refresh() {
+        blockchain.refresh()
+    }
+
     fun clear() {
         blockchain.stop()
         blockchain.clear()
@@ -78,8 +82,8 @@ class EthereumKit(
                 .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
-    fun send(toAddress: String, value: BigInteger, gasPrice: Long): Single<EthereumTransaction> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress.hexStringToByteArray(), value)
+    fun send(toAddress: String, value: String, gasPrice: Long): Single<EthereumTransaction> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress.hexStringToByteArray(), value.toBigInteger())
 
         return blockchain.send(rawTransaction)
     }
@@ -96,6 +100,10 @@ class EthereumKit(
 
     fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
         return blockchain.getStorageAt(contractAddress, position, blockNumber)
+    }
+
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long? = null): Single<ByteArray> {
+        return blockchain.call(contractAddress, data, blockNumber)
     }
 
     fun debugInfo(): String {

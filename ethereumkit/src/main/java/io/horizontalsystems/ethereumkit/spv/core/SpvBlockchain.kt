@@ -24,6 +24,10 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         peerGroup.start()
     }
 
+    override fun refresh() {
+        TODO("not implemented")
+    }
+
     override fun stop() {
         peerGroup.stop()
     }
@@ -83,6 +87,10 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
     }
 
     override fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+        TODO("not implemented")
+    }
+
+    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
         TODO("not implemented")
     }
 

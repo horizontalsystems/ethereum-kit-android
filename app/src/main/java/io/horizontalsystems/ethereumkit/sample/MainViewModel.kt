@@ -3,7 +3,6 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Log
-import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
@@ -29,7 +28,6 @@ class MainViewModel : ViewModel() {
     private var ethereumKit: EthereumKit
     private val ethereumAdapter: EthereumAdapter
 
-    private val erc20Kit: Erc20Kit
     private val erc20Adapter: Erc20Adapter
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
@@ -57,8 +55,7 @@ class MainViewModel : ViewModel() {
         ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(infuraKey, etherscanKey), NetworkType.Ropsten, "unique-wallet-id")
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
-        erc20Kit = Erc20Kit.getInstance(App.instance, ethereumKit)
-        erc20Adapter = Erc20Adapter(erc20Kit, ethereumKit, contractAddress, 6, contractDecimal)
+        erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "Max Token", "MXT", contractAddress, contractDecimal)
 
         fee.value = ethereumKit.fee(gasPrice)
         updateBalance()
@@ -142,7 +139,7 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateTransactions() {
-        ethereumAdapter.transactionsSingle()
+        ethereumAdapter.transactions()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
                     transactions.value = list
@@ -152,7 +149,7 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateErc20Transactions() {
-        erc20Adapter.transactionsSingle()
+        erc20Adapter.transactions()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
                     transactions.value = list
@@ -167,7 +164,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun refresh() {
-        ethereumKit.start()
+        ethereumKit.refresh()
         fee.postValue(ethereumKit.fee(gasPrice))
     }
 
@@ -176,7 +173,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(address: String, amount: BigDecimal) {
-        ethereumAdapter.sendSingle(address, amount)
+        ethereumAdapter.send(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -194,7 +191,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(address: String, amount: BigDecimal) {
-        erc20Adapter.sendSingle(address, amount)
+        erc20Adapter.send(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -207,7 +204,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val txMethod = if (ethTx) ethereumAdapter.transactionsSingle() else erc20Adapter.transactionsSingle()
+        val txMethod = if (ethTx) ethereumAdapter.transactions() else erc20Adapter.transactions()
 
         txMethod
                 .observeOn(AndroidSchedulers.mainThread())

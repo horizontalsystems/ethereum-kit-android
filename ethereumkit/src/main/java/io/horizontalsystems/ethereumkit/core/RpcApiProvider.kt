@@ -37,6 +37,10 @@ class RpcApiProvider(private val infuraService: InfuraService) : IRpcApiProvider
         return infuraService.getBlockByNumber(blockNumber)
     }
 
+    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+        return infuraService.call(contractAddress, data, blockNumber)
+    }
+
     companion object {
         fun getInstance(networkType: NetworkType, infuraApiKey: String): RpcApiProvider {
             val infuraService = InfuraService(networkType, infuraApiKey)
