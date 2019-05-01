@@ -11,6 +11,8 @@ import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
+import io.horizontalsystems.hdwalletkit.HDWallet
+import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -193,6 +195,29 @@ class EthereumKit(
 
             return ethereumKit
         }
+
+        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType, walletId: String): EthereumKit {
+            val seed = Mnemonic().toSeed(words)
+            val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
+            val privateKey = hdWallet.privateKey(0, 0, true).privKey
+
+            val syncMode = when (wordsSyncMode) {
+                is WordsSyncMode.SpvSyncMode -> {
+                    val nodePrivateKey = hdWallet.privateKey(101, 101, true).privKey
+                    SyncMode.SpvSyncMode(nodePrivateKey)
+                }
+                is WordsSyncMode.ApiSyncMode -> {
+                    SyncMode.ApiSyncMode(wordsSyncMode.infuraKey, wordsSyncMode.etherscanKey)
+                }
+            }
+
+            return getInstance(context, privateKey, syncMode, networkType, walletId)
+        }
+    }
+
+    sealed class WordsSyncMode {
+        class SpvSyncMode : WordsSyncMode()
+        class ApiSyncMode(val infuraKey: String, val etherscanKey: String) : WordsSyncMode()
     }
 
     sealed class SyncMode {
