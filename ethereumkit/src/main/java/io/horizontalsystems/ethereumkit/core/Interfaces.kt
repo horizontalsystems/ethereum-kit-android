@@ -1,5 +1,7 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.models.Block
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -41,48 +43,44 @@ interface IBlockchain {
     val address: ByteArray
 
     fun start()
+    fun refresh()
     fun stop()
     fun clear()
 
     val syncState: EthereumKit.SyncState
-    fun getSyncStateErc20(contractAddress: ByteArray): EthereumKit.SyncState
-
-    fun getLastBlockHeight(): Long?
-
+    val lastBlockHeight: Long?
     val balance: BigInteger?
-    fun getBalanceErc20(contractAddress: ByteArray): BigInteger?
 
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
-    fun getTransactionsErc20(contractAddress: ByteArray?, fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
-
     fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
 
-    fun register(contractAddress: ByteArray)
-    fun unregister(contractAddress: ByteArray)
+    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
+    fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray>
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray>
 }
 
 interface IBlockchainListener {
     fun onUpdateLastBlockHeight(lastBlockHeight: Long)
 
     fun onUpdateBalance(balance: BigInteger)
-    fun onUpdateErc20Balance(balance: BigInteger, contractAddress: ByteArray)
-
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
-    fun onUpdateErc20SyncState(syncState: EthereumKit.SyncState, contractAddress: ByteArray)
-
     fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
-    fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: ByteArray)
 }
 
-interface IApiProvider {
+interface IRpcApiProvider {
     fun getLastBlockHeight(): Single<Long>
     fun getTransactionCount(address: ByteArray): Single<Long>
 
     fun getBalance(address: ByteArray): Single<BigInteger>
-    fun getBalanceErc20(address: ByteArray, contractAddress: ByteArray): Single<BigInteger>
-
-    fun getTransactions(address: ByteArray, startBlock: Long): Single<List<EthereumTransaction>>
-    fun getTransactionsErc20(address: ByteArray, startBlock: Long): Single<List<EthereumTransaction>>
 
     fun send(signedTransaction: ByteArray): Single<Unit>
+
+    fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String>
+    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>>
+    fun getBlock(blockNumber: Long): Single<Block>
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
+}
+
+interface ITransactionsProvider {
+    fun getTransactions(address: ByteArray, startBlock: Long): Single<List<EthereumTransaction>>
 }

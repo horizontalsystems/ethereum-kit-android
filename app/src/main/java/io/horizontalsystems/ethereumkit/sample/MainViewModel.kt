@@ -3,12 +3,9 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Log
-import android.widget.Toast
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
@@ -29,10 +26,9 @@ class MainViewModel : ViewModel() {
     private val disposables = CompositeDisposable()
 
     private var ethereumKit: EthereumKit
-    private val erc20Adapter: Erc20Adapter
     private val ethereumAdapter: EthereumAdapter
-    var feePriority: FeePriority = FeePriority.Medium
 
+    private val erc20Adapter: Erc20Adapter
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
     val balance = MutableLiveData<BigDecimal>()
@@ -56,12 +52,10 @@ class MainViewModel : ViewModel() {
         val privateKey = hdWallet.privateKey(0, 0, true).privKey
         val nodePrivateKey = hdWallet.privateKey(102, 102, true).privKey
 
-        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.SpvSyncMode(nodePrivateKey), NetworkType.Ropsten, "unique-wallet-id")
+        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(infuraKey, etherscanKey), NetworkType.Ropsten, "unique-wallet-id")
         ethereumAdapter = EthereumAdapter(ethereumKit)
-        erc20Adapter = Erc20Adapter(ethereumKit, contractAddress.hexStringToByteArray(), contractDecimal)
 
-        ethereumKit.start()
-
+        erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "Max Token", "MXT", contractAddress, contractDecimal)
 
         fee.value = ethereumKit.fee(gasPrice)
         updateBalance()
@@ -73,42 +67,50 @@ class MainViewModel : ViewModel() {
         //
         // Ethereum
         //
-        ethereumAdapter.transactionSubject.subscribe {
-            updateTransactions()
-        }.let {
-            disposables.add(it)
-        }
 
-        ethereumAdapter.balanceSubject.subscribe {
-            updateBalance()
-        }.let {
-            disposables.add(it)
-        }
-
-        ethereumAdapter.lastBlockHeightSubject.subscribe {
+        ethereumAdapter.lastBlockHeightFlowable.subscribe {
             updateLastBlockHeight()
         }.let {
             disposables.add(it)
         }
 
-        ethereumAdapter.syncStateUpdateSubject.subscribe {
+        ethereumAdapter.transactionsFlowable.subscribe {
+            updateTransactions()
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.balanceFlowable.subscribe {
+            updateBalance()
+        }.let {
+            disposables.add(it)
+        }
+
+        ethereumAdapter.syncStateFlowable.subscribe {
             updateState()
         }.let {
             disposables.add(it)
         }
 
-        erc20Adapter.syncStateUpdateSubject.subscribe {
-            updateErc20State()
-        }.let {
-            disposables.add(it)
-        }
 
         //
         // ERC20
         //
 
-        erc20Adapter.balanceSubject.subscribe {
+        erc20Adapter.transactionsFlowable.subscribe {
+            updateErc20Transactions()
+        }.let {
+            disposables.add(it)
+        }
+
+        erc20Adapter.balanceFlowable.subscribe {
             updateErc20Balance()
+        }.let {
+            disposables.add(it)
+        }
+
+        erc20Adapter.syncStateFlowable.subscribe {
+            updateErc20State()
         }.let {
             disposables.add(it)
         }
@@ -136,26 +138,47 @@ class MainViewModel : ViewModel() {
         erc20TokenBalance.postValue(erc20Adapter.balance)
     }
 
+    private fun updateTransactions() {
+        ethereumAdapter.transactions()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { list: List<TransactionRecord> ->
+                    transactions.value = list
+                }.let {
+                    disposables.add(it)
+                }
+    }
+
+    private fun updateErc20Transactions() {
+        erc20Adapter.transactions()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { list: List<TransactionRecord> ->
+                    transactions.value = list
+                }.let {
+                    disposables.add(it)
+                }
+    }
+
+
     //
     // Ethereum
     //
 
     fun refresh() {
-        ethereumKit.start()
+        ethereumKit.refresh()
         fee.postValue(ethereumKit.fee(gasPrice))
     }
 
     fun receiveAddress(): String {
-        return ethereumKit.receiveAddress.toHexString()
+        return ethereumKit.receiveAddress
     }
 
     fun send(address: String, amount: BigDecimal) {
-        ethereumAdapter.sendSingle(address, amount, feePriority)
+        ethereumAdapter.send(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
-                    Toast.makeText(App.instance, "Success", Toast.LENGTH_SHORT).show()
+                    sendStatus.value = null
                 }, {
                     Log.e("MainViewModel", "send failed ${it.message}")
                     sendStatus.value = it
@@ -168,12 +191,12 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(address: String, amount: BigDecimal) {
-        erc20Adapter.sendSingle(address, amount, feePriority)
+        erc20Adapter.send(address, amount)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
-                    Toast.makeText(App.instance, "Success", Toast.LENGTH_SHORT).show()
+                    sendStatus.value = null
                 }, {
                     Log.e("MainViewModel", "send failed ${it.message}")
                     sendStatus.value = it
@@ -181,26 +204,12 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val txMethod = if (ethTx) ethereumAdapter.transactionsSingle() else erc20Adapter.transactionsSingle()
+        val txMethod = if (ethTx) ethereumAdapter.transactions() else erc20Adapter.transactions()
 
         txMethod
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { txList: List<TransactionRecord> ->
                     transactions.value = txList
-                }.let {
-                    disposables.add(it)
-                }
-    }
-
-    //
-    // Private
-    //
-
-    private fun updateTransactions() {
-        ethereumAdapter.transactionsSingle()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { list: List<TransactionRecord> ->
-                    transactions.value = list
                 }.let {
                     disposables.add(it)
                 }

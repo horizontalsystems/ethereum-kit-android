@@ -2,41 +2,38 @@ package io.horizontalsystems.ethereumkit.core
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.ApiBlockchain
-import io.horizontalsystems.ethereumkit.api.models.State
+import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiRoomStorage
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.net.INetwork
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.subjects.PublishSubject
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 class EthereumKit(
         private val blockchain: IBlockchain,
         private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
-        private val state: State = State()) : IBlockchainListener {
+        private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener {
 
-    interface Listener {
-        fun onTransactionsUpdate(transactions: List<EthereumTransaction>)
-        fun onBalanceUpdate()
-        fun onLastBlockHeightUpdate()
-        fun onSyncStateUpdate()
-    }
-
-    var listener: Listener? = null
-    var listenerExecutor: Executor = Executors.newSingleThreadExecutor()
+    private val lastBlockHeightSubject = PublishSubject.create<Long>()
+    private val syncStateSubject = PublishSubject.create<SyncState>()
+    private val balanceSubject = PublishSubject.create<BigInteger>()
+    private val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
 
     private val gasLimit: Long = 21_000
-    private val gasLimitErc20: Long = 100_000
 
     init {
         state.balance = blockchain.balance
-        state.lastBlockHeight = blockchain.getLastBlockHeight()
+        state.lastBlockHeight = blockchain.lastBlockHeight
     }
 
     fun start() {
@@ -47,33 +44,30 @@ class EthereumKit(
         blockchain.stop()
     }
 
-    fun clear() {
-        listener = null
+    fun refresh() {
+        blockchain.refresh()
+    }
 
+    fun clear() {
+        blockchain.stop()
         blockchain.clear()
         state.clear()
     }
 
-    val receiveAddress: ByteArray
-        get() {
-            return blockchain.address
-        }
+    val lastBlockHeight: Long?
+        get() = state.lastBlockHeight
 
-    fun register(contractAddress: ByteArray, listener: Listener) {
-        if (state.hasContract(contractAddress)) {
-            return
-        }
+    val balance: BigInteger?
+        get() = state.balance
 
-        state.add(contractAddress, listener)
-        state.setBalance(blockchain.getBalanceErc20(contractAddress), contractAddress)
+    val syncState: SyncState
+        get() = blockchain.syncState
 
-        blockchain.register(contractAddress)
-    }
+    val receiveAddress: String
+        get() = blockchain.address.toEIP55Address()
 
-    fun unregister(contractAddress: ByteArray) {
-        blockchain.unregister(contractAddress)
-        state.remove(contractAddress)
-    }
+    val receiveAddressRaw: ByteArray
+        get() = blockchain.address
 
     fun validateAddress(address: String) {
         addressValidator.validate(address)
@@ -83,14 +77,33 @@ class EthereumKit(
         return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
-    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return blockchain.getTransactions(fromHash, limit)
+    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<TransactionInfo>> {
+        return blockchain.getTransactions(fromHash?.hexStringToByteArray(), limit)
+                .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
-    fun send(toAddress: ByteArray, amount: BigInteger, gasPrice: Long): Single<EthereumTransaction> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, amount)
+    fun send(toAddress: String, value: String, gasPrice: Long): Single<EthereumTransaction> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress.hexStringToByteArray(), value.toBigInteger())
 
         return blockchain.send(rawTransaction)
+    }
+
+    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long = this.gasLimit): Single<TransactionInfo> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
+        return blockchain.send(rawTransaction)
+                .map { TransactionInfo(it) }
+    }
+
+    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+        return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
+    }
+
+    fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+        return blockchain.getStorageAt(contractAddress, position, blockNumber)
+    }
+
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long? = null): Single<ByteArray> {
+        return blockchain.call(contractAddress, data, blockNumber)
     }
 
     fun debugInfo(): String {
@@ -99,103 +112,47 @@ class EthereumKit(
         return lines.joinToString { "\n" }
     }
 
-    val balance: BigInteger?
-        get() {
-            return state.balance
-        }
+    val lastBlockHeightFlowable: Flowable<Long>
+        get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val lastBlockHeight: Long?
-        get() {
-            return state.lastBlockHeight
-        }
+    val syncStateFlowable: Flowable<SyncState>
+        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val syncState: SyncState
-        get() = blockchain.syncState
+    val balanceFlowable: Flowable<BigInteger>
+        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    //
-    // ERC20
-    //
-
-    fun feeERC20(gasPrice: Long): BigDecimal {
-        return BigDecimal(gasPrice).multiply(gasLimitErc20.toBigDecimal())
-    }
-
-    fun balanceERC20(contractAddress: ByteArray): BigInteger? {
-        return state.balance(contractAddress)
-    }
-
-    fun syncStateErc20(contractAddress: ByteArray): SyncState {
-        return blockchain.getSyncStateErc20(contractAddress)
-    }
-
-    fun transactionsERC20(contractAddress: ByteArray, fromHash: ByteArray? = null, limit: Int? = null): Single<List<EthereumTransaction>> {
-        return blockchain.getTransactionsErc20(contractAddress, fromHash, limit)
-    }
-
-    fun sendERC20(toAddress: ByteArray, contractAddress: ByteArray, amount: BigInteger, gasPrice: Long): Single<EthereumTransaction> {
-        val rawTransaction = transactionBuilder.rawErc20Transaction(contractAddress, gasPrice, gasLimitErc20, toAddress, amount)
-
-        return blockchain.send(rawTransaction)
-    }
+    val transactionsFlowable: Flowable<List<TransactionInfo>>
+        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     //
     //IBlockchain
     //
 
     override fun onUpdateLastBlockHeight(lastBlockHeight: Long) {
+        if (state.lastBlockHeight == lastBlockHeight)
+            return
+
         state.lastBlockHeight = lastBlockHeight
-        listenerExecutor.execute {
-            listener?.onLastBlockHeightUpdate()
-        }
-        for (erc20Listener in state.erc20Listeners) {
-            listenerExecutor.execute {
-                erc20Listener.onLastBlockHeightUpdate()
-            }
-        }
+        lastBlockHeightSubject.onNext(lastBlockHeight)
     }
 
     override fun onUpdateSyncState(syncState: SyncState) {
-        listenerExecutor.execute {
-            listener?.onSyncStateUpdate()
-        }
-    }
-
-    override fun onUpdateErc20SyncState(syncState: SyncState, contractAddress: ByteArray) {
-        listenerExecutor.execute {
-            state.listener(contractAddress)?.onSyncStateUpdate()
-        }
+        syncStateSubject.onNext(syncState)
     }
 
     override fun onUpdateBalance(balance: BigInteger) {
-        state.balance = balance
-        listenerExecutor.execute {
-            listener?.onBalanceUpdate()
-        }
-    }
+        if (state.balance == balance)
+            return
 
-    override fun onUpdateErc20Balance(balance: BigInteger, contractAddress: ByteArray) {
-        state.setBalance(balance, contractAddress)
-        listenerExecutor.execute {
-            state.listener(contractAddress)?.onBalanceUpdate()
-        }
+        state.balance = balance
+        balanceSubject.onNext(balance)
     }
 
     override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
         if (ethereumTransactions.isEmpty())
             return
 
-        listenerExecutor.execute {
-            listener?.onTransactionsUpdate(ethereumTransactions)
-        }
-    }
-
-    override fun onUpdateErc20Transactions(ethereumTransactions: List<EthereumTransaction>, contractAddress: ByteArray) {
-        if (ethereumTransactions.isEmpty())
-            return
-
-        listenerExecutor.execute {
-            state.listener(contractAddress)?.onTransactionsUpdate(ethereumTransactions)
-        }
+        transactionsSubject.onNext(ethereumTransactions.map { tx -> TransactionInfo(tx) })
     }
 
     sealed class SyncState {

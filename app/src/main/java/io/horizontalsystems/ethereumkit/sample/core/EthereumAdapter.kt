@@ -1,30 +1,90 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.sample.FeePriority
+import io.horizontalsystems.ethereumkit.models.TransactionInfo
+import io.reactivex.Flowable
 import io.reactivex.Single
-import java.math.BigInteger
+import java.math.BigDecimal
 
-class EthereumAdapter(ethereumKit: EthereumKit) : BaseAdapter(ethereumKit, 18) {
+class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
 
-    init {
-        ethereumKit.listener = this
-    }
+    private val decimal = 18
+
+    override val name: String
+        get() = "Ether"
+
+    override val coin: String
+        get() = "ETH"
+
+    override val lastBlockHeight: Long?
+        get() = ethereumKit.lastBlockHeight
 
     override val syncState: EthereumKit.SyncState
         get() = ethereumKit.syncState
 
-    override val balanceString: String?
-        get() = ethereumKit.balance?.toString()
+    override val balance: BigDecimal
+        get() = ethereumKit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
 
-    override fun sendSingle(address: String, amount: String, feePriority: FeePriority): Single<Unit> {
-        return ethereumKit.send(address.hexStringToByteArray(), BigInteger(amount), 5_000_000_000).map { Unit }
+    override val receiveAddress: String
+        get() = ethereumKit.receiveAddress
+
+    override val lastBlockHeightFlowable: Flowable<Unit>
+        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
+
+    override val syncStateFlowable: Flowable<Unit>
+        get() = ethereumKit.syncStateFlowable.map { Unit }
+
+    override val balanceFlowable: Flowable<Unit>
+        get() = ethereumKit.syncStateFlowable.map { Unit }
+
+    override val transactionsFlowable: Flowable<Unit>
+        get() = ethereumKit.transactionsFlowable.map { Unit }
+
+    override fun validateAddress(address: String) {
+        ethereumKit.validateAddress(address)
     }
 
-    override fun transactionsObservable(hashFrom: String?, limit: Int?): Single<List<EthereumTransaction>> {
-        return ethereumKit.transactions(hashFrom?.hexStringToByteArray(), limit)
+    override fun send(address: String, amount: BigDecimal): Single<Unit> {
+        val poweredDecimal = amount.scaleByPowerOfTen(decimal)
+        val noScaleDecimal = poweredDecimal.setScale(0)
+
+        return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
     }
 
+    override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+        return ethereumKit.transactions(from?.first, limit).map { transactions ->
+            transactions.map { transactionRecord(it) }
+        }
+    }
+
+    private fun transactionRecord(transaction: TransactionInfo): TransactionRecord {
+        val mineAddress = ethereumKit.receiveAddress
+
+        val fromAddressHex = transaction.from
+        val from = TransactionAddress(fromAddressHex, fromAddressHex == mineAddress)
+
+        val toAddressHex = transaction.to
+        val to = TransactionAddress(toAddressHex, toAddressHex == mineAddress)
+
+        var amount: BigDecimal
+
+        transaction.value.toBigDecimal().let {
+            amount = it.movePointLeft(decimal)
+            if (from.mine) {
+                amount = -amount
+            }
+        }
+
+        return TransactionRecord(
+                transactionHash = transaction.hash,
+                transactionIndex = transaction.transactionIndex ?: 0,
+                interTransactionInex = 0,
+                blockHeight = transaction.blockNumber,
+                amount = amount,
+                timestamp = transaction.timestamp,
+                from = from,
+                to = to
+        )
+    }
 }
+

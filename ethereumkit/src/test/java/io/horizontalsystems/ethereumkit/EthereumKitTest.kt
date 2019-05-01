@@ -5,7 +5,7 @@ class EthereumKitTest {
 
     private val blockchain = mock(IBlockchain::class.java)
     private val addressValidator = mock(AddressValidator::class.java)
-    private val state = mock(State::class.java)
+    private val state = mock(EthereumKitState::class.java)
     private val listener = mock(EthereumKit.Listener::class.java)
     private lateinit var kit: EthereumKit
 

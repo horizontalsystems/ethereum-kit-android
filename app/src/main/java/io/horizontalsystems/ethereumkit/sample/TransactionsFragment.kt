@@ -12,6 +12,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TransactionsFragment : Fragment() {
 
@@ -90,12 +92,17 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             Color.TRANSPARENT
         )
 
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+
         var value = """
             - #$index
+            - Tx Hash: ${tx.transactionHash}
+            - Tx Index: ${tx.transactionIndex}
+            - Inter Tx Index: ${tx.interTransactionInex}
+            - Time: ${format.format(Date(tx.timestamp * 1000))}
             - From: ${tx.from.address}
             - To: ${tx.to.address}
             - Amount: ${tx.amount.stripTrailingZeros()}
-            - GasPriceInWei: ${tx.gasPriceInWei}
         """
 
         if (lastBlockHeight > 0)

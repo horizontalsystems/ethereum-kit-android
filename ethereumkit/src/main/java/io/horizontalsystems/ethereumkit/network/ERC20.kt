@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.network
 
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import java.lang.Math.max
+import java.math.BigInteger
 
 object ERC20 {
     private fun buildMethodId(methodSignature: String): ByteArray {
@@ -19,4 +20,12 @@ object ERC20 {
         val methodId = buildMethodId("balanceOf(address)")
         return methodId + pad(address)
     }
+
+    fun encodeFunctionTransfer(toAddress: ByteArray, value: BigInteger): ByteArray {
+        val methodId = buildMethodId("transfer(address,uint256)")
+        return methodId + pad(toAddress) + pad(value.toByteArray())
+    }
+
+    val transferEventTopic = CryptoUtils.sha3("Transfer(address,address,uint256)".toByteArray())
+
 }

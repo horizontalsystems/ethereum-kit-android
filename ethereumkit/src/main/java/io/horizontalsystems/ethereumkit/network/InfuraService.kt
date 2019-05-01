@@ -3,6 +3,8 @@ package io.horizontalsystems.ethereumkit.network
 import com.google.gson.GsonBuilder
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.models.Block
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -29,7 +31,7 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
     init {
         val logger = HttpLoggingInterceptor()
-                .setLevel(HttpLoggingInterceptor.Level.BASIC)
+                .setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(logger)
@@ -43,6 +45,8 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
         val gson = GsonBuilder()
                 .setLenient()
                 .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
+                .registerTypeAdapter(Long::class.java, LongTypeAdapter())
+                .registerTypeAdapter(Int::class.java, IntTypeAdapter())
                 .create()
 
         val retrofit = Retrofit.Builder()
@@ -80,21 +84,51 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
         }
     }
 
-    fun getBalanceErc20(address: ByteArray, contractAddress: ByteArray): Single<BigInteger> {
-        val encodedFunctionCall = ERC20.encodeFunctionBalanceOf(address)
-        val callParams = mapOf(
-                "to" to contractAddress.toHexString(),
-                "data" to encodedFunctionCall.toHexString())
+    fun send(signedTransaction: ByteArray): Single<Unit> {
+        val request = Request("eth_sendRawTransaction", listOf(signedTransaction.toHexString()))
+        return service.makeRequestForString(request).flatMap {
+            returnResultOrError(it)
+        }.map { Unit }
+    }
 
-        val request = Request("eth_call", listOf(callParams, "latest"))
-        return service.makeRequestForBigInteger(request).flatMap {
+    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>> {
+        val fromBlockStr = fromBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "earliest"
+        val toBlockStr = toBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "latest"
+        val params: MutableMap<String, Any> = mutableMapOf(
+                "fromBlock" to fromBlockStr,
+                "toBlock" to toBlockStr,
+                "topics" to topics.map { it?.toHexString() })
+
+        address?.let {
+            params["address"] = address.toHexString()
+        }
+
+        val request = Request("eth_getLogs", listOf(params))
+
+        return service.makeRequestForLogs(request).flatMap {
             returnResultOrError(it)
         }
     }
 
-    fun send(signedTransaction: ByteArray): Single<Unit> {
-        val request = Request("eth_sendRawTransaction", listOf(signedTransaction.toHexString()))
-        return service.makeRequestForString(request).map { Unit }
+    fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
+        val request = Request("eth_getStorageAt", listOf(contractAddress.toHexString(), position, "latest"))
+        return service.makeRequestForString(request).flatMap {
+            returnResultOrError(it)
+        }
+    }
+
+    fun getBlockByNumber(blockNumber: Long): Single<Block> {
+        val request = Request("eth_getBlockByNumber", listOf("0x${blockNumber.toString(16)}", false))
+        return service.makeRequestForBlock(request).flatMap {
+            returnResultOrError(it)
+        }
+    }
+
+    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+        val request = Request("eth_call", listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
+        return service.makeRequestForString(request).flatMap {
+            returnResultOrError(it)
+        }
     }
 
     private fun <T> returnResultOrError(response: Response<T>): Single<T> {
@@ -116,5 +150,10 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
         @POST("/")
         fun makeRequestForString(@Body request: Request): Single<Response<String>>
 
+        @POST("/")
+        fun makeRequestForLogs(@Body request: Request): Single<Response<List<EthereumLog>>>
+
+        @POST("/")
+        fun makeRequestForBlock(@Body request: Request): Single<Response<Block>>
     }
 }
