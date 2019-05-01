@@ -25,4 +25,7 @@ object ERC20 {
         val methodId = buildMethodId("transfer(address,uint256)")
         return methodId + pad(toAddress) + pad(value.toByteArray())
     }
+
+    val transferEventTopic = CryptoUtils.sha3("Transfer(address,address,uint256)".toByteArray())
+
 }

@@ -4,7 +4,8 @@ import java.math.BigDecimal
 
 class TransactionRecord(
         val transactionHash: String,
-        val index: Int,
+        val transactionIndex: Int,
+        val interTransactionInex: Int,
         val amount: BigDecimal,
         val timestamp: Long,
 

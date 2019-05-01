@@ -23,5 +23,5 @@ interface IAdapter {
 
     fun validateAddress(address: String)
     fun send(address: String, amount: BigDecimal): Single<Unit>
-    fun transactions(fromHash: String? = null, fromIndex: Int? = null, limit: Int? = null): Single<List<TransactionRecord>>
+    fun transactions(from: Pair<String, Int>? = null, limit: Int? = null): Single<List<TransactionRecord>>
 }

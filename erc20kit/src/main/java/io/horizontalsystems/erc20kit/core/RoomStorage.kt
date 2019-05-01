@@ -18,14 +18,18 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
         get() = database.transactionDao.getLastTransaction()?.blockNumber
 
 
-    override fun getTransactions(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
+    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return database.transactionDao.getAllTransactions().flatMap { transactionsList ->
             var transactions = transactionsList
 
-            hashFrom?.let { hashFrom ->
-                val tx = transactions.firstOrNull { it.transactionHash.contentEquals(hashFrom) }
-                tx?.timestamp?.let { txTimeStamp ->
-                    transactions = transactions.filter { indexFrom != null && it.timestamp == txTimeStamp && it.logIndex < indexFrom || it.timestamp < txTimeStamp }
+            fromTransaction?.let { fromTxKey ->
+                transactions.firstOrNull { it.transactionHash.contentEquals(fromTxKey.hash) && it.interTransactionIndex == fromTxKey.interTransactionIndex }?.let { txFrom ->
+                    transactions = transactions
+                            .filter {
+                                it.timestamp < txFrom.timestamp ||
+                                        it.timestamp == txFrom.timestamp && (it.transactionIndex?.compareTo(txFrom.transactionIndex ?:0 ) ?: 0) < 0 ||
+                                        it.timestamp == txFrom.timestamp && it.transactionIndex == txFrom.transactionIndex && it.interTransactionIndex < fromTransaction.interTransactionIndex
+                            }
                 }
             }
             limit?.let {
@@ -34,6 +38,10 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
 
             Single.just(transactions)
         }
+    }
+
+    override fun getPendingTransactions(): List<Transaction> {
+        return database.transactionDao.getPendingTransactions()
     }
 
     override fun save(transactions: List<Transaction>) {

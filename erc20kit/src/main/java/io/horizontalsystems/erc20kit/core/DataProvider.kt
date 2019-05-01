@@ -1,8 +1,8 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.network.ERC20
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
@@ -14,11 +14,11 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     override val lastBlockHeight: Long
         get() = ethereumKit.lastBlockHeight ?: 0
 
-    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>> {
-        val addressTopic = ByteArray(12) { 0 } + address
+    override fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>> {
+        val addressTopic = ByteArray(12) + address
 
-        val outgoingTopics = listOf(Transaction.transferEventTopic, addressTopic)
-        val incomingTopics = listOf(Transaction.transferEventTopic, null, addressTopic)
+        val outgoingTopics = listOf(ERC20.transferEventTopic, addressTopic)
+        val incomingTopics = listOf(ERC20.transferEventTopic, null, addressTopic)
 
         val outgoingLogsRequest = ethereumKit.getLogs(contractAddress, outgoingTopics, from, to, true)
         val incomingLogsRequest = ethereumKit.getLogs(contractAddress, incomingTopics, from, to, true)
@@ -34,8 +34,11 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
                             }
                         }
                     }
-                    logs.mapNotNull {
-                        Transaction.createFromLog(it)
+                    logs.filter { log ->
+                        log.topics.count() == 3
+                                && log.topics[0] == ERC20.transferEventTopic.toHexString()
+                                && log.topics[1].hexStringToByteArray().count() == 32
+                                && log.topics[2].hexStringToByteArray().count() == 32
                     }
                 }
     }

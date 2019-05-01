@@ -28,6 +28,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     }
 
     init {
+        onSyncStateUpdate(ethereumKit.syncState)
+
         ethereumKit.syncStateFlowable
                 .subscribe { syncState ->
                     onSyncStateUpdate(syncState)
@@ -65,8 +67,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
                 }
     }
 
-    fun transactions(hashFrom: String?, indexFrom: Int?, limit: Int?): Single<List<TransactionInfo>> {
-        return transactionManager.transactionsSingle(hashFrom?.hexStringToByteArray(), indexFrom, limit)
+    fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionInfo>> {
+        return transactionManager.transactionsSingle(fromTransaction, limit)
                 .map { transactions ->
                     transactions.map {
                         TransactionInfo(it)

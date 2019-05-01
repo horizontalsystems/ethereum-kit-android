@@ -51,8 +51,8 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
     }
 
-    override fun transactions(fromHash: String?, fromIndex: Int?, limit: Int?): Single<List<TransactionRecord>> {
-        return ethereumKit.transactions(fromHash, limit).map { transactions ->
+    override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+        return ethereumKit.transactions(from?.first, limit).map { transactions ->
             transactions.map { transactionRecord(it) }
         }
     }
@@ -77,7 +77,8 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
 
         return TransactionRecord(
                 transactionHash = transaction.hash,
-                index = 0,
+                transactionIndex = transaction.transactionIndex ?: 0,
+                interTransactionInex = 0,
                 blockHeight = transaction.blockNumber,
                 amount = amount,
                 timestamp = transaction.timestamp,

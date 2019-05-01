@@ -3,9 +3,13 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+
+
+data class TransactionKey(val hash: ByteArray, val interTransactionIndex: Int)
 
 interface ITransactionManagerListener {
     fun onSyncSuccess(transactions: List<Transaction>)
@@ -16,11 +20,9 @@ interface ITransactionManager {
     var listener: ITransactionManagerListener?
 
     val lastTransactionBlockHeight: Long?
-    fun transactionsSingle(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>>
-
+    fun transactionsSingle(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun sync()
     fun sendSingle(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
-
     fun clear()
 }
 
@@ -34,7 +36,6 @@ interface IBalanceManager {
 
     val balance: BigInteger?
     fun sync()
-
     fun clear()
 }
 
@@ -59,7 +60,8 @@ interface ITokenHolder {
 interface ITransactionStorage {
     val lastTransactionBlockHeight: Long?
 
-    fun getTransactions(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>>
+    fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
+    fun getPendingTransactions(): List<Transaction>
     fun save(transactions: List<Transaction>)
     fun clearTransactions()
 }
@@ -73,7 +75,7 @@ interface ITokenBalanceStorage {
 interface IDataProvider {
     val lastBlockHeight: Long
 
-    fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>>
+    fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>>
     fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger>
     fun sendSingle(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
 }

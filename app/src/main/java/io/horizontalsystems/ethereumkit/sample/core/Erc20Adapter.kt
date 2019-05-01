@@ -2,8 +2,10 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit
+import io.horizontalsystems.erc20kit.core.TransactionKey
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -56,8 +58,8 @@ class Erc20Adapter(context: Context,
         return erc20Kit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
     }
 
-    override fun transactions(fromHash: String?, fromIndex: Int?, limit: Int?): Single<List<TransactionRecord>> {
-        return erc20Kit.transactions(fromHash, fromIndex, limit)
+    override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+        return erc20Kit.transactions(from?.let { TransactionKey(from.first.hexStringToByteArray(), from.second) }, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }
@@ -80,7 +82,8 @@ class Erc20Adapter(context: Context,
 
         return TransactionRecord(
                 transactionHash = transaction.transactionHash,
-                index = transaction.logIndex ?: 0,
+                transactionIndex = transaction.transactionIndex ?: 0,
+                interTransactionInex = transaction.interTransactionIndex,
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,

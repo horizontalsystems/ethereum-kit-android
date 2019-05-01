@@ -2,9 +2,11 @@ package io.horizontalsystems.erc20kit.models
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 
-class TransactionInfo {
+class TransactionInfo(transaction: Transaction) {
 
     val transactionHash: String
+    val transactionIndex: Int?
+    val interTransactionIndex: Int
     val from: String
     val to: String
     val value: String
@@ -14,8 +16,10 @@ class TransactionInfo {
     var blockHash: String? = null
     var blockNumber: Long? = null
 
-    constructor(transaction: Transaction) {
+    init {
         transactionHash = transaction.transactionHash.toHexString()
+        transactionIndex = transaction.transactionIndex
+        interTransactionIndex = transaction.interTransactionIndex
         logIndex = transaction.logIndex
         from = transaction.from.toHexString()
         to = transaction.to.toHexString()
@@ -23,14 +27,6 @@ class TransactionInfo {
         timestamp = transaction.timestamp
         blockHash = transaction.blockHash?.toHexString()
         blockNumber = transaction.blockNumber
-    }
-
-    constructor(hash: String, from: String, to: String, value: String, timestamp: Long) {
-        this.transactionHash = hash
-        this.from = from
-        this.to = to
-        this.value = value
-        this.timestamp = timestamp
     }
 
 }

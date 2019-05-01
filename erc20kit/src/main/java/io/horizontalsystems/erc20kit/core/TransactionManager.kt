@@ -1,6 +1,9 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -19,19 +22,56 @@ class TransactionManager(private val contractAddress: ByteArray,
     override val lastTransactionBlockHeight: Long?
         get() = storage.lastTransactionBlockHeight
 
-    override fun transactionsSingle(hashFrom: ByteArray?, indexFrom: Int?, limit: Int?): Single<List<Transaction>> {
-        return storage.getTransactions(hashFrom, indexFrom, limit)
+    override fun transactionsSingle(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
+        return storage.getTransactions(fromTransaction, limit)
+    }
+
+    private fun handleLogs(logs: List<EthereumLog>) {
+        val pendingTransactions = storage.getPendingTransactions()
+
+        val transactions = logs.map { log ->
+            var interTransactionIndex = log.logIndex
+            val value = log.data.hexStringToByteArray().toBigInteger()
+            val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
+            val to = log.topics[2].hexStringToByteArray().copyOfRange(12, 32)
+
+            if (pendingTransactions.count {
+                        it.transactionHash.contentEquals(log.transactionHash.hexStringToByteArray())
+                                && it.value == value
+                                && it.from.contentEquals(from)
+                                && it.to.contentEquals(to)
+                    } > 0) {
+                interTransactionIndex = 0
+            }
+
+            val transaction = Transaction(
+                    transactionHash = log.transactionHash.hexStringToByteArray(),
+                    interTransactionIndex = interTransactionIndex,
+                    transactionIndex = log.transactionIndex,
+                    from = from,
+                    to = to,
+                    value = value,
+                    timestamp = log.timestamp ?: System.currentTimeMillis() / 1000)
+
+            transaction.logIndex = log.logIndex
+            transaction.blockHash = log.blockHash.hexStringToByteArray()
+            transaction.blockNumber = log.blockNumber
+
+            transaction
+        }
+
+        storage.save(transactions)
+        listener?.onSyncSuccess(transactions)
     }
 
     override fun sync() {
         val lastBlockHeight = dataProvider.lastBlockHeight
         val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
 
-        dataProvider.getTransactions(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
+        dataProvider.getTransactionLogs(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
                 .subscribeOn(Schedulers.io())
-                .subscribe({ transactions ->
-                    storage.save(transactions)
-                    listener?.onSyncSuccess(transactions)
+                .subscribe({ logs ->
+                    handleLogs(logs)
                 }, {
                     listener?.onSyncTransactionsError()
                 })
@@ -46,7 +86,6 @@ class TransactionManager(private val contractAddress: ByteArray,
         return dataProvider.sendSingle(contractAddress, transactionInput, gasPrice, gasLimit)
                 .map { hash ->
                     Transaction(transactionHash = hash,
-                            contractAddress = contractAddress,
                             from = address,
                             to = to,
                             value = value)
