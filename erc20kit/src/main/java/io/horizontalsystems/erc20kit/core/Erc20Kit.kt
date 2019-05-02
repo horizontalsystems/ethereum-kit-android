@@ -55,7 +55,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     val balance: BigInteger?
         get() = state.balance
 
-    fun fee(gasPrice: Int): BigDecimal {
+    fun fee(gasPrice: Long): BigDecimal {
         return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
