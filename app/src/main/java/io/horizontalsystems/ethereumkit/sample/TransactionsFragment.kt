@@ -98,7 +98,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             - #$index
             - Tx Hash: ${tx.transactionHash}
             - Tx Index: ${tx.transactionIndex}
-            - Inter Tx Index: ${tx.interTransactionInex}
+            - Inter Tx Index: ${tx.interTransactionIndex}
             - Time: ${format.format(Date(tx.timestamp * 1000))}
             - From: ${tx.from.address}
             - To: ${tx.to.address}
