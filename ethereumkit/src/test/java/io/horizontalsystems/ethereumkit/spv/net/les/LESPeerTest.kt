@@ -4,7 +4,7 @@ import com.nhaarman.mockito_kotlin.*
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.net.INetwork
+import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.net.IPeerListener
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*

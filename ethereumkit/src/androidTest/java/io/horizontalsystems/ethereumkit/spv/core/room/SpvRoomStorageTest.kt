@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.spv.core.room
 import android.arch.persistence.room.Room
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
-import io.horizontalsystems.ethereumkit.spv.net.Ropsten
+import io.horizontalsystems.ethereumkit.network.Ropsten
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
