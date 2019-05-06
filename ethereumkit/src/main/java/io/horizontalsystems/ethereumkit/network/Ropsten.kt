@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.net
+package io.horizontalsystems.ethereumkit.network
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader

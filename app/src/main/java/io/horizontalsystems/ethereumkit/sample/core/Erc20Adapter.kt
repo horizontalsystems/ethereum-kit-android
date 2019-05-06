@@ -83,7 +83,7 @@ class Erc20Adapter(context: Context,
         return TransactionRecord(
                 transactionHash = transaction.transactionHash,
                 transactionIndex = transaction.transactionIndex ?: 0,
-                interTransactionInex = transaction.interTransactionIndex,
+                interTransactionIndex = transaction.interTransactionIndex,
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,

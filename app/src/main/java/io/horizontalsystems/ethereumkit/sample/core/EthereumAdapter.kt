@@ -78,7 +78,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         return TransactionRecord(
                 transactionHash = transaction.hash,
                 transactionIndex = transaction.transactionIndex ?: 0,
-                interTransactionInex = 0,
+                interTransactionIndex = 0,
                 blockHeight = transaction.blockNumber,
                 amount = amount,
                 timestamp = transaction.timestamp,

@@ -5,7 +5,7 @@ import java.math.BigDecimal
 class TransactionRecord(
         val transactionHash: String,
         val transactionIndex: Int,
-        val interTransactionInex: Int,
+        val interTransactionIndex: Int,
         val amount: BigDecimal,
         val timestamp: Long,
 
