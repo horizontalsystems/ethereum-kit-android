@@ -23,7 +23,7 @@ class BalanceManager(private val contractAddress: ByteArray,
                     storage.save(balance)
                     listener?.onSyncBalanceSuccess(balance)
                 }, {
-
+                    listener?.onSyncBalanceError()
                 })
                 .let {
                     disposables.add(it)

@@ -22,7 +22,7 @@ class TransactionManager(private val contractAddress: ByteArray,
     override val lastTransactionBlockHeight: Long?
         get() = storage.lastTransactionBlockHeight
 
-    override fun transactionsSingle(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
+    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return storage.getTransactions(fromTransaction, limit)
     }
 
@@ -80,10 +80,10 @@ class TransactionManager(private val contractAddress: ByteArray,
                 }
     }
 
-    override fun sendSingle(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
+    override fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         val transactionInput = transactionBuilder.transferTransactionInput(to, value)
 
-        return dataProvider.sendSingle(contractAddress, transactionInput, gasPrice, gasLimit)
+        return dataProvider.send(contractAddress, transactionInput, gasPrice, gasLimit)
                 .map { hash ->
                     Transaction(transactionHash = hash,
                             from = address,

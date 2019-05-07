@@ -61,7 +61,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     }
 
     fun send(to: String, value: String, gasPrice: Long): Single<TransactionInfo> {
-        return transactionManager.sendSingle(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
+        return transactionManager.send(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
                     state.transactionsSubject.onNext(listOf(txInfo))
@@ -69,7 +69,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     }
 
     fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionInfo>> {
-        return transactionManager.transactionsSingle(fromTransaction, limit)
+        return transactionManager.getTransactions(fromTransaction, limit)
                 .map { transactions ->
                     transactions.map {
                         TransactionInfo(it)
