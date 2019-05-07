@@ -1,5 +1,6 @@
 package io.horizontalsystems.erc20kit.models
 
+import io.horizontalsystems.ethereumkit.core.toEIP55Address
 import io.horizontalsystems.ethereumkit.core.toHexString
 
 class TransactionInfo(transaction: Transaction) {
@@ -21,8 +22,8 @@ class TransactionInfo(transaction: Transaction) {
         transactionIndex = transaction.transactionIndex
         interTransactionIndex = transaction.interTransactionIndex
         logIndex = transaction.logIndex
-        from = transaction.from.toHexString()
-        to = transaction.to.toHexString()
+        from = transaction.from.toEIP55Address()
+        to = transaction.to.toEIP55Address()
         value = transaction.value.toString(10)
         timestamp = transaction.timestamp
         blockHash = transaction.blockHash?.toHexString()
