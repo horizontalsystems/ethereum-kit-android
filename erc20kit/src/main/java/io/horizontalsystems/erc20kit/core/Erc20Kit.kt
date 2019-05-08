@@ -29,6 +29,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
     init {
         onSyncStateUpdate(ethereumKit.syncState)
+        state.balance = balanceManager.balance
 
         ethereumKit.syncStateFlowable
                 .subscribe { syncState ->
@@ -44,7 +45,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             EthereumKit.SyncState.Syncing -> state.syncState = Syncing
             EthereumKit.SyncState.Synced -> {
                 state.syncState = Syncing
-                transactionManager.sync()
+                balanceManager.sync()
             }
         }
     }
@@ -60,7 +61,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     }
 
     fun send(to: String, value: String, gasPrice: Long): Single<TransactionInfo> {
-        return transactionManager.sendSingle(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
+        return transactionManager.send(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
                     state.transactionsSubject.onNext(listOf(txInfo))
@@ -68,7 +69,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     }
 
     fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionInfo>> {
-        return transactionManager.transactionsSingle(fromTransaction, limit)
+        return transactionManager.getTransactions(fromTransaction, limit)
                 .map { transactions ->
                     transactions.map {
                         TransactionInfo(it)
@@ -94,13 +95,10 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     // ITransactionManagerListener
 
     override fun onSyncSuccess(transactions: List<Transaction>) {
-        if (transactions.isEmpty()) {
-            state.syncState = Synced
-            return
-        }
+        state.syncState = Synced
 
-        state.transactionsSubject.onNext(transactions.map { TransactionInfo(it) })
-        balanceManager.sync()
+        if (transactions.isNotEmpty())
+            state.transactionsSubject.onNext(transactions.map { TransactionInfo(it) })
     }
 
     override fun onSyncTransactionsError() {
@@ -112,16 +110,12 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
     override fun onSyncBalanceSuccess(balance: BigInteger) {
         state.balance = balance
-        state.syncState = Synced
+        transactionManager.sync()
     }
 
     override fun onSyncBalanceError() {
         state.syncState = NotSynced
     }
-
-    open class TokenError : Exception()
-    class NotRegisteredToken : TokenError()
-
 
     companion object {
 
