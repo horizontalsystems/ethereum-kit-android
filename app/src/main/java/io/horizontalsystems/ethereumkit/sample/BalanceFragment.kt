@@ -21,6 +21,7 @@ class BalanceFragment : Fragment() {
     lateinit var kitStateValue: TextView
     lateinit var erc20StateValue: TextView
     lateinit var refreshButton: Button
+    lateinit var clearButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +74,7 @@ class BalanceFragment : Fragment() {
         balanceValue = view.findViewById(R.id.balanceValue)
         tokenBalanceValue = view.findViewById(R.id.tokenBalanceValue)
         refreshButton = view.findViewById(R.id.buttonRefresh)
+        clearButton = view.findViewById(R.id.buttonClear)
         feeValue = view.findViewById(R.id.feeValue)
         lbhValue = view.findViewById(R.id.lbhValue)
         kitStateValue = view.findViewById(R.id.kitStateValue)
@@ -80,6 +82,10 @@ class BalanceFragment : Fragment() {
 
         refreshButton.setOnClickListener {
             viewModel.refresh()
+        }
+
+        clearButton.setOnClickListener {
+            viewModel.clear()
         }
     }
 }

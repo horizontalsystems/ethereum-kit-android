@@ -86,9 +86,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
     val transactionsFlowable: Flowable<List<TransactionInfo>>
         get() = state.transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    fun clear() {
-        transactionManager.clear()
-        balanceManager.clear()
+    fun stop() {
         disposables.clear()
     }
 
@@ -126,7 +124,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw
 
-            val roomStorage = RoomStorage(context, "erc20_$contractAddress")
+            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, contractAddress)
+            val roomStorage = Erc20Storage(erc20KitDatabase)
             val transactionStorage: ITransactionStorage = roomStorage
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
@@ -141,6 +140,10 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             balanceManager.listener = erc20Kit
 
             return erc20Kit
+        }
+
+        fun clear(context: Context) {
+            Erc20DatabaseManager.clear(context)
         }
     }
 

@@ -46,16 +46,11 @@ class EthereumKit(
 
     fun stop() {
         blockchain.stop()
+        state.clear()
     }
 
     fun refresh() {
         blockchain.refresh()
-    }
-
-    fun clear() {
-        blockchain.stop()
-        blockchain.clear()
-        state.clear()
     }
 
     val lastBlockHeight: Long?
@@ -178,12 +173,14 @@ class EthereumKit(
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
-                    val storage = ApiRoomStorage("api-$walletId-${networkType.name}", context)
+                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
+                    val storage = ApiRoomStorage(apiDatabase)
                     blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, syncMode.infuraKey, syncMode.etherscanKey)
                 }
                 is SyncMode.SpvSyncMode -> {
+                    val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
-                    val storage = SpvRoomStorage(context, "spv-$walletId-${networkType.name}")
+                    val storage = SpvRoomStorage(spvDatabase)
 
                     blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, network, address, nodeKey)
                 }
@@ -214,6 +211,10 @@ class EthereumKit(
             }
 
             return getInstance(context, privateKey, syncMode, networkType, walletId)
+        }
+
+        fun clear(context: Context) {
+            EthereumDatabaseManager.clear(context)
         }
     }
 

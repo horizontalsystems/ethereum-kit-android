@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
-import android.content.Context
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.core.room.SPVDatabase
@@ -8,21 +7,7 @@ import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 
-class SpvRoomStorage : ISpvStorage {
-
-    val database: SPVDatabase
-
-    constructor(database: SPVDatabase) {
-        this.database = database
-    }
-
-    constructor(context: Context, databaseName: String) {
-        this.database = SPVDatabase.getInstance(context, databaseName)
-    }
-
-    override fun clear() {
-        database.clearAllTables()
-    }
+class SpvRoomStorage(private val database: SPVDatabase) : ISpvStorage {
 
     override fun getLastBlockHeader(): BlockHeader? {
         return database.blockHeaderDao().getAll().firstOrNull()

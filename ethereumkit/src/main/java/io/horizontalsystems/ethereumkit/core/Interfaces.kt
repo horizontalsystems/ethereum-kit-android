@@ -19,8 +19,6 @@ interface IApiStorage {
     fun saveLastBlockHeight(lastBlockHeight: Long)
     fun saveBalance(balance: BigInteger, address: ByteArray)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
-
-    fun clear()
 }
 
 interface ISpvStorage {
@@ -33,8 +31,6 @@ interface ISpvStorage {
 
     fun saveTransactions(transactions: List<EthereumTransaction>)
     fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
-
-    fun clear()
 }
 
 interface IBlockchain {
@@ -45,7 +41,6 @@ interface IBlockchain {
     fun start()
     fun refresh()
     fun stop()
-    fun clear()
 
     val syncState: EthereumKit.SyncState
     val lastBlockHeight: Long?

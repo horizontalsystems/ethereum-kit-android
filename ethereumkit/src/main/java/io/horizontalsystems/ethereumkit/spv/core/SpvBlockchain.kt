@@ -33,10 +33,6 @@ class SpvBlockchain(private val peerGroup: PeerGroup,
         peerGroup.stop()
     }
 
-    override fun clear() {
-    }
-
-
     override val balance: BigInteger?
         get() = storage.getAccountState()?.balance
 
