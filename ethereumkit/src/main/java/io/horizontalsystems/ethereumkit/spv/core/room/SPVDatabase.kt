@@ -20,16 +20,7 @@ abstract class SPVDatabase : RoomDatabase() {
 
     companion object {
 
-        @Volatile
-        private var INSTANCE: SPVDatabase? = null
-
         fun getInstance(context: Context, databaseName: String): SPVDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context, databaseName).also { INSTANCE = it }
-            }
-        }
-
-        private fun buildDatabase(context: Context, databaseName: String): SPVDatabase {
             return Room.databaseBuilder(context, SPVDatabase::class.java, databaseName)
                     .fallbackToDestructiveMigration()
                     .allowMainThreadQueries()

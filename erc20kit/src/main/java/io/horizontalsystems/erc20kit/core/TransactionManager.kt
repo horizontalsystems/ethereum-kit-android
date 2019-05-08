@@ -94,8 +94,4 @@ class TransactionManager(private val contractAddress: ByteArray,
                 }
     }
 
-    override fun clear() {
-        disposables.clear()
-        storage.clearTransactions()
-    }
 }

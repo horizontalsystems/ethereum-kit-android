@@ -1,16 +1,12 @@
 package io.horizontalsystems.erc20kit.core
 
-import android.content.Context
 import io.horizontalsystems.erc20kit.core.room.Erc20KitDatabase
 import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.reactivex.Single
 import java.math.BigInteger
 
-class RoomStorage(context: Context, databaseName: String) : ITransactionStorage, ITokenBalanceStorage {
-
-    private val database = Erc20KitDatabase.getInstance(context, databaseName)
-
+class Erc20Storage(private val database: Erc20KitDatabase) : ITransactionStorage, ITokenBalanceStorage {
 
     // ITransactionStorage
 
@@ -48,10 +44,6 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
         database.transactionDao.insert(transactions)
     }
 
-    override fun clearTransactions() {
-        database.transactionDao.deleteAll()
-    }
-
 
     // ITokenBalanceStorage
 
@@ -63,7 +55,4 @@ class RoomStorage(context: Context, databaseName: String) : ITransactionStorage,
         database.tokenBalanceDao.insert(TokenBalance(balance))
     }
 
-    override fun clearBalance() {
-        database.tokenBalanceDao.deleteAll()
-    }
 }

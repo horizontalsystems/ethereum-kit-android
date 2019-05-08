@@ -30,8 +30,4 @@ class BalanceManager(private val contractAddress: ByteArray,
                 }
     }
 
-    override fun clear() {
-        storage.clearBalance()
-        disposables.clear()
-    }
 }

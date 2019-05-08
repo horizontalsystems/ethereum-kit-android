@@ -18,16 +18,7 @@ abstract class Erc20KitDatabase : RoomDatabase() {
 
     companion object {
 
-        @Volatile
-        private var INSTANCE: Erc20KitDatabase? = null
-
         fun getInstance(context: Context, databaseName: String): Erc20KitDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context, databaseName).also { INSTANCE = it }
-            }
-        }
-
-        private fun buildDatabase(context: Context, databaseName: String): Erc20KitDatabase {
             return Room.databaseBuilder(context, Erc20KitDatabase::class.java, databaseName)
                     .fallbackToDestructiveMigration()
                     .allowMainThreadQueries()

@@ -22,7 +22,4 @@ interface TransactionDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     fun update(transaction: Transaction)
 
-    @Query("DELETE FROM `Transaction`")
-    fun deleteAll()
-
 }

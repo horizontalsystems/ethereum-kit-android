@@ -58,11 +58,6 @@ class ApiBlockchain(
         disposables.clear()
     }
 
-    override fun clear() {
-        disposables.clear()
-        storage.clear()
-    }
-
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
         return rpcApiProvider.getTransactionCount(address)
                 .flatMap { nonce ->

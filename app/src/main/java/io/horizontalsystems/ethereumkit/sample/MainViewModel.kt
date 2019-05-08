@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.sample
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Log
+import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
@@ -25,10 +26,10 @@ class MainViewModel : ViewModel() {
 
     private val disposables = CompositeDisposable()
 
-    private var ethereumKit: EthereumKit
-    private val ethereumAdapter: EthereumAdapter
+    private lateinit var ethereumKit: EthereumKit
+    private lateinit var ethereumAdapter: EthereumAdapter
 
-    private val erc20Adapter: Erc20Adapter
+    private lateinit var erc20Adapter: Erc20Adapter
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
     val balance = MutableLiveData<BigDecimal>()
@@ -44,6 +45,10 @@ class MainViewModel : ViewModel() {
     val gasPrice: Long = 5_000_000_000
 
     init {
+        init()
+    }
+
+    fun init() {
         //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
@@ -166,6 +171,12 @@ class MainViewModel : ViewModel() {
     fun refresh() {
         ethereumKit.refresh()
         fee.postValue(ethereumKit.fee(gasPrice))
+    }
+
+    fun clear() {
+        EthereumKit.clear(App.instance)
+        Erc20Kit.clear(App.instance)
+        init()
     }
 
     fun receiveAddress(): String {

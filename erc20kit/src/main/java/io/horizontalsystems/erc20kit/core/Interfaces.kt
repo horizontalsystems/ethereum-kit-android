@@ -20,7 +20,6 @@ interface ITransactionManager {
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun sync()
     fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
-    fun clear()
 }
 
 interface IBalanceManagerListener {
@@ -33,7 +32,6 @@ interface IBalanceManager {
 
     val balance: BigInteger?
     fun sync()
-    fun clear()
 }
 
 interface ITransactionStorage {
@@ -42,13 +40,11 @@ interface ITransactionStorage {
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun getPendingTransactions(): List<Transaction>
     fun save(transactions: List<Transaction>)
-    fun clearTransactions()
 }
 
 interface ITokenBalanceStorage {
     fun getBalance(): BigInteger?
     fun save(balance: BigInteger)
-    fun clearBalance()
 }
 
 interface IDataProvider {

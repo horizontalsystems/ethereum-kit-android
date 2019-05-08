@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.api.storage
 
-import android.content.Context
 import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 import io.horizontalsystems.ethereumkit.core.IApiStorage
@@ -8,10 +7,7 @@ import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 import java.math.BigInteger
 
-class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
-
-    private val database: ApiDatabase = ApiDatabase.getInstance(context, databaseName)
-
+class ApiRoomStorage(private val database: ApiDatabase) : IApiStorage {
 
     override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
         val single =
@@ -67,7 +63,4 @@ class ApiRoomStorage(databaseName: String, context: Context) : IApiStorage {
         database.transactionDao().insert(ethereumTransactions)
     }
 
-    override fun clear() {
-        database.clearAllTables()
-    }
 }

@@ -15,6 +15,4 @@ interface TokenBalanceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(balance: TokenBalance)
 
-    @Query("DELETE FROM TokenBalance")
-    fun deleteAll()
 }

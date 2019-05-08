@@ -20,15 +20,7 @@ abstract class ApiDatabase : RoomDatabase() {
 
     companion object {
 
-        @Volatile private var INSTANCE: ApiDatabase? = null
-
         fun getInstance(context: Context, databaseName: String): ApiDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: buildDatabase(context, databaseName).also { INSTANCE = it }
-            }
-        }
-
-        private fun buildDatabase(context: Context, databaseName: String): ApiDatabase {
             return Room.databaseBuilder(context, ApiDatabase::class.java, databaseName)
                     .fallbackToDestructiveMigration()
                     .allowMainThreadQueries()
