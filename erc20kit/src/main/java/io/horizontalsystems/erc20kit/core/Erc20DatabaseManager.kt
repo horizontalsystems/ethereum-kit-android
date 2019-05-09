@@ -9,7 +9,7 @@ import java.io.File
 internal object Erc20DatabaseManager {
 
     fun getErc20Database(context: Context, contractAddress: String): Erc20KitDatabase {
-        val databaseName = "erc20-$contractAddress"
+        val databaseName = "Erc20-$contractAddress"
         return Erc20KitDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
     }
 
