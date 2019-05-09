@@ -18,7 +18,9 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
                private val balanceManager: IBalanceManager,
                private val state: KitState = KitState()) : ITransactionManagerListener, IBalanceManagerListener {
 
-    private val gasLimit: Long = 100_000
+    private val gasLimit: Long = 150_000
+    private val estimateGasLimit: Long = 100_000
+
     private val disposables = CompositeDisposable()
 
     sealed class SyncState {
@@ -57,7 +59,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         get() = state.balance
 
     fun fee(gasPrice: Long): BigDecimal {
-        return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
+        return BigDecimal(gasPrice).multiply(estimateGasLimit.toBigDecimal())
     }
 
     fun send(to: String, value: String, gasPrice: Long): Single<TransactionInfo> {
