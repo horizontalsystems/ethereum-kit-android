@@ -10,7 +10,7 @@ import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 
-@Database(entities = [BlockHeader::class, EthereumTransaction::class, AccountState::class], version = 6, exportSchema = true)
+@Database(entities = [BlockHeader::class, EthereumTransaction::class, AccountState::class], version = 1, exportSchema = true)
 @TypeConverters(RoomTypeConverters::class)
 abstract class SPVDatabase : RoomDatabase() {
 
