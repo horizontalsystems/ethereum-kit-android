@@ -1,8 +1,10 @@
 package io.horizontalsystems.ethereumkit.network
 
 import com.google.gson.GsonBuilder
-import io.horizontalsystems.ethereumkit.models.etherscan.EtherscanResponse
-import io.reactivex.Flowable
+import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanResponse
+import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.core.toHexString
+import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -11,12 +13,21 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-class EtherscanService(baseUrl: String, private val apiKey: String) {
+class EtherscanService(private val networkType: NetworkType, private val apiKey: String) {
 
     private val service: EtherscanServiceAPI
 
-    init {
+    private val baseUrl: String
+        get() {
+            return when (networkType) {
+                NetworkType.MainNet -> "https://api.etherscan.io"
+                NetworkType.Ropsten -> "https://api-ropsten.etherscan.io"
+                NetworkType.Kovan -> "https://api-kovan.etherscan.io"
+                NetworkType.Rinkeby -> "https://api-rinkeby.etherscan.io"
+            }
+        }
 
+    init {
         val logger = HttpLoggingInterceptor()
                 .setLevel(HttpLoggingInterceptor.Level.BASIC)
 
@@ -37,35 +48,35 @@ class EtherscanService(baseUrl: String, private val apiKey: String) {
         service = retrofit.create(EtherscanServiceAPI::class.java)
     }
 
-    fun getTransactionList(address: String, startBlock: Int): Flowable<EtherscanResponse> {
-        return service.getTransactionList("account", "txList", address, startBlock, 99_999_999, "desc", apiKey)
+    fun getTransactionList(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTransactionList("account", "txList", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
     }
 
-    fun getTokenTransactions(address: String, startBlock: Int): Flowable<EtherscanResponse> {
-        return service.getTokenTransactions("account", "tokentx", address, startBlock, 99_999_999, "desc", apiKey)
+    fun getTokenTransactions(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTokenTransactions("account", "tokentx", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
     }
 
-    interface EtherscanServiceAPI {
+    private interface EtherscanServiceAPI {
 
         @GET("/api")
         fun getTransactionList(
                 @Query("module") module: String,
                 @Query("action") action: String,
                 @Query("address") address: String,
-                @Query("startblock") startblock: Int,
-                @Query("endblock") endblock: Int,
+                @Query("startblock") startblock: Long,
+                @Query("endblock") endblock: Long,
                 @Query("sort") sort: String,
-                @Query("apiKey") apiKey: String): Flowable<EtherscanResponse>
+                @Query("apiKey") apiKey: String): Single<EtherscanResponse>
 
         @GET("/api")
         fun getTokenTransactions(
                 @Query("module") module: String,
                 @Query("action") action: String,
                 @Query("address") address: String,
-                @Query("startblock") startblock: Int,
-                @Query("endblock") endblock: Int,
+                @Query("startblock") startblock: Long,
+                @Query("endblock") endblock: Long,
                 @Query("sort") sort: String,
-                @Query("apiKey") apiKey: String): Flowable<EtherscanResponse>
+                @Query("apiKey") apiKey: String): Single<EtherscanResponse>
     }
 
 }

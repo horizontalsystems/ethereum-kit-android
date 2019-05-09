@@ -6,22 +6,22 @@ class AddressValidatorTest {
 
     private val addressValidator = AddressValidator()
 
-    @Test(expected = AddressValidator.AddressValidationException::class)
+    @Test(expected = AddressValidator.InvalidAddressLength::class)
     fun testInvalidAddressLength() {
         addressValidator.validate("0x1234")
     }
 
-    @Test(expected = AddressValidator.AddressValidationException::class)
+    @Test(expected = AddressValidator.InvalidAddressHex::class)
     fun testInvalidSymbols() {
         addressValidator.validate("0x52908400098527886E0F7030069857D2E4169EEZ")
     }
 
-    @Test(expected = AddressValidator.AddressValidationException::class)
+    @Test(expected = AddressValidator.InvalidAddressHex::class)
     fun testInvalidPrefix() {
-        addressValidator.validate("1x52908400098527886E0F7030069857D2E4169EE9")
+        addressValidator.validate("1x52908400098527886E0F7030069857D2E4169E")
     }
 
-    @Test(expected = AddressValidator.AddressValidationException::class)
+    @Test(expected = AddressValidator.InvalidAddressChecksum::class)
     fun testInvalidChecksum() {
         addressValidator.validate("0x52908400098527886e0F7030069857D2e4169eE7")
     }

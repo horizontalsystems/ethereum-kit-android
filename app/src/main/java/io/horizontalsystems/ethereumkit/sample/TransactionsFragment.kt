@@ -12,6 +12,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TransactionsFragment : Fragment() {
 
@@ -67,7 +69,7 @@ class TransactionsFragment : Fragment() {
 
 class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     var items = listOf<TransactionRecord>()
-    var lastBlockHeight: Int = 0
+    var lastBlockHeight: Long = 0
 
     override fun getItemCount() = items.size
 
@@ -84,14 +86,20 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 class ViewHolderTransaction(private val containerView: View) : RecyclerView.ViewHolder(containerView) {
     private val summary = containerView.findViewById<TextView>(R.id.summary)!!
 
-    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Int) {
+    fun bind(tx: TransactionRecord, index: Int, lastBlockHeight: Long) {
         containerView.setBackgroundColor(if (index % 2 == 0)
             Color.parseColor("#dddddd") else
             Color.TRANSPARENT
         )
 
+        val format = SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+
         var value = """
             - #$index
+            - Tx Hash: ${tx.transactionHash}
+            - Tx Index: ${tx.transactionIndex}
+            - Inter Tx Index: ${tx.interTransactionIndex}
+            - Time: ${format.format(Date(tx.timestamp * 1000))}
             - From: ${tx.from.address}
             - To: ${tx.to.address}
             - Amount: ${tx.amount.stripTrailingZeros()}
@@ -99,9 +107,6 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
 
         if (lastBlockHeight > 0)
             value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it } ?: 0}"
-
-        if (tx.contractAddress.isNotEmpty())
-            value += "\n- Contract: ${tx.contractAddress}"
 
         summary.text = value.trimIndent()
     }

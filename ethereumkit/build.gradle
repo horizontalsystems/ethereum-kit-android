@@ -46,9 +46,6 @@ dependencies {
 
     implementation 'com.github.horizontalsystems:hd-wallet-kit-android:a3666d8'
 
-
-    implementation 'org.web3j:core:4.1.0-android'
-
     implementation 'io.reactivex.rxjava2:rxjava:2.2.2'
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     implementation 'com.squareup.retrofit2:retrofit:2.4.0'
@@ -71,7 +68,14 @@ dependencies {
     testImplementation 'org.powermock:powermock-api-mockito2:2.0.0-beta.5'
     testImplementation 'org.powermock:powermock-module-junit4:2.0.0-beta.5'
 
+    // Spek
+    testImplementation "org.spekframework.spek2:spek-dsl-jvm:2.0.1"
+    testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:2.0.1"
+    testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+
     // Android Instrumentation Test
+    implementation 'com.android.support:support-annotations:28.0.0'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.linkedin.dexmaker:dexmaker-mockito-inline:2.19.1'
     androidTestImplementation 'com.nhaarman:mockito-kotlin-kt1.1:1.6.0'

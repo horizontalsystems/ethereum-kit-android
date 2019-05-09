@@ -1,1 +1,1 @@
-include ':app', ':ethereumkit'
+include ':app', ':ethereumkit', ':erc20kit'

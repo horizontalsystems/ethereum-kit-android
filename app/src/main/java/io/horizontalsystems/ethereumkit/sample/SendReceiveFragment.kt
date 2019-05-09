@@ -35,7 +35,6 @@ class SendReceiveFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_send_receive, null)
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
