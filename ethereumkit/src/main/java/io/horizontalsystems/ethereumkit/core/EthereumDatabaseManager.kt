@@ -10,12 +10,12 @@ import java.io.File
 internal object EthereumDatabaseManager {
 
     fun getEthereumApiDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): ApiDatabase {
-        val databaseName = "api-$walletId-${networkType.name}"
+        val databaseName = "Ethereum-$walletId-${networkType.name}-api"
         return ApiDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
     }
 
     fun getEthereumSpvDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): SPVDatabase {
-        val databaseName = "spv-$walletId-${networkType.name}"
+        val databaseName = "Ethereum-$walletId-${networkType.name}-spv"
         return SPVDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
     }
 
