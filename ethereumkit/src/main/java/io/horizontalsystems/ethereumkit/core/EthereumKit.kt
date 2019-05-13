@@ -228,7 +228,7 @@ class EthereumKit(
         class ApiSyncMode : SyncMode()
     }
 
-    data class InfuraCredentials(val projectId: String, val secretKey: String)
+    data class InfuraCredentials(val projectId: String, val secretKey: String?)
 
     enum class NetworkType {
         MainNet,
