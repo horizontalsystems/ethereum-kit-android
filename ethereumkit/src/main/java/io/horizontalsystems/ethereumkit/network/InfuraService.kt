@@ -39,7 +39,9 @@ class InfuraService(private val networkType: NetworkType, private val infuraCred
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
-            requestBuilder.header("Authorization", Credentials.basic("", infuraCredentials.secretKey))
+            infuraCredentials.secretKey?.let { secretKey ->
+                requestBuilder.header("Authorization", Credentials.basic("", secretKey))
+            }
             requestBuilder.header("Content-Type", "application/json")
             requestBuilder.header("Accept", "application/json")
             chain.proceed(requestBuilder.build())
