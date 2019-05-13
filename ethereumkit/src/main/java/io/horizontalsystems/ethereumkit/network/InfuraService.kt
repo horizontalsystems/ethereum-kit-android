@@ -1,11 +1,14 @@
 package io.horizontalsystems.ethereumkit.network
 
 import com.google.gson.GsonBuilder
+import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.reactivex.Single
+import okhttp3.Credentials
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -13,9 +16,10 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.Path
 import java.math.BigInteger
 
-class InfuraService(private val networkType: NetworkType, private val apiKey: String) {
+class InfuraService(private val networkType: NetworkType, private val infuraCredentials: InfuraCredentials) {
 
     private val service: InfuraServiceAPI
 
@@ -26,21 +30,24 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
                 NetworkType.Kovan -> "kovan"
                 else -> "mainnet"
             }
-            return "https://$subdomain.infura.io/v3/$apiKey/"
+            return "https://$subdomain.infura.io/v3/"
         }
 
     init {
         val logger = HttpLoggingInterceptor()
                 .setLevel(HttpLoggingInterceptor.Level.BODY)
 
+        val headersInterceptor = Interceptor { chain ->
+            val requestBuilder = chain.request().newBuilder()
+            requestBuilder.header("Authorization", Credentials.basic("", infuraCredentials.secretKey))
+            requestBuilder.header("Content-Type", "application/json")
+            requestBuilder.header("Accept", "application/json")
+            chain.proceed(requestBuilder.build())
+        }
+
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(logger)
-                .addInterceptor { chain ->
-                    val requestBuilder = chain.request().newBuilder()
-                    requestBuilder.header("Content-Type", "application/json")
-                    requestBuilder.header("Accept", "application/json")
-                    chain.proceed(requestBuilder.build())
-                }
+                .addInterceptor(headersInterceptor)
 
         val gson = GsonBuilder()
                 .setLenient()
@@ -61,7 +68,7 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
     fun getLastBlockHeight(): Single<Long> {
         val request = Request("eth_blockNumber")
-        return service.makeRequestForBigInteger(request).flatMap {
+        return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it).map { blockNumber ->
                 blockNumber.toLong()
             }
@@ -70,7 +77,7 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
     fun getTransactionCount(address: ByteArray): Single<Long> {
         val request = Request("eth_getTransactionCount", listOf(address.toHexString(), "latest"))
-        return service.makeRequestForBigInteger(request).flatMap {
+        return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it).map { txCount ->
                 txCount.toLong()
             }
@@ -79,14 +86,14 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
     fun getBalance(address: ByteArray): Single<BigInteger> {
         val request = Request("eth_getBalance", listOf(address.toHexString(), "latest"))
-        return service.makeRequestForBigInteger(request).flatMap {
+        return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
     }
 
     fun send(signedTransaction: ByteArray): Single<Unit> {
         val request = Request("eth_sendRawTransaction", listOf(signedTransaction.toHexString()))
-        return service.makeRequestForString(request).flatMap {
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }.map { Unit }
     }
@@ -105,28 +112,28 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
 
         val request = Request("eth_getLogs", listOf(params))
 
-        return service.makeRequestForLogs(request).flatMap {
+        return service.makeRequestForLogs(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
     }
 
     fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
         val request = Request("eth_getStorageAt", listOf(contractAddress.toHexString(), position, "latest"))
-        return service.makeRequestForString(request).flatMap {
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
     }
 
     fun getBlockByNumber(blockNumber: Long): Single<Block> {
         val request = Request("eth_getBlockByNumber", listOf("0x${blockNumber.toString(16)}", false))
-        return service.makeRequestForBlock(request).flatMap {
+        return service.makeRequestForBlock(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
     }
 
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
         val request = Request("eth_call", listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
-        return service.makeRequestForString(request).flatMap {
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
     }
@@ -144,16 +151,20 @@ class InfuraService(private val networkType: NetworkType, private val apiKey: St
     class Response<T>(val result: T?, val error: Error?, val id: Long, val jsonrpc: String)
 
     private interface InfuraServiceAPI {
-        @POST("/")
-        fun makeRequestForBigInteger(@Body request: Request): Single<Response<BigInteger>>
+        @POST("{projectId}")
+        fun makeRequestForBigInteger(@Path("projectId") apiKey: String,
+                                     @Body request: Request): Single<Response<BigInteger>>
 
-        @POST("/")
-        fun makeRequestForString(@Body request: Request): Single<Response<String>>
+        @POST("{projectId}")
+        fun makeRequestForString(@Path("projectId") apiKey: String,
+                                 @Body request: Request): Single<Response<String>>
 
-        @POST("/")
-        fun makeRequestForLogs(@Body request: Request): Single<Response<List<EthereumLog>>>
+        @POST("{projectId}")
+        fun makeRequestForLogs(@Path("projectId") apiKey: String,
+                               @Body request: Request): Single<Response<List<EthereumLog>>>
 
-        @POST("/")
-        fun makeRequestForBlock(@Body request: Request): Single<Response<Block>>
+        @POST("{projectId}")
+        fun makeRequestForBlock(@Path("projectId") apiKey: String,
+                                @Body request: Request): Single<Response<Block>>
     }
 }
