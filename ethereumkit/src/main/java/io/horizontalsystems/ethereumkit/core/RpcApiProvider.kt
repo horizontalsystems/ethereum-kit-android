@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
@@ -42,8 +43,8 @@ class RpcApiProvider(private val infuraService: InfuraService) : IRpcApiProvider
     }
 
     companion object {
-        fun getInstance(networkType: NetworkType, infuraApiKey: String): RpcApiProvider {
-            val infuraService = InfuraService(networkType, infuraApiKey)
+        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials): RpcApiProvider {
+            val infuraService = InfuraService(networkType, infuraCredentials)
 
             return RpcApiProvider(infuraService)
         }
