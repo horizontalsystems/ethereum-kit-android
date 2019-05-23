@@ -161,7 +161,7 @@ class EthereumKit(
     }
 
     companion object {
-        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType, walletId: String): EthereumKit {
+        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType, infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
             val blockchain: IBlockchain
 
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
@@ -175,7 +175,7 @@ class EthereumKit(
                 is SyncMode.ApiSyncMode -> {
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiRoomStorage(apiDatabase)
-                    blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, syncMode.infuraKey, syncMode.etherscanKey)
+                    blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, infuraCredentials, etherscanKey)
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
@@ -195,7 +195,7 @@ class EthereumKit(
             return ethereumKit
         }
 
-        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType, walletId: String): EthereumKit {
+        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType, infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
             val seed = Mnemonic().toSeed(words)
             val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey
@@ -206,11 +206,11 @@ class EthereumKit(
                     SyncMode.SpvSyncMode(nodePrivateKey)
                 }
                 is WordsSyncMode.ApiSyncMode -> {
-                    SyncMode.ApiSyncMode(wordsSyncMode.infuraKey, wordsSyncMode.etherscanKey)
+                    SyncMode.ApiSyncMode()
                 }
             }
 
-            return getInstance(context, privateKey, syncMode, networkType, walletId)
+            return getInstance(context, privateKey, syncMode, networkType, infuraCredentials, etherscanKey, walletId)
         }
 
         fun clear(context: Context) {
@@ -220,13 +220,15 @@ class EthereumKit(
 
     sealed class WordsSyncMode {
         class SpvSyncMode : WordsSyncMode()
-        class ApiSyncMode(val infuraKey: String, val etherscanKey: String) : WordsSyncMode()
+        class ApiSyncMode : WordsSyncMode()
     }
 
     sealed class SyncMode {
         class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
-        class ApiSyncMode(val infuraKey: String, val etherscanKey: String) : SyncMode()
+        class ApiSyncMode : SyncMode()
     }
+
+    data class InfuraCredentials(val projectId: String, val secretKey: String?)
 
     enum class NetworkType {
         MainNet,

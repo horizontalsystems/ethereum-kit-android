@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
@@ -204,10 +205,10 @@ class ApiBlockchain(
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
                         address: ByteArray,
-                        infuraApiKey: String,
+                        infuraCredentials: InfuraCredentials,
                         etherscanApiKey: String): ApiBlockchain {
 
-            val rpcProvider = RpcApiProvider.getInstance(networkType, infuraApiKey)
+            val rpcProvider = RpcApiProvider.getInstance(networkType, infuraCredentials)
             val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanApiKey)
 
             return ApiBlockchain(storage, transactionsProvider, rpcProvider, transactionSigner, transactionBuilder, address)
