@@ -1,16 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net
 
-import com.nhaarman.mockito_kotlin.*
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
-import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
-import org.junit.Assert.assertEquals
-import org.mockito.Mockito.mock
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
-
+/*
 class PeerGroupTest : Spek({
 
     lateinit var peerGroup: PeerGroup
@@ -294,3 +284,4 @@ class PeerGroupTest : Spek({
         }
     }
 })
+*/

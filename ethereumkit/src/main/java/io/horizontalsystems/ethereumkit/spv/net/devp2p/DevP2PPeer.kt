@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
-import io.horizontalsystems.ethereumkit.spv.net.IMessage
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessage
@@ -18,7 +18,7 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
     interface Listener {
         fun didConnect()
         fun didDisconnect(error: Throwable?)
-        fun didReceive(message: IMessage)
+        fun didReceive(message: IInMessage)
     }
 
     var listener: Listener? = null
@@ -73,7 +73,7 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
         listener?.didDisconnect(error)
     }
 
-    override fun didReceive(message: IMessage) {
+    override fun didReceive(message: IInMessage) {
         println("<<<<<<< $message \n")
         try {
             when (message) {

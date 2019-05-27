@@ -19,7 +19,8 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import java.math.BigInteger
 
-class InfuraService(private val networkType: NetworkType, private val infuraCredentials: InfuraCredentials) {
+class InfuraService(private val networkType: NetworkType,
+                    private val infuraCredentials: InfuraCredentials) {
 
     private val service: InfuraServiceAPI
 

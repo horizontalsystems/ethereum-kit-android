@@ -12,12 +12,12 @@ import java.math.BigInteger
 
 interface IApiStorage {
     fun getLastBlockHeight(): Long?
-    fun getBalance(address: ByteArray): BigInteger?
-    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
+    fun getBalance(): BigInteger?
+    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
 
     fun getLastTransactionBlockHeight(isErc20: Boolean): Long?
     fun saveLastBlockHeight(lastBlockHeight: Long)
-    fun saveBalance(balance: BigInteger, address: ByteArray)
+    fun saveBalance(balance: BigInteger)
     fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
 }
 
@@ -35,8 +35,6 @@ interface ISpvStorage {
 
 interface IBlockchain {
     var listener: IBlockchainListener?
-
-    val address: ByteArray
 
     fun start()
     fun refresh()
@@ -64,9 +62,9 @@ interface IBlockchainListener {
 
 interface IRpcApiProvider {
     fun getLastBlockHeight(): Single<Long>
-    fun getTransactionCount(address: ByteArray): Single<Long>
+    fun getTransactionCount(): Single<Long>
 
-    fun getBalance(address: ByteArray): Single<BigInteger>
+    fun getBalance(): Single<BigInteger>
 
     fun send(signedTransaction: ByteArray): Single<Unit>
 
@@ -77,5 +75,5 @@ interface IRpcApiProvider {
 }
 
 interface ITransactionsProvider {
-    fun getTransactions(address: ByteArray, startBlock: Long): Single<List<EthereumTransaction>>
+    fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
 }

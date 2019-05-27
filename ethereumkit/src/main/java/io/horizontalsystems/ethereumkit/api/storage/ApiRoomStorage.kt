@@ -9,14 +9,8 @@ import java.math.BigInteger
 
 class ApiRoomStorage(private val database: ApiDatabase) : IApiStorage {
 
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
-        val single =
-                if (contractAddress == null)
-                    database.transactionDao().getTransactions()
-                else
-                    database.transactionDao().getErc20Transactions(contractAddress)
-
-        return single
+    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
+        return database.transactionDao().getTransactions()
                 .flatMap { transactionsList ->
                     var transactions = transactionsList
 
@@ -35,12 +29,12 @@ class ApiRoomStorage(private val database: ApiDatabase) : IApiStorage {
                 }
     }
 
-    override fun getBalance(address: ByteArray): BigInteger? {
-        return database.balanceDao().getBalance(address)?.balance
+    override fun getBalance(): BigInteger? {
+        return database.balanceDao().getBalance()?.balance
     }
 
     override fun getLastBlockHeight(): Long? {
-        return database.lastBlockHeightDao().getLastBlockHeight()?.height?.toLong()
+        return database.lastBlockHeightDao().getLastBlockHeight()?.height
     }
 
     override fun getLastTransactionBlockHeight(isErc20: Boolean): Long? {
@@ -55,8 +49,8 @@ class ApiRoomStorage(private val database: ApiDatabase) : IApiStorage {
         database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
     }
 
-    override fun saveBalance(balance: BigInteger, address: ByteArray) {
-        database.balanceDao().insert(EthereumBalance(address, balance))
+    override fun saveBalance(balance: BigInteger) {
+        database.balanceDao().insert(EthereumBalance(balance))
     }
 
     override fun saveTransactions(ethereumTransactions: List<EthereumTransaction>) {

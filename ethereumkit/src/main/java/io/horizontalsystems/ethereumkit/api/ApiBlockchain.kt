@@ -1,8 +1,6 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
-import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
@@ -18,9 +16,7 @@ class ApiBlockchain(
         private val transactionsProvider: ITransactionsProvider,
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
-        private val transactionBuilder: TransactionBuilder,
-        override val address: ByteArray
-) : IBlockchain {
+        private val transactionBuilder: TransactionBuilder) : IBlockchain {
 
     private val disposables = CompositeDisposable()
     private var started = false
@@ -31,10 +27,10 @@ class ApiBlockchain(
         get() = storage.getLastBlockHeight()
 
     override val balance: BigInteger?
-        get() = storage.getBalance(address)
+        get() = storage.getBalance()
 
     override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, null)
+        return storage.getTransactions(fromHash, limit)
     }
 
     override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
@@ -60,7 +56,7 @@ class ApiBlockchain(
     }
 
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
-        return rpcApiProvider.getTransactionCount(address)
+        return rpcApiProvider.getTransactionCount()
                 .flatMap { nonce ->
                     send(rawTransaction, nonce)
                 }.doOnSuccess { transaction ->
@@ -70,8 +66,8 @@ class ApiBlockchain(
     }
 
     private fun send(rawTransaction: RawTransaction, nonce: Long): Single<EthereumTransaction> {
-        val signature = transactionSigner.sign(rawTransaction, nonce)
-        val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature, address)
+        val signature = transactionSigner.signature(rawTransaction, nonce)
+        val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature)
         val encoded = transactionBuilder.encode(rawTransaction, nonce, signature)
 
         return rpcApiProvider.send(signedTransaction = encoded)
@@ -150,7 +146,7 @@ class ApiBlockchain(
 
         Single.zip(
                 rpcApiProvider.getLastBlockHeight(),
-                rpcApiProvider.getBalance(address),
+                rpcApiProvider.getBalance(),
                 BiFunction<Long, BigInteger, Pair<Long, BigInteger>> { t1, t2 -> Pair(t1, t2) })
                 .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
@@ -168,7 +164,7 @@ class ApiBlockchain(
     private fun refreshTransactions() {
         val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight(false) ?: 0
 
-        transactionsProvider.getTransactions(address, (lastTransactionBlockHeight + 1))
+        transactionsProvider.getTransactions(lastTransactionBlockHeight + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactions(transactions)
@@ -186,7 +182,7 @@ class ApiBlockchain(
     }
 
     private fun updateBalance(balance: BigInteger) {
-        storage.saveBalance(balance, address)
+        storage.saveBalance(balance)
         listener?.onUpdateBalance(balance)
     }
 
@@ -201,17 +197,12 @@ class ApiBlockchain(
 
     companion object {
         fun getInstance(storage: IApiStorage,
-                        networkType: NetworkType,
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
-                        address: ByteArray,
-                        infuraCredentials: InfuraCredentials,
-                        etherscanApiKey: String): ApiBlockchain {
+                        rpcApiProvider: IRpcApiProvider,
+                        transactionsProvider: ITransactionsProvider): ApiBlockchain {
 
-            val rpcProvider = RpcApiProvider.getInstance(networkType, infuraCredentials)
-            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanApiKey)
-
-            return ApiBlockchain(storage, transactionsProvider, rpcProvider, transactionSigner, transactionBuilder, address)
+            return ApiBlockchain(storage, transactionsProvider, rpcApiProvider, transactionSigner, transactionBuilder)
         }
     }
 

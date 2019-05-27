@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node
@@ -16,7 +17,7 @@ class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConn
     interface Listener {
         fun didConnect()
         fun didDisconnect(error: Throwable?)
-        fun didReceive(message: IMessage)
+        fun didReceive(message: IInMessage)
     }
 
     companion object {
@@ -90,7 +91,8 @@ class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConn
                 }
 
         try {
-            val message = messageClass.java.getConstructor(ByteArray::class.java).newInstance(payload)
+            val message = messageClass.java.getConstructor(ByteArray::class.java).newInstance(payload) as? IInMessage
+                    ?: throw UnknownMessageType()
             listener?.didReceive(message)
         } catch (ex: Exception) {
             disconnect(InvalidPayload())

@@ -38,4 +38,8 @@ object RandomHelper {
     fun randomLong(): Long {
         return Math.abs(Random().nextLong())
     }
+
+    fun randomInt(): Int {
+        return Math.abs(Random().nextInt())
+    }
 }

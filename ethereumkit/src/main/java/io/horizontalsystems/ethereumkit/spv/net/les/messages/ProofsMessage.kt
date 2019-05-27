@@ -28,11 +28,4 @@ class ProofsMessage(data: ByteArray) : IInMessage {
         return "Proofs [requestID: $requestID; bv: $bv; nodes: [${nodes.joinToString(separator = ", ") { it.toString() }}]]"
     }
 
-    open class ProofError : Exception() {
-        class NoNodes : ProofError()
-        class StateNodeNotFound : ProofError()
-        class NodesNotInterconnected : ProofError()
-        class PathDoesNotMatchAddressHash : ProofError()
-        class RootHashDoesNotMatchStateRoot : ProofError()
-    }
 }

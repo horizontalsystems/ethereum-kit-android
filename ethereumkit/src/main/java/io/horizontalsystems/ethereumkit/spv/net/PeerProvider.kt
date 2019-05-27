@@ -29,7 +29,7 @@ class PeerProvider(val connectionKey: ECKey,
 
         val lastBlockHeader = storage.getLastBlockHeader() ?: network.checkpointBlock
 
-        return LESPeer.getInstance(network, lastBlockHeader, connectionKey, node)
+        return LESPeer.getInstance(connectionKey, node)
     }
 
 }

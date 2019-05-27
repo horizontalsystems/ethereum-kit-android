@@ -1,9 +1,10 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p.messages
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 
-class PongMessage() : IOutMessage {
+class PongMessage() : IInMessage, IOutMessage {
 
     constructor(payload: ByteArray) : this()
 

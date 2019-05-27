@@ -26,6 +26,7 @@ class EthereumKit(
         private val blockchain: IBlockchain,
         private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
+        private val address: ByteArray,
         private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener {
 
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
@@ -63,10 +64,10 @@ class EthereumKit(
         get() = blockchain.syncState
 
     val receiveAddress: String
-        get() = blockchain.address.toEIP55Address()
+        get() = address.toEIP55Address()
 
     val receiveAddressRaw: ByteArray
-        get() = blockchain.address
+        get() = address
 
     fun validateAddress(address: String) {
         addressValidator.validate(address)
@@ -107,7 +108,7 @@ class EthereumKit(
 
     fun debugInfo(): String {
         val lines = mutableListOf<String>()
-        lines.add("ADDRESS: ${blockchain.address}")
+        lines.add("ADDRESS: ${address}")
         return lines.joinToString { "\n" }
     }
 
@@ -169,26 +170,28 @@ class EthereumKit(
 
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
-            val transactionBuilder = TransactionBuilder()
+            val transactionBuilder = TransactionBuilder(address)
+            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanKey, address)
+            val rpcApiProvider = RpcApiProvider.getInstance(networkType, infuraCredentials, address)
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiRoomStorage(apiDatabase)
-                    blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, infuraCredentials, etherscanKey)
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, transactionsProvider)
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
                     val storage = SpvRoomStorage(spvDatabase)
 
-                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, network, address, nodeKey)
+                    blockchain = SpvBlockchain.getInstance(storage, transactionsProvider, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
                 }
             }
 
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, addressValidator, transactionBuilder)
+            val ethereumKit = EthereumKit(blockchain, addressValidator, transactionBuilder, address)
 
             blockchain.listener = ethereumKit
 

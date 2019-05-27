@@ -9,8 +9,8 @@ interface BalanceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(ethereumBalance: EthereumBalance)
 
-    @Query("SELECT * FROM EthereumBalance WHERE address = :address")
-    fun getBalance(address: ByteArray): EthereumBalance?
+    @Query("SELECT * FROM EthereumBalance LIMIT 1")
+    fun getBalance(): EthereumBalance?
 
     @Delete
     fun delete(rate: EthereumBalance)
