@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.core.room
+package io.horizontalsystems.ethereumkit.spv.core.storage
 
 import android.arch.persistence.room.Dao
 import android.arch.persistence.room.Insert

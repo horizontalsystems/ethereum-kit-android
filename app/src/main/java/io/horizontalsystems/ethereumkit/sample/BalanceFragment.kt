@@ -47,7 +47,7 @@ class BalanceFragment : Fragment() {
             viewModel.etherState.observe(this, Observer { kitState ->
                 kitStateValue.text = when (kitState) {
                     is EthereumKit.SyncState.Synced -> "Synced"
-                    is EthereumKit.SyncState.Syncing -> "Syncing"
+                    is EthereumKit.SyncState.Syncing ->  "Syncing ${kitState.progress ?: ""}"
                     is EthereumKit.SyncState.NotSynced -> "NotSynced"
                     else -> "null"
                 }

@@ -1,6 +1,9 @@
-package io.horizontalsystems.ethereumkit.api.storage
+package io.horizontalsystems.ethereumkit.core.storage
 
-import android.arch.persistence.room.*
+import android.arch.persistence.room.Dao
+import android.arch.persistence.room.Insert
+import android.arch.persistence.room.OnConflictStrategy
+import android.arch.persistence.room.Query
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 
@@ -19,12 +22,4 @@ interface TransactionDao {
     @Query("SELECT * FROM EthereumTransaction ORDER BY blockNumber DESC LIMIT 1")
     fun getLastTransaction(): EthereumTransaction?
 
-    @Query("SELECT * FROM EthereumTransaction WHERE length(input) > 0 ORDER BY blockNumber DESC LIMIT 1")
-    fun getTokenLastTransaction(): EthereumTransaction?
-
-    @Delete
-    fun delete(ethereumTransaction: EthereumTransaction)
-
-    @Query("DELETE FROM EthereumTransaction")
-    fun deleteAll()
 }

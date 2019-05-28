@@ -24,9 +24,9 @@ class Erc20Adapter(context: Context,
 
     override val syncState: EthereumKit.SyncState
         get() = when (erc20Kit.syncState) {
-            Erc20Kit.SyncState.Synced -> EthereumKit.SyncState.Synced
-            Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing
-            Erc20Kit.SyncState.NotSynced -> EthereumKit.SyncState.NotSynced
+            Erc20Kit.SyncState.Synced -> EthereumKit.SyncState.Synced()
+            Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing()
+            Erc20Kit.SyncState.NotSynced -> EthereumKit.SyncState.NotSynced()
         }
 
     override val balance: BigDecimal

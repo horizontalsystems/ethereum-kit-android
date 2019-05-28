@@ -5,8 +5,4 @@ import android.arch.persistence.room.PrimaryKey
 import java.math.BigInteger
 
 @Entity
-class EthereumBalance(
-        @PrimaryKey
-        val address: ByteArray,
-        val balance: BigInteger
-)
+class EthereumBalance(val balance: BigInteger, @PrimaryKey val id: String = "")

@@ -1,82 +1,33 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.network.INetwork
+import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.spv.core.*
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
-import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
-import io.horizontalsystems.ethereumkit.spv.net.*
+import io.horizontalsystems.ethereumkit.spv.net.IInMessage
+import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
+import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
 
-class LESPeer(private val devP2PPeer: DevP2PPeer,
-              private val network: INetwork,
-              private val lastBlockHeader: BlockHeader,
-              private val randomHelper: RandomHelper,
-              private val requestHolder: LESPeerRequestHolder = LESPeerRequestHolder()) : IPeer, DevP2PPeer.Listener {
+class LESPeer(private val devP2PPeer: DevP2PPeer) : IPeer, DevP2PPeer.Listener, ITaskHandlerRequester {
+
+    private val taskHandlers: MutableList<ITaskHandler> = ArrayList()
+    private val messageHandlers: MutableList<IMessageHandler> = ArrayList()
+
+    //-------------IPeer methods----------------------
+
+    override val id = devP2PPeer.myNodeId.toHexString()
 
     override var listener: IPeerListener? = null
 
-    override val syncState: EthereumKit.SyncState
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
-
-    private fun handle(message: IMessage) {
-        when (message) {
-            is StatusMessage -> handle(message)
-            is BlockHeadersMessage -> handle(message)
-            is ProofsMessage -> handle(message)
-            is AnnounceMessage -> handle(message)
-        }
+    override fun register(messageHandler: IMessageHandler) {
+        messageHandlers.add(messageHandler)
     }
 
-    private fun handle(message: StatusMessage) {
-        check(message.protocolVersion == LESPeer.capability.version) {
-            throw InvalidProtocolVersion()
-        }
-
-        check(message.networkId == network.id) {
-            throw WrongNetwork()
-        }
-
-        check(message.genesisHash.contentEquals(network.genesisBlockHash)) {
-            throw WrongNetwork()
-        }
-
-        check(message.headHeight >= lastBlockHeader.height) {
-            throw ExpiredBestBlockHeight()
-        }
-
-        listener?.didConnect()
+    override fun register(taskHandler: ITaskHandler) {
+        taskHandlers.add(taskHandler)
     }
-
-    private fun handle(message: BlockHeadersMessage) {
-        val request = requestHolder.removeBlockHeaderRequest(message.requestID)
-
-        checkNotNull(request) {
-            throw UnexpectedMessage()
-        }
-
-        listener?.didReceive(message.headers, request.blockHeader, request.reversed)
-    }
-
-    private fun handle(message: ProofsMessage) {
-        val request = requestHolder.removeAccountStateRequest(message.requestID)
-
-        checkNotNull(request) {
-            throw UnexpectedMessage()
-        }
-
-        listener?.didReceive(request.getAccountState(message), request.address, request.blockHeader)
-    }
-
-    private fun handle(message: AnnounceMessage) {
-        listener?.didAnnounce(message.blockHash, message.blockHeight)
-    }
-
-    //------------------Public methods----------------------
 
     override fun connect() {
         devP2PPeer.connect()
@@ -86,55 +37,45 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
         devP2PPeer.disconnect(error)
     }
 
-    override fun requestBlockHeaders(blockHeader: BlockHeader, limit: Int, reversed: Boolean) {
-        val requestId = randomHelper.randomLong()
-        requestHolder.setBlockHeaderRequest(BlockHeaderRequest(blockHeader, reversed), requestId)
+    override fun add(task: ITask) {
+        for (taskHandler in taskHandlers) {
+            if (taskHandler.perform(task, this)) {
+                return
+            }
+        }
 
-        val message = GetBlockHeadersMessage(requestId, blockHeader.height, limit, reverse = if (reversed) 1 else 0)
-        devP2PPeer.send(message)
-    }
-
-    override fun requestAccountState(address: ByteArray, blockHeader: BlockHeader) {
-        val requestId = randomHelper.randomLong()
-        requestHolder.setAccountStateRequest(AccountStateRequest(address, blockHeader), requestId)
-
-        val message = GetProofsMessage(requestId, blockHeader.hashHex, address)
-        devP2PPeer.send(message)
-    }
-
-    override fun send(rawTransaction: RawTransaction, nonce: Long, signature: Signature) {
-        val requestId = randomHelper.randomLong()
-        val message = SendTransactionMessage(requestId, rawTransaction, nonce, signature)
-
-        devP2PPeer.send(message)
+        println("No handler for task: ${task.javaClass.name}")
     }
 
     //-----------DevP2PPeer.Listener methods------------
 
     override fun didConnect() {
         println("LESPeer -> didConnect\n")
-        val statusMessage = StatusMessage(
-                protocolVersion = capability.version,
-                networkId = network.id,
-                genesisHash = network.genesisBlockHash,
-                headTotalDifficulty = lastBlockHeader.totalDifficulty,
-                headHash = lastBlockHeader.hashHex,
-                headHeight = lastBlockHeader.height)
 
-        devP2PPeer.send(statusMessage)
+        listener?.didConnect(this)
     }
 
     override fun didDisconnect(error: Throwable?) {
         println("LESPeer -> didDisconnect: $error")
-        listener?.didDisconnect(error)
+        listener?.didDisconnect(this, error)
     }
 
-    override fun didReceive(message: IMessage) {
+    override fun didReceive(message: IInMessage) {
         try {
-            handle(message)
+            for (messageHandler in messageHandlers) {
+                val handled = messageHandler.handle(this, message)
+                if (handled)
+                    return
+            }
         } catch (error: Exception) {
             disconnect(error)
         }
+    }
+
+    //--------------ITaskHandlerRequester methods------------------
+
+    override fun send(message: IOutMessage) {
+        devP2PPeer.send(message)
     }
 
     companion object {
@@ -148,9 +89,9 @@ class LESPeer(private val devP2PPeer: DevP2PPeer,
                         0x13 to SendTransactionMessage::class,
                         0x15 to TransactionStatusMessage::class))
 
-        fun getInstance(network: INetwork, bestBlock: BlockHeader, key: ECKey, node: Node): LESPeer {
+        fun getInstance(key: ECKey, node: Node): LESPeer {
             val devP2PPeer = DevP2PPeer.getInstance(key, node, listOf(capability))
-            val lesPeer = LESPeer(devP2PPeer, network, bestBlock, RandomHelper)
+            val lesPeer = LESPeer(devP2PPeer)
             devP2PPeer.listener = lesPeer
 
             return lesPeer

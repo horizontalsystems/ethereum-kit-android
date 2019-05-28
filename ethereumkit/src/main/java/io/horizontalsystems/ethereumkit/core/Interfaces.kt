@@ -12,13 +12,10 @@ import java.math.BigInteger
 
 interface IApiStorage {
     fun getLastBlockHeight(): Long?
-    fun getBalance(address: ByteArray): BigInteger?
-    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
-
-    fun getLastTransactionBlockHeight(isErc20: Boolean): Long?
     fun saveLastBlockHeight(lastBlockHeight: Long)
-    fun saveBalance(balance: BigInteger, address: ByteArray)
-    fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
+
+    fun getBalance(): BigInteger?
+    fun saveBalance(balance: BigInteger)
 }
 
 interface ISpvStorage {
@@ -28,15 +25,10 @@ interface ISpvStorage {
 
     fun getAccountState(): AccountState?
     fun saveAccountSate(accountState: AccountState)
-
-    fun saveTransactions(transactions: List<EthereumTransaction>)
-    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
 }
 
 interface IBlockchain {
     var listener: IBlockchainListener?
-
-    val address: ByteArray
 
     fun start()
     fun refresh()
@@ -46,7 +38,6 @@ interface IBlockchain {
     val lastBlockHeight: Long?
     val balance: BigInteger?
 
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
     fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
 
     fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
@@ -59,14 +50,13 @@ interface IBlockchainListener {
 
     fun onUpdateBalance(balance: BigInteger)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
-    fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
 }
 
 interface IRpcApiProvider {
     fun getLastBlockHeight(): Single<Long>
-    fun getTransactionCount(address: ByteArray): Single<Long>
+    fun getTransactionCount(): Single<Long>
 
-    fun getBalance(address: ByteArray): Single<BigInteger>
+    fun getBalance(): Single<BigInteger>
 
     fun send(signedTransaction: ByteArray): Single<Unit>
 
@@ -77,5 +67,12 @@ interface IRpcApiProvider {
 }
 
 interface ITransactionsProvider {
-    fun getTransactions(address: ByteArray, startBlock: Long): Single<List<EthereumTransaction>>
+    fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
+}
+
+interface ITransactionStorage {
+    fun getLastTransactionBlockHeight(): Long?
+
+    fun saveTransactions(transactions: List<EthereumTransaction>)
+    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
 }

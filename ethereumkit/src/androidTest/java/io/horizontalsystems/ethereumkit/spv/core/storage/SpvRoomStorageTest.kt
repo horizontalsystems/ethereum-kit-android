@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.core.room
+package io.horizontalsystems.ethereumkit.spv.core.storage
 
 import android.arch.persistence.room.Room
 import android.support.test.InstrumentationRegistry
@@ -15,12 +15,12 @@ import org.junit.runner.RunWith
 class SpvRoomStorageTest {
 
     private lateinit var blockHeaderDao: BlockHeaderDao
-    private lateinit var db: SPVDatabase
+    private lateinit var db: SpvDatabase
 
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getTargetContext()
-        db = Room.inMemoryDatabaseBuilder(context, SPVDatabase::class.java).build()
+        db = Room.inMemoryDatabaseBuilder(context, SpvDatabase::class.java).build()
         blockHeaderDao = db.blockHeaderDao()
     }
 

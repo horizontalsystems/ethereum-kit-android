@@ -8,17 +8,18 @@ import io.horizontalsystems.ethereumkit.network.InfuraService
 import io.reactivex.Single
 import java.math.BigInteger
 
-class RpcApiProvider(private val infuraService: InfuraService) : IRpcApiProvider {
+class RpcApiProvider(private val infuraService: InfuraService,
+                     private val address: ByteArray) : IRpcApiProvider {
 
     override fun getLastBlockHeight(): Single<Long> {
         return infuraService.getLastBlockHeight()
     }
 
-    override fun getTransactionCount(address: ByteArray): Single<Long> {
+    override fun getTransactionCount(): Single<Long> {
         return infuraService.getTransactionCount(address)
     }
 
-    override fun getBalance(address: ByteArray): Single<BigInteger> {
+    override fun getBalance(): Single<BigInteger> {
         return infuraService.getBalance(address)
     }
 
@@ -43,10 +44,10 @@ class RpcApiProvider(private val infuraService: InfuraService) : IRpcApiProvider
     }
 
     companion object {
-        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials): RpcApiProvider {
+        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials, address: ByteArray): RpcApiProvider {
             val infuraService = InfuraService(networkType, infuraCredentials)
 
-            return RpcApiProvider(infuraService)
+            return RpcApiProvider(infuraService, address)
         }
     }
 

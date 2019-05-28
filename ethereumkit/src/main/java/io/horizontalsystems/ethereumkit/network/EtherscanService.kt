@@ -13,7 +13,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-class EtherscanService(private val networkType: NetworkType, private val apiKey: String) {
+class EtherscanService(private val networkType: NetworkType,
+                       private val apiKey: String) {
 
     private val service: EtherscanServiceAPI
 

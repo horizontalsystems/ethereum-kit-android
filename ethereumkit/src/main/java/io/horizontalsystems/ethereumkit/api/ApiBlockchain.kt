@@ -1,8 +1,6 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
-import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
@@ -15,12 +13,9 @@ import java.math.BigInteger
 
 class ApiBlockchain(
         private val storage: IApiStorage,
-        private val transactionsProvider: ITransactionsProvider,
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
-        private val transactionBuilder: TransactionBuilder,
-        override val address: ByteArray
-) : IBlockchain {
+        private val transactionBuilder: TransactionBuilder) : IBlockchain {
 
     private val disposables = CompositeDisposable()
     private var started = false
@@ -31,13 +26,9 @@ class ApiBlockchain(
         get() = storage.getLastBlockHeight()
 
     override val balance: BigInteger?
-        get() = storage.getBalance(address)
+        get() = storage.getBalance()
 
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, null)
-    }
-
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
+    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced()
         private set(value) {
             if (field != value) {
                 field = value
@@ -60,18 +51,17 @@ class ApiBlockchain(
     }
 
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
-        return rpcApiProvider.getTransactionCount(address)
+        return rpcApiProvider.getTransactionCount()
                 .flatMap { nonce ->
                     send(rawTransaction, nonce)
-                }.doOnSuccess { transaction ->
-                    updateTransactions(listOf(transaction))
+                }.doOnSuccess {
                     sync()
                 }
     }
 
     private fun send(rawTransaction: RawTransaction, nonce: Long): Single<EthereumTransaction> {
-        val signature = transactionSigner.sign(rawTransaction, nonce)
-        val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature, address)
+        val signature = transactionSigner.signature(rawTransaction, nonce)
+        val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature)
         val encoded = transactionBuilder.encode(rawTransaction, nonce, signature)
 
         return rpcApiProvider.send(signedTransaction = encoded)
@@ -143,39 +133,25 @@ class ApiBlockchain(
             return
         }
 
-        if (syncState == EthereumKit.SyncState.Syncing) {
+        if (syncState is EthereumKit.SyncState.Syncing) {
             return
         }
-        syncState = EthereumKit.SyncState.Syncing
+        syncState = EthereumKit.SyncState.Syncing()
 
         Single.zip(
                 rpcApiProvider.getLastBlockHeight(),
-                rpcApiProvider.getBalance(address),
+                rpcApiProvider.getBalance(),
                 BiFunction<Long, BigInteger, Pair<Long, BigInteger>> { t1, t2 -> Pair(t1, t2) })
                 .subscribeOn(Schedulers.io())
                 .subscribe({ result ->
                     updateLastBlockHeight(result.first)
                     updateBalance(result.second)
-                    refreshTransactions()
+
+                    syncState = EthereumKit.SyncState.Synced()
                 }, {
                     it?.printStackTrace()
-                    syncState = EthereumKit.SyncState.NotSynced
+                    syncState = EthereumKit.SyncState.NotSynced()
                 }).let {
-                    disposables.add(it)
-                }
-    }
-
-    private fun refreshTransactions() {
-        val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight(false) ?: 0
-
-        transactionsProvider.getTransactions(address, (lastTransactionBlockHeight + 1))
-                .subscribeOn(Schedulers.io())
-                .subscribe({ transactions ->
-                    updateTransactions(transactions)
-                    syncState = EthereumKit.SyncState.Synced
-                }, {
-                    syncState = EthereumKit.SyncState.NotSynced
-                })?.let {
                     disposables.add(it)
                 }
     }
@@ -186,13 +162,8 @@ class ApiBlockchain(
     }
 
     private fun updateBalance(balance: BigInteger) {
-        storage.saveBalance(balance, address)
+        storage.saveBalance(balance)
         listener?.onUpdateBalance(balance)
-    }
-
-    private fun updateTransactions(ethereumTransactions: List<EthereumTransaction>) {
-        storage.saveTransactions(ethereumTransactions)
-        listener?.onUpdateTransactions(ethereumTransactions.filter { it.input.isEmpty() })
     }
 
     open class ApiException : Exception() {
@@ -201,17 +172,11 @@ class ApiBlockchain(
 
     companion object {
         fun getInstance(storage: IApiStorage,
-                        networkType: NetworkType,
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
-                        address: ByteArray,
-                        infuraCredentials: InfuraCredentials,
-                        etherscanApiKey: String): ApiBlockchain {
+                        rpcApiProvider: IRpcApiProvider): ApiBlockchain {
 
-            val rpcProvider = RpcApiProvider.getInstance(networkType, infuraCredentials)
-            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanApiKey)
-
-            return ApiBlockchain(storage, transactionsProvider, rpcProvider, transactionSigner, transactionBuilder, address)
+            return ApiBlockchain(storage, rpcApiProvider, transactionSigner, transactionBuilder)
         }
     }
 

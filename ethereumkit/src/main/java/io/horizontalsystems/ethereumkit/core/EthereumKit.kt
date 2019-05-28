@@ -3,7 +3,9 @@ package io.horizontalsystems.ethereumkit.core
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
-import io.horizontalsystems.ethereumkit.api.storage.ApiRoomStorage
+import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
+import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
+import io.horizontalsystems.ethereumkit.geth.GethBlockchain
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
@@ -11,7 +13,7 @@ import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.network.MainNet
 import io.horizontalsystems.ethereumkit.network.Ropsten
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
-import io.horizontalsystems.ethereumkit.spv.core.SpvRoomStorage
+import io.horizontalsystems.ethereumkit.spv.core.storage.SpvStorage
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -24,9 +26,11 @@ import java.math.BigInteger
 
 class EthereumKit(
         private val blockchain: IBlockchain,
+        private val transactionManager: TransactionManager,
         private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
-        private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener {
+        private val address: ByteArray,
+        private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener, TransactionManager.Listener {
 
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
@@ -42,6 +46,7 @@ class EthereumKit(
 
     fun start() {
         blockchain.start()
+        transactionManager.refresh()
     }
 
     fun stop() {
@@ -51,6 +56,7 @@ class EthereumKit(
 
     fun refresh() {
         blockchain.refresh()
+        transactionManager.refresh()
     }
 
     val lastBlockHeight: Long?
@@ -63,10 +69,10 @@ class EthereumKit(
         get() = blockchain.syncState
 
     val receiveAddress: String
-        get() = blockchain.address.toEIP55Address()
+        get() = address.toEIP55Address()
 
     val receiveAddressRaw: ByteArray
-        get() = blockchain.address
+        get() = address
 
     fun validateAddress(address: String) {
         addressValidator.validate(address)
@@ -77,19 +83,20 @@ class EthereumKit(
     }
 
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<TransactionInfo>> {
-        return blockchain.getTransactions(fromHash?.hexStringToByteArray(), limit)
+        return transactionManager.getTransactions(fromHash?.hexStringToByteArray(), limit)
                 .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
-    fun send(toAddress: String, value: String, gasPrice: Long): Single<EthereumTransaction> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress.hexStringToByteArray(), value.toBigInteger())
-
-        return blockchain.send(rawTransaction)
+    fun send(toAddress: String, value: String, gasPrice: Long): Single<TransactionInfo> {
+        return send(toAddress.hexStringToByteArray(), value.toBigInteger(), ByteArray(0), gasPrice, gasLimit)
     }
 
-    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long = this.gasLimit): Single<TransactionInfo> {
+    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
         val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
         return blockchain.send(rawTransaction)
+                .doOnSuccess { transaction ->
+                    transactionManager.handle(transaction)
+                }
                 .map { TransactionInfo(it) }
     }
 
@@ -107,7 +114,7 @@ class EthereumKit(
 
     fun debugInfo(): String {
         val lines = mutableListOf<String>()
-        lines.add("ADDRESS: ${blockchain.address}")
+        lines.add("ADDRESS: ${address}")
         return lines.joinToString { "\n" }
     }
 
@@ -147,6 +154,10 @@ class EthereumKit(
         balanceSubject.onNext(balance)
     }
 
+    //
+    //TransactionManager.Listener
+    //
+
     override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
         if (ethereumTransactions.isEmpty())
             return
@@ -155,9 +166,9 @@ class EthereumKit(
     }
 
     sealed class SyncState {
-        object Synced : SyncState()
-        object NotSynced : SyncState()
-        object Syncing : SyncState()
+        class Synced : SyncState()
+        class NotSynced : SyncState()
+        class Syncing(val progress: Double? = null) : SyncState()
     }
 
     companion object {
@@ -169,26 +180,39 @@ class EthereumKit(
 
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
-            val transactionBuilder = TransactionBuilder()
+            val transactionBuilder = TransactionBuilder(address)
+            val rpcApiProvider = RpcApiProvider.getInstance(networkType, infuraCredentials, address)
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
-                    val storage = ApiRoomStorage(apiDatabase)
-                    blockchain = ApiBlockchain.getInstance(storage, networkType, transactionSigner, transactionBuilder, address, infuraCredentials, etherscanKey)
+                    val storage = ApiStorage(apiDatabase)
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider)
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
-                    val storage = SpvRoomStorage(spvDatabase)
+                    val storage = SpvStorage(spvDatabase)
 
-                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, network, address, nodeKey)
+                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
+                }
+                is SyncMode.GethSyncMode -> {
+                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
+                    val storage = ApiStorage(apiDatabase)
+                    val nodeDirectory = context.filesDir.path + "/gethNode"
+
+                    blockchain = GethBlockchain.getInstance(nodeDirectory, network, storage, transactionSigner, transactionBuilder, address)
                 }
             }
 
+            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanKey, address)
+            val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(context, walletId, networkType)
+            val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
+            val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
+
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, addressValidator, transactionBuilder)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address)
 
             blockchain.listener = ethereumKit
 
@@ -219,13 +243,14 @@ class EthereumKit(
     }
 
     sealed class WordsSyncMode {
-        class SpvSyncMode : WordsSyncMode()
         class ApiSyncMode : WordsSyncMode()
+        class SpvSyncMode : WordsSyncMode()
     }
 
     sealed class SyncMode {
-        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
         class ApiSyncMode : SyncMode()
+        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
+        class GethSyncMode : SyncMode()
     }
 
     data class InfuraCredentials(val projectId: String, val secretKey: String?)
