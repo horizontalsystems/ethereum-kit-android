@@ -7,16 +7,14 @@ import android.arch.persistence.room.TypeConverters
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 
 
-@Database(entities = [EthereumBalance::class, LastBlockHeight::class, EthereumTransaction::class], version = 2, exportSchema = false)
+@Database(entities = [EthereumBalance::class, LastBlockHeight::class], version = 1, exportSchema = false)
 @TypeConverters(RoomTypeConverters::class)
 abstract class ApiDatabase : RoomDatabase() {
 
     abstract fun balanceDao(): BalanceDao
     abstract fun lastBlockHeightDao(): LastBlockHeightDao
-    abstract fun transactionDao(): TransactionDao
 
     companion object {
 

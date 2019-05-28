@@ -12,13 +12,10 @@ import java.math.BigInteger
 
 interface IApiStorage {
     fun getLastBlockHeight(): Long?
-    fun getBalance(): BigInteger?
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
-
-    fun getLastTransactionBlockHeight(isErc20: Boolean): Long?
     fun saveLastBlockHeight(lastBlockHeight: Long)
+
+    fun getBalance(): BigInteger?
     fun saveBalance(balance: BigInteger)
-    fun saveTransactions(ethereumTransactions: List<EthereumTransaction>)
 }
 
 interface ISpvStorage {
@@ -28,9 +25,6 @@ interface ISpvStorage {
 
     fun getAccountState(): AccountState?
     fun saveAccountSate(accountState: AccountState)
-
-    fun saveTransactions(transactions: List<EthereumTransaction>)
-    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
 }
 
 interface IBlockchain {
@@ -44,7 +38,6 @@ interface IBlockchain {
     val lastBlockHeight: Long?
     val balance: BigInteger?
 
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
     fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
 
     fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
@@ -57,7 +50,6 @@ interface IBlockchainListener {
 
     fun onUpdateBalance(balance: BigInteger)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
-    fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
 }
 
 interface IRpcApiProvider {
@@ -76,4 +68,11 @@ interface IRpcApiProvider {
 
 interface ITransactionsProvider {
     fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
+}
+
+interface ITransactionStorage {
+    fun getLastTransactionBlockHeight(): Long?
+
+    fun saveTransactions(transactions: List<EthereumTransaction>)
+    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
 }

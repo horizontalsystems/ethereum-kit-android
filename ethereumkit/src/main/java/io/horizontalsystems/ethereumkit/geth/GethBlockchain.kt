@@ -238,10 +238,6 @@ class GethBlockchain private constructor(private val node: Node,
     override val balance: BigInteger?
         get() = storage.getBalance()
 
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return Single.just(listOf())
-    }
-
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
         return Single.create { emitter ->
             try {

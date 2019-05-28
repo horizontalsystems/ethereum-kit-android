@@ -29,8 +29,6 @@ class TransactionSender(private val storage: ISpvStorage,
     override fun onSendSuccess(task: SendTransactionTask) {
         val transaction = transactionBuilder.transaction(task.rawTransaction, task.nonce, task.signature)
 
-        storage.saveTransactions(listOf(transaction))
-
         listener?.onSendSuccess(task.sendId, transaction)
     }
 

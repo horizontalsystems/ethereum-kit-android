@@ -1,13 +1,10 @@
-package io.horizontalsystems.ethereumkit.spv.core
+package io.horizontalsystems.ethereumkit.spv.core.storage
 
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.spv.core.room.SPVDatabase
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.reactivex.Single
 
-class SpvRoomStorage(private val database: SPVDatabase) : ISpvStorage {
+class SpvStorage(private val database: SpvDatabase) : ISpvStorage {
 
     override fun getLastBlockHeader(): BlockHeader? {
         return database.blockHeaderDao().getAll().firstOrNull()
@@ -29,11 +26,4 @@ class SpvRoomStorage(private val database: SPVDatabase) : ISpvStorage {
         database.accountStateDao().insert(accountState)
     }
 
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
-        return database.transactionDao().getTransactions()
-    }
-
-    override fun saveTransactions(transactions: List<EthereumTransaction>) {
-        database.transactionDao().insert(transactions)
-    }
 }

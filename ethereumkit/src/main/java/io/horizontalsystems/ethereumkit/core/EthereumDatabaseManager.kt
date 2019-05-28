@@ -4,7 +4,8 @@ import android.arch.persistence.room.RoomDatabase
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import io.horizontalsystems.ethereumkit.api.storage.ApiDatabase
-import io.horizontalsystems.ethereumkit.spv.core.room.SPVDatabase
+import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
+import io.horizontalsystems.ethereumkit.spv.core.storage.SpvDatabase
 import java.io.File
 
 internal object EthereumDatabaseManager {
@@ -14,9 +15,14 @@ internal object EthereumDatabaseManager {
         return ApiDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
     }
 
-    fun getEthereumSpvDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): SPVDatabase {
+    fun getEthereumSpvDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): SpvDatabase {
         val databaseName = "Ethereum-$walletId-${networkType.name}-spv"
-        return SPVDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
+        return SpvDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
+    }
+
+    fun getTransactionDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): TransactionDatabase {
+        val databaseName = "Transactions-$walletId-${networkType.name}"
+        return TransactionDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
     }
 
     fun clear(context: Context) {

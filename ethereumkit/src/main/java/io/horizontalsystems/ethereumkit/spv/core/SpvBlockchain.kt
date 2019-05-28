@@ -25,7 +25,6 @@ class SpvBlockchain(private val peer: IPeer,
                     private val accountStateSyncer: AccountStateSyncer,
                     private val transactionSender: TransactionSender,
                     private val storage: ISpvStorage,
-                    private val transactionsProvider: ITransactionsProvider,
                     private val network: INetwork,
                     private val rpcApiProvider: IRpcApiProvider) : IBlockchain, IPeerListener,
         BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
@@ -58,10 +57,6 @@ class SpvBlockchain(private val peer: IPeer,
 
     override val balance: BigInteger?
         get() = storage.getAccountState()?.balance
-
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit, null)
-    }
 
     override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
         return try {
@@ -135,8 +130,6 @@ class SpvBlockchain(private val peer: IPeer,
 
         subject.onNext(transaction)
         subject.onComplete()
-
-        listener?.onUpdateTransactions(listOf(transaction))
     }
 
     override fun onSendFailure(sendId: Int, error: Throwable) {
@@ -146,7 +139,7 @@ class SpvBlockchain(private val peer: IPeer,
     }
 
     companion object {
-        fun getInstance(storage: ISpvStorage, transactionsProvider: ITransactionsProvider, transactionSigner: TransactionSigner, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: ByteArray, nodeKey: ECKey): SpvBlockchain {
+        fun getInstance(storage: ISpvStorage, transactionSigner: TransactionSigner, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: ByteArray, nodeKey: ECKey): SpvBlockchain {
             val peerProvider = PeerProvider(nodeKey, storage, network)
             val blockValidator = BlockValidator()
             val blockHelper = BlockHelper(storage, network)
@@ -156,7 +149,7 @@ class SpvBlockchain(private val peer: IPeer,
             val accountStateSyncer = AccountStateSyncer(storage, address)
             val transactionSender = TransactionSender(storage, transactionBuilder, transactionSigner)
 
-            val spvBlockchain = SpvBlockchain(peer, blockSyncer, accountStateSyncer, transactionSender, storage, transactionsProvider, network, rpcApiProvider)
+            val spvBlockchain = SpvBlockchain(peer, blockSyncer, accountStateSyncer, transactionSender, storage, network, rpcApiProvider)
 
             peer.listener = spvBlockchain
             blockSyncer.listener = spvBlockchain

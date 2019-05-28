@@ -13,7 +13,6 @@ import java.math.BigInteger
 
 class ApiBlockchain(
         private val storage: IApiStorage,
-        private val transactionsProvider: ITransactionsProvider,
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
         private val transactionBuilder: TransactionBuilder) : IBlockchain {
@@ -28,10 +27,6 @@ class ApiBlockchain(
 
     override val balance: BigInteger?
         get() = storage.getBalance()
-
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>> {
-        return storage.getTransactions(fromHash, limit)
-    }
 
     override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced()
         private set(value) {
@@ -59,8 +54,7 @@ class ApiBlockchain(
         return rpcApiProvider.getTransactionCount()
                 .flatMap { nonce ->
                     send(rawTransaction, nonce)
-                }.doOnSuccess { transaction ->
-                    updateTransactions(listOf(transaction))
+                }.doOnSuccess {
                     sync()
                 }
     }
@@ -152,26 +146,12 @@ class ApiBlockchain(
                 .subscribe({ result ->
                     updateLastBlockHeight(result.first)
                     updateBalance(result.second)
-                    refreshTransactions()
+
+                    syncState = EthereumKit.SyncState.Synced()
                 }, {
                     it?.printStackTrace()
                     syncState = EthereumKit.SyncState.NotSynced()
                 }).let {
-                    disposables.add(it)
-                }
-    }
-
-    private fun refreshTransactions() {
-        val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight(false) ?: 0
-
-        transactionsProvider.getTransactions(lastTransactionBlockHeight + 1)
-                .subscribeOn(Schedulers.io())
-                .subscribe({ transactions ->
-                    updateTransactions(transactions)
-                    syncState = EthereumKit.SyncState.Synced()
-                }, {
-                    syncState = EthereumKit.SyncState.NotSynced()
-                })?.let {
                     disposables.add(it)
                 }
     }
@@ -186,11 +166,6 @@ class ApiBlockchain(
         listener?.onUpdateBalance(balance)
     }
 
-    private fun updateTransactions(ethereumTransactions: List<EthereumTransaction>) {
-        storage.saveTransactions(ethereumTransactions)
-        listener?.onUpdateTransactions(ethereumTransactions.filter { it.input.isEmpty() })
-    }
-
     open class ApiException : Exception() {
         class InvalidData : ApiException()
     }
@@ -199,10 +174,9 @@ class ApiBlockchain(
         fun getInstance(storage: IApiStorage,
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
-                        rpcApiProvider: IRpcApiProvider,
-                        transactionsProvider: ITransactionsProvider): ApiBlockchain {
+                        rpcApiProvider: IRpcApiProvider): ApiBlockchain {
 
-            return ApiBlockchain(storage, transactionsProvider, rpcApiProvider, transactionSigner, transactionBuilder)
+            return ApiBlockchain(storage, rpcApiProvider, transactionSigner, transactionBuilder)
         }
     }
 

@@ -6,7 +6,7 @@ class PeerGroupTest : Spek({
     lateinit var peerGroup: PeerGroup
 
     val listener = mock(PeerGroup.Listener::class.java)
-    val storage = mock(SpvRoomStorage::class.java)
+    val storage = mock(SpvStorage::class.java)
     val peerProvider = mock(PeerProvider::class.java)
     val blockValidator = mock(BlockValidator::class.java)
     val blockHelper = mock(BlockHelper::class.java)
