@@ -43,9 +43,9 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
     private fun onSyncStateUpdate(syncState: EthereumKit.SyncState) {
         when (syncState) {
-            EthereumKit.SyncState.NotSynced -> state.syncState = NotSynced
-            EthereumKit.SyncState.Syncing -> state.syncState = Syncing
-            EthereumKit.SyncState.Synced -> {
+            is EthereumKit.SyncState.NotSynced -> state.syncState = NotSynced
+            is EthereumKit.SyncState.Syncing -> state.syncState = Syncing
+            is EthereumKit.SyncState.Synced -> {
                 state.syncState = Syncing
                 balanceManager.sync()
             }

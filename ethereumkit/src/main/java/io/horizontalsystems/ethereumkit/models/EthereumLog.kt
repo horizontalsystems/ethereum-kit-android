@@ -13,7 +13,7 @@ data class EthereumLog(
         val transactionHash: String,
         val transactionIndex: Int,
 
-        var timestamp: Long?) {
+        var timestamp: Long? = null) {
 
     override fun equals(other: Any?): Boolean {
         if (other !is EthereumLog)

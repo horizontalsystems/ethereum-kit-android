@@ -33,7 +33,7 @@ class ApiBlockchain(
         return storage.getTransactions(fromHash, limit)
     }
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced
+    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced()
         private set(value) {
             if (field != value) {
                 field = value
@@ -139,10 +139,10 @@ class ApiBlockchain(
             return
         }
 
-        if (syncState == EthereumKit.SyncState.Syncing) {
+        if (syncState is EthereumKit.SyncState.Syncing) {
             return
         }
-        syncState = EthereumKit.SyncState.Syncing
+        syncState = EthereumKit.SyncState.Syncing()
 
         Single.zip(
                 rpcApiProvider.getLastBlockHeight(),
@@ -155,7 +155,7 @@ class ApiBlockchain(
                     refreshTransactions()
                 }, {
                     it?.printStackTrace()
-                    syncState = EthereumKit.SyncState.NotSynced
+                    syncState = EthereumKit.SyncState.NotSynced()
                 }).let {
                     disposables.add(it)
                 }
@@ -168,9 +168,9 @@ class ApiBlockchain(
                 .subscribeOn(Schedulers.io())
                 .subscribe({ transactions ->
                     updateTransactions(transactions)
-                    syncState = EthereumKit.SyncState.Synced
+                    syncState = EthereumKit.SyncState.Synced()
                 }, {
-                    syncState = EthereumKit.SyncState.NotSynced
+                    syncState = EthereumKit.SyncState.NotSynced()
                 })?.let {
                     disposables.add(it)
                 }

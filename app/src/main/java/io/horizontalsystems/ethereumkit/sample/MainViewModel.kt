@@ -24,7 +24,7 @@ class MainViewModel : ViewModel() {
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
     private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
     private val contractDecimal = 28
-    private val networkType: NetworkType = NetworkType.Ropsten
+    private val networkType: NetworkType = NetworkType.MainNet
 
     private val disposables = CompositeDisposable()
 
@@ -59,7 +59,7 @@ class MainViewModel : ViewModel() {
         val privateKey = hdWallet.privateKey(0, 0, true).privKey
         val nodePrivateKey = hdWallet.privateKey(102, 102, true).privKey
 
-        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, infuraCredentials, etherscanKey, "unique-wallet-id")
+        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.GethSyncMode(), networkType, infuraCredentials, etherscanKey, "unique-wallet-id")
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
         erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "Max Token", "MXT", contractAddress, contractDecimal)

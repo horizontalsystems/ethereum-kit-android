@@ -51,7 +51,7 @@ class SpvBlockchain(private val peer: IPeer,
         TODO("not implemented")
     }
 
-    override var syncState = EthereumKit.SyncState.NotSynced
+    override var syncState = EthereumKit.SyncState.NotSynced()
 
     override val lastBlockHeight: Long?
         get() = storage.getLastBlockHeader()?.height

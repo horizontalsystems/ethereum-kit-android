@@ -4,6 +4,7 @@ import android.content.Context
 import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiRoomStorage
+import io.horizontalsystems.ethereumkit.geth.GethBlockchain
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
@@ -156,9 +157,9 @@ class EthereumKit(
     }
 
     sealed class SyncState {
-        object Synced : SyncState()
-        object NotSynced : SyncState()
-        object Syncing : SyncState()
+        class Synced : SyncState()
+        class NotSynced : SyncState()
+        class Syncing(val progress: Double? = null) : SyncState()
     }
 
     companion object {
@@ -186,6 +187,13 @@ class EthereumKit(
                     val storage = SpvRoomStorage(spvDatabase)
 
                     blockchain = SpvBlockchain.getInstance(storage, transactionsProvider, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
+                }
+                is SyncMode.GethSyncMode -> {
+                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
+                    val storage = ApiRoomStorage(apiDatabase)
+                    val nodeDirectory = context.filesDir.path + "/gethNode"
+
+                    blockchain = GethBlockchain.getInstance(nodeDirectory, network, storage, transactionSigner, transactionBuilder, address)
                 }
             }
 
@@ -222,13 +230,14 @@ class EthereumKit(
     }
 
     sealed class WordsSyncMode {
-        class SpvSyncMode : WordsSyncMode()
         class ApiSyncMode : WordsSyncMode()
+        class SpvSyncMode : WordsSyncMode()
     }
 
     sealed class SyncMode {
-        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
         class ApiSyncMode : SyncMode()
+        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
+        class GethSyncMode : SyncMode()
     }
 
     data class InfuraCredentials(val projectId: String, val secretKey: String?)
