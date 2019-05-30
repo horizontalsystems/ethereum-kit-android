@@ -18,6 +18,7 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.*
 import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
+import org.slf4j.LoggerFactory
 import java.math.BigInteger
 
 class SpvBlockchain(private val peer: IPeer,
@@ -29,6 +30,7 @@ class SpvBlockchain(private val peer: IPeer,
                     private val rpcApiProvider: IRpcApiProvider) : IBlockchain, IPeerListener,
         BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
 
+    private val logger = LoggerFactory.getLogger(SpvBlockchain::class.java)
 
     private val sendingTransactions: MutableMap<Int, PublishSubject<EthereumTransaction>> = HashMap()
 
@@ -37,7 +39,7 @@ class SpvBlockchain(private val peer: IPeer,
     override var listener: IBlockchainListener? = null
 
     override fun start() {
-        println("SpvBlockchain started")
+        logger.debug("SpvBlockchain started")
 
         peer.connect()
     }
@@ -104,13 +106,13 @@ class SpvBlockchain(private val peer: IPeer,
     //------------BlockSyncer.Listener--------------
 
     override fun onSuccess(taskPerformer: ITaskPerformer, lastBlockHeader: BlockHeader) {
-        println("Blocks synced successfully up to ${lastBlockHeader.height}. Starting account state sync...")
+        logger.debug("Blocks synced successfully up to ${lastBlockHeader.height}. Starting account state sync...")
 
         accountStateSyncer.sync(taskPerformer, lastBlockHeader)
     }
 
     override fun onFailure(error: Throwable) {
-        println("Blocks sync failed: ${error.message}")
+        logger.debug("Blocks sync failed: ${error.message}")
     }
 
     override fun onUpdate(lastBlockHeader: BlockHeader) {
@@ -164,7 +166,7 @@ class SpvBlockchain(private val peer: IPeer,
             peer.register(taskHandler = blockHeadersHandler)
             peer.register(messageHandler = blockHeadersHandler)
 
-            val accountStateHandler= AccountStateTaskHandler(accountStateSyncer)
+            val accountStateHandler = AccountStateTaskHandler(accountStateSyncer)
             peer.register(taskHandler = accountStateHandler)
             peer.register(messageHandler = accountStateHandler)
 

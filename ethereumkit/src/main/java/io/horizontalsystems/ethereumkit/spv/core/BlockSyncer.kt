@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.AnnouncedBlockHandler
 import io.horizontalsystems.ethereumkit.spv.net.handlers.BlockHeadersTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.handlers.HandshakeTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.tasks.BlockHeadersTask
+import org.slf4j.LoggerFactory
 
 class BlockSyncer(private val storage: ISpvStorage,
                   private val blockHelper: BlockHelper,
@@ -20,6 +21,8 @@ class BlockSyncer(private val storage: ISpvStorage,
 
         fun onUpdate(lastBlockHeader: BlockHeader)
     }
+
+    private val logger = LoggerFactory.getLogger(BlockSyncer::class.java)
 
     var listener: Listener? = null
     private var syncing = false
@@ -35,7 +38,7 @@ class BlockSyncer(private val storage: ISpvStorage,
             when (error) {
                 is BlockValidator.ForkDetected -> {
 
-                    println("Fork detected! Requesting reversed headers for block ${blockHeader.height}")
+                    logger.debug("Fork detected! Requesting reversed headers for block ${blockHeader.height}")
 
                     peer.add(BlockHeadersTask(blockHeader, headersLimit, true))
                 }
@@ -57,14 +60,14 @@ class BlockSyncer(private val storage: ISpvStorage,
 
     private fun onUpdate(taskPerformer: ITaskPerformer, bestBlockHash: ByteArray, bestBlockHeight: Long) {
         if (syncing) {
-            println("BlockSyncer: already syncing")
+            logger.debug("BlockSyncer: already syncing")
             return
         }
 
         val lastBlockHeader = blockHelper.lastBlockHeader
 
         if (lastBlockHeader.height > bestBlockHeight || (lastBlockHeader.height == bestBlockHeight && lastBlockHeader.hashHex.contentEquals(bestBlockHash))) {
-            println("BlockSyncer: no sync required")
+            logger.debug("BlockSyncer: no sync required")
             return
         }
 
@@ -75,7 +78,7 @@ class BlockSyncer(private val storage: ISpvStorage,
 
     @Throws(PeerError::class)
     private fun handleFork(taskPerformer: ITaskPerformer, blockHeaders: List<BlockHeader>, fromBlockHeader: BlockHeader) {
-        println("Received reversed block headers")
+        logger.debug("Received reversed block headers")
 
         val localHeaders = storage.getBlockHeadersReversed(fromBlockHeader.height, blockHeaders.size)
 
@@ -83,7 +86,7 @@ class BlockSyncer(private val storage: ISpvStorage,
             blockHeaders.any { it.hashHex.contentEquals(localHeader.hashHex) && it.height == localHeader.height }
         } ?: throw PeerError.InvalidForkedPeer()
 
-        println("Found forked block header ${forkedHeader.height}")
+        logger.debug("Found forked block header ${forkedHeader.height}")
 
         taskPerformer.add(BlockHeadersTask(forkedHeader, headersLimit))
     }
