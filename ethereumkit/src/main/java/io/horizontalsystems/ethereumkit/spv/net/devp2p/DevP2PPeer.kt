@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessag
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
+import org.slf4j.LoggerFactory
 
 class DevP2PPeer(val devP2PConnection: DevP2PConnection,
                  val capabilityHelper: CapabilityHelper,
@@ -20,6 +21,8 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
         fun didDisconnect(error: Throwable?)
         fun didReceive(message: IInMessage)
     }
+
+    private val logger = LoggerFactory.getLogger(DevP2PPeer::class.java)
 
     var listener: Listener? = null
 
@@ -74,7 +77,7 @@ class DevP2PPeer(val devP2PConnection: DevP2PConnection,
     }
 
     override fun didReceive(message: IInMessage) {
-        println("<<<<<<< $message \n")
+        logger.debug("<<<<<<< {} \n", message)
         try {
             when (message) {
                 is HelloMessage -> handle(message)

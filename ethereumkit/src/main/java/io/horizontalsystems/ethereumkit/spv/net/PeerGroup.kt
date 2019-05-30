@@ -7,7 +7,9 @@ class PeerGroup(private val peerProvider: PeerProvider) : IPeer, IPeerListener {
     private val peers: MutableList<IPeer> = ArrayList()
 
     init {
-        peers.add(peerProvider.getPeer())
+        val peer = peerProvider.getPeer()
+        peer.listener = this
+        peers.add(peer)
     }
 
     //-----------------IPeer-------------------

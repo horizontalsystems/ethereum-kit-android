@@ -11,6 +11,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import org.ethereum.geth.*
+import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 
@@ -21,8 +22,9 @@ class GethBlockchain private constructor(private val node: Node,
                                          private val transactionBuilder: TransactionBuilder,
                                          private val address: Address) : IBlockchain, NewHeadHandler {
 
-    private val context: Context = Geth.newContext()
+    private val logger = LoggerFactory.getLogger(GethBlockchain::class.java)
 
+    private val context: Context = Geth.newContext()
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val disposables = CompositeDisposable()
 
@@ -71,7 +73,7 @@ class GethBlockchain private constructor(private val node: Node,
             onUpdateBalance(balance)
 
         } catch (error: Exception) {
-            println("Could not fetch account state ${error.message}")
+            logger.error("Could not fetch account state", error)
         }
     }
 
@@ -83,7 +85,7 @@ class GethBlockchain private constructor(private val node: Node,
     private fun sendInternal(rawTransaction: RawTransaction): EthereumTransaction {
         val nonce = node.ethereumClient.getNonceAt(context, address, -1)
 
-        println("NONCE: $nonce")
+        logger.debug("NONCE: $nonce")
 
         val toAccount = Address(rawTransaction.to)
 
@@ -134,7 +136,7 @@ class GethBlockchain private constructor(private val node: Node,
     }
 
     private fun getLogsInternal(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): List<EthereumLog> {
-        println("Get logs: ${address?.toHexString()} $fromBlock -- $toBlock, topics: ${topics.size}")
+        logger.debug("Get logs: ${address?.toHexString()} $fromBlock -- $toBlock, topics: ${topics.size}")
 
         val addresses = Addresses()
         addresses.append(Address(address))
@@ -155,7 +157,7 @@ class GethBlockchain private constructor(private val node: Node,
 
         val ethLogs = node.ethereumClient.filterLogs(context, query)
 
-        println("Eth logs result: ${ethLogs.size()}")
+        logger.debug("Eth logs result: ${ethLogs.size()}")
 
         val logs: MutableList<EthereumLog> = mutableListOf()
 
@@ -171,13 +173,13 @@ class GethBlockchain private constructor(private val node: Node,
             }
         }
 
-        println("Logs result: ${ethLogs.size()}")
+        logger.debug("Logs result: ${ethLogs.size()}")
 
         return logs
     }
 
     private fun callInternal(contractAddress: ByteArray, data: ByteArray, blockHeight: Long?): ByteArray {
-        println("Calling ${contractAddress.toHexString()}, blockHeight: $blockHeight")
+        logger.debug("Calling ${contractAddress.toHexString()}, blockHeight: $blockHeight")
 
         val message = CallMsg()
         message.to = Address(contractAddress)
@@ -185,7 +187,7 @@ class GethBlockchain private constructor(private val node: Node,
 
         val resultData = node.ethereumClient.callContract(context, message, blockHeight ?: -1)
 
-        println("Call result: ${resultData.toHexString()}")
+        logger.debug("Call result: ${resultData.toHexString()}")
 
         return resultData
     }
@@ -197,16 +199,16 @@ class GethBlockchain private constructor(private val node: Node,
     override fun start() {
         try {
             node.start()
-            println("GethBlockchain: started")
+            logger.debug("GethBlockchain: started")
         } catch (error: Exception) {
-            println("GethBlockchain: failed to start node: ${error.message})")
+            logger.error("GethBlockchain: failed to start node", error)
         }
 
         try {
             node.ethereumClient.subscribeNewHead(context, this, 16)
-            println("GethBlockchain: subscribed to new headers")
+            logger.debug("GethBlockchain: subscribed to new headers")
         } catch (error: Exception) {
-            println("GethBlockchain: failed to subscribe to new headers: ${error.message})")
+            logger.error("GethBlockchain: failed to subscribe to new headers", error)
         }
     }
 
@@ -217,9 +219,9 @@ class GethBlockchain private constructor(private val node: Node,
     override fun stop() {
         try {
             node.stop()
-            println("GethBlockchain: stopped")
+            logger.debug("GethBlockchain: stopped")
         } catch (error: Exception) {
-            println("GethBlockchain: failed to stop node: ${error.message}")
+            logger.error("GethBlockchain: failed to stop node", error)
         }
     }
 
@@ -245,8 +247,7 @@ class GethBlockchain private constructor(private val node: Node,
                 emitter.onSuccess(transaction)
 
             } catch (error: Exception) {
-                error.printStackTrace()
-                println("Send error: ${error.message}")
+                logger.error("Send error", error)
                 emitter.onError(error)
             }
         }
@@ -259,8 +260,7 @@ class GethBlockchain private constructor(private val node: Node,
                 emitter.onSuccess(logs)
 
             } catch (error: Exception) {
-                error.printStackTrace()
-                println("GetLogs error: ${error.message}")
+                logger.error("GetLogs error", error)
                 emitter.onError(error)
             }
         }
@@ -277,8 +277,7 @@ class GethBlockchain private constructor(private val node: Node,
                 emitter.onSuccess(callResult)
 
             } catch (error: Exception) {
-                error.printStackTrace()
-                println("Call error: ${error.message}")
+                logger.error("Call error", error)
                 emitter.onError(error)
             }
         }
@@ -293,7 +292,7 @@ class GethBlockchain private constructor(private val node: Node,
     }
 
     override fun onError(error: String?) {
-        println("New head error: $error")
+        logger.error("NewHeadHandler error", error)
     }
 
     companion object {

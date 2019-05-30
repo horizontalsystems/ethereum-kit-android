@@ -2,7 +2,6 @@ package io.horizontalsystems.ethereumkit.sample
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
-import android.util.Log
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
@@ -14,9 +13,12 @@ import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
 class MainViewModel : ViewModel() {
+
+    private val logger = LoggerFactory.getLogger(MainViewModel::class.java)
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(
             projectId = "2a1306f1d12f4c109a4d4fb9be46b02e",
@@ -193,7 +195,7 @@ class MainViewModel : ViewModel() {
                     //success
                     sendStatus.value = null
                 }, {
-                    Log.e("MainViewModel", "send failed ${it.message}")
+                    logger.error("Ether send failed", it)
                     sendStatus.value = it
                 })?.let { disposables.add(it) }
 
@@ -211,7 +213,7 @@ class MainViewModel : ViewModel() {
                     //success
                     sendStatus.value = null
                 }, {
-                    Log.e("MainViewModel", "send failed ${it.message}")
+                    logger.error("Erc20 send failed", it)
                     sendStatus.value = it
                 })?.let { disposables.add(it) }
     }

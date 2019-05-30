@@ -10,6 +10,7 @@ import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.DisconnectMessag
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.HelloMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PingMessage
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.messages.PongMessage
+import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
 class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConnection.Listener {
@@ -19,6 +20,8 @@ class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConn
         fun didDisconnect(error: Throwable?)
         fun didReceive(message: IInMessage)
     }
+
+    private val logger = LoggerFactory.getLogger(DevP2PConnection::class.java)
 
     companion object {
         private val devP2PPacketTypesMap: MutableMap<Int, KClass<out IMessage>> = hashMapOf(
@@ -64,7 +67,8 @@ class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConn
     }
 
     fun send(message: IOutMessage) {
-        println(">>>>>>>> $message \n")
+        logger.debug(">>>>>>>> {} \n", message)
+
         for (entry in packetTypesMap.entries) {
             if (entry.value == message::class) {
                 frameConnection.send(entry.key, message.encoded())

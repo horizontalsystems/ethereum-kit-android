@@ -9,8 +9,11 @@ import io.horizontalsystems.ethereumkit.spv.net.Node
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.Capability
 import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
 import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
+import org.slf4j.LoggerFactory
 
 class LESPeer(private val devP2PPeer: DevP2PPeer) : IPeer, DevP2PPeer.Listener, ITaskHandlerRequester {
+
+    private val logger = LoggerFactory.getLogger(LESPeer::class.java)
 
     private val taskHandlers: MutableList<ITaskHandler> = ArrayList()
     private val messageHandlers: MutableList<IMessageHandler> = ArrayList()
@@ -44,19 +47,19 @@ class LESPeer(private val devP2PPeer: DevP2PPeer) : IPeer, DevP2PPeer.Listener, 
             }
         }
 
-        println("No handler for task: ${task.javaClass.name}")
+        logger.debug("No handler for task: ${task.javaClass.name}")
     }
 
     //-----------DevP2PPeer.Listener methods------------
 
     override fun didConnect() {
-        println("LESPeer -> didConnect\n")
+        logger.debug("LESPeer -> didConnect\n")
 
         listener?.didConnect(this)
     }
 
     override fun didDisconnect(error: Throwable?) {
-        println("LESPeer -> didDisconnect: $error")
+        logger.debug("didDisconnect", error)
         listener?.didDisconnect(this, error)
     }
 
