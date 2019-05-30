@@ -22,12 +22,17 @@ class PeerProvider(val connectionKey: ECKey,
                  port = 30303,
                  discoveryPort = 30301)*/
 
+/*
         val node = Node(id = "f9a9a1b2f68dc119b0f44ba579cbc40da1f817ddbdb1045a57fa8159c51eb0f826786ce9e8b327d04c9ad075f2c52da90e9f84ee4dde3a2a911bb1270ef23f6d".hexStringToByteArray(),
                 host = "eth-testnet.horizontalsystems.xyz",
                 port = 20303,
                 discoveryPort = 30301)
+*/
 
-        val lastBlockHeader = storage.getLastBlockHeader() ?: network.checkpointBlock
+        val node = Node(id = "9cfc66931bd30d316b57c4e761a58110d882fc0a6387e26897499be4263cac7cbdb1a8ba43088b8b279ffa84db6c331e7968875191baeecf9d87c1221feec1eb".hexStringToByteArray(),
+                host = "212.112.123.197",
+                port = 30303,
+                discoveryPort = 30301)
 
         return LESPeer.getInstance(connectionKey, node)
     }
