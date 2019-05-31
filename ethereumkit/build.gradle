@@ -55,7 +55,9 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
     implementation 'com.google.code.gson:gson:2.8.5'
 
-    implementation 'org.ethereum:geth:1.8.11';
+    //Geth mobile
+    implementation project(path: ':geth-android')
+//    implementation 'org.ethereum:geth:1.8.11';
 
     // Room
     def room_version = "1.1.1"
