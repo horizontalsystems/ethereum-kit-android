@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.rlp
 
+import io.horizontalsystems.ethereumkit.core.toByteArray
 import io.horizontalsystems.ethereumkit.spv.core.toBytesNoLeadZeroes
 import io.horizontalsystems.ethereumkit.spv.core.toInt
 import org.spongycastle.util.Arrays.concatenate
@@ -74,11 +75,8 @@ object RLP {
         else -> byteArrayOf((OFFSET_SHORT_ITEM + 4).toByte(), singleInt.ushr(24).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
     }
 
-    fun encodeLong(singleInt: Long) = when (singleInt) {
-        singleInt and 0xFF -> encodeByte(singleInt.toByte())
-        singleInt and 0xFFFF -> encodeShort(singleInt.toShort())
-        singleInt and 0xFFFFFF -> byteArrayOf((OFFSET_SHORT_ITEM + 3).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
-        else -> byteArrayOf((OFFSET_SHORT_ITEM + 4).toByte(), singleInt.ushr(24).toByte(), singleInt.ushr(16).toByte(), singleInt.ushr(8).toByte(), singleInt.toByte())
+    fun encodeLong(longValue: Long): ByteArray {
+        return encodeElement(longValue.toByteArray())
     }
 
     fun encodeByte(singleByte: Byte) = when {

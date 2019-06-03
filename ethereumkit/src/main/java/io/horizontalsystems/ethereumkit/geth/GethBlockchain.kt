@@ -67,9 +67,12 @@ class GethBlockchain private constructor(private val node: Node,
 
     private fun syncAccountState() {
         try {
+            logger.debug("syncAccountState")
+
             val gethBalance = node.ethereumClient.getBalanceAt(context, address, -1).string()
             val balance = BigInteger(gethBalance)
 
+            logger.debug("balance: $balance")
             onUpdateBalance(balance)
 
         } catch (error: Exception) {
@@ -85,17 +88,26 @@ class GethBlockchain private constructor(private val node: Node,
     private fun sendInternal(rawTransaction: RawTransaction): EthereumTransaction {
         val nonce = node.ethereumClient.getNonceAt(context, address, -1)
 
-        logger.debug("NONCE: $nonce")
 
         val toAccount = Address(rawTransaction.to)
 
-        val amount = BigInt(rawTransaction.value.toLong())
+        val amount = BigInt(0)
+        amount.setString(rawTransaction.value.toString(10), 10)
 
         val gethTransaction = Transaction(nonce, toAccount, amount, rawTransaction.gasLimit,
                 BigInt(rawTransaction.gasPrice), rawTransaction.data)
 
         val signatureData = transactionSigner.sign(rawTransaction, nonce)
         val signedTransaction = gethTransaction.withSignature(signatureData, BigInt(network.id.toLong()))
+
+        logger.debug("signatureData: ${signatureData.toHexString()}")
+
+        logger.debug("nonce: ${signedTransaction.nonce}")
+        logger.debug("toAccount: ${signedTransaction.to.hex}")
+        logger.debug("value: ${signedTransaction.value}")
+        logger.debug("gasLimit: ${signedTransaction.gas}")
+        logger.debug("gasPrice: ${signedTransaction.gasPrice}")
+        logger.debug("data: ${signedTransaction.data}")
 
         node.ethereumClient.sendTransaction(context, signedTransaction)
 
@@ -115,10 +127,11 @@ class GethBlockchain private constructor(private val node: Node,
 
         val topics: MutableList<ByteArray> = mutableListOf()
 
-        for (i in 0..gethTopics.size()) {
+        for (i in 0 until gethTopics.size()) {
             val gethTopic = try {
                 gethTopics.get(i)
             } catch (error: Exception) {
+                logger.error("gethTopics.get($i) error", error)
                 return null
             }
 
@@ -141,12 +154,14 @@ class GethBlockchain private constructor(private val node: Node,
         val addresses = Addresses()
         addresses.append(Address(address))
 
-        val gethTopics = Topics()
+        val gethTopics = Topics(topics.size.toLong())
 
         topics.forEachIndexed { index, topic ->
-            val hashes = Hashes()
-            hashes.append(Hash(topic))
-            gethTopics.set(index.toLong(), hashes)
+            topic?.let {
+                val hashes = Hashes()
+                hashes.append(Hash(topic))
+                gethTopics.set(index.toLong(), hashes)
+            }
         }
 
         val query = FilterQuery()
@@ -161,10 +176,11 @@ class GethBlockchain private constructor(private val node: Node,
 
         val logs: MutableList<EthereumLog> = mutableListOf()
 
-        for (i in 0..ethLogs.size()) {
+        for (i in 0 until ethLogs.size()) {
             val log = try {
                 ethLogs.get(i)
             } catch (error: Exception) {
+                logger.error("ethLogs.get($i) error", error)
                 null
             }
 
@@ -173,7 +189,7 @@ class GethBlockchain private constructor(private val node: Node,
             }
         }
 
-        logger.debug("Logs result: ${ethLogs.size()}")
+        logger.debug("Logs result: ${logs.size}")
 
         return logs
     }

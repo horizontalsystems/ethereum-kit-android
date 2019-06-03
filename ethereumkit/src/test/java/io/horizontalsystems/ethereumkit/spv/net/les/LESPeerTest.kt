@@ -1,19 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.les
 
-import com.nhaarman.mockito_kotlin.*
-import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
-import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.network.INetwork
-import io.horizontalsystems.ethereumkit.spv.net.IPeerListener
-import io.horizontalsystems.ethereumkit.spv.net.devp2p.DevP2PPeer
-import io.horizontalsystems.ethereumkit.spv.net.les.messages.*
-import org.mockito.Mockito.mock
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
-import java.math.BigInteger
-import java.util.*
-
+/*
 class LESPeerTest : Spek({
 
     lateinit var lesPeer: LESPeer
@@ -345,3 +332,4 @@ class LESPeerTest : Spek({
 
 
 })
+*/
