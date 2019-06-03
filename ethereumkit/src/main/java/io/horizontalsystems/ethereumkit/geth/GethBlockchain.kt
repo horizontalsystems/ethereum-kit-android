@@ -88,20 +88,26 @@ class GethBlockchain private constructor(private val node: Node,
     private fun sendInternal(rawTransaction: RawTransaction): EthereumTransaction {
         val nonce = node.ethereumClient.getNonceAt(context, address, -1)
 
-        logger.debug("NONCE: $nonce")
 
         val toAccount = Address(rawTransaction.to)
 
         val amount = BigInt(0)
         amount.setString(rawTransaction.value.toString(10), 10)
 
-        logger.debug("geth amount: $amount")
-
         val gethTransaction = Transaction(nonce, toAccount, amount, rawTransaction.gasLimit,
                 BigInt(rawTransaction.gasPrice), rawTransaction.data)
 
         val signatureData = transactionSigner.sign(rawTransaction, nonce)
         val signedTransaction = gethTransaction.withSignature(signatureData, BigInt(network.id.toLong()))
+
+        logger.debug("signatureData: ${signatureData.toHexString()}")
+
+        logger.debug("nonce: ${signedTransaction.nonce}")
+        logger.debug("toAccount: ${signedTransaction.to.hex}")
+        logger.debug("value: ${signedTransaction.value}")
+        logger.debug("gasLimit: ${signedTransaction.gas}")
+        logger.debug("gasPrice: ${signedTransaction.gasPrice}")
+        logger.debug("data: ${signedTransaction.data}")
 
         node.ethereumClient.sendTransaction(context, signedTransaction)
 
