@@ -11,6 +11,8 @@ import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.logging.HttpLoggingInterceptor.Level
+import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -21,6 +23,8 @@ import java.math.BigInteger
 
 class InfuraService(private val networkType: NetworkType,
                     private val infuraCredentials: InfuraCredentials) {
+
+    private val logger = LoggerFactory.getLogger(InfuraService::class.java)
 
     private val service: InfuraServiceAPI
 
@@ -35,8 +39,9 @@ class InfuraService(private val networkType: NetworkType,
         }
 
     init {
-        val logger = HttpLoggingInterceptor()
-                .setLevel(HttpLoggingInterceptor.Level.BODY)
+        val logger = HttpLoggingInterceptor {
+            logger.trace(it)
+        }.setLevel(Level.BODY)
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
