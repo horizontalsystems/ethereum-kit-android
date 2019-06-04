@@ -5,7 +5,6 @@ import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
-import io.horizontalsystems.ethereumkit.geth.GethBlockchain
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
@@ -197,6 +196,7 @@ class EthereumKit(
                 is SyncMode.ApiSyncMode -> {
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
+
                     blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider)
                 }
                 is SyncMode.SpvSyncMode -> {
@@ -207,11 +207,12 @@ class EthereumKit(
                     blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
                 }
                 is SyncMode.GethSyncMode -> {
-                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
-                    val storage = ApiStorage(apiDatabase)
-                    val nodeDirectory = context.filesDir.path + "/gethNode"
-
-                    blockchain = GethBlockchain.getInstance(nodeDirectory, network, storage, transactionSigner, transactionBuilder, address)
+                    throw Exception("Geth Sync Mode not supported!")
+//                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
+//                    val storage = ApiStorage(apiDatabase)
+//                    val nodeDirectory = context.filesDir.path + "/gethNode"
+//
+//                    blockchain = GethBlockchain.getInstance(nodeDirectory, network, storage, transactionSigner, transactionBuilder, address)
                 }
             }
 
