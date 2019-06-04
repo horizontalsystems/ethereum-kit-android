@@ -1,1 +1,1 @@
-include ':app', ':ethereumkit', ':erc20kit', ':geth-android'
+include ':app', ':ethereumkit', ':erc20kit'
