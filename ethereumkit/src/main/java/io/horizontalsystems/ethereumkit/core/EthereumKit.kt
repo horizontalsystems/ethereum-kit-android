@@ -226,6 +226,7 @@ class EthereumKit(
             val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address)
 
             blockchain.listener = ethereumKit
+            transactionManager.listener = ethereumKit
 
             return ethereumKit
         }

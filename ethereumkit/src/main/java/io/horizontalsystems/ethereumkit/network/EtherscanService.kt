@@ -7,6 +7,7 @@ import io.horizontalsystems.ethereumkit.core.toHexString
 import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -15,6 +16,8 @@ import retrofit2.http.Query
 
 class EtherscanService(private val networkType: NetworkType,
                        private val apiKey: String) {
+
+    private val logger = LoggerFactory.getLogger(EtherscanService::class.java)
 
     private val service: EtherscanServiceAPI
 
@@ -29,8 +32,9 @@ class EtherscanService(private val networkType: NetworkType,
         }
 
     init {
-        val logger = HttpLoggingInterceptor()
-                .setLevel(HttpLoggingInterceptor.Level.BASIC)
+        val logger = HttpLoggingInterceptor {
+            logger.trace(it)
+        }.setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(logger)

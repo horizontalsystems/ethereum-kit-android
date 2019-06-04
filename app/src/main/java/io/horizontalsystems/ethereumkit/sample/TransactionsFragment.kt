@@ -97,6 +97,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         var value = """
             - #$index
             - Tx Hash: ${tx.transactionHash}
+            - Block Number: ${tx.blockHeight ?: "N/A"}
             - Tx Index: ${tx.transactionIndex}
             - Inter Tx Index: ${tx.interTransactionIndex}
             - Time: ${format.format(Date(tx.timestamp * 1000))}
@@ -106,7 +107,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         """
 
         if (lastBlockHeight > 0)
-            value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it } ?: 0}"
+            value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it + 1 } ?: 0}"
 
         summary.text = value.trimIndent()
     }

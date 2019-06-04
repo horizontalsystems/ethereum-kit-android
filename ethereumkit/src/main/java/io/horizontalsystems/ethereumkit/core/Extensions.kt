@@ -33,6 +33,13 @@ fun ByteArray.toEIP55Address(): String {
     return EIP55.encode(this)
 }
 
+// Converts positive long values to a byte array without leading zero byte (for sign bit)
 fun Long.toByteArray(): ByteArray {
-    return this.toBigInteger().toByteArray()
+    var array = this.toBigInteger().toByteArray()
+    if (array[0].toInt() == 0) {
+        val tmp = ByteArray(array.size - 1)
+        System.arraycopy(array, 1, tmp, 0, tmp.size)
+        array = tmp
+    }
+    return array
 }
