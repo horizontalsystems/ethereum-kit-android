@@ -25,9 +25,9 @@ class TransactionManager(private val storage: ITransactionStorage,
 
         transactionsProvider.getTransactions(lastTransactionBlockHeight + 1)
                 .subscribeOn(Schedulers.io())
-                .subscribe { transactions ->
+                .subscribe({ transactions ->
                     update(transactions)
-                }.let {
+                }, {}).let {
                     disposables.add(it)
                 }
     }

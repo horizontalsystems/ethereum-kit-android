@@ -41,17 +41,24 @@ class EthereumKit(
 
     private val gasLimit: Long = 21_000
 
+    private var started = false
+
     init {
         state.balance = blockchain.balance
         state.lastBlockHeight = blockchain.lastBlockHeight
     }
 
     fun start() {
+        if (started)
+            return
+        started = true
+
         blockchain.start()
         transactionManager.refresh()
     }
 
     fun stop() {
+        started = false
         blockchain.stop()
         state.clear()
     }
