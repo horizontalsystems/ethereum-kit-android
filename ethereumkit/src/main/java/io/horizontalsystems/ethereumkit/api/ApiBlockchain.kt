@@ -18,7 +18,6 @@ class ApiBlockchain(
         private val transactionBuilder: TransactionBuilder) : IBlockchain {
 
     private val disposables = CompositeDisposable()
-    private var started = false
 
     override var listener: IBlockchainListener? = null
 
@@ -37,7 +36,6 @@ class ApiBlockchain(
         }
 
     override fun start() {
-        started = true
         sync()
     }
 
@@ -46,7 +44,6 @@ class ApiBlockchain(
     }
 
     override fun stop() {
-        started = false
         disposables.clear()
     }
 
@@ -129,10 +126,6 @@ class ApiBlockchain(
     }
 
     private fun sync() {
-        if (!started) {
-            return
-        }
-
         if (syncState is EthereumKit.SyncState.Syncing) {
             return
         }
