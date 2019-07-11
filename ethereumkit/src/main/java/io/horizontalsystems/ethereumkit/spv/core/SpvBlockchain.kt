@@ -18,8 +18,8 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.*
 import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
+import java.util.logging.Logger
 
 class SpvBlockchain(private val peer: IPeer,
                     private val blockSyncer: BlockSyncer,
@@ -30,7 +30,7 @@ class SpvBlockchain(private val peer: IPeer,
                     private val rpcApiProvider: IRpcApiProvider) : IBlockchain, IPeerListener,
         BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
 
-    private val logger = LoggerFactory.getLogger(SpvBlockchain::class.java)
+    private val logger = Logger.getLogger("SpvBlockchain")
 
     private val sendingTransactions: MutableMap<Int, PublishSubject<EthereumTransaction>> = HashMap()
 
@@ -39,7 +39,7 @@ class SpvBlockchain(private val peer: IPeer,
     override var listener: IBlockchainListener? = null
 
     override fun start() {
-        logger.debug("SpvBlockchain started")
+        logger.info("SpvBlockchain started")
 
         peer.connect()
     }
@@ -106,13 +106,13 @@ class SpvBlockchain(private val peer: IPeer,
     //------------BlockSyncer.Listener--------------
 
     override fun onSuccess(taskPerformer: ITaskPerformer, lastBlockHeader: BlockHeader) {
-        logger.debug("Blocks synced successfully up to ${lastBlockHeader.height}. Starting account state sync...")
+        logger.info("Blocks synced successfully up to ${lastBlockHeader.height}. Starting account state sync...")
 
         accountStateSyncer.sync(taskPerformer, lastBlockHeader)
     }
 
     override fun onFailure(error: Throwable) {
-        logger.debug("Blocks sync failed: ${error.message}")
+        logger.info("Blocks sync failed: ${error.message}")
     }
 
     override fun onUpdate(lastBlockHeader: BlockHeader) {

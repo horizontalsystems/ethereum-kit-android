@@ -63,9 +63,6 @@ dependencies {
     implementation "android.arch.persistence.room:rxjava2:$room_version"
     kapt "android.arch.persistence.room:compiler:$room_version"
 
-    // Logging
-    implementation 'org.slf4j:slf4j-api:1.7.26'
-
     // Test helpers
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.mockito:mockito-core:2.23.0'
@@ -78,7 +75,6 @@ dependencies {
     testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:2.0.3"
     testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
-    testImplementation 'org.slf4j:slf4j-nop:1.7.26'
 
     // Android Instrumentation Test
     implementation 'com.android.support:support-annotations:28.0.0'
