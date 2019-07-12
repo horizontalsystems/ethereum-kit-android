@@ -13,12 +13,12 @@ import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import org.slf4j.LoggerFactory
 import java.math.BigDecimal
+import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
 
-    private val logger = LoggerFactory.getLogger(MainViewModel::class.java)
+    private val logger = Logger.getLogger("MainViewModel")
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(
             projectId = "2a1306f1d12f4c109a4d4fb9be46b02e",
@@ -195,7 +195,7 @@ class MainViewModel : ViewModel() {
                     //success
                     sendStatus.value = null
                 }, {
-                    logger.error("Ether send failed", it)
+                    logger.warning("Ether send failed: ${it.message}")
                     sendStatus.value = it
                 })?.let { disposables.add(it) }
 
@@ -213,7 +213,7 @@ class MainViewModel : ViewModel() {
                     //success
                     sendStatus.value = null
                 }, {
-                    logger.error("Erc20 send failed", it)
+                    logger.warning("Erc20 send failed: ${it.message}")
                     sendStatus.value = it
                 })?.let { disposables.add(it) }
     }

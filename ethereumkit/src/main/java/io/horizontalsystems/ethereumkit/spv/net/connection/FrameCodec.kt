@@ -5,11 +5,11 @@ import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP.rlpDecodeInt
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
-import org.slf4j.LoggerFactory
 import org.spongycastle.crypto.digests.KeccakDigest
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
+import java.util.logging.Logger
 
 class FrameCodec(private val secrets: Secrets,
                  private val frameCodecHelper: FrameCodecHelper = FrameCodecHelper(CryptoUtils),
@@ -17,7 +17,7 @@ class FrameCodec(private val secrets: Secrets,
                  private val dec: AESCipher = AESCipher(secrets.aes, false)
 ) {
 
-    private val logger = LoggerFactory.getLogger(FrameCodec::class.java)
+    private val logger = Logger.getLogger("FrameCodec")
 
     fun readFrame(inputStream: InputStream): Frame? {
         val headBuffer = ByteArray(32)
@@ -46,7 +46,7 @@ class FrameCodec(private val secrets: Secrets,
                 totalFrameSize = rlpDecodeInt(rlpList[2])
             }
             if (contextId > 0) {
-                logger.debug("+++++++ Multi-frame message received $contextId $totalFrameSize")
+                logger.info("+++++++ Multi-frame message received $contextId $totalFrameSize")
             }
         }
 

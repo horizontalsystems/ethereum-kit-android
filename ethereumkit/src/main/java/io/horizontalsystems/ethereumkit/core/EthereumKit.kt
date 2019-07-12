@@ -20,9 +20,9 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
-import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.util.logging.Logger
 
 class EthereumKit(
         private val blockchain: IBlockchain,
@@ -32,7 +32,7 @@ class EthereumKit(
         private val address: ByteArray,
         private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener, TransactionManager.Listener {
 
-    private val logger = LoggerFactory.getLogger(EthereumKit::class.java)
+    private val logger = Logger.getLogger("EthereumKit")
 
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
@@ -102,12 +102,12 @@ class EthereumKit(
 
     fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
         val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
-        logger.debug("send rawTransaction: {}", rawTransaction)
+        logger.info("send rawTransaction: $rawTransaction")
 
         val fee = gasPrice.toBigInteger().times(gasLimit.toBigInteger())
         val totalValue = value.add(fee)
 
-        logger.debug("fee = $fee, total value = $totalValue, balance = $balance")
+        logger.info("fee = $fee, total value = $totalValue, balance = $balance")
 
         return blockchain.send(rawTransaction)
                 .doOnSuccess { transaction ->

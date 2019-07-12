@@ -7,8 +7,8 @@ import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import org.slf4j.LoggerFactory
 import java.math.BigInteger
+import java.util.logging.Logger
 
 class TransactionManager(private val contractAddress: ByteArray,
                          private val address: ByteArray,
@@ -16,7 +16,7 @@ class TransactionManager(private val contractAddress: ByteArray,
                          private val dataProvider: IDataProvider,
                          private val transactionBuilder: ITransactionBuilder) : ITransactionManager {
 
-    private val logger = LoggerFactory.getLogger(TransactionManager::class.java)
+    private val logger = Logger.getLogger("TransactionManager")
 
     private val disposables = CompositeDisposable()
 
@@ -76,7 +76,7 @@ class TransactionManager(private val contractAddress: ByteArray,
                 .subscribe({ logs ->
                     handleLogs(logs)
                 }, {
-                    logger.error("Transaction sync error", it)
+                    logger.warning("Transaction sync error: ${it.message}")
                     listener?.onSyncTransactionsError()
                 })
                 .let {

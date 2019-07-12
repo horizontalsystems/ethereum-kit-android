@@ -7,7 +7,6 @@ import io.horizontalsystems.ethereumkit.spv.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.net.Node
-import org.slf4j.LoggerFactory
 import org.spongycastle.math.ec.ECPoint
 import java.io.IOException
 import java.io.InputStream
@@ -19,6 +18,7 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 
 
 class Connection(private val connectionKey: ECKey, private val node: Node) : Thread() {
@@ -28,7 +28,7 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
         fun didReceive(frame: Frame)
     }
 
-    private val logger = LoggerFactory.getLogger(Connection::class.java)
+    private val logger = Logger.getLogger("Connection")
 
     var listener: Listener? = null
 
@@ -59,7 +59,7 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
     }
 
     fun disconnect(error: Throwable?) {
-        logger.debug("disconnect with error: ", error)
+        logger.info("disconnect with error: ${error?.message}")
         isRunning = false
     }
 
@@ -98,7 +98,7 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
 
         try {
 
-            logger.debug("Socket ${node.host} didConnect.")
+            logger.info("Socket ${node.host} didConnect.")
 
             initiateHandshake(outputStream)
 
@@ -119,7 +119,7 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
                     val frameReceived = frameCodec.readFrame(inputStream)
 
                     if (frameReceived == null) {
-                        logger.debug("Frame is NULL")
+                        logger.info("Frame is NULL")
                     } else {
                         listener?.didReceive(frameReceived)
                     }
@@ -127,19 +127,19 @@ class Connection(private val connectionKey: ECKey, private val node: Node) : Thr
             }
 
         } catch (e: SocketTimeoutException) {
-            logger.error("Connection error", e)
+            logger.warning("Connection error: ${e.message}")
             listener?.didDisconnect(e)
         } catch (e: ConnectException) {
-            logger.error("Connection error", e)
+            logger.warning("Connection error: ${e.message}")
             listener?.didDisconnect(e)
         } catch (e: IOException) {
-            logger.error("Connection error", e)
+            logger.warning("Connection error: ${e.message}")
             listener?.didDisconnect(e)
         } catch (e: InterruptedException) {
-            logger.error("Connection error", e)
+            logger.warning("Connection error: ${e.message}")
             listener?.didDisconnect(e)
         } catch (e: Exception) {
-            logger.error("Connection error", e)
+            logger.warning("Connection error: ${e.message}")
             listener?.didDisconnect(e)
         } finally {
             isRunning = false
