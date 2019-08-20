@@ -1,55 +1,45 @@
 package io.horizontalsystems.ethereumkit.core
 
-import android.arch.persistence.room.RoomDatabase
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import io.horizontalsystems.ethereumkit.api.storage.ApiDatabase
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.spv.core.storage.SpvDatabase
-import java.io.File
 
 internal object EthereumDatabaseManager {
 
     fun getEthereumApiDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): ApiDatabase {
-        val databaseName = "Ethereum-$walletId-${networkType.name}-api"
-        return ApiDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
+        return ApiDatabase.getInstance(context, getDbNameApi(walletId, networkType))
     }
 
     fun getEthereumSpvDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): SpvDatabase {
-        val databaseName = "Ethereum-$walletId-${networkType.name}-spv"
-        return SpvDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
+        return SpvDatabase.getInstance(context, getDbNameSpv(walletId, networkType))
     }
 
     fun getTransactionDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): TransactionDatabase {
-        val databaseName = "Transactions-$walletId-${networkType.name}"
-        return TransactionDatabase.getInstance(context, databaseName).also { addDatabasePath(context, it) }
+        return TransactionDatabase.getInstance(context, getDbNameTransactions(walletId, networkType))
     }
 
-    fun clear(context: Context) {
+    fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
         synchronized(this) {
-            val preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
-            val paths = HashSet<String>(preferences.getStringSet(DATABASE_PATHS, setOf()))
-
-            paths.forEach { path ->
-                SQLiteDatabase.deleteDatabase(File(path))
-            }
-
-            preferences.edit().clear().apply()
+            context.deleteDatabase(getDbNameApi(walletId, networkType))
+            context.deleteDatabase(getDbNameSpv(walletId, networkType))
+            context.deleteDatabase(getDbNameTransactions(walletId, networkType))
         }
     }
 
-    private const val preferencesName = "ethereum_database_preferences"
-    private const val DATABASE_PATHS = "key_database_paths"
+    private fun getDbNameApi(walletId: String, networkType: EthereumKit.NetworkType): String {
+        return getDbName(networkType, walletId, "api")
+    }
 
-    private fun addDatabasePath(context: Context, database: RoomDatabase) {
-        val path = database.openHelper.writableDatabase.path
+    private fun getDbNameSpv(walletId: String, networkType: EthereumKit.NetworkType): String {
+        return getDbName(networkType, walletId, "spv")
+    }
 
-        synchronized(this) {
-            val preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
+    private fun getDbNameTransactions(walletId: String, networkType: EthereumKit.NetworkType): String {
+        return getDbName(networkType, walletId, "txs")
+    }
 
-            val paths = HashSet<String>(preferences.getStringSet(DATABASE_PATHS, setOf()))
-            paths.add(path)
-            preferences.edit().putStringSet(DATABASE_PATHS, paths).apply()
-        }
+    private fun getDbName(networkType: EthereumKit.NetworkType, walletId: String, suffix: String): String {
+        return "Ethereum-${networkType.name}-$walletId-$suffix"
     }
 }

@@ -126,7 +126,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw
 
-            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, contractAddress)
+            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId, contractAddress)
             val roomStorage = Erc20Storage(erc20KitDatabase)
             val transactionStorage: ITransactionStorage = roomStorage
             val balanceStorage: ITokenBalanceStorage = roomStorage
@@ -144,8 +144,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             return erc20Kit
         }
 
-        fun clear(context: Context) {
-            Erc20DatabaseManager.clear(context)
+        fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
+            Erc20DatabaseManager.clear(context, networkType, walletId)
         }
     }
 
