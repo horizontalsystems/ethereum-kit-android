@@ -30,6 +30,8 @@ class EthereumKit(
         private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
         private val address: ByteArray,
+        val networkType: NetworkType,
+        val walletId: String,
         private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener, TransactionManager.Listener {
 
     private val logger = Logger.getLogger("EthereumKit")
@@ -230,7 +232,7 @@ class EthereumKit(
 
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address, networkType, walletId)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit
@@ -256,8 +258,8 @@ class EthereumKit(
             return getInstance(context, privateKey, syncMode, networkType, infuraCredentials, etherscanKey, walletId)
         }
 
-        fun clear(context: Context) {
-            EthereumDatabaseManager.clear(context)
+        fun clear(context: Context, networkType: NetworkType, walletId: String) {
+            EthereumDatabaseManager.clear(context, networkType, walletId)
         }
     }
 
