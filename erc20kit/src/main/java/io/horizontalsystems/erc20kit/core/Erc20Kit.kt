@@ -13,13 +13,13 @@ import io.reactivex.disposables.CompositeDisposable
 import java.math.BigDecimal
 import java.math.BigInteger
 
-class Erc20Kit(private val ethereumKit: EthereumKit,
-               private val transactionManager: ITransactionManager,
-               private val balanceManager: IBalanceManager,
-               private val state: KitState = KitState()) : ITransactionManagerListener, IBalanceManagerListener {
-
-    private val gasLimit: Long = 150_000
-    private val estimateGasLimit: Long = 100_000
+class Erc20Kit(
+        private val ethereumKit: EthereumKit,
+        private val transactionManager: ITransactionManager,
+        private val balanceManager: IBalanceManager,
+        private val gasLimit: Long,
+        private val state: KitState = KitState()
+) : ITransactionManagerListener, IBalanceManagerListener {
 
     private val disposables = CompositeDisposable()
 
@@ -59,7 +59,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
         get() = state.balance
 
     fun fee(gasPrice: Long): BigDecimal {
-        return BigDecimal(gasPrice).multiply(estimateGasLimit.toBigDecimal())
+        return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
     fun send(to: String, value: String, gasPrice: Long): Single<TransactionInfo> {
@@ -121,7 +121,8 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
 
         fun getInstance(context: Context,
                         ethereumKit: EthereumKit,
-                        contractAddress: String): Erc20Kit {
+                        contractAddress: String,
+                        gasLimit: Long = 100_000): Erc20Kit {
 
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw
@@ -136,7 +137,7 @@ class Erc20Kit(private val ethereumKit: EthereumKit,
             val transactionManager: ITransactionManager = TransactionManager(contractAddressRaw, address, transactionStorage, dataProvider, transactionBuilder)
             val balanceManager: IBalanceManager = BalanceManager(contractAddressRaw, address, balanceStorage, dataProvider)
 
-            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager)
+            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, gasLimit)
 
             transactionManager.listener = erc20Kit
             balanceManager.listener = erc20Kit
