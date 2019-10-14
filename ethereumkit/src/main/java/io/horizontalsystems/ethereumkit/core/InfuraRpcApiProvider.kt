@@ -8,7 +8,7 @@ import io.horizontalsystems.ethereumkit.network.InfuraService
 import io.reactivex.Single
 import java.math.BigInteger
 
-class RpcApiProvider(
+class InfuraRpcApiProvider(
         private val infuraService: InfuraService,
         private val address: ByteArray
 ) : IRpcApiProvider {
@@ -49,10 +49,10 @@ class RpcApiProvider(
     }
 
     companion object {
-        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials, address: ByteArray): RpcApiProvider {
+        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials, address: ByteArray): InfuraRpcApiProvider {
             val infuraService = InfuraService(networkType, infuraCredentials)
 
-            return RpcApiProvider(infuraService, address)
+            return InfuraRpcApiProvider(infuraService, address)
         }
     }
 

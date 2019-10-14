@@ -24,7 +24,6 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
 import java.util.logging.Logger
-import kotlin.collections.LinkedHashMap
 
 class EthereumKit(
         private val blockchain: IBlockchain,
@@ -53,6 +52,33 @@ class EthereumKit(
         state.lastBlockHeight = blockchain.lastBlockHeight
     }
 
+    val lastBlockHeight: Long?
+        get() = state.lastBlockHeight
+
+    val balance: BigInteger?
+        get() = state.balance
+
+    val syncState: SyncState
+        get() = blockchain.syncState
+
+    val receiveAddress: String
+        get() = address.toEIP55Address()
+
+    val receiveAddressRaw: ByteArray
+        get() = address
+
+    val lastBlockHeightFlowable: Flowable<Long>
+        get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val syncStateFlowable: Flowable<SyncState>
+        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val balanceFlowable: Flowable<BigInteger>
+        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val transactionsFlowable: Flowable<List<TransactionInfo>>
+        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+
     fun start() {
         if (started)
             return
@@ -72,32 +98,6 @@ class EthereumKit(
         blockchain.refresh()
         transactionManager.refresh()
     }
-
-    fun statusInfo(): Map<String, Any> {
-        val statusInfo = LinkedHashMap<String, Any>()
-
-        statusInfo["Synced Until"] = "Block Number ${state.lastBlockHeight}"
-        statusInfo["Sync State"] = blockchain.syncState
-        statusInfo["Blockchain source"] = blockchain.source
-        statusInfo["Transactions source"] = transactionManager.source
-
-        return statusInfo
-    }
-
-    val lastBlockHeight: Long?
-        get() = state.lastBlockHeight
-
-    val balance: BigInteger?
-        get() = state.balance
-
-    val syncState: SyncState
-        get() = blockchain.syncState
-
-    val receiveAddress: String
-        get() = address.toEIP55Address()
-
-    val receiveAddressRaw: ByteArray
-        get() = address
 
     fun validateAddress(address: String) {
         addressValidator.validate(address)
@@ -150,17 +150,16 @@ class EthereumKit(
         return lines.joinToString { "\n" }
     }
 
-    val lastBlockHeightFlowable: Flowable<Long>
-        get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
+    fun statusInfo(): Map<String, Any> {
+        val statusInfo = LinkedHashMap<String, Any>()
 
-    val syncStateFlowable: Flowable<SyncState>
-        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+        statusInfo["Synced Until"] = "Block Number ${state.lastBlockHeight}"
+        statusInfo["Sync State"] = blockchain.syncState
+        statusInfo["Blockchain source"] = blockchain.source
+        statusInfo["Transactions source"] = transactionManager.source
 
-    val balanceFlowable: Flowable<BigInteger>
-        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    val transactionsFlowable: Flowable<List<TransactionInfo>>
-        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+        return statusInfo
+    }
 
     //
     //IBlockchain
@@ -239,7 +238,7 @@ class EthereumKit(
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
             val transactionBuilder = TransactionBuilder(address)
-            val rpcApiProvider = RpcApiProvider.getInstance(networkType, infuraCredentials, address)
+            val rpcApiProvider = InfuraRpcApiProvider.getInstance(networkType, infuraCredentials, address)
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
