@@ -15,9 +15,13 @@ class ApiBlockchain(
         private val storage: IApiStorage,
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
-        private val transactionBuilder: TransactionBuilder) : IBlockchain {
+        private val transactionBuilder: TransactionBuilder
+) : IBlockchain {
 
     private val disposables = CompositeDisposable()
+
+    override val source: String
+        get() = "RPC (${rpcApiProvider.source})"
 
     override var listener: IBlockchainListener? = null
 

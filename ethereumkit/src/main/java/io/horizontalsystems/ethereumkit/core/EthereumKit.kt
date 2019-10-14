@@ -22,17 +22,20 @@ import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.util.*
 import java.util.logging.Logger
+import kotlin.collections.LinkedHashMap
 
 class EthereumKit(
         private val blockchain: IBlockchain,
-        private val transactionManager: TransactionManager,
+        private val transactionManager: ITransactionManager,
         private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
         private val address: ByteArray,
         val networkType: NetworkType,
         val walletId: String,
-        private val state: EthereumKitState = EthereumKitState()) : IBlockchainListener, TransactionManager.Listener {
+        private val state: EthereumKitState = EthereumKitState()
+) : IBlockchainListener, ITransactionManagerListener {
 
     private val logger = Logger.getLogger("EthereumKit")
 
@@ -68,6 +71,17 @@ class EthereumKit(
     fun refresh() {
         blockchain.refresh()
         transactionManager.refresh()
+    }
+
+    fun statusInfo(): Map<String, Any> {
+        val statusInfo = LinkedHashMap<String, Any>()
+
+        statusInfo["Synced Until"] = "Block Number ${state.lastBlockHeight}"
+        statusInfo["Sync State"] = blockchain.syncState
+        statusInfo["Blockchain source"] = blockchain.source
+        statusInfo["Transactions source"] = transactionManager.source
+
+        return statusInfo
     }
 
     val lastBlockHeight: Long?
@@ -187,6 +201,32 @@ class EthereumKit(
         class Synced : SyncState()
         class NotSynced : SyncState()
         class Syncing(val progress: Double? = null) : SyncState()
+
+        override fun toString(): String = when (this) {
+            is Syncing -> "Syncing ${progress?.let { "${it * 100}" } ?: ""}"
+            else -> this.javaClass.simpleName
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (other !is SyncState)
+                return false
+
+            if (other.javaClass != this.javaClass)
+                return false
+
+            if (other is Syncing && this is Syncing) {
+                return other.progress == this.progress
+            }
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            if (this is Syncing) {
+                return Objects.hashCode(this.progress)
+            }
+            return Objects.hashCode(this.javaClass.name)
+        }
     }
 
     companion object {

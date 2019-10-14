@@ -28,6 +28,7 @@ interface ISpvStorage {
 }
 
 interface IBlockchain {
+    val source: String
     var listener: IBlockchainListener?
 
     fun start()
@@ -53,6 +54,8 @@ interface IBlockchainListener {
 }
 
 interface IRpcApiProvider {
+    val source: String
+
     fun getLastBlockHeight(): Single<Long>
     fun getTransactionCount(): Single<Long>
 
@@ -65,8 +68,22 @@ interface IRpcApiProvider {
     fun getBlock(blockNumber: Long): Single<Block>
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
 }
+interface ITransactionManager {
+    val source: String
+    var listener: ITransactionManagerListener?
+
+    fun refresh()
+    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
+    fun handle(transaction: EthereumTransaction)
+}
+
+interface ITransactionManagerListener {
+    fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
+}
 
 interface ITransactionsProvider {
+    val source: String
+
     fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
 }
 

@@ -21,13 +21,15 @@ import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 import java.util.logging.Logger
 
-class SpvBlockchain(private val peer: IPeer,
-                    private val blockSyncer: BlockSyncer,
-                    private val accountStateSyncer: AccountStateSyncer,
-                    private val transactionSender: TransactionSender,
-                    private val storage: ISpvStorage,
-                    private val network: INetwork,
-                    private val rpcApiProvider: IRpcApiProvider) : IBlockchain, IPeerListener,
+class SpvBlockchain(
+        private val peer: IPeer,
+        private val blockSyncer: BlockSyncer,
+        private val accountStateSyncer: AccountStateSyncer,
+        private val transactionSender: TransactionSender,
+        private val storage: ISpvStorage,
+        private val network: INetwork,
+        private val rpcApiProvider: IRpcApiProvider
+) : IBlockchain, IPeerListener,
         BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
 
     private val logger = Logger.getLogger("SpvBlockchain")
@@ -35,6 +37,9 @@ class SpvBlockchain(private val peer: IPeer,
     private val sendingTransactions: MutableMap<Int, PublishSubject<EthereumTransaction>> = HashMap()
 
     //--------------IBlockchain---------------------
+
+    override val source: String
+        get() = "SPV"
 
     override var listener: IBlockchainListener? = null
 
