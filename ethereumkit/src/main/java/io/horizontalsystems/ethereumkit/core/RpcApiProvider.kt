@@ -8,8 +8,13 @@ import io.horizontalsystems.ethereumkit.network.InfuraService
 import io.reactivex.Single
 import java.math.BigInteger
 
-class RpcApiProvider(private val infuraService: InfuraService,
-                     private val address: ByteArray) : IRpcApiProvider {
+class RpcApiProvider(
+        private val infuraService: InfuraService,
+        private val address: ByteArray
+) : IRpcApiProvider {
+
+    override val source: String
+        get() = "infura.io"
 
     override fun getLastBlockHeight(): Single<Long> {
         return infuraService.getLastBlockHeight()
