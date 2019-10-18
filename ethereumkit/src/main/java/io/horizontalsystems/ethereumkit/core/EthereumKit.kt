@@ -153,7 +153,7 @@ class EthereumKit(
     fun statusInfo(): Map<String, Any> {
         val statusInfo = LinkedHashMap<String, Any>()
 
-        statusInfo["Synced Until"] = "Block Number ${state.lastBlockHeight}"
+        statusInfo["Last Block Height"] = state.lastBlockHeight ?: "N/A"
         statusInfo["Sync State"] = blockchain.syncState
         statusInfo["Blockchain source"] = blockchain.source
         statusInfo["Transactions source"] = transactionManager.source
