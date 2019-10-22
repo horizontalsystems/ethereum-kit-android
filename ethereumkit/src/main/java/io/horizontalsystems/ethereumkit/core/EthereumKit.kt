@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
+import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.network.MainNet
 import io.horizontalsystems.ethereumkit.network.Ropsten
@@ -245,7 +246,7 @@ class EthereumKit(
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
 
-                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider)
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, ConnectionManager(context))
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
