@@ -40,7 +40,6 @@ class TransactionManager(private val contractAddress: ByteArray,
 
             if (pendingTransactions.count {
                         it.transactionHash.contentEquals(log.transactionHash.hexStringToByteArray())
-                                && it.value == value
                                 && it.from.contentEquals(from)
                                 && it.to.contentEquals(to)
                     } > 0) {
