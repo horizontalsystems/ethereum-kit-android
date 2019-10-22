@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -15,10 +16,19 @@ class ApiBlockchain(
         private val storage: IApiStorage,
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
-        private val transactionBuilder: TransactionBuilder
+        private val transactionBuilder: TransactionBuilder,
+        private val connectionManager: ConnectionManager
 ) : IBlockchain {
 
     private val disposables = CompositeDisposable()
+
+    init {
+        connectionManager.listener = object : ConnectionManager.Listener {
+            override fun onConnectionChange(isConnected: Boolean) {
+                sync()
+            }
+        }
+    }
 
     override val source: String
         get() = "RPC (${rpcApiProvider.source})"
@@ -130,6 +140,11 @@ class ApiBlockchain(
     }
 
     private fun sync() {
+        if (!connectionManager.isConnected) {
+            syncState = EthereumKit.SyncState.NotSynced()
+            return
+        }
+
         if (syncState is EthereumKit.SyncState.Syncing) {
             return
         }
@@ -171,9 +186,10 @@ class ApiBlockchain(
         fun getInstance(storage: IApiStorage,
                         transactionSigner: TransactionSigner,
                         transactionBuilder: TransactionBuilder,
-                        rpcApiProvider: IRpcApiProvider): ApiBlockchain {
+                        rpcApiProvider: IRpcApiProvider,
+                        connectionManager: ConnectionManager): ApiBlockchain {
 
-            return ApiBlockchain(storage, rpcApiProvider, transactionSigner, transactionBuilder)
+            return ApiBlockchain(storage, rpcApiProvider, transactionSigner, transactionBuilder, connectionManager)
         }
     }
 
