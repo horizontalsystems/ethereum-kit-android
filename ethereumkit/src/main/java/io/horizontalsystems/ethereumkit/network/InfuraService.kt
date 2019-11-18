@@ -106,6 +106,8 @@ class InfuraService(private val networkType: NetworkType,
         }.map { Unit }
     }
 
+
+
     fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>> {
         val fromBlockStr = fromBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "earliest"
         val toBlockStr = toBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "latest"
@@ -132,6 +134,21 @@ class InfuraService(private val networkType: NetworkType,
         }
     }
 
+    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Int?, data:String?): Single<String> {
+
+        val params: MutableMap<String,String> = mutableMapOf("to" to toAddress.toLowerCase())
+        fromAddress?.let { params.put("from", fromAddress.toLowerCase()) }
+        gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16)}") }
+        value?.let { params.put("value", "0x${value.toString(16)}") }
+        data?.let { params.put("data", data) }
+
+        val request = Request("eth_estimateGas", listOf(params))
+
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
+            returnResultOrError(it)
+        }
+    }
+
     fun getBlockByNumber(blockNumber: Long): Single<Block> {
         val request = Request("eth_getBlockByNumber", listOf("0x${blockNumber.toString(16)}", false))
         return service.makeRequestForBlock(infuraCredentials.projectId, request).flatMap {
@@ -140,7 +157,8 @@ class InfuraService(private val networkType: NetworkType,
     }
 
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
-        val request = Request("eth_call", listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
+        val request = Request("eth_call",
+                              listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }

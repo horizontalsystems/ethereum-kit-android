@@ -44,11 +44,15 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         ethereumKit.validateAddress(address)
     }
 
-    override fun send(address: String, amount: BigDecimal): Single<Unit> {
+    override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Int> {
+        return Single.just(ethereumKit.gasLimit)
+    }
+
+    override fun send(address: String, amount: BigDecimal, gasLimit: Int): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
-        return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
+        return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
     }
 
     override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
