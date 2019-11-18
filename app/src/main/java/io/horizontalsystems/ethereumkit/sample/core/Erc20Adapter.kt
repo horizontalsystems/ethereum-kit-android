@@ -14,7 +14,7 @@ class Erc20Adapter(context: Context,
                    private val ethereumKit: EthereumKit,
                    override val name: String,
                    override val coin: String,
-                   contractAddress: String,
+                   private val contractAddress: String,
                    private val decimal: Int) : IAdapter {
 
     private val erc20Kit = Erc20Kit.getInstance(context, ethereumKit, contractAddress)
@@ -51,11 +51,19 @@ class Erc20Adapter(context: Context,
         ethereumKit.validateAddress(address)
     }
 
-    override fun send(address: String, amount: BigDecimal): Single<Unit> {
+    override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Int> {
+
+        val poweredDecimal = value.scaleByPowerOfTen(decimal)
+        val noScaleDecimal = poweredDecimal.setScale(0)
+
+        return erc20Kit.estimateGas(toAddress, contractAddress, noScaleDecimal.toBigInteger())
+    }
+
+    override fun send(toAddress: String, amount: BigDecimal, gasLimit: Int): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
-        return erc20Kit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000).map { Unit }
+        return erc20Kit.send(toAddress, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
     }
 
     override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {

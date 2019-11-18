@@ -18,6 +18,7 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.*
 import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
+import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.logging.Logger
 
@@ -76,6 +77,13 @@ class SpvBlockchain(
         } catch (error: Throwable) {
             Single.error(error)
         }
+    }
+
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?,data: ByteArray?): Single<Int> {
+        return rpcApiProvider.estimateGas(from, to, value, gasLimit, data.toHexString())
+                .flatMap {
+                    Single.just(BigInteger(it.replace("0x", ""), 16).toInt())
+                }
     }
 
     override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {

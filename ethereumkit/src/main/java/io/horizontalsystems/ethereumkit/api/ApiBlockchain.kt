@@ -17,8 +17,8 @@ class ApiBlockchain(
         private val rpcApiProvider: IRpcApiProvider,
         private val transactionSigner: TransactionSigner,
         private val transactionBuilder: TransactionBuilder,
-        private val connectionManager: ConnectionManager
-) : IBlockchain {
+        private val connectionManager: ConnectionManager)
+    : IBlockchain {
 
     private val disposables = CompositeDisposable()
 
@@ -78,6 +78,13 @@ class ApiBlockchain(
         return rpcApiProvider.send(signedTransaction = encoded)
                 .map {
                     transaction
+                }
+    }
+
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?, data: ByteArray?): Single<Int> {
+        return rpcApiProvider.estimateGas (from, to, value, gasLimit, data?.toHexString())
+                .flatMap {
+                    Single.just(BigInteger(it.replace("0x", ""), 16).toInt())
                 }
     }
 
@@ -192,5 +199,4 @@ class ApiBlockchain(
             return ApiBlockchain(storage, rpcApiProvider, transactionSigner, transactionBuilder, connectionManager)
         }
     }
-
 }

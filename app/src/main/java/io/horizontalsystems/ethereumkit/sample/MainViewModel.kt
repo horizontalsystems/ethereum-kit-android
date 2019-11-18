@@ -18,16 +18,19 @@ import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
 
+    private val decimal = 18
+
     private val logger = Logger.getLogger("MainViewModel")
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(
             projectId = "2a1306f1d12f4c109a4d4fb9be46b02e",
             secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val contractAddress = "0xF559862f9265756619d5523bBC4bd8422898e97d"
-    private val contractDecimal = 28
+    private val contractAddress = "0x4f3AfEC4E5a3F2A6a1A411DEF7D7dFe50eE057bF"
+    private val contractDecimal = 9
     private val networkType: NetworkType = NetworkType.Ropsten
     private val walletId = "walletId"
+    private var estimateGasLimit: Int = 0
 
     private val disposables = CompositeDisposable()
 
@@ -45,6 +48,7 @@ class MainViewModel : ViewModel() {
 
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
+    val estimateGas = SingleLiveEvent<String>()
 
 
     val gasPrice: Long = 5_000_000_000
@@ -54,7 +58,6 @@ class MainViewModel : ViewModel() {
     }
 
     fun init() {
-        //  val words = "subway plate brick pattern inform used oblige identify cherry drop flush balance".split(" ")
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
         val seed = Mnemonic().toSeed(words)
@@ -188,8 +191,43 @@ class MainViewModel : ViewModel() {
         return ethereumKit.receiveAddress
     }
 
-    fun send(address: String, amount: BigDecimal) {
-        ethereumAdapter.send(address, amount)
+    fun estimageGas(toAddress: String, value: BigDecimal): Boolean {
+
+        val poweredDecimal = value.scaleByPowerOfTen(decimal)
+        val noScaleDecimal = poweredDecimal.setScale(0)
+
+        return ethereumAdapter.estimatedGasLimit(toAddress = toAddress, value = noScaleDecimal)
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                               //success
+                               estimateGas.value = it.toString()
+                               estimateGasLimit = it
+                           }, {
+                               logger.warning("Gas estimate: ${it.message}")
+                                estimateGas.value = "Gas Estimate:Error"
+                           }).let { disposables.add(it) }
+
+    }
+
+    fun estimageTGas(toAddress: String, value: BigDecimal): Boolean {
+
+        return erc20Adapter.estimatedGasLimit(toAddress = toAddress, value = value)
+                .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                               //success
+                               estimateGas.value = it.toString()
+                               estimateGasLimit = it
+                           }, {
+                               logger.warning("Gas estimate: ${it.message}")
+                               estimateGas.value = "Gas Estimate:Error"
+                           }).let { disposables.add(it) }
+
+    }
+
+    fun send(toAddress: String, amount: BigDecimal) {
+        ethereumAdapter.send(address = toAddress, amount = amount, gasLimit = estimateGasLimit)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -198,7 +236,7 @@ class MainViewModel : ViewModel() {
                 }, {
                     logger.warning("Ether send failed: ${it.message}")
                     sendStatus.value = it
-                })?.let { disposables.add(it) }
+                }).let { disposables.add(it) }
 
     }
 
@@ -206,8 +244,8 @@ class MainViewModel : ViewModel() {
     // ERC20
     //
 
-    fun sendERC20(address: String, amount: BigDecimal) {
-        erc20Adapter.send(address, amount)
+    fun sendERC20(toAddress: String, amount: BigDecimal) {
+        erc20Adapter.send(toAddress, amount, estimateGasLimit )
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({

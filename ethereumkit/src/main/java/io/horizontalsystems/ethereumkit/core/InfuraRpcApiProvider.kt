@@ -32,6 +32,10 @@ class InfuraRpcApiProvider(
         return infuraService.send(signedTransaction)
     }
 
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?, data: String?): Single<String> {
+        return infuraService.estimateGas(from, to, value, gasLimit, data)
+    }
+
     override fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
         return infuraService.getStorageAt(contractAddress, position, blockNumber)
     }

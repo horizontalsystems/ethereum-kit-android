@@ -17,9 +17,12 @@ class SendReceiveFragment : Fragment() {
     private lateinit var viewModel: MainViewModel
     private lateinit var receiveAddressButton: Button
     private lateinit var receiveAddressText: TextView
+    private lateinit var estimateGasText: TextView
 
     private lateinit var sendToken: Button
     private lateinit var sendButton: Button
+    private lateinit var estimateGasButton: Button
+    private lateinit var estimateTGasButton: Button
     private lateinit var sendAmount: EditText
     private lateinit var sendAddress: EditText
 
@@ -29,6 +32,10 @@ class SendReceiveFragment : Fragment() {
         activity?.let {
             viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
         }
+
+        viewModel.estimateGas.observe(this, Observer { estimeGasVal ->
+            estimateGasText.text = "Estimage Gas:${(estimeGasVal ?: 0)}"
+        })
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -39,9 +46,29 @@ class SendReceiveFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         receiveAddressText = view.findViewById(R.id.receiveAddressText)
+        estimateGasText = view.findViewById(R.id.estimateGasText)
+        estimateGasText = view.findViewById(R.id.estimateGasText)
         receiveAddressButton = view.findViewById(R.id.receiveAddressButton)
+        estimateGasButton = view.findViewById(R.id.estimateGasButton)
+        estimateTGasButton = view.findViewById(R.id.estimateTGasButton)
+
         receiveAddressButton.setOnClickListener {
             receiveAddressText.text = viewModel.receiveAddress()
+        }
+        estimateGasButton.setOnClickListener {
+            when {
+                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
+                else -> viewModel.estimageGas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
+            }
+            estimateGasText.text = viewModel.receiveAddress()
+        }
+
+        estimateTGasButton.setOnClickListener {
+            when {
+                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
+                else -> viewModel.estimageTGas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
+            }
+            estimateGasText.text = viewModel.receiveAddress()
         }
 
         sendAddress = view.findViewById(R.id.sendAddress)
@@ -58,7 +85,6 @@ class SendReceiveFragment : Fragment() {
         sendToken = view.findViewById(R.id.sendToken)
         sendToken.setOnClickListener {
             when {
-                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
                 sendAmount.text.isEmpty() -> sendAmount.error = "Send amount cannot be blank"
                 else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
