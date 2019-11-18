@@ -210,7 +210,7 @@ class MainViewModel : ViewModel() {
 
     }
 
-    fun estimageTGas(toAddress: String, value: BigDecimal): Boolean {
+    fun estimateERC20Gas(toAddress: String, value: BigDecimal): Boolean {
 
         return erc20Adapter.estimatedGasLimit(toAddress = toAddress, value = value)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())

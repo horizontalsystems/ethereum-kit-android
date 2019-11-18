@@ -66,7 +66,7 @@ class SendReceiveFragment : Fragment() {
         estimateTGasButton.setOnClickListener {
             when {
                 sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
-                else -> viewModel.estimageTGas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
+                else -> viewModel.estimateERC20Gas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
             estimateGasText.text = viewModel.receiveAddress()
         }
