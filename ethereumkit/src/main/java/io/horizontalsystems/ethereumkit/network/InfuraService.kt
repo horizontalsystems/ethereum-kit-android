@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.network
 import com.google.gson.GsonBuilder
 import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.core.removeLeadingZeros
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
@@ -21,11 +22,11 @@ import retrofit2.http.Path
 import java.math.BigInteger
 import java.util.logging.Logger
 
-class InfuraService(private val networkType: NetworkType,
-                    private val infuraCredentials: InfuraCredentials) {
+class InfuraService(
+        private val networkType: NetworkType,
+        private val infuraCredentials: InfuraCredentials) {
 
     private val logger = Logger.getLogger("InfuraService")
-
     private val service: InfuraServiceAPI
 
     private val baseUrl: String
@@ -106,8 +107,6 @@ class InfuraService(private val networkType: NetworkType,
         }.map { Unit }
     }
 
-
-
     fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>> {
         val fromBlockStr = fromBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "earliest"
         val toBlockStr = toBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "latest"
@@ -138,8 +137,8 @@ class InfuraService(private val networkType: NetworkType,
 
         val params: MutableMap<String,String> = mutableMapOf("to" to toAddress.toLowerCase())
         fromAddress?.let { params.put("from", fromAddress.toLowerCase()) }
-        gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16)}") }
-        value?.let { params.put("value", "0x${value.toString(16)}") }
+        gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16).removeLeadingZeros()}") }
+        value?.let { params.put("value", "0x${value.toString(16).removeLeadingZeros()}") }
         data?.let { params.put("data", data) }
 
         val request = Request("eth_estimateGas", listOf(params))
