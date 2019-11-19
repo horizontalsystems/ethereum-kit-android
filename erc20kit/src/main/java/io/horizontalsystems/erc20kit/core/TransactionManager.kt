@@ -83,7 +83,7 @@ class TransactionManager(private val contractAddress: ByteArray,
                 }
     }
 
-    override fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Int): Single<Transaction> {
+    override fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         val transactionInput = transactionBuilder.transferTransactionInput(to, value)
 
         return dataProvider.send(contractAddress, transactionInput, gasPrice, gasLimit)

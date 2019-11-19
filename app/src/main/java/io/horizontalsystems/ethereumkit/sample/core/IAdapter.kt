@@ -22,8 +22,8 @@ interface IAdapter {
     val transactionsFlowable: Flowable<Unit>
 
     fun validateAddress(address: String)
-    fun send(address: String, amount: BigDecimal, gasLimit: Int): Single<Unit>
+    fun send(address: String, amount: BigDecimal, gasLimit: Long): Single<Unit>
     fun transactions(from: Pair<String, Int>? = null, limit: Int? = null): Single<List<TransactionRecord>>
 
-    fun estimatedGasLimit(toAddress: String, value: BigDecimal) : Single<Int>
+    fun estimatedGasLimit(toAddress: String, value: BigDecimal) : Single<Long>
 }

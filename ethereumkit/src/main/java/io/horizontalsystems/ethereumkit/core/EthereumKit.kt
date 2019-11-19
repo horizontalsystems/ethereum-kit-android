@@ -44,7 +44,7 @@ class EthereumKit(
     private val balanceSubject = PublishSubject.create<BigInteger>()
     private val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
 
-    val gasLimit: Int = 21_000
+    val gasLimit: Long = 21_000
 
     private var started = false
 
@@ -113,16 +113,16 @@ class EthereumKit(
                 .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
-    fun estimateGas(contractAddress: String, value: BigInteger?, gasLimit: Int? = null, data: ByteArray? = null): Single<Int> {
-        return blockchain.estimateGas( receiveAddress, to = contractAddress, gasLimit = gasLimit, value = value , data = data)
+    fun estimateGas(contractAddress: String, value: BigInteger?, gasLimit: Long? = null, gasPrice: Long? = null, data: ByteArray? = null): Single<Long> {
+        return blockchain.estimateGas( receiveAddress, to = contractAddress, value = value , gasLimit = gasLimit, gasPrice = gasPrice, data = data)
     }
 
-    fun send(toAddress: String, value: String, gasPrice: Long, gasLimit: Int): Single<TransactionInfo> {
+    fun send(toAddress: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
         return send(toAddress.hexStringToByteArray(), value.toBigInteger(), ByteArray(0), gasPrice, gasLimit)
     }
 
-    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Int): Single<TransactionInfo> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit.toLong(), toAddress, value, transactionInput)
+    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
         logger.info("send rawTransaction: $rawTransaction")
 
         val fee = gasPrice.toBigInteger().times(gasLimit.toBigInteger())
