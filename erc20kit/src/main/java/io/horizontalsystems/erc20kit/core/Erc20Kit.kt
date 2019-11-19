@@ -17,7 +17,7 @@ class Erc20Kit(
         private val ethereumKit: EthereumKit,
         private val transactionManager: ITransactionManager,
         private val balanceManager: IBalanceManager,
-        private val gasLimit: Int = 1000000,
+        private val gasLimit: Long = 1000000,
         private val state: KitState = KitState()
 ) : ITransactionManagerListener, IBalanceManagerListener {
 
@@ -62,14 +62,14 @@ class Erc20Kit(
         return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
     }
 
-    fun estimateGas( toAddress: String, contractAddress: String, value: BigInteger ): Single<Int> {
+    fun estimateGas( toAddress: String, contractAddress: String, value: BigInteger, gasPrice: Long? = null ): Single<Long> {
         val transactionInput = transactionManager.getTransactionInput(toAddress.hexStringToByteArray(), value)
 
-        return ethereumKit.estimateGas(contractAddress, null, gasLimit,  transactionInput)
+        return ethereumKit.estimateGas(contractAddress, null, gasLimit, gasPrice, transactionInput)
     }
 
 
-    fun send(to: String, value: String, gasPrice: Long, gasLimit: Int): Single<TransactionInfo> {
+    fun send(to: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
         return transactionManager.send(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
@@ -129,7 +129,7 @@ class Erc20Kit(
         fun getInstance(context: Context,
                         ethereumKit: EthereumKit,
                         contractAddress: String,
-                        gasLimit: Int = 1_000_000): Erc20Kit {
+                        gasLimit: Long = 1_000_000): Erc20Kit {
 
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw

@@ -79,11 +79,8 @@ class SpvBlockchain(
         }
     }
 
-    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?,data: ByteArray?): Single<Int> {
-        return rpcApiProvider.estimateGas(from, to, value, gasLimit, data.toHexString())
-                .flatMap {
-                    Single.just(BigInteger(it.replace("0x", ""), 16).toInt())
-                }
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+        TODO("not implemented")
     }
 
     override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {

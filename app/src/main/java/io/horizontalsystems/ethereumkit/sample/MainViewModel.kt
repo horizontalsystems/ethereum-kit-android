@@ -30,7 +30,7 @@ class MainViewModel : ViewModel() {
     private val contractDecimal = 9
     private val networkType: NetworkType = NetworkType.Ropsten
     private val walletId = "walletId"
-    private var estimateGasLimit: Int = 0
+    private var estimateGasLimit: Long = 0
 
     private val disposables = CompositeDisposable()
 

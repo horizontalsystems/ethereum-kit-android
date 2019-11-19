@@ -53,15 +53,15 @@ class Erc20Adapter(
         ethereumKit.validateAddress(address)
     }
 
-    override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Int> {
+    override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Long> {
 
         val poweredDecimal = value.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
-        return erc20Kit.estimateGas(toAddress, contractAddress, noScaleDecimal.toBigInteger())
+        return erc20Kit.estimateGas(toAddress = toAddress, contractAddress = contractAddress, value = noScaleDecimal.toBigInteger())
     }
 
-    override fun send(toAddress: String, amount: BigDecimal, gasLimit: Int): Single<Unit> {
+    override fun send(toAddress: String, amount: BigDecimal, gasLimit: Long): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 

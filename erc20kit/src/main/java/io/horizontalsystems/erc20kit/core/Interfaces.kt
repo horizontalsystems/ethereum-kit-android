@@ -19,7 +19,7 @@ interface ITransactionManager {
     val lastTransactionBlockHeight: Long?
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun sync()
-    fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Int): Single<Transaction>
+    fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
     fun getTransactionInput(to: ByteArray, value: BigInteger):ByteArray
 }
 
@@ -53,7 +53,7 @@ interface IDataProvider {
 
     fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>>
     fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger>
-    fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Int): Single<ByteArray>
+    fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
 }
 
 interface ITransactionBuilder {

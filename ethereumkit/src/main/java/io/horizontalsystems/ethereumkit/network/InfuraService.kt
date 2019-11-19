@@ -133,11 +133,12 @@ class InfuraService(
         }
     }
 
-    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Int?, data:String?): Single<String> {
+    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data:String?): Single<String> {
 
         val params: MutableMap<String,String> = mutableMapOf("to" to toAddress.toLowerCase())
         fromAddress?.let { params.put("from", fromAddress.toLowerCase()) }
         gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16).removeLeadingZeros()}") }
+        gasPrice?.let { params.put("gasPrice", "0x${gasPrice.toString(16).removeLeadingZeros()}") }
         value?.let { params.put("value", "0x${value.toString(16).removeLeadingZeros()}") }
         data?.let { params.put("data", data) }
 

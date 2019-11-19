@@ -40,7 +40,7 @@ interface IBlockchain {
     val balance: BigInteger?
 
     fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
-    fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?, data: ByteArray?): Single<Int>
+    fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
 
     fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
     fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray>
@@ -68,7 +68,7 @@ interface IRpcApiProvider {
     fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>>
     fun getBlock(blockNumber: Long): Single<Block>
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
-    fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit:Int?, data: String?): Single<String>
+    fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<String>
 
 }
 interface ITransactionManager {

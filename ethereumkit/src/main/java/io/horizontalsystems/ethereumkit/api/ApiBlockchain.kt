@@ -81,10 +81,10 @@ class ApiBlockchain(
                 }
     }
 
-    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Int?, data: ByteArray?): Single<Int> {
-        return rpcApiProvider.estimateGas (from, to, value, gasLimit, data?.toHexString())
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+        return rpcApiProvider.estimateGas (from, to, value, gasLimit, gasPrice, data?.toHexString())
                 .flatMap {
-                    Single.just(BigInteger(it.replace("0x", ""), 16).toInt())
+                    Single.just(BigInteger(it.replace("0x", ""), 16).toLong())
                 }
     }
 
