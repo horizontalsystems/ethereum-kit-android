@@ -2,6 +2,11 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.utils.EIP55
 
+
+fun String.removeLeadingZeros(): String{
+    return this.trimStart('0')
+}
+
 fun ByteArray?.toRawHexString(): String {
     return this?.joinToString(separator = "") {
         it.toInt().and(0xff).toString(16).padStart(2, '0')

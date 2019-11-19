@@ -34,8 +34,8 @@ class EthereumKit(
         private val address: ByteArray,
         val networkType: NetworkType,
         val walletId: String,
-        private val state: EthereumKitState = EthereumKitState()
-) : IBlockchainListener, ITransactionManagerListener {
+        private val state: EthereumKitState = EthereumKitState())
+    : IBlockchainListener, ITransactionManagerListener {
 
     private val logger = Logger.getLogger("EthereumKit")
 
