@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.network
 
 import com.google.gson.GsonBuilder
+import io.horizontalsystems.ethereumkit.api.models.ApiError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.removeLeadingZeros
@@ -145,7 +146,7 @@ class InfuraService(
         val request = Request("eth_estimateGas", listOf(params))
 
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
-            returnResultOrError(it)
+            returnResultOrParsedError(it)
         }
     }
 
@@ -161,6 +162,24 @@ class InfuraService(
                               listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
+        }
+    }
+
+    private fun <T> parseInfuraError(errorResponse: Response<T>): Exception {
+
+        if(errorResponse.error != null) {
+            return ApiError.InfuraError(errorResponse.error.code, errorResponse.error.message)
+        }
+
+        return ApiError.InvalidData
+    }
+
+    private fun <T> returnResultOrParsedError(response: Response<T>): Single<T> {
+        return if (response.error != null) {
+            Single.error(parseInfuraError(response))
+
+        } else {
+            Single.just(response.result)
         }
     }
 
