@@ -10,7 +10,7 @@ interface TransactionDao {
     @Query("SELECT * FROM `Transaction` ORDER BY blockNumber DESC, logIndex DESC LIMIT 1")
     fun getLastTransaction(): Transaction?
 
-    @Query("SELECT * FROM `Transaction` ORDER BY blockNumber DESC, transactionIndex DESC, interTransactionIndex DESC")
+    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC, transactionIndex DESC, interTransactionIndex DESC")
     fun getAllTransactions(): Single<List<Transaction>>
 
     @Query("SELECT * FROM `Transaction` WHERE logIndex IS NULL")
