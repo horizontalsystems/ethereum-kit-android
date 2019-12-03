@@ -4,6 +4,7 @@ import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
+import io.horizontalsystems.erc20kit.models.ValidationError
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.reactivex.BackpressureStrategy
@@ -63,18 +64,29 @@ class Erc20Kit(
     }
 
     fun estimateGas( toAddress: String, contractAddress: String, value: BigInteger, gasPrice: Long? = null ): Single<Long> {
-        val transactionInput = transactionManager.getTransactionInput(toAddress.hexStringToByteArray(), value)
 
-        return ethereumKit.estimateGas(contractAddress, null, gasLimit, gasPrice, transactionInput)
+        try{
+            val transactionInput = transactionManager.getTransactionInput(toAddress.hexStringToByteArray(), value)
+            return ethereumKit.estimateGas(contractAddress, null, gasLimit, gasPrice, transactionInput)
+
+        }catch (e: Exception){
+            throw ValidationError.InvalidAddress
+        }
     }
 
-
     fun send(to: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return transactionManager.send(to.hexStringToByteArray(), value.toBigInteger(), gasPrice, gasLimit)
-                .map { TransactionInfo(it) }
-                .doOnSuccess { txInfo ->
-                    state.transactionsSubject.onNext(listOf(txInfo))
-                }
+
+        try{
+            value.toBigInteger().let {
+                return transactionManager.send(to.hexStringToByteArray(), it, gasPrice, gasLimit)
+                        .map { TransactionInfo(it) }
+                        .doOnSuccess { txInfo ->
+                            state.transactionsSubject.onNext(listOf(txInfo))
+                        }
+            }
+        }catch (e: Exception) {
+            throw ValidationError.InvalidValue
+        }
     }
 
     fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionInfo>> {
