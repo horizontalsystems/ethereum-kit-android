@@ -30,9 +30,14 @@ class TransactionManager(
     }
 
     private fun handleLogs(logs: List<EthereumLog>) {
+        val nonZeroLogs = logs.filter { log ->
+            logs.count { it.transactionHash.contentEquals(log.transactionHash) } == 1 ||
+                    log.data.hexStringToByteArray().toBigInteger() != BigInteger.ZERO
+        }
+
         val pendingTransactions = storage.getPendingTransactions()
 
-        val updatedTransactions = logs.map { log ->
+        val updatedTransactions = nonZeroLogs.map { log ->
             var interTransactionIndex = log.logIndex
             val value = log.data.hexStringToByteArray().toBigInteger()
             val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
