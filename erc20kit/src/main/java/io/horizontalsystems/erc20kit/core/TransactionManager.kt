@@ -9,6 +9,7 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
+import java.util.concurrent.Executors
 import java.util.logging.Logger
 
 class TransactionManager(
@@ -18,6 +19,8 @@ class TransactionManager(
         private val dataProvider: IDataProvider,
         private val transactionBuilder: ITransactionBuilder)
     : ITransactionManager {
+
+    private val scheduler = Schedulers.from(Executors.newSingleThreadExecutor())
 
     private val logger = Logger.getLogger("TransactionManager")
     private val disposables = CompositeDisposable()
@@ -67,8 +70,13 @@ class TransactionManager(
             transaction
         }
 
+        if(pendingTransactions.isEmpty()){
+            finishSync(updatedTransactions)
+            return
+        }
+
         dataProvider.getTransactionStatuses(pendingTransactions.map { it.transactionHash })
-                .subscribeOn(Schedulers.io())
+                .observeOn(scheduler)
                 .map { statuses ->
                     updateFailStatus(pendingTransactions, statuses)
                 }.subscribe(
@@ -107,7 +115,7 @@ class TransactionManager(
         val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
 
         dataProvider.getTransactionLogs(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(scheduler)
                 .subscribe({ logs ->
                                handleLogs(logs)
                            }, {
