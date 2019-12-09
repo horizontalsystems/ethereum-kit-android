@@ -100,7 +100,7 @@ class TransactionManager(
                                  statuses: Map<ByteArray, TransactionStatus>): List<Transaction>? {
         return statuses.mapNotNull { (hash, status) ->
             if (status == TransactionStatus.FAILED || status == TransactionStatus.NOTFOUND) {
-                pendingTransactions.find { it.transactionHash.equals(hash) }?.let { foundTx ->
+                pendingTransactions.find { it.transactionHash.contentEquals(hash) }?.let { foundTx ->
                     foundTx.isError = true
                     foundTx
                 }
