@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.InfuraService
 import io.reactivex.Single
 import java.math.BigInteger
@@ -34,6 +35,14 @@ class InfuraRpcApiProvider(
 
     override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<String> {
         return infuraService.estimateGas(from, to, value, gasLimit, gasPrice, data)
+    }
+
+    override fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
+        return infuraService.transactionReceiptStatus(transactionHash)
+    }
+
+    override fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
+        return infuraService.transactionExist(transactionHash)
     }
 
     override fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
