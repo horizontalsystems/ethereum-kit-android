@@ -12,6 +12,7 @@ class TransactionRecord(
         var from: TransactionAddress,
         var to: TransactionAddress,
 
-        val blockHeight: Long?)
+        val blockHeight: Long?,
+        val isError: Boolean)
 
 class TransactionAddress(val address: String, val mine: Boolean)

@@ -16,6 +16,7 @@ class TransactionInfo(transaction: Transaction) {
     var logIndex: Int? = null
     var blockHash: String? = null
     var blockNumber: Long? = null
+    var isError: Boolean
 
     init {
         transactionHash = transaction.transactionHash.toHexString()
@@ -28,6 +29,7 @@ class TransactionInfo(transaction: Transaction) {
         timestamp = transaction.timestamp
         blockHash = transaction.blockHash?.toHexString()
         blockNumber = transaction.blockNumber
+        isError = transaction.isError
     }
 
 }

@@ -87,7 +87,8 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,
-                to = to
+                to = to,
+                isError = transaction.isError?.let { it != 0 }?: false
         )
     }
 }

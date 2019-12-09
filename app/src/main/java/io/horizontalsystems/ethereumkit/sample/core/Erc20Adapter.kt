@@ -98,7 +98,9 @@ class Erc20Adapter(
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                blockHeight = transaction.blockNumber
+                blockHeight = transaction.blockNumber,
+                isError = transaction.isError
+
         )
     }
 }
