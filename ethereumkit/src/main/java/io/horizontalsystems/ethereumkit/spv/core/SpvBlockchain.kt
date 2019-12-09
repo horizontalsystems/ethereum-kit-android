@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
@@ -81,6 +82,14 @@ class SpvBlockchain(
 
     override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         TODO("not implemented")
+    }
+
+    override fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
+        return rpcApiProvider.transactionReceiptStatus(transactionHash)
+    }
+
+    override fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
+        return rpcApiProvider.transactionExist(transactionHash)
     }
 
     override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {

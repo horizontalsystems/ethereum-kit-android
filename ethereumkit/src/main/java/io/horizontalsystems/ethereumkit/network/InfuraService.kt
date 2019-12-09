@@ -1,19 +1,24 @@
 package io.horizontalsystems.ethereumkit.network
 
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.models.ApiError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.removeLeadingZeros
+import io.horizontalsystems.ethereumkit.core.stripHexPrefix
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.reactivex.Single
 import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level
+import org.spongycastle.asn1.cmc.CMCStatus.success
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -108,7 +113,8 @@ class InfuraService(
         }.map { Unit }
     }
 
-    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>> {
+    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?,
+                topics: List<ByteArray?>): Single<List<EthereumLog>> {
         val fromBlockStr = fromBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "earliest"
         val toBlockStr = toBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "latest"
         val params: MutableMap<String, Any> = mutableMapOf(
@@ -134,9 +140,47 @@ class InfuraService(
         }
     }
 
-    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data:String?): Single<String> {
+    fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
+        val request = Request("eth_getTransactionReceipt", listOf(transactionHash.toHexString()))
 
-        val params: MutableMap<String,String> = mutableMapOf("to" to toAddress.toLowerCase())
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
+            if (it.error != null)
+                Single.just(TransactionStatus.FAILED)
+            else {
+
+                it.result?.let { result ->
+                    val txStatusMap: Map<String, String> = Gson().fromJson(result, object : TypeToken<Map<String, Any>>() {}.type)
+
+                    txStatusMap["status"]?.let { statusStr ->
+                        val success = Integer.parseInt(statusStr.stripHexPrefix(), 16)
+
+                        if(success == 0)
+                            Single.just(TransactionStatus.SUCCESS)
+                        else
+                            Single.just(TransactionStatus.FAILED)
+                    }
+                }
+
+                Single.just(TransactionStatus.NOTFOUND)
+            }
+        }
+    }
+
+    fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
+        val request = Request("eth_getTransactionByHash", listOf(transactionHash.toHexString()))
+
+        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
+            if (it.error != null || it.result == null)
+                Single.just(false)
+            else
+                Single.just(true)
+        }
+    }
+
+    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?,
+                    data: String?): Single<String> {
+
+        val params: MutableMap<String, String> = mutableMapOf("to" to toAddress.toLowerCase())
         fromAddress?.let { params.put("from", fromAddress.toLowerCase()) }
         gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16).removeLeadingZeros()}") }
         gasPrice?.let { params.put("gasPrice", "0x${gasPrice.toString(16).removeLeadingZeros()}") }
@@ -159,7 +203,8 @@ class InfuraService(
 
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
         val request = Request("eth_call",
-                              listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()), "latest"))
+                              listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()),
+                                     "latest"))
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
@@ -167,7 +212,7 @@ class InfuraService(
 
     private fun <T> parseInfuraError(errorResponse: Response<T>): Exception {
 
-        if(errorResponse.error != null) {
+        if (errorResponse.error != null) {
             return ApiError.InfuraError(errorResponse.error.code, errorResponse.error.message)
         }
 

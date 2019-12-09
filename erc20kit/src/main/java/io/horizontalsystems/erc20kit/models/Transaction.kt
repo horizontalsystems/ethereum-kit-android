@@ -11,7 +11,8 @@ class Transaction(var transactionHash: ByteArray,
                   val from: ByteArray,
                   val to: ByteArray,
                   val value: BigInteger,
-                  var timestamp: Long = System.currentTimeMillis() / 1000) {
+                  var timestamp: Long = System.currentTimeMillis() / 1000,
+                  var isError: Boolean = false) {
 
     var logIndex: Int? = null
     var blockHash: ByteArray? = null

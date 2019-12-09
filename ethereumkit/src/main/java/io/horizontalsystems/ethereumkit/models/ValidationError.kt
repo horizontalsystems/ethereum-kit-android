@@ -1,4 +1,4 @@
-package io.horizontalsystems.erc20kit.models
+package io.horizontalsystems.ethereumkit.models
 
 import java.lang.Exception
 

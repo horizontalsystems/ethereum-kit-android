@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
@@ -86,6 +87,14 @@ class ApiBlockchain(
                 .flatMap {
                     Single.just(BigInteger(it.replace("0x", ""), 16).toLong())
                 }
+    }
+
+    override fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
+        return rpcApiProvider.transactionReceiptStatus(transactionHash)
+    }
+
+    override fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
+        return rpcApiProvider.transactionExist(transactionHash)
     }
 
     override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
