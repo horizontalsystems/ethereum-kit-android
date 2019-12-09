@@ -5,9 +5,7 @@ import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
-import io.horizontalsystems.ethereumkit.models.EthereumLog
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionInfo
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.network.MainNet
@@ -113,15 +111,44 @@ class EthereumKit(
                 .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
-    fun estimateGas(contractAddress: String, value: BigInteger?, gasLimit: Long? = null, gasPrice: Long? = null, data: ByteArray? = null): Single<Long> {
-        return blockchain.estimateGas( receiveAddress, to = contractAddress, value = value , gasLimit = gasLimit, gasPrice = gasPrice, data = data)
+    fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
+
+        return blockchain.transactionReceiptStatus(transactionHash).flatMap { transactionStatus ->
+
+            if (transactionStatus == TransactionStatus.SUCCESS || transactionStatus == TransactionStatus.FAILED)
+                Single.just(transactionStatus)
+            else {
+                blockchain.transactionExist(transactionHash).flatMap { exist ->
+                    if (exist)
+                        Single.just(TransactionStatus.PENDING)
+                    else
+                        Single.just(TransactionStatus.NOTFOUND)
+                }
+            }
+        }
+    }
+
+    fun estimateGas(contractAddress: String, value: BigInteger?, gasLimit: Long? = null, gasPrice: Long? = null,
+                    data: ByteArray? = null): Single<Long> {
+        return blockchain.estimateGas(receiveAddress, to = contractAddress, value = value, gasLimit = gasLimit,
+                                      gasPrice = gasPrice, data = data)
+    }
+
+    @Throws(ValidationError::class)
+    private fun convertValue(value: String): BigInteger {
+        try {
+            return value.toBigInteger()
+        } catch (e: Exception) {
+            throw ValidationError.InvalidValue
+        }
     }
 
     fun send(toAddress: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return send(toAddress.hexStringToByteArray(), value.toBigInteger(), ByteArray(0), gasPrice, gasLimit)
+        return send(toAddress.hexStringToByteArray(), convertValue(value), ByteArray(0), gasPrice, gasLimit)
     }
 
-    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long,
+             gasLimit: Long): Single<TransactionInfo> {
         val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
         logger.info("send rawTransaction: $rawTransaction")
 
@@ -137,7 +164,8 @@ class EthereumKit(
                 .map { TransactionInfo(it) }
     }
 
-    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long,
+                pullTimestamps: Boolean): Single<List<EthereumLog>> {
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 
@@ -234,10 +262,12 @@ class EthereumKit(
     }
 
     companion object {
-        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType, infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
+        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType,
+                        infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
             val blockchain: IBlockchain
 
-            val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
+            val publicKey =
+                    CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
             val address = CryptoUtils.sha3(publicKey).takeLast(20).toByteArray()
 
             val network = networkType.getNetwork()
@@ -250,14 +280,18 @@ class EthereumKit(
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
 
-                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, ConnectionManager(context))
+                    blockchain =
+                            ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider,
+                                                      ConnectionManager(context))
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
                     val storage = SpvStorage(spvDatabase)
 
-                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
+                    blockchain =
+                            SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider,
+                                                      network, address, nodeKey)
                 }
                 is SyncMode.GethSyncMode -> {
                     throw Exception("Geth Sync Mode not supported!")
@@ -276,7 +310,8 @@ class EthereumKit(
 
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address, networkType, walletId)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address,
+                                          networkType, walletId)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit
@@ -284,7 +319,8 @@ class EthereumKit(
             return ethereumKit
         }
 
-        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType, infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
+        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType,
+                        infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
             val seed = Mnemonic().toSeed(words)
             val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey

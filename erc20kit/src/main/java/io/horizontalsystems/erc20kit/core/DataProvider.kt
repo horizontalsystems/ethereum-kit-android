@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.ERC20
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
@@ -14,7 +15,8 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     override val lastBlockHeight: Long
         get() = ethereumKit.lastBlockHeight ?: 0
 
-    override fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>> {
+    override fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long,
+                                    to: Long): Single<List<EthereumLog>> {
         val addressTopic = ByteArray(12) + address
 
         val outgoingTopics = listOf(ERC20.transferEventTopic, addressTopic)
@@ -43,6 +45,27 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
                 }
     }
 
+    override fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>> {
+
+        val singles = transactionHashes.map { hash ->
+            ethereumKit.transactionStatus(hash).flatMap { txStatus ->
+                Single.just(Pair(hash, txStatus))
+            }
+        }
+
+        return Single.zip(singles) { singleResults ->
+            singleResults.map { it as? Pair<ByteArray, TransactionStatus> }
+        }.flatMap { list ->
+            val map = mutableMapOf<ByteArray, TransactionStatus>()
+            list.forEach {
+                if (it != null) {
+                    map[it.first] = it.second
+                }
+            }
+            Single.just(map)
+        }
+    }
+
     override fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger> {
         val balanceOfData = ERC20.encodeFunctionBalanceOf(address)
 
@@ -50,7 +73,8 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
                 .map { it.toBigInteger() }
     }
 
-    override fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray> {
+    override fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long,
+                      gasLimit: Long): Single<ByteArray> {
         return ethereumKit.send(contractAddress, BigInteger.ZERO, transactionInput, gasPrice, gasLimit).map { txInfo ->
             txInfo.hash.hexStringToByteArray()
         }

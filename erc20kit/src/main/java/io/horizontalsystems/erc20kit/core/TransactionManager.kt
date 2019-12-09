@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -10,18 +11,17 @@ import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 import java.util.logging.Logger
 
-class TransactionManager(private val contractAddress: ByteArray,
-                         private val address: ByteArray,
-                         private val storage: ITransactionStorage,
-                         private val dataProvider: IDataProvider,
-                         private val transactionBuilder: ITransactionBuilder) : ITransactionManager {
+class TransactionManager(
+        private val contractAddress: ByteArray,
+        private val address: ByteArray,
+        private val storage: ITransactionStorage,
+        private val dataProvider: IDataProvider,
+        private val transactionBuilder: ITransactionBuilder)
+    : ITransactionManager {
 
     private val logger = Logger.getLogger("TransactionManager")
-
     private val disposables = CompositeDisposable()
-
     override var listener: ITransactionManagerListener? = null
-
     override val lastTransactionBlockHeight: Long?
         get() = storage.lastTransactionBlockHeight
 
@@ -37,7 +37,7 @@ class TransactionManager(private val contractAddress: ByteArray,
 
         val pendingTransactions = storage.getPendingTransactions()
 
-        val transactions = nonZeroLogs.map { log ->
+        val updatedTransactions = nonZeroLogs.map { log ->
             var interTransactionIndex = log.logIndex
             val value = log.data.hexStringToByteArray().toBigInteger()
             val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
@@ -67,8 +67,39 @@ class TransactionManager(private val contractAddress: ByteArray,
             transaction
         }
 
+        dataProvider.getTransactionStatuses(pendingTransactions.map { it.transactionHash })
+                .subscribeOn(Schedulers.io())
+                .map { statuses ->
+                    updateFailStatus(pendingTransactions, statuses)
+                }.subscribe(
+                        { failedTransactions ->
+                            failedTransactions?.let {
+                                finishSync(updatedTransactions.plus(failedTransactions))
+                            }
+                        },
+                        { error -> finishSync(updatedTransactions) })
+                .let {
+                    disposables.add(it)
+                }
+    }
+
+    private fun finishSync(transactions: List<Transaction>) {
         storage.save(transactions)
         listener?.onSyncSuccess(transactions)
+    }
+
+    private fun updateFailStatus(pendingTransactions: List<Transaction>,
+                                 statuses: Map<ByteArray, TransactionStatus>): List<Transaction>? {
+        return statuses.mapNotNull { (hash, status) ->
+            if (status == TransactionStatus.FAILED || status == TransactionStatus.NOTFOUND) {
+                pendingTransactions.find { it.transactionHash.equals(hash) }?.let { foundTx ->
+                    foundTx.isError = true
+                    foundTx
+                }
+            } else {
+                null
+            }
+        }
     }
 
     override fun sync() {
@@ -78,11 +109,11 @@ class TransactionManager(private val contractAddress: ByteArray,
         dataProvider.getTransactionLogs(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ logs ->
-                    handleLogs(logs)
-                }, {
-                    logger.warning("Transaction sync error: ${it.message}")
-                    listener?.onSyncTransactionsError()
-                })
+                               handleLogs(logs)
+                           }, {
+                               logger.warning("Transaction sync error: ${it.message}")
+                               listener?.onSyncTransactionsError()
+                           })
                 .let {
                     disposables.add(it)
                 }
@@ -94,9 +125,9 @@ class TransactionManager(private val contractAddress: ByteArray,
         return dataProvider.send(contractAddress, transactionInput, gasPrice, gasLimit)
                 .map { hash ->
                     Transaction(transactionHash = hash,
-                            from = address,
-                            to = to,
-                            value = value)
+                                from = address,
+                                to = to,
+                                value = value)
                 }.doOnSuccess { transaction ->
                     storage.save(listOf(transaction))
                 }
@@ -105,5 +136,4 @@ class TransactionManager(private val contractAddress: ByteArray,
     override fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray {
         return transactionBuilder.transferTransactionInput(to, value)
     }
-
 }
