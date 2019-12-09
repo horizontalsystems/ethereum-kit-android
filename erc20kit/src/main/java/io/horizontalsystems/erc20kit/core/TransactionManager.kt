@@ -30,9 +30,14 @@ class TransactionManager(private val contractAddress: ByteArray,
     }
 
     private fun handleLogs(logs: List<EthereumLog>) {
+        val nonZeroLogs = logs.filter { log ->
+            logs.count { it.transactionHash.contentEquals(log.transactionHash) } == 1 ||
+                    log.data.hexStringToByteArray().toBigInteger() != BigInteger.ZERO
+        }
+
         val pendingTransactions = storage.getPendingTransactions()
 
-        val transactions = logs.map { log ->
+        val transactions = nonZeroLogs.map { log ->
             var interTransactionIndex = log.logIndex
             val value = log.data.hexStringToByteArray().toBigInteger()
             val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
@@ -97,7 +102,7 @@ class TransactionManager(private val contractAddress: ByteArray,
                 }
     }
 
-    override fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray{
+    override fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray {
         return transactionBuilder.transferTransactionInput(to, value)
     }
 
