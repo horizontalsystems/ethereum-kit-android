@@ -1,23 +1,25 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.ethereumkit.models.TransactionStatus
-import io.reactivex.Observable
 import io.reactivex.Single
-import io.reactivex.functions.Function
 import org.junit.Assert.*
 import org.junit.Test
 
-class DataProviderTest{
+class DataProviderTest {
 
     @Test
-    fun zipTest(){
+    fun zipTest() {
 
-        val values = listOf<String>("1_Value", "2_Value", "3_Value", "4_Value", "5_Value", "6_Value")
+        val values = listOf("1_Value", "2_Value", "3_Value", "4_Value", "5_Value", "6_Value")
 
-        getSingleZip(values).subscribe ({
-            value -> println(value)},
-        {   error -> println("Error:$error")
-        })
+        getSingleZip(values).subscribe(
+                { value ->
+                    assertEquals(value.get("1_Value"), "1_Value_Return")
+                    assertEquals(value.get("2_Value"), "2_Value_Return")
+                    assertEquals(value.size, values.size)
+                },
+                { error ->
+                    println("Error:$error")
+                })
 
         println("End")
     }
@@ -27,7 +29,7 @@ class DataProviderTest{
         return Single.just(value + "_Return")
     }
 
-    private fun getSingleZip(values: List<String>): Single<Map<String,String>> {
+    private fun getSingleZip(values: List<String>): Single<Map<String, String>> {
 
         val singles = values.map { hash ->
             getSingle(hash).flatMap { txStatus ->
@@ -45,7 +47,6 @@ class DataProviderTest{
                 }
             }
             Single.just(map)
-
         }
     }
 }
