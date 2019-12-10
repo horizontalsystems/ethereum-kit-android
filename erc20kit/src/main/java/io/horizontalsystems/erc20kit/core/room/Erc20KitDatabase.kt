@@ -9,7 +9,7 @@ import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 
-@Database(entities = [Transaction::class, TokenBalance::class], version = 1, exportSchema = true)
+@Database(entities = [Transaction::class, TokenBalance::class], version = 2, exportSchema = true)
 @TypeConverters(RoomTypeConverters::class)
 abstract class Erc20KitDatabase : RoomDatabase() {
 
