@@ -32,6 +32,7 @@ class EthereumKit(
         private val address: ByteArray,
         val networkType: NetworkType,
         val walletId: String,
+        val etherscanKey: String,
         private val state: EthereumKitState = EthereumKitState())
     : IBlockchainListener, ITransactionManagerListener {
 
@@ -311,7 +312,7 @@ class EthereumKit(
             val addressValidator = AddressValidator()
 
             val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address,
-                                          networkType, walletId)
+                                          networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit

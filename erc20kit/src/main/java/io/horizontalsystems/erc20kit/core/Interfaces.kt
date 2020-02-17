@@ -17,11 +17,10 @@ interface ITransactionManagerListener {
 interface ITransactionManager {
     var listener: ITransactionManagerListener?
 
-    val lastTransactionBlockHeight: Long?
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun sync()
     fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
-    fun getTransactionInput(to: ByteArray, value: BigInteger):ByteArray
+    fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray
 }
 
 interface IBalanceManagerListener {
@@ -42,6 +41,10 @@ interface ITransactionStorage {
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun getPendingTransactions(): List<Transaction>
     fun save(transactions: List<Transaction>)
+}
+
+interface ITransactionsProvider {
+    fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>>
 }
 
 interface ITokenBalanceStorage {

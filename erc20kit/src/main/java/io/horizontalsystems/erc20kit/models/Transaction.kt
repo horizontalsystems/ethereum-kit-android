@@ -6,7 +6,7 @@ import java.util.*
 
 @Entity(primaryKeys = ["transactionHash", "interTransactionIndex"])
 class Transaction(var transactionHash: ByteArray,
-                  val interTransactionIndex: Int = 0,
+                  var interTransactionIndex: Int = 0,
                   var transactionIndex: Int? = null,
                   val from: ByteArray,
                   val to: ByteArray,
@@ -22,11 +22,11 @@ class Transaction(var transactionHash: ByteArray,
         if (other !is Transaction)
             return false
 
-        return transactionHash.contentEquals(other.transactionHash) && logIndex == other.logIndex
+        return transactionHash.contentEquals(other.transactionHash) && interTransactionIndex == other.interTransactionIndex
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(transactionHash, logIndex)
+        return Objects.hash(transactionHash, interTransactionIndex)
     }
 
 }
