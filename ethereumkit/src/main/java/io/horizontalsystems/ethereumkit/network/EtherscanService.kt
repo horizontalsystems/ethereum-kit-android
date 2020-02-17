@@ -57,8 +57,8 @@ class EtherscanService(private val networkType: NetworkType,
         return service.getTransactionList("account", "txList", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
     }
 
-    fun getTokenTransactions(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
-        return service.getTokenTransactions("account", "tokentx", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+    fun getTokenTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTokenTransactions("account", "tokentx", contractAddress.toHexString(), address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
     }
 
     private interface EtherscanServiceAPI {
@@ -77,6 +77,7 @@ class EtherscanService(private val networkType: NetworkType,
         fun getTokenTransactions(
                 @Query("module") module: String,
                 @Query("action") action: String,
+                @Query("contractaddress") contractAddress: String,
                 @Query("address") address: String,
                 @Query("startblock") startblock: Long,
                 @Query("endblock") endblock: Long,

@@ -8,6 +8,7 @@ import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.ValidationError
+import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -152,20 +153,16 @@ class Erc20Kit(
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw
 
-            val erc20KitDatabase =
-                    Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId,
-                                                          contractAddress)
+            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId, contractAddress)
             val roomStorage = Erc20Storage(erc20KitDatabase)
             val transactionStorage: ITransactionStorage = roomStorage
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
             val dataProvider: IDataProvider = DataProvider(ethereumKit)
+            val transactionsProvider = EtherscanTransactionsProvider(EtherscanService(ethereumKit.networkType, ethereumKit.etherscanKey)) // TransactionsProvider(dataProvider)
             val transactionBuilder: ITransactionBuilder = TransactionBuilder()
-            val transactionManager: ITransactionManager =
-                    TransactionManager(contractAddressRaw, address, transactionStorage, dataProvider,
-                                       transactionBuilder)
-            val balanceManager: IBalanceManager =
-                    BalanceManager(contractAddressRaw, address, balanceStorage, dataProvider)
+            val transactionManager: ITransactionManager = TransactionManager(contractAddressRaw, address, transactionStorage, transactionsProvider, dataProvider, transactionBuilder)
+            val balanceManager: IBalanceManager = BalanceManager(contractAddressRaw, address, balanceStorage, dataProvider)
 
             val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, gasLimit)
 
