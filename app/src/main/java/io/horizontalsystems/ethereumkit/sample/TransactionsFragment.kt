@@ -104,7 +104,6 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             - From: ${tx.from.address}
             - To: ${tx.to.address}
             - Amount: ${tx.amount.stripTrailingZeros()}
-            - isError: ${tx.isError}
         """
 
         if (lastBlockHeight > 0)
