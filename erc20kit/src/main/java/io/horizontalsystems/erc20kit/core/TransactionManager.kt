@@ -1,7 +1,10 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
+import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -13,75 +16,88 @@ class TransactionManager(
         private val contractAddress: ByteArray,
         private val address: ByteArray,
         private val storage: ITransactionStorage,
-        private val transactionsProvider: ITransactionsProvider,
         private val dataProvider: IDataProvider,
-        private val transactionBuilder: ITransactionBuilder) : ITransactionManager {
+        private val transactionBuilder: ITransactionBuilder)
+    : ITransactionManager {
 
     private val scheduler = Schedulers.from(Executors.newSingleThreadExecutor())
+
     private val logger = Logger.getLogger("TransactionManager")
     private val disposables = CompositeDisposable()
-
     override var listener: ITransactionManagerListener? = null
+    override val lastTransactionBlockHeight: Long?
+        get() = storage.lastTransactionBlockHeight
 
     override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return storage.getTransactions(fromTransaction, limit)
     }
 
-    override fun sync() {
-        val lastBlockHeight = dataProvider.lastBlockHeight
-        val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
+    private fun handleLogs(logs: List<EthereumLog>) {
+        val nonZeroLogs = logs.filter { log ->
+            logs.count { it.transactionHash.contentEquals(log.transactionHash) } == 1 ||
+                    log.data.hexStringToByteArray().toBigInteger() != BigInteger.ZERO
+        }
 
-        transactionsProvider.getTransactions(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
-                .subscribeOn(scheduler)
-                .subscribe({ transactions ->
-                    handleTransactions(transactions.filter { it.value != BigInteger.ZERO })
-                }, {
-                    logger.warning("Transaction sync error: ${it.message}")
-                    listener?.onSyncTransactionsError()
-                })
+        val pendingTransactions = storage.getPendingTransactions()
+
+        val updatedTransactions = nonZeroLogs.map { log ->
+            var interTransactionIndex = log.logIndex
+            val value = log.data.hexStringToByteArray().toBigInteger()
+            val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
+            val to = log.topics[2].hexStringToByteArray().copyOfRange(12, 32)
+
+            if (pendingTransactions.count {
+                        it.transactionHash.contentEquals(log.transactionHash.hexStringToByteArray())
+                                && it.from.contentEquals(from)
+                                && it.to.contentEquals(to)
+                    } > 0) {
+                interTransactionIndex = 0
+            }
+
+            val transaction = Transaction(
+                    transactionHash = log.transactionHash.hexStringToByteArray(),
+                    interTransactionIndex = interTransactionIndex,
+                    transactionIndex = log.transactionIndex,
+                    from = from,
+                    to = to,
+                    value = value,
+                    timestamp = log.timestamp ?: System.currentTimeMillis() / 1000)
+
+            transaction.logIndex = log.logIndex
+            transaction.blockHash = log.blockHash.hexStringToByteArray()
+            transaction.blockNumber = log.blockNumber
+
+            transaction
+        }
+
+        if(pendingTransactions.isEmpty()){
+            finishSync(updatedTransactions)
+            return
+        }
+
+        dataProvider.getTransactionStatuses(pendingTransactions.map { it.transactionHash })
+                .observeOn(scheduler)
+                .map { statuses ->
+                    updateFailStatus(pendingTransactions, statuses)
+                }.subscribe(
+                        { failedTransactions ->
+                            failedTransactions?.let {
+                                finishSync(updatedTransactions.plus(failedTransactions))
+                            }
+                        },
+                        { error -> finishSync(updatedTransactions) })
                 .let {
                     disposables.add(it)
                 }
     }
 
-    private fun handleTransactions(transactions: List<Transaction>) {
-        val pendingTransactions = storage.getPendingTransactions().toMutableList()
-
-        transactions.forEach { transaction ->
-            val pendingTransactionIndex = pendingTransactions.indexOfFirst {
-                it.transactionHash.contentEquals(transaction.transactionHash)
-                        && it.from.contentEquals(transaction.from)
-                        && it.to.contentEquals(transaction.to)
-            }
-
-            if (pendingTransactionIndex > 0) {
-                // when this transaction was sent interTransactionIndex was set to 0, so we need it to set 0 for it to replace the transaction in database
-                transaction.interTransactionIndex = 0
-                pendingTransactions.removeAt(pendingTransactionIndex)
-            }
-        }
-
-        if (pendingTransactions.isEmpty()) {
-            finishSync(transactions)
-            return
-        }
-
-        dataProvider.getTransactionStatuses(pendingTransactions.map { it.transactionHash })
-                .map { statuses ->
-                    transactions.plus(getFailedTransactions(pendingTransactions, statuses))
-                }
-                .subscribeOn(scheduler)
-                .subscribe({ allTransactions ->
-                    finishSync(allTransactions)
-                }, {
-                    finishSync(transactions)
-                }).let {
-                    disposables.add(it)
-                }
+    private fun finishSync(transactions: List<Transaction>) {
+        storage.save(transactions)
+        listener?.onSyncSuccess(transactions)
     }
 
-    private fun getFailedTransactions(pendingTransactions: List<Transaction>,
-                                      statuses: Map<ByteArray, TransactionStatus>): List<Transaction> {
+    private fun updateFailStatus(pendingTransactions: List<Transaction>,
+                                 statuses: Map<ByteArray, TransactionStatus>): List<Transaction>? {
         return statuses.mapNotNull { (hash, status) ->
             if (status == TransactionStatus.FAILED || status == TransactionStatus.NOTFOUND) {
                 pendingTransactions.find { it.transactionHash.contentEquals(hash) }?.let { foundTx ->
@@ -94,9 +110,21 @@ class TransactionManager(
         }
     }
 
-    private fun finishSync(transactions: List<Transaction>) {
-        storage.save(transactions)
-        listener?.onSyncSuccess(transactions)
+    override fun sync() {
+        val lastBlockHeight = dataProvider.lastBlockHeight
+        val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
+
+        dataProvider.getTransactionLogs(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
+                .subscribeOn(scheduler)
+                .subscribe({ logs ->
+                               handleLogs(logs)
+                           }, {
+                               logger.warning("Transaction sync error: ${it.message}")
+                               listener?.onSyncTransactionsError()
+                           })
+                .let {
+                    disposables.add(it)
+                }
     }
 
     override fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
@@ -105,9 +133,9 @@ class TransactionManager(
         return dataProvider.send(contractAddress, transactionInput, gasPrice, gasLimit)
                 .map { hash ->
                     Transaction(transactionHash = hash,
-                            from = address,
-                            to = to,
-                            value = value)
+                                from = address,
+                                to = to,
+                                value = value)
                 }.doOnSuccess { transaction ->
                     storage.save(listOf(transaction))
                 }
