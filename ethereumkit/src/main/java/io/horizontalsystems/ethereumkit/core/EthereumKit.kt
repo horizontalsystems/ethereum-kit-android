@@ -273,7 +273,7 @@ class EthereumKit(
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
             val transactionBuilder = TransactionBuilder(address)
-            val rpcApiProvider = InfuraRpcApiProvider.getInstance(networkType, infuraCredentials, address)
+            val rpcApiProvider = IncubedRpcApiProvider(networkType, address) //InfuraRpcApiProvider.getInstance(networkType, infuraCredentials, address)
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
