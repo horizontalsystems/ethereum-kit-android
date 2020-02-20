@@ -49,7 +49,7 @@ class InfuraRpcApiProvider(
         return infuraService.getStorageAt(contractAddress, position, blockNumber)
     }
 
-    override fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>> {
+    override fun getLogs(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>> {
         return infuraService.getLogs(address, fromBlock, toBlock, topics)
     }
 

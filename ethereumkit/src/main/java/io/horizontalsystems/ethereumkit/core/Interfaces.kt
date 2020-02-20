@@ -68,7 +68,7 @@ interface IRpcApiProvider {
     fun send(signedTransaction: ByteArray): Single<Unit>
 
     fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String>
-    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?, topics: List<ByteArray?>): Single<List<EthereumLog>>
+    fun getLogs(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>>
     fun getBlock(blockNumber: Long): Single<Block>
     fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
     fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<String>
