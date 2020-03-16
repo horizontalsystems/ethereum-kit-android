@@ -178,7 +178,7 @@ public class TransactionRequest {
         if (from != null)
             JSON.appendKey(sb, "from", from);
         if (gas > 0)
-            JSON.appendKey(sb, "gasLimit", JSON.asString(gas));
+            JSON.appendKey(sb, "gas", JSON.asString(gas));
         if (gasPrice > 0)
             JSON.appendKey(sb, "gasPrice", JSON.asString(gasPrice));
         if (value != null)
