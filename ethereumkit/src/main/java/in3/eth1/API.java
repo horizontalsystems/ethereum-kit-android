@@ -2,7 +2,7 @@
  * This file is part of the Incubed project.
  * Sources: https://github.com/slockit/in3-c
  * 
- * Copyright (C) 2018-2019 slock.it GmbH, Blockchains LLC
+ * Copyright (C) 2018-2020 slock.it GmbH, Blockchains LLC
  * 
  * 
  * COMMERCIAL LICENSE USAGE
@@ -35,8 +35,8 @@
 package in3.eth1;
 
 import in3.*;
-import in3.eth1.*;
-
+import in3.utils.JSON;
+import in3.utils.Signer;
 import java.math.BigInteger;
 
 /**
@@ -45,239 +45,273 @@ import java.math.BigInteger;
  */
 public class API {
 
-    private IN3 in3;
+  // Methods
+  private static final String GET_BLOCK_BY_NUMBER                       = "eth_getBlockByNumber";
+  private static final String BLOCK_BY_HASH                             = "eth_getBlockByHash";
+  private static final String BLOCK_NUMBER                              = "eth_blockNumber";
+  private static final String GAS_PRICE                                 = "eth_gasPrice";
+  private static final String CHAIN_ID                                  = "eth_chainId";
+  private static final String CALL                                      = "eth_call";
+  private static final String ESTIMATE_GAS                              = "eth_estimateGas";
+  private static final String GET_BALANCE                               = "eth_getBalance";
+  private static final String GET_CODE                                  = "eth_getCode";
+  private static final String GET_STORAGE_AT                            = "eth_getStorageAt";
+  private static final String GET_BLOCK_TRANSACTION_COUNT_BY_HASH       = "eth_getBlockTransactionCountByHash";
+  private static final String GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER     = "eth_getBlockTransactionCountByNumber";
+  private static final String GET_FILTER_CHANGES                        = "eth_getFilterChanges";
+  private static final String GET_FILTER_LOGS                           = "eth_getFilterLogs";
+  private static final String GET_LOGS                                  = "eth_getLogs";
+  private static final String GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX   = "eth_getTransactionByBlockHashAndIndex";
+  private static final String GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX = "eth_getTransactionByBlockNumberAndIndex";
+  private static final String GET_TRANSACTION_BY_HASH                   = "eth_getTransactionByHash";
+  private static final String GET_TRANSACTION_COUNT                     = "eth_getTransactionCount";
+  private static final String GET_TRANSACTION_RECEIPT                   = "eth_getTransactionReceipt";
+  private static final String GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX       = "eth_getUncleByBlockNumberAndIndex";
+  private static final String GET_UNCLE_COUNT_BY_BLOCK_HASH             = "eth_getUncleCountByBlockHash";
+  private static final String GET_UNCLE_COUNT_BY_BLOCK_NUMBER           = "eth_getUncleCountByBlockNumber";
+  private static final String NEW_BLOCK_FILTER                          = "eth_newBlockFilter";
+  private static final String NEW_FILTER                                = "eth_newFilter";
+  private static final String UNINSTALL_FILTER                          = "eth_uninstallFilter";
+  private static final String SEND_RAW_TRANSACTION                      = "eth_sendRawTransaction";
+  private static final String SEND_TRANSACTION                          = "eth_sendTransaction";
+  private static final String ABI_ENCODE                                = "in3_abiEncode";
+  private static final String ABI_DECODE                                = "in3_abiDecode";
+  private static final String CHECKSUM_ADDRESS                          = "in3_checksumAddress";
+  private static final String ENS                                       = "in3_ens";
 
-    /**
+  private IN3 in3;
+
+  /**
      * creates a API using the given incubed instance.
      */
-    public API(IN3 in3) {
-        this.in3 = in3;
-    }
+  public API(IN3 in3) {
+    this.in3 = in3;
+  }
 
-    /**
+  /**
      * finds the Block as specified by the number. use `Block.LATEST` for getting
      * the lastest block.
      */
-    public Block getBlockByNumber(long block, /** < the Blocknumber */
-    boolean includeTransactions /**
+  public Block getBlockByNumber(long    block,              /** < the Blocknumber */
+                                boolean includeTransactions /**
                                  * < if true all Transactions will be includes, if not only the
                                  * transactionhashes
                                  */
-    ) {
-        return Block.asBlock(in3.sendRPCasObject("eth_getBlockByNumber",
-                new Object[] { getBlockString(block), includeTransactions }));
-    }
+  ) {
+    return Block.asBlock(in3.sendRPCasObject(GET_BLOCK_BY_NUMBER,
+                                             new Object[] {getBlockString(block), includeTransactions}));
+  }
 
-    /**
+  /**
      * Returns information about a block by hash.
      */
-    public Block getBlockByHash(String blockHash, /** < the Blocknumber */
-    boolean includeTransactions /**
+  public Block getBlockByHash(String  blockHash,          /** < the Blocknumber */
+                              boolean includeTransactions /**
                                  * < if true all Transactions will be includes, if not only the
                                  * transactionhashes
                                  */
-    ) {
-        return Block
-                .asBlock(in3.sendRPCasObject("eth_getBlockByHash", new Object[] { blockHash, includeTransactions }));
-    }
+  ) {
+    return Block
+        .asBlock(in3.sendRPCasObject(BLOCK_BY_HASH, new Object[] {blockHash, includeTransactions}));
+  }
 
-    /**
+  /**
      * the current BlockNumber.
      */
-    public long getBlockNumber() {
-        return JSON.asLong(in3.sendRPCasObject("eth_blockNumber", new Object[] {}));
-    }
+  public long getBlockNumber() {
+    return JSON.asLong(in3.sendRPCasObject(BLOCK_NUMBER, new Object[] {}));
+  }
 
-    /**
+  /**
      * the current Gas Price.
      */
-    public long getGasPrice() {
-        return JSON.asLong(in3.sendRPCasObject("eth_gasPrice", new Object[] {}));
-    }
+  public long getGasPrice() {
+    return JSON.asLong(in3.sendRPCasObject(GAS_PRICE, new Object[] {}));
+  }
 
-    /**
+  /**
      * Returns the EIP155 chain ID used for transaction signing at the current best
      * block. Null is returned if not available.
      */
-    public String getChainId() {
-        return JSON.asString(in3.sendRPCasObject("eth_chainId", new Object[] {}));
-    }
+  public String getChainId() {
+    return JSON.asString(in3.sendRPCasObject(CHAIN_ID, new Object[] {}));
+  }
 
-    /**
+  /**
      * calls a function of a smart contract and returns the result.
      * 
      * @return the decoded result. if only one return value is expected the Object
      *         will be returned, if not an array of objects will be the result.
      */
-    public Object call(TransactionRequest request, /** < the transaction to call. */
-    long block /** < the Block used to for the state. */
-    ) {
-        return request.getResult((String) in3.sendRPCasObject("eth_call",
-                new Object[] { request.getTransactionJson(), getBlockString(block) }));
-    }
+  public Object call(TransactionRequest request, /** < the transaction to call. */
+                     long               block    /** < the Block used to for the state. */
+  ) {
+    return request.getResult((String) in3.sendRPCasObject(CALL,
+                                                          new Object[] {request.getTransactionJson(), getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Makes a call or transaction, which won't be added to the blockchain and
      * returns the used gas, which can be used for estimating the used gas.
      * 
      * @return the gas required to call the function.
      */
-    public long estimateGas(TransactionRequest request, /** < the transaction to call. */
-    long block /** < the Block used to for the state. */
-    ) {
-        return JSON.asLong(in3.sendRPCasObject("eth_estimateGas",
-                new Object[] { request.getTransactionJson(), getBlockString(block) }));
-    }
+  public long estimateGas(TransactionRequest request, /** < the transaction to call. */
+                          long               block    /** < the Block used to for the state. */
+  ) {
+    return JSON.asLong(in3.sendRPCasObject(ESTIMATE_GAS,
+                                           new Object[] {request.getTransactionJson(), getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Returns the balance of the account of given address in wei.
      */
-    public BigInteger getBalance(String address, long block) {
-        return JSON
-                .asBigInteger(in3.sendRPCasObject("eth_getBalance", new Object[] { address, getBlockString(block) }));
-    }
+  public BigInteger getBalance(String address, long block) {
+    return JSON
+        .asBigInteger(in3.sendRPCasObject(GET_BALANCE, new Object[] {address, getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Returns code at a given address.
      */
-    public String getCode(String address, long block) {
-        return JSON.asString(in3.sendRPCasObject("eth_getCode", new Object[] { address, getBlockString(block) }));
-    }
+  public String getCode(String address, long block) {
+    return JSON.asString(in3.sendRPCasObject(GET_CODE, new Object[] {address, getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Returns the value from a storage position at a given address.
      */
-    public String getStorageAt(String address, BigInteger position, long block) {
-        return JSON.asString(in3.sendRPCasObject("eth_getStorageAt",
-                new Object[] { address, JSON.asString(position), getBlockString(block) }));
-    }
+  public String getStorageAt(String address, BigInteger position, long block) {
+    return JSON.asString(in3.sendRPCasObject(GET_STORAGE_AT,
+                                             new Object[] {address, JSON.asString(position), getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Returns the number of transactions in a block from a block matching the given
      * block hash.
      */
-    public long getBlockTransactionCountByHash(String blockHash) {
-        return JSON.asLong(in3.sendRPCasObject("eth_getBlockTransactionCountByHash", new Object[] { blockHash }));
-    }
+  public long getBlockTransactionCountByHash(String blockHash) {
+    return JSON.asLong(in3.sendRPCasObject(GET_BLOCK_TRANSACTION_COUNT_BY_HASH, new Object[] {blockHash}));
+  }
 
-    /**
+  /**
      * Returns the number of transactions in a block from a block matching the given
      * block number.
      */
-    public long getBlockTransactionCountByNumber(long block) {
-        return JSON.asLong(
-                in3.sendRPCasObject("eth_getBlockTransactionCountByNumber", new Object[] { getBlockString(block) }));
-    }
+  public long getBlockTransactionCountByNumber(long block) {
+    return JSON.asLong(
+        in3.sendRPCasObject(GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER, new Object[] {getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Polling method for a filter, which returns an array of logs which occurred
      * since last poll.
      */
-    public Log[] getFilterChangesFromLogs(long id) {
-        return Log.asLogs(in3.sendRPCasObject("eth_getFilterChanges", new Object[] { JSON.asString(id) }));
-    }
+  public Log[] getFilterChangesFromLogs(long id) {
+    return Log.asLogs(in3.sendRPCasObject(GET_FILTER_CHANGES, new Object[] {JSON.asString(id)}));
+  }
 
-    /**
+  /**
      * Polling method for a filter, which returns an array of logs which occurred
      * since last poll.
      */
-    public String[] getFilterChangesFromBlocks(long id) {
-        return JSON.asStringArray(in3.sendRPCasObject("eth_getFilterChanges", new Object[] { JSON.asString(id) }));
-    }
+  public String[] getFilterChangesFromBlocks(long id) {
+    return JSON.asStringArray(in3.sendRPCasObject(GET_FILTER_CHANGES, new Object[] {JSON.asString(id)}));
+  }
 
-    /**
+  /**
      * Polling method for a filter, which returns an array of logs which occurred
      * since last poll.
      */
-    public Log[] getFilterLogs(long id) {
-        return Log.asLogs(in3.sendRPCasObject("eth_getFilterLogs", new Object[] { JSON.asString(id) }));
-    }
+  public Log[] getFilterLogs(long id) {
+    return Log.asLogs(in3.sendRPCasObject(GET_FILTER_LOGS, new Object[] {JSON.asString(id)}));
+  }
 
-    /**
+  /**
      * Polling method for a filter, which returns an array of logs which occurred
      * since last poll.
      */
-    public Log[] getLogs(LogFilter filter) {
-        return Log.asLogs(in3.sendRPCasObject("eth_getLogs", new Object[] { filter.toString() }));
-    }
+  public Log[] getLogs(LogFilter filter) {
+    return Log.asLogs(in3.sendRPCasObject(GET_LOGS, new Object[] {filter.toString()}));
+  }
 
-    /**
+  /**
      * Returns information about a transaction by block hash and transaction index
      * position.
      */
-    public Transaction getTransactionByBlockHashAndIndex(String blockHash, int index) {
-        return Transaction.asTransaction(in3.sendRPCasObject("eth_getTransactionByBlockHashAndIndex",
-                new Object[] { blockHash, JSON.asString(index) }));
-    }
+  public Transaction getTransactionByBlockHashAndIndex(String blockHash, int index) {
+    return Transaction.asTransaction(in3.sendRPCasObject(GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
+                                                         new Object[] {blockHash, JSON.asString(index)}));
+  }
 
-    /**
+  /**
      * Returns information about a transaction by block number and transaction index
      * position.
      */
-    public Transaction getTransactionByBlockNumberAndIndex(long block, int index) {
-        return Transaction.asTransaction(in3.sendRPCasObject("eth_getTransactionByBlockNumberAndIndex",
-                new Object[] { JSON.asString(block), JSON.asString(index) }));
-    }
+  public Transaction getTransactionByBlockNumberAndIndex(long block, int index) {
+    return Transaction.asTransaction(in3.sendRPCasObject(GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
+                                                         new Object[] {JSON.asString(block), JSON.asString(index)}));
+  }
 
-    /**
+  /**
      * Returns the information about a transaction requested by transaction hash.
      */
-    public Transaction getTransactionByHash(String transactionHash) {
-        return Transaction
-                .asTransaction(in3.sendRPCasObject("eth_getTransactionByHash", new Object[] { transactionHash }));
-    }
+  public Transaction getTransactionByHash(String transactionHash) {
+    return Transaction
+        .asTransaction(in3.sendRPCasObject(GET_TRANSACTION_BY_HASH, new Object[] {transactionHash}));
+  }
 
-    /**
+  /**
      * Returns the number of transactions sent from an address.
      */
-    public BigInteger getTransactionCount(String address, long block) {
-        return JSON.asBigInteger(
-                in3.sendRPCasObject("eth_getTransactionCount", new Object[] { address, getBlockString(block) }));
-    }
+  public BigInteger getTransactionCount(String address, long block) {
+    return JSON.asBigInteger(
+        in3.sendRPCasObject(GET_TRANSACTION_COUNT, new Object[] {address, getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Returns the number of transactions sent from an address.
      */
-    public TransactionReceipt getTransactionReceipt(String transactionHash) {
-        return TransactionReceipt.asTransactionReceipt(
-                in3.sendRPCasObject("eth_getTransactionReceipt", new Object[] { transactionHash }));
-    }
+  public TransactionReceipt getTransactionReceipt(String transactionHash) {
+    return TransactionReceipt.asTransactionReceipt(
+        in3.sendRPCasObject(GET_TRANSACTION_RECEIPT, new Object[] {transactionHash}));
+  }
 
-    /**
+  /**
      * Returns information about a uncle of a block number and uncle index position.
      * Note: An uncle doesn't contain individual transactions.
      */
-    public Block getUncleByBlockNumberAndIndex(long block, int pos) {
-        return Block.asBlock(in3.sendRPCasObject("eth_getUncleByBlockNumberAndIndex",
-                new Object[] { getBlockString(block), JSON.asString(pos) }));
-    }
+  public Block getUncleByBlockNumberAndIndex(long block, int pos) {
+    return Block.asBlock(in3.sendRPCasObject(GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX,
+                                             new Object[] {getBlockString(block), JSON.asString(pos)}));
+  }
 
-    /**
+  /**
      * Returns the number of uncles in a block from a block matching the given block
      * hash.
      */
-    public long getUncleCountByBlockHash(String block) {
-        return JSON.asLong(in3.sendRPCasObject("eth_getUncleCountByBlockHash", new Object[] { block }));
-    }
+  public long getUncleCountByBlockHash(String block) {
+    return JSON.asLong(in3.sendRPCasObject(GET_UNCLE_COUNT_BY_BLOCK_HASH, new Object[] {block}));
+  }
 
-    /**
+  /**
      * Returns the number of uncles in a block from a block matching the given block
      * hash.
      */
-    public long getUncleCountByBlockNumber(long block) {
-        return JSON
-                .asLong(in3.sendRPCasObject("eth_getUncleCountByBlockNumber", new Object[] { getBlockString(block) }));
-    }
+  public long getUncleCountByBlockNumber(long block) {
+    return JSON
+        .asLong(in3.sendRPCasObject(GET_UNCLE_COUNT_BY_BLOCK_NUMBER, new Object[] {getBlockString(block)}));
+  }
 
-    /**
+  /**
      * Creates a filter in the node, to notify when a new block arrives. To check if
      * the state has changed, call eth_getFilterChanges.
      */
-    public long newBlockFilter() {
-        return JSON.asLong(in3.sendRPCasObject("eth_newBlockFilter", new Object[] {}));
-    }
+  public long newBlockFilter() {
+    return JSON.asLong(in3.sendRPCasObject(NEW_BLOCK_FILTER, new Object[] {}));
+  }
 
-    /**
+  /**
      * Creates a filter object, based on filter options, to notify when the state
      * changes (logs). To check if the state has changed, call eth_getFilterChanges.
      * 
@@ -291,60 +325,105 @@ public class API {
      * (and anything after)"
      * 
      */
-    public long newLogFilter(LogFilter filter) {
-        return JSON.asLong(in3.sendRPCasObject("eth_newFilter", new Object[] { filter.toString() }));
-    }
+  public long newLogFilter(LogFilter filter) {
+    return JSON.asLong(in3.sendRPCasObject(NEW_FILTER, new Object[] {filter.toString()}));
+  }
 
-    /**
+  /**
      * uninstall filter.
      */
-    public boolean uninstallFilter(long filter) {
-        return (boolean) in3.sendRPCasObject("eth_uninstallFilter", new Object[] { JSON.asString(filter) });
-    }
+  public boolean uninstallFilter(long filter) {
+    return (boolean) in3.sendRPCasObject(UNINSTALL_FILTER, new Object[] {JSON.asString(filter)});
+  }
 
-    /**
+  /**
      * Creates new message call transaction or a contract creation for signed
      * transactions.
      * 
      * @return transactionHash
      */
-    public String sendRawTransaction(String data) {
-        return JSON.asString(in3.sendRPCasObject("eth_sendRawTransaction", new Object[] { data }));
-    }
+  public String sendRawTransaction(String data) {
+    return JSON.asString(in3.sendRPCasObject(SEND_RAW_TRANSACTION, new Object[] {data}));
+  }
 
-    /**
-     * sends a Transaction as desribed by the TransactionRequest. This will require
+  /**
+       * encodes the arguments as described in the method signature using ABI-Encoding.
+       */
+  public String abiEncode(String signature, String[] params) {
+    Object rawResult = in3.sendRPCasObject(ABI_ENCODE, new Object[] {
+                                                           signature,
+                                                           params});
+    return JSON.asString(rawResult);
+  }
+
+  /**
+       * decodes the data based on the signature.
+       */
+  public String[] abiDecode(String signature, String encoded) {
+    Object rawResult = in3.sendRPCasObject(ABI_DECODE, new Object[] {signature, encoded});
+    return JSON.asStringArray(rawResult);
+  }
+
+  /**
+       * converts the given address to a checksum address.
+       */
+  public String checksumAddress(String address) {
+    return checksumAddress(address, null);
+  }
+
+  /**
+       * converts the given address to a checksum address. Second parameter includes the chainId.
+       */
+  public String checksumAddress(String address, Boolean useChainId) {
+    return JSON.asString(in3.sendRPCasObject(CHECKSUM_ADDRESS, new Object[] {address, useChainId}));
+  }
+
+  /**
+       * resolve ens-name.
+       */
+  public String ens(String name) {
+    return ens(name, null);
+  }
+
+  /**
+       * resolve ens-name. Second parameter especifies if it is an address, owner, resolver or hash.
+       */
+  public String ens(String name, ENSMethod type) {
+    return JSON.asString(in3.sendRPCasObject(ENS, new Object[] {name, type}, false));
+  }
+
+  /**
+     * sends a Transaction as described by the TransactionRequest. This will require
      * a signer to be set in order to sign the transaction.
      */
-    public String sendTransaction(TransactionRequest tx) {
-        Signer signer = in3.getSigner();
-        if (signer == null)
-            throw new RuntimeException("No Signer set. This is needed in order to sign transaction.");
-        if (tx.getFrom() == null)
-            throw new RuntimeException("No from address set");
-        if (!signer.hasAccount(tx.getFrom()))
-            throw new RuntimeException("The from address is not supported by the signer");
-        tx = signer.prepareTransaction(in3, tx);
+  public String sendTransaction(TransactionRequest tx) {
+    Signer signer = in3.getSigner();
+    if (signer == null)
+      throw new RuntimeException("No Signer set. This is needed in order to sign transaction.");
+    if (tx.getFrom() == null)
+      throw new RuntimeException("No from address set");
+    if (!signer.canSign(tx.getFrom()))
+      throw new RuntimeException("The from address is not supported by the signer");
+    tx = signer.prepareTransaction(in3, tx);
 
-        return JSON.asString(in3.sendRPCasObject("eth_sendTransaction", new Object[] { tx.getTransactionJson() }));
-    }
+    return JSON.asString(in3.sendRPCasObject(SEND_TRANSACTION, new Object[] {tx.getTransactionJson()}));
+  }
 
-    /**
+  /**
      * the current Gas Price.
      * 
      * @return the decoded result. if only one return value is expected the Object
      *         will be returned, if not an array of objects will be the result.
      */
-    public Object call(String to, String function, Object... params) {
-        TransactionRequest req = new TransactionRequest();
-        req.setTo(to);
-        req.setFunction(function);
-        req.setParams(params);
-        return call(req, Block.LATEST);
-    }
+  public Object call(String to, String function, Object... params) {
+    TransactionRequest req = new TransactionRequest();
+    req.setTo(to);
+    req.setFunction(function);
+    req.setParams(params);
+    return call(req, Block.LATEST);
+  }
 
-    private static String getBlockString(long l) {
-        return l == Block.LATEST ? "latest" : "0x" + Long.toHexString(l);
-    }
-
+  private static String getBlockString(long l) {
+    return l == Block.LATEST ? "latest" : "0x" + Long.toHexString(l);
+  }
 }

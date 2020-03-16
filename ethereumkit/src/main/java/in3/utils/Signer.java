@@ -32,17 +32,24 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>.
  *******************************************************************************/
 
-package in3;
+package in3.utils;
+
+import in3.IN3;
+import in3.eth1.TransactionRequest;
 
 /**
- * The Proof type indicating how much proof is required.
+ * a Interface responsible for signing data or transactions.
  */
+public interface Signer {
+  /**
+     * optiional method which allows to change the transaction-data before sending
+     * it. This can be used for redirecting it through a multisig.
+     */
+  TransactionRequest prepareTransaction(IN3 in3, TransactionRequest tx);
 
-public enum Proof {
-  /** No Verification */
-  none,
-  /** Standard Verification of the important properties */
-  standard,
-  /** Full Verification including even uncles wich leads to higher payload */
-  full
+  /** returns true if the account is supported (or unlocked) */
+  boolean canSign(String address);
+
+  /** signing of the raw data. */
+  String sign(String data, String address);
 }
