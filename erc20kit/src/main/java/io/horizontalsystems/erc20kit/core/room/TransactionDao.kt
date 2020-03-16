@@ -13,7 +13,7 @@ interface TransactionDao {
     @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC, transactionIndex DESC, interTransactionIndex DESC")
     fun getAllTransactions(): Single<List<Transaction>>
 
-    @Query("SELECT * FROM `Transaction` WHERE logIndex IS NULL")
+    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NULL")
     fun getPendingTransactions(): List<Transaction>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
