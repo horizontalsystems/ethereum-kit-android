@@ -32,17 +32,26 @@
  * with this program. If not, see <https://www.gnu.org/licenses/>.
  *******************************************************************************/
 
-package in3;
+package in3.utils;
 
 /**
- * The Proof type indicating how much proof is required.
+ * Provider methods to cache data.
+ * These data could be nodelists, contract codes or validator changes.
  */
+public interface StorageProvider {
+  /**
+     * returns a item from cache ()
+     * @return the bytes or null if not found.
+     */
+  byte[] getItem(String key /** the key for the item */);
 
-public enum Proof {
-  /** No Verification */
-  none,
-  /** Standard Verification of the important properties */
-  standard,
-  /** Full Verification including even uncles wich leads to higher payload */
-  full
+  /**
+     * stores a item in the cache.
+     */
+  void setItem(String key /** the key for the item */, byte[] content /** the value to store */);
+
+  /**
+     * clear the cache.
+     */
+  boolean clear();
 }

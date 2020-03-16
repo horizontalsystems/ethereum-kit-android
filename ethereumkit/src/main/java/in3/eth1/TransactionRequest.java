@@ -1,26 +1,26 @@
 /*******************************************************************************
  * This file is part of the Incubed project.
  * Sources: https://github.com/slockit/in3-c
- * 
- * Copyright (C) 2018-2019 slock.it GmbH, Blockchains LLC
- * 
- * 
+ *
+ * Copyright (C) 2018-2020 slock.it GmbH, Blockchains LLC
+ *
+ *
  * COMMERCIAL LICENSE USAGE
- * 
+ *
  * Licensees holding a valid commercial license may use this file in accordance 
  * with the commercial license agreement provided with the Software or, alternatively, 
  * in accordance with the terms contained in a written agreement between you and 
  * slock.it GmbH/Blockchains LLC. For licensing terms and conditions or further 
  * information please contact slock.it at in3@slock.it.
- * 	
+ *
  * Alternatively, this file may be used under the AGPL license as follows:
- *    
+ *
  * AGPL LICENSE USAGE
- * 
+ *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Affero General Public License as published by the Free Software 
  * Foundation, either version 3 of the License, or (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY 
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
  * PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
@@ -34,39 +34,59 @@
 
 package in3.eth1;
 
-import in3.*;
-import java.math.*;
+import java.math.BigInteger;
+
+import in3.Loader;
+import in3.utils.JSON;
 
 /**
  * represents a Transaction Request which should be send or called.
  */
 
 public class TransactionRequest {
-    /** the from address */
+    /**
+     * the from address
+     */
     private String from;
 
-    /** the recipients address */
+    /**
+     * the recipients address
+     */
     private String to;
 
-    /** the data */
+    /**
+     * the data
+     */
     private String data;
 
-    /** the value of the transaction */
+    /**
+     * the value of the transaction
+     */
     private BigInteger value;
 
-    /** the nonce (transactionCount of the sender) */
+    /**
+     * the nonce (transactionCount of the sender)
+     */
     private long nonce = -1;
 
-    /** the gas to use */
+    /**
+     * the gas to use
+     */
     private long gas;
 
-    /** the gas price to use */
+    /**
+     * the gas price to use
+     */
     private long gasPrice;
 
-    /** the signature for the function to call */
+    /**
+     * the signature for the function to call
+     */
     private String function;
 
-    /** the params to use for encoding in the data */
+    /**
+     * the params to use for encoding in the data
+     */
     private Object[] params;
 
     public String getFrom() {
@@ -184,5 +204,4 @@ public class TransactionRequest {
     private static native String abiEncode(String function, String jsonParams);
 
     private static native Object abiDecode(String function, String data);
-
 }
