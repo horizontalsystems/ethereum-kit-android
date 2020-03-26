@@ -264,7 +264,7 @@ class EthereumKit(
 
     companion object {
         fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType,
-                        infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
+                        rpcApi: RpcApi, etherscanKey: String, walletId: String): EthereumKit {
             val blockchain: IBlockchain
 
             val publicKey =
@@ -274,7 +274,11 @@ class EthereumKit(
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
             val transactionBuilder = TransactionBuilder(address)
-            val rpcApiProvider = IncubedRpcApiProvider(networkType, address) //InfuraRpcApiProvider.getInstance(networkType, infuraCredentials, address)
+
+            val rpcApiProvider = when (rpcApi) {
+                is RpcApi.Infura -> InfuraRpcApiProvider.getInstance(networkType, rpcApi.infuraCredentials, address)
+                is RpcApi.Incubed -> IncubedRpcApiProvider(networkType, address)
+            }
 
             when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
@@ -321,7 +325,7 @@ class EthereumKit(
         }
 
         fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType,
-                        infuraCredentials: InfuraCredentials, etherscanKey: String, walletId: String): EthereumKit {
+                        rpcApi: RpcApi, etherscanKey: String, walletId: String): EthereumKit {
             val seed = Mnemonic().toSeed(words)
             val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey
@@ -336,12 +340,17 @@ class EthereumKit(
                 }
             }
 
-            return getInstance(context, privateKey, syncMode, networkType, infuraCredentials, etherscanKey, walletId)
+            return getInstance(context, privateKey, syncMode, networkType, rpcApi, etherscanKey, walletId)
         }
 
         fun clear(context: Context, networkType: NetworkType, walletId: String) {
             EthereumDatabaseManager.clear(context, networkType, walletId)
         }
+    }
+
+    sealed class RpcApi {
+        class Infura(val infuraCredentials: InfuraCredentials) : RpcApi()
+        class Incubed : RpcApi()
     }
 
     sealed class WordsSyncMode {

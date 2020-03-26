@@ -64,8 +64,9 @@ class MainViewModel : ViewModel() {
         val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
         val privateKey = hdWallet.privateKey(0, 0, true).privKey
         val nodePrivateKey = hdWallet.privateKey(102, 102, true).privKey
+        val rpcApi = EthereumKit.RpcApi.Incubed()
 
-        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, infuraCredentials, etherscanKey, walletId)
+        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, rpcApi, etherscanKey, walletId)
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
         erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "Max Token", "MXT", contractAddress, contractDecimal)
