@@ -18,7 +18,6 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level
-import org.spongycastle.asn1.cmc.CMCStatus.success
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -46,9 +45,11 @@ class InfuraService(
         }
 
     init {
-        val logger = HttpLoggingInterceptor {
-            logger.info(it)
-        }.setLevel(Level.BODY)
+        val loggingInterceptor = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
+            override fun log(message: String) {
+                logger.info(message)
+            }
+        }).setLevel(Level.BODY)
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
@@ -61,7 +62,7 @@ class InfuraService(
         }
 
         val httpClient = OkHttpClient.Builder()
-                .addInterceptor(logger)
+                .addInterceptor(loggingInterceptor)
                 .addInterceptor(headersInterceptor)
 
         val gson = GsonBuilder()

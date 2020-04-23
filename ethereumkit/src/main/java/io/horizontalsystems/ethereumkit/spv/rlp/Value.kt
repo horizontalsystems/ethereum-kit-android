@@ -51,7 +51,7 @@ class Value(obj: Any?) {
 
     fun isList(): Boolean {
         decode()
-        return value?.let { it.javaClass.isArray && !it.javaClass.componentType.isPrimitive }
+        return value?.let { it.javaClass.isArray && it.javaClass.componentType?.isPrimitive == false }
                 ?: false
     }
 }
