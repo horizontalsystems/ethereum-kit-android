@@ -3,17 +3,18 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
 
     defaultConfig {
         minSdkVersion 23
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 1
         versionName "0.3.0"
 
         kapt {
             arguments {
                 arg("room.schemaLocation", "$projectDir/schemas".toString())
+                arg("room.incremental", true)
             }
         }
 
@@ -50,38 +51,38 @@ dependencies {
 
     implementation 'com.github.horizontalsystems:hd-wallet-kit-android:68903dc'
 
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.11'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.19'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'com.squareup.retrofit2:retrofit:2.6.1'
+    implementation 'com.squareup.retrofit2:retrofit:2.8.1'
 
-    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.6.1'
-    implementation 'com.squareup.retrofit2:converter-gson:2.6.1'
-    implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
-    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.8.1'
+    implementation 'com.squareup.retrofit2:converter-gson:2.8.1'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.5.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
 
     // Geth mobile
 //    implementation 'org.ethereum:geth:1.8.11';
 
     // Room
-    implementation 'androidx.room:room-runtime:2.0.0'
-    implementation 'androidx.room:room-rxjava2:2.0.0'
-    kapt 'androidx.room:room-compiler:2.0.0'
+    implementation 'androidx.room:room-runtime:2.2.5'
+    implementation 'androidx.room:room-rxjava2:2.2.5'
+    kapt 'androidx.room:room-compiler:2.2.5'
 
     // Test helpers
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.mockito:mockito-core:2.23.0'
+    testImplementation 'junit:junit:4.13'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'com.nhaarman:mockito-kotlin-kt1.1:1.6.0'
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.2'
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.2'
+    testImplementation 'org.powermock:powermock-api-mockito2:2.0.7'
+    testImplementation 'org.powermock:powermock-module-junit4:2.0.7'
 
     // Spek
-    testImplementation "org.spekframework.spek2:spek-dsl-jvm:2.0.6"
-    testRuntimeOnly "org.spekframework.spek2:spek-runner-junit5:2.0.6"
+    testImplementation 'org.spekframework.spek2:spek-dsl-jvm:2.0.9'
+    testRuntimeOnly 'org.spekframework.spek2:spek-runner-junit5:2.0.9'
     testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 
     // Android Instrumentation Test
-    implementation 'androidx.annotation:annotation:1.0.0'
+    implementation 'androidx.annotation:annotation:1.1.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'com.linkedin.dexmaker:dexmaker-mockito-inline:2.19.1'
     androidTestImplementation 'com.nhaarman:mockito-kotlin-kt1.1:1.6.0'
