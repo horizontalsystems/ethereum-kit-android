@@ -11,6 +11,8 @@ import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.net.connection.messages.AuthAckMessage
 import io.horizontalsystems.ethereumkit.spv.net.connection.messages.AuthMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
+import org.bouncycastle.crypto.digests.KeccakDigest
+import org.bouncycastle.math.ec.ECPoint
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -19,8 +21,6 @@ import org.mockito.Mockito
 import org.powermock.api.mockito.PowerMockito
 import org.powermock.core.classloader.annotations.PrepareForTest
 import org.powermock.modules.junit4.PowerMockRunner
-import org.spongycastle.crypto.digests.KeccakDigest
-import org.spongycastle.math.ec.ECPoint
 
 @RunWith(PowerMockRunner::class)
 @PrepareForTest(EncryptionHandshake::class)
