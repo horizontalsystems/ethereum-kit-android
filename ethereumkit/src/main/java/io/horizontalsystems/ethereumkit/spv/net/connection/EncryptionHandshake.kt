@@ -7,8 +7,8 @@ import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.net.connection.messages.AuthAckMessage
 import io.horizontalsystems.ethereumkit.spv.net.connection.messages.AuthMessage
-import org.spongycastle.crypto.digests.KeccakDigest
-import org.spongycastle.math.ec.ECPoint
+import org.bouncycastle.crypto.digests.KeccakDigest
+import org.bouncycastle.math.ec.ECPoint
 
 class EncryptionHandshake(private val myKey: ECKey, private val remotePublicKeyPoint: ECPoint, private val cryptoUtils: CryptoUtils, private val randomHelper: RandomHelper) {
 

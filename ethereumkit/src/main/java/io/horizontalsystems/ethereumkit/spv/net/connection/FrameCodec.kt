@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP.rlpDecodeInt
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
-import org.spongycastle.crypto.digests.KeccakDigest
+import org.bouncycastle.crypto.digests.KeccakDigest
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*

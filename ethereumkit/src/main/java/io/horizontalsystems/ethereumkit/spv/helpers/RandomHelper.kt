@@ -2,10 +2,10 @@ package io.horizontalsystems.ethereumkit.spv.helpers
 
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
-import org.spongycastle.crypto.generators.ECKeyPairGenerator
-import org.spongycastle.crypto.params.ECKeyGenerationParameters
-import org.spongycastle.crypto.params.ECPrivateKeyParameters
-import org.spongycastle.crypto.params.ECPublicKeyParameters
+import org.bouncycastle.crypto.generators.ECKeyPairGenerator
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters
+import org.bouncycastle.crypto.params.ECPublicKeyParameters
 import java.security.SecureRandom
 import java.util.*
 

@@ -1,11 +1,11 @@
 package io.horizontalsystems.ethereumkit.spv.crypto
 
 
-import org.spongycastle.crypto.*
-import org.spongycastle.crypto.params.*
-import org.spongycastle.util.Arrays
-import org.spongycastle.util.BigIntegers
-import org.spongycastle.util.Pack
+import org.bouncycastle.crypto.*
+import org.bouncycastle.crypto.params.*
+import org.bouncycastle.util.Arrays
+import org.bouncycastle.util.BigIntegers
+import org.bouncycastle.util.Pack
 import java.io.ByteArrayInputStream
 import java.io.IOException
 

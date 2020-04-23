@@ -3,9 +3,9 @@ package io.horizontalsystems.ethereumkit.spv.rlp
 import io.horizontalsystems.ethereumkit.core.toByteArray
 import io.horizontalsystems.ethereumkit.spv.core.toBytesNoLeadZeroes
 import io.horizontalsystems.ethereumkit.spv.core.toInt
-import org.spongycastle.util.Arrays.concatenate
-import org.spongycastle.util.BigIntegers.asUnsignedByteArray
-import org.spongycastle.util.encoders.Hex
+import org.bouncycastle.util.Arrays.concatenate
+import org.bouncycastle.util.BigIntegers.asUnsignedByteArray
+import org.bouncycastle.util.encoders.Hex
 import java.io.Serializable
 import java.math.BigInteger
 import java.util.*

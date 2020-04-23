@@ -1,10 +1,10 @@
 package io.horizontalsystems.ethereumkit.spv.crypto
 
-import org.spongycastle.crypto.StreamCipher
-import org.spongycastle.crypto.engines.AESEngine
-import org.spongycastle.crypto.modes.SICBlockCipher
-import org.spongycastle.crypto.params.KeyParameter
-import org.spongycastle.crypto.params.ParametersWithIV
+import org.bouncycastle.crypto.StreamCipher
+import org.bouncycastle.crypto.engines.AESEngine
+import org.bouncycastle.crypto.modes.SICBlockCipher
+import org.bouncycastle.crypto.params.KeyParameter
+import org.bouncycastle.crypto.params.ParametersWithIV
 
 class AESCipher(val key: ByteArray, forEncryption: Boolean ) {
 
