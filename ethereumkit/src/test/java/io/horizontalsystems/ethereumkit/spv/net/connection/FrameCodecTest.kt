@@ -5,11 +5,11 @@ import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
 import io.horizontalsystems.ethereumkit.spv.crypto.AESCipher
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
+import org.bouncycastle.crypto.digests.KeccakDigest
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
-import org.spongycastle.crypto.digests.KeccakDigest
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
