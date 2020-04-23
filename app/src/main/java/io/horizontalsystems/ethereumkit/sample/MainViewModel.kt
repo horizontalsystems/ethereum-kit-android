@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.sample
 
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType

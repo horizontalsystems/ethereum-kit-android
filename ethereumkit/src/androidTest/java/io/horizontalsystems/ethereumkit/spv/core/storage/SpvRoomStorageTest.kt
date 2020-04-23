@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.spv.core.storage
 
-import android.arch.persistence.room.Room
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
+import androidx.room.Room
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.horizontalsystems.ethereumkit.network.Ropsten
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -19,7 +19,7 @@ class SpvRoomStorageTest {
 
     @Before
     fun setUp() {
-        val context = InstrumentationRegistry.getTargetContext()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
         db = Room.inMemoryDatabaseBuilder(context, SpvDatabase::class.java).build()
         blockHeaderDao = db.blockHeaderDao()
     }

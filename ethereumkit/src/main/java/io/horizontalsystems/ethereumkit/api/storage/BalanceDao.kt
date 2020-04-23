@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.api.storage
 
-import android.arch.persistence.room.*
+import androidx.room.*
 import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
 
 @Dao

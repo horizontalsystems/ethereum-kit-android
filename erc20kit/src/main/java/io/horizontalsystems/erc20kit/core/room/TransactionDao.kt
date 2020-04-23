@@ -1,6 +1,6 @@
 package io.horizontalsystems.erc20kit.core.room
 
-import android.arch.persistence.room.*
+import androidx.room.*
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.reactivex.Single
 
