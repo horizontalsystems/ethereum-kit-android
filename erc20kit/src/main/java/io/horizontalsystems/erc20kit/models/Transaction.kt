@@ -1,6 +1,6 @@
 package io.horizontalsystems.erc20kit.models
 
-import android.arch.persistence.room.Entity
+import androidx.room.Entity
 import java.math.BigInteger
 import java.util.*
 

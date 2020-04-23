@@ -1,9 +1,9 @@
 package io.horizontalsystems.erc20kit.core.room
 
-import android.arch.persistence.room.Database
-import android.arch.persistence.room.Room
-import android.arch.persistence.room.RoomDatabase
-import android.arch.persistence.room.TypeConverters
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import android.content.Context
 import io.horizontalsystems.erc20kit.models.TokenBalance
 import io.horizontalsystems.erc20kit.models.Transaction
