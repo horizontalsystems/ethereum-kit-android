@@ -61,11 +61,11 @@ class Erc20Adapter(
         return erc20Kit.estimateGas(toAddress = toAddress, contractAddress = contractAddress, value = noScaleDecimal.toBigInteger())
     }
 
-    override fun send(toAddress: String, amount: BigDecimal, gasLimit: Long): Single<Unit> {
+    override fun send(address: String, amount: BigDecimal, gasLimit: Long): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
-        return erc20Kit.send(toAddress, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
+        return erc20Kit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
     }
 
     override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {

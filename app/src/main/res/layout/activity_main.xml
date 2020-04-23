@@ -21,7 +21,7 @@
         android:id="@+id/navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="#bf360c"
+        android:background="@android:color/white"
         app:layout_constraintTop_toBottomOf="@+id/fragment_container"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"

@@ -9,8 +9,8 @@ import org.bouncycastle.util.encoders.Hex
 import java.io.Serializable
 import java.math.BigInteger
 import java.util.*
-import java.util.Arrays.copyOfRange
 import kotlin.experimental.and
+import kotlin.math.pow
 
 interface RLPElement : Serializable {
     val rlpData: ByteArray?
@@ -42,7 +42,7 @@ object RLP {
     private const val SIZE_THRESHOLD = 56
 
     private const val MAX_DEPTH = 16
-    private val MAX_ITEM_LENGTH = Math.pow(256.0, 8.0)
+    private val MAX_ITEM_LENGTH = 256.0.pow(8.0)
 
     fun encode(input: Any): ByteArray {
         val value = Value(input)
@@ -59,11 +59,11 @@ object RLP {
             return concatenate(prefix, output)
         } else {
             val inputAsBytes = toBytes(input)
-            if (inputAsBytes.size == 1 && (inputAsBytes[0].toInt() and 0xFF) <= 0x80) {
-                return inputAsBytes
+            return if (inputAsBytes.size == 1 && (inputAsBytes[0].toInt() and 0xFF) <= 0x80) {
+                inputAsBytes
             } else {
                 val firstByte = encodeLength(inputAsBytes.size, OFFSET_SHORT_ITEM)
-                return concatenate(firstByte, inputAsBytes)
+                concatenate(firstByte, inputAsBytes)
             }
         }
     }
@@ -205,26 +205,25 @@ object RLP {
             prefix < OFFSET_SHORT_ITEM -> return DecodeResult(pos + 1, byteArrayOf(data[pos]))
             prefix <= OFFSET_LONG_ITEM -> {
                 val len = prefix - OFFSET_SHORT_ITEM
-                return DecodeResult(pos + 1 + len, copyOfRange(data, pos + 1, pos + 1 + len))
+                return DecodeResult(pos + 1 + len, data.copyOfRange(pos + 1, pos + 1 + len))
             }
             prefix < OFFSET_SHORT_LIST -> {
                 val lenlen = prefix - OFFSET_LONG_ITEM
-                val lenbytes = copyOfRange(data, pos + 1, pos + 1 + lenlen).toInt()
+                val lenbytes = data.copyOfRange(pos + 1, pos + 1 + lenlen).toInt()
 
-                return DecodeResult(pos + 1 + lenlen + lenbytes, copyOfRange(data, pos + 1 + lenlen, pos + 1 + lenlen
+                return DecodeResult(pos + 1 + lenlen + lenbytes, data.copyOfRange(pos + 1 + lenlen, pos + 1 + lenlen
                         + lenbytes))
             }
             prefix <= OFFSET_LONG_LIST -> {
                 val len = prefix - OFFSET_SHORT_LIST
-                val prevPos = pos
                 pos++
-                return decodeList(data, pos, prevPos, len)
+                return decodeList(data, pos, len)
             }
             prefix <= 0xFF -> {
                 val lenlen = prefix - OFFSET_LONG_LIST
-                val lenlist = copyOfRange(data, pos + 1, pos + 1 + lenlen).toInt()
+                val lenlist = data.copyOfRange(pos + 1, pos + 1 + lenlen).toInt()
                 pos += lenlen + 1
-                return decodeList(data, pos, lenlist, lenlist)
+                return decodeList(data, pos, lenlist)
             }
             else -> throw RuntimeException("Only byte values between 0x00 and 0xFF are supported, but got: $prefix")
         }
@@ -236,9 +235,9 @@ object RLP {
         return rlpList
     }
 
-    private fun decodeList(data: ByteArray, posParam: Int, prevPosParam: Int, len: Int): DecodeResult {
+    private fun decodeList(data: ByteArray, posParam: Int, len: Int): DecodeResult {
         var pos = posParam
-        var prevPos = prevPosParam
+        var prevPos: Int
 
         val slice = ArrayList<Any>()
         var i = 0
@@ -258,11 +257,10 @@ object RLP {
             byteArrayOf(firstByte)
         }
         length < MAX_ITEM_LENGTH -> {
-            val binaryLength: ByteArray
-            if (length > 0xFF)
-                binaryLength = length.toBytesNoLeadZeroes()
+            val binaryLength = if (length > 0xFF)
+                length.toBytesNoLeadZeroes()
             else
-                binaryLength = byteArrayOf(length.toByte())
+                byteArrayOf(length.toByte())
             val firstByte = (binaryLength.size + offset + SIZE_THRESHOLD - 1).toByte()
             concatenate(byteArrayOf(firstByte), binaryLength)
         }
@@ -347,7 +345,7 @@ object RLP {
                 // It's an item with a payload more than 55 bytes
                 // data[0] - 0xB7 = how much next bytes allocated for
                 // the length of the string
-                if (msgData[pos].toInt() and 0xFF in (OFFSET_LONG_ITEM + 1)..(OFFSET_SHORT_LIST - 1)) {
+                if (msgData[pos].toInt() and 0xFF in (OFFSET_LONG_ITEM + 1) until OFFSET_SHORT_LIST) {
 
                     val lengthOfLength = (msgData[pos].toInt() and 0xFF) - OFFSET_LONG_ITEM
                     val length = calcLength(lengthOfLength, msgData, pos)
@@ -357,7 +355,7 @@ object RLP {
 
                     // now we can parse an item for data[1]..data[length]
                     val item = ByteArray(length)
-                    System.arraycopy(msgData, pos + lengthOfLength.toInt() + 1, item,
+                    System.arraycopy(msgData, pos + lengthOfLength + 1, item,
                             0, length)
 
                     val rlpItem = RLPItem(item)
@@ -373,7 +371,7 @@ object RLP {
                     val length = (msgData[pos].toInt() and 0xFF) - OFFSET_SHORT_ITEM
 
                     val item = ByteArray(length)
-                    System.arraycopy(msgData, pos + 1, item, 0, length.toInt())
+                    System.arraycopy(msgData, pos + 1, item, 0, length)
 
                     if (length == 1 && item[0].toInt() and 0xFF < OFFSET_SHORT_ITEM) {
                         throw RuntimeException("Single byte has been encoded as byte string")
@@ -436,13 +434,13 @@ object RLP {
         return length
     }
 
-    fun decode2OneItem(msgData: ByteArray, startPos: Int): RLPElement {
+    fun decodeToOneItem(msgData: ByteArray, startPos: Int): RLPElement {
         val rlpList = RLPList()
         fullTraverse(msgData, 0, startPos, startPos + 1, rlpList, Integer.MAX_VALUE)
         return rlpList[0]
     }
 
-    fun rlpDecodeInt(elem: RLPElement): Int {
+    fun decodeInt(elem: RLPElement): Int {
         val b = elem.rlpData
         return b.toInt()
     }
@@ -486,7 +484,7 @@ object RLP {
             return pos + 1 + length.toInt()
         }
         // [0xb8, 0xbf]
-        if (payload[pos].toInt() and 0xFF in (OFFSET_LONG_ITEM + 1)..(OFFSET_SHORT_LIST - 1)) {
+        if (payload[pos].toInt() and 0xFF in (OFFSET_LONG_ITEM + 1) until OFFSET_SHORT_LIST) {
 
             val lengthOfLength = ((payload[pos].toInt() and 0xFF) - OFFSET_LONG_ITEM).toByte()
             val length = calcLength(lengthOfLength.toInt(), payload, pos)

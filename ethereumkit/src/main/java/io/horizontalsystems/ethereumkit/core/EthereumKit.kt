@@ -180,7 +180,7 @@ class EthereumKit(
 
     fun debugInfo(): String {
         val lines = mutableListOf<String>()
-        lines.add("ADDRESS: ${address}")
+        lines.add("ADDRESS: $address")
         return lines.joinToString { "\n" }
     }
 

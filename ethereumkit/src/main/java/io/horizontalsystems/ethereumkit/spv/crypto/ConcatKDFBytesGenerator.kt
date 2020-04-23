@@ -25,19 +25,21 @@ class ConcatKDFBytesGenerator(private val counterStart: Int, private val digest:
     private var shared: ByteArray? = null
     private var iv: ByteArray? = null
 
-    constructor(digest: Digest) : this(1, digest) {}
+    constructor(digest: Digest) : this(1, digest)
 
     override fun init(param: DerivationParameters) {
-        if (param is KDFParameters) {
-
-            shared = param.sharedSecret
-            iv = param.iv
-        } else if (param is ISO18033KDFParameters) {
-
-            shared = param.seed
-            iv = null
-        } else {
-            throw IllegalArgumentException("KDF parameters required for KDF2Generator")
+        when (param) {
+            is KDFParameters -> {
+                shared = param.sharedSecret
+                iv = param.iv
+            }
+            is ISO18033KDFParameters -> {
+                shared = param.seed
+                iv = null
+            }
+            else -> {
+                throw IllegalArgumentException("KDF parameters required for KDF2Generator")
+            }
         }
     }
 
@@ -59,13 +61,13 @@ class ConcatKDFBytesGenerator(private val counterStart: Int, private val digest:
      */
     @Throws(DataLengthException::class, IllegalArgumentException::class)
     override fun generateBytes(out: ByteArray, outOff: Int, len: Int): Int {
-        var outOff = outOff
-        var len = len
-        if (out.size - len < outOff) {
+        var mOutOff = outOff
+        var mLen = len
+        if (out.size - mLen < mOutOff) {
             throw DataLengthException("output buffer too small")
         }
 
-        val oBytes = len.toLong()
+        val oBytes = mLen.toLong()
         val outLen = digest.digestSize
 
         //
@@ -97,12 +99,12 @@ class ConcatKDFBytesGenerator(private val counterStart: Int, private val digest:
 
             digest.doFinal(dig, 0)
 
-            if (len > outLen) {
-                System.arraycopy(dig, 0, out, outOff, outLen)
-                outOff += outLen
-                len -= outLen
+            if (mLen > outLen) {
+                System.arraycopy(dig, 0, out, mOutOff, outLen)
+                mOutOff += outLen
+                mLen -= outLen
             } else {
-                System.arraycopy(dig, 0, out, outOff, len)
+                System.arraycopy(dig, 0, out, mOutOff, mLen)
             }
 
             if ((++C[3]).toInt() == 0) {

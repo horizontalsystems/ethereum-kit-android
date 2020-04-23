@@ -8,6 +8,7 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters
 import org.bouncycastle.crypto.params.ECPublicKeyParameters
 import java.security.SecureRandom
 import java.util.*
+import kotlin.math.abs
 
 object RandomHelper {
     fun randomECKey(): ECKey {
@@ -36,10 +37,10 @@ object RandomHelper {
     }
 
     fun randomLong(): Long {
-        return Math.abs(Random().nextLong())
+        return abs(Random().nextLong())
     }
 
     fun randomInt(): Int {
-        return Math.abs(Random().nextInt())
+        return abs(Random().nextInt())
     }
 }

@@ -13,7 +13,7 @@ class AuthAckMessage(payload: ByteArray) {
     val version: Int
 
     init {
-        val params = RLP.decode2OneItem(payload, 0) as RLPList
+        val params = RLP.decodeToOneItem(payload, 0) as RLPList
         val pubKeyBytes = params[0].rlpData ?: ByteArray(65) { 0 }
         val bytes = ByteArray(65)
         System.arraycopy(pubKeyBytes, 0, bytes, 1, 64)

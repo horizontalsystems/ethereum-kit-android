@@ -53,9 +53,6 @@ class MainViewModel : ViewModel() {
 
     val gasPrice: Long = 5_000_000_000
 
-    init {
-        init()
-    }
 
     fun init() {
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
@@ -201,13 +198,13 @@ class MainViewModel : ViewModel() {
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                               //success
-                               estimateGas.value = it.toString()
-                               estimateGasLimit = it
-                           }, {
-                               logger.warning("Gas estimate: ${it.message}")
-                                estimateGas.value = "Gas Estimate:Error"
-                           }).let { disposables.add(it) }
+                    //success
+                    estimateGas.value = it.toString()
+                    estimateGasLimit = it
+                }, {
+                    logger.warning("Gas estimate: ${it.message}")
+                    estimateGas.value = "Gas Estimate:Error"
+                }).let { disposables.add(it) }
 
     }
 
@@ -217,13 +214,13 @@ class MainViewModel : ViewModel() {
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                               //success
-                               estimateGas.value = it.toString()
-                               estimateGasLimit = it
-                           }, {
-                               logger.warning("Gas estimate: ${it.message}")
-                               estimateGas.value = "Gas Estimate:Error"
-                           }).let { disposables.add(it) }
+                    //success
+                    estimateGas.value = it.toString()
+                    estimateGasLimit = it
+                }, {
+                    logger.warning("Gas estimate: ${it.message}")
+                    estimateGas.value = "Gas Estimate:Error"
+                }).let { disposables.add(it) }
 
     }
 
@@ -246,7 +243,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(toAddress: String, amount: BigDecimal) {
-        erc20Adapter.send(toAddress, amount, estimateGasLimit )
+        erc20Adapter.send(toAddress, amount, estimateGasLimit)
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -255,7 +252,7 @@ class MainViewModel : ViewModel() {
                 }, {
                     logger.warning("Erc20 send failed: ${it.message}")
                     sendStatus.value = it
-                })?.let { disposables.add(it) }
+                }).let { disposables.add(it) }
     }
 
     fun filterTransactions(ethTx: Boolean) {

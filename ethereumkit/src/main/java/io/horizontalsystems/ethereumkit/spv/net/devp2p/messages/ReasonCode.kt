@@ -25,7 +25,7 @@ enum class ReasonCode(val code: Int) {
         private val intToTypeMap: MutableMap<Int, ReasonCode> = hashMapOf()
 
         init {
-            for (type in ReasonCode.values()) {
+            for (type in values()) {
                 intToTypeMap[type.code] = type
             }
         }

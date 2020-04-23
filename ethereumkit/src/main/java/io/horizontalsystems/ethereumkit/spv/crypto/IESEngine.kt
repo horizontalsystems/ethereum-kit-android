@@ -11,10 +11,7 @@ import java.io.IOException
 
 class IESEngine(var agree: BasicAgreement,
                 var kdf: DerivationFunction,
-                mac: Mac, private val hash: Digest, cipher: BufferedBlockCipher) {
-    var mac: Mac
-    var cipher: BufferedBlockCipher
-    private var macBuf: ByteArray
+                var mac: Mac, private val hash: Digest, private var cipher: BufferedBlockCipher) {
 
     private var forEncryption: Boolean = false
     lateinit var privParam: CipherParameters
@@ -24,13 +21,6 @@ class IESEngine(var agree: BasicAgreement,
     lateinit var V: ByteArray
     private var keyParser: KeyParser? = null
     private var IV: ByteArray? = null
-    private var hashK2 = true
-
-    init {
-        this.mac = mac
-        this.macBuf = ByteArray(mac.macSize)
-        this.cipher = cipher
-    }
 
     fun init(
             forEncryption: Boolean,

@@ -6,7 +6,7 @@ import kotlin.reflect.KClass
 data class Capability(val name: String, val version: Byte, val packetTypesMap: Map<Int, KClass<out IMessage>> = mapOf()) : Comparable<Capability> {
 
     companion object {
-        val LES = "les"
+        const val LES = "les"
     }
 
     override fun equals(other: Any?): Boolean {

@@ -19,7 +19,6 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.*
 import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
-import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.logging.Logger
 
