@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.ECIESEncryptedMessage
 import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.net.Node
-import org.spongycastle.math.ec.ECPoint
+import org.bouncycastle.math.ec.ECPoint
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream

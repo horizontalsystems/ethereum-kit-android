@@ -2,22 +2,23 @@ package io.horizontalsystems.ethereumkit.spv.crypto
 
 import io.horizontalsystems.ethereumkit.spv.core.toBytes
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import org.spongycastle.asn1.sec.SECNamedCurves
-import org.spongycastle.asn1.x9.X9IntegerConverter
-import org.spongycastle.crypto.BufferedBlockCipher
-import org.spongycastle.crypto.agreement.ECDHBasicAgreement
-import org.spongycastle.crypto.digests.SHA256Digest
-import org.spongycastle.crypto.engines.AESEngine
-import org.spongycastle.crypto.macs.HMac
-import org.spongycastle.crypto.modes.SICBlockCipher
-import org.spongycastle.crypto.params.*
-import org.spongycastle.crypto.signers.ECDSASigner
-import org.spongycastle.crypto.signers.HMacDSAKCalculator
-import org.spongycastle.jce.spec.ECParameterSpec
-import org.spongycastle.math.ec.ECAlgorithms
-import org.spongycastle.math.ec.ECCurve
-import org.spongycastle.math.ec.ECPoint
-import org.spongycastle.util.BigIntegers
+import org.bouncycastle.asn1.sec.SECNamedCurves
+import org.bouncycastle.asn1.x9.X9IntegerConverter
+import org.bouncycastle.crypto.BufferedBlockCipher
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement
+import org.bouncycastle.crypto.digests.SHA256Digest
+import org.bouncycastle.crypto.engines.AESEngine
+import org.bouncycastle.crypto.macs.HMac
+import org.bouncycastle.crypto.modes.SICBlockCipher
+import org.bouncycastle.crypto.params.*
+import org.bouncycastle.crypto.signers.ECDSASigner
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.jce.spec.ECParameterSpec
+import org.bouncycastle.math.ec.ECAlgorithms
+import org.bouncycastle.math.ec.ECCurve
+import org.bouncycastle.math.ec.ECPoint
+import org.bouncycastle.util.BigIntegers
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.Provider
@@ -43,8 +44,10 @@ object CryptoUtils {
         CURVE_SPEC = ECParameterSpec(params.curve, params.g, params.n, params.h)
         HALF_CURVE_ORDER = params.n.shiftRight(1)
 
-        Security.addProvider(SpongyCastleProvider.getInstance())
-        CRYPTO_PROVIDER = Security.getProvider("SC")
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
+        Security.addProvider(InternalBouncyCastleProvider.getInstance())
+
+        CRYPTO_PROVIDER = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
         HASH_256_ALGORITHM_NAME = "ETH-KECCAK-256"
     }
 

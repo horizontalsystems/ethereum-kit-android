@@ -46,8 +46,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    implementation "com.madgag.spongycastle:core:1.58.0.0" // for SHA3 and SECP256K1
-    implementation "com.madgag.spongycastle:prov:1.58.0.0" // for SHA3 and SECP256K1
+    implementation 'org.bouncycastle:bcpkix-jdk15on:1.65'
 
     implementation 'com.github.horizontalsystems:hd-wallet-kit-android:68903dc'
 

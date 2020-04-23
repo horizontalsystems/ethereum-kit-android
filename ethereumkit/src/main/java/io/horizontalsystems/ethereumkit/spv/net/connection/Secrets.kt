@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
-import org.spongycastle.crypto.digests.KeccakDigest
+import org.bouncycastle.crypto.digests.KeccakDigest
 
 data class Secrets(var aes: ByteArray,
                    var mac: ByteArray,

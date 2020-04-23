@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.connection
 
 import io.horizontalsystems.ethereumkit.spv.core.xor
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
-import org.spongycastle.crypto.digests.KeccakDigest
+import org.bouncycastle.crypto.digests.KeccakDigest
 
 class FrameCodecHelper(val cryptoUtils: CryptoUtils) {
 

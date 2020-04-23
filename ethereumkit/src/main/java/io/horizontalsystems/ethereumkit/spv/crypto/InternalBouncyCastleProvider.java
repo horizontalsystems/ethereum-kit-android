@@ -1,17 +1,17 @@
 package io.horizontalsystems.ethereumkit.spv.crypto;
 
-import org.spongycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.Provider;
 import java.security.Security;
 
-public final class SpongyCastleProvider {
+public final class InternalBouncyCastleProvider {
 
     private static class Holder {
         private static final Provider INSTANCE;
 
         static {
-            Provider p = Security.getProvider("SC");
+            Provider p = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
 
             INSTANCE = (p != null) ? p : new BouncyCastleProvider();
 

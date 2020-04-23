@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.rlp
 
-import org.spongycastle.util.encoders.Hex
+import org.bouncycastle.util.encoders.Hex
 import java.io.Serializable
 
 class DecodeResult(val pos: Int, val decoded: Any) : Serializable {

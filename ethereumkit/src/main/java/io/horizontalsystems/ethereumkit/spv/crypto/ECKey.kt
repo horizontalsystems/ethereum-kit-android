@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.crypto
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import org.spongycastle.math.ec.ECPoint
+import org.bouncycastle.math.ec.ECPoint
 import java.math.BigInteger
 
 

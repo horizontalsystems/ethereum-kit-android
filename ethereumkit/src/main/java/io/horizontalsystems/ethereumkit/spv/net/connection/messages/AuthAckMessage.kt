@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import io.horizontalsystems.ethereumkit.spv.core.toInt
-import org.spongycastle.math.ec.ECPoint
+import org.bouncycastle.math.ec.ECPoint
 
 class AuthAckMessage(payload: ByteArray) {
     val ephemPublicKeyPoint: ECPoint
