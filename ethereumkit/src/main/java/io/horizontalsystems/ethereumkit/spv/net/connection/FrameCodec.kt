@@ -3,7 +3,6 @@ package io.horizontalsystems.ethereumkit.spv.net.connection
 import io.horizontalsystems.ethereumkit.spv.crypto.AESCipher
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
-import io.horizontalsystems.ethereumkit.spv.rlp.RLP.rlpDecodeInt
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import org.bouncycastle.crypto.digests.KeccakDigest
 import java.io.InputStream
@@ -34,16 +33,15 @@ class FrameCodec(private val secrets: Secrets,
         val decryptedHeader = dec.process(header)
 
         val totalBodySize = frameCodecHelper.fromThreeBytes(decryptedHeader.copyOfRange(0, 3))
-        val rlpList = RLP.decode2OneItem(decryptedHeader, 3) as RLPList
+        val rlpList = RLP.decodeToOneItem(decryptedHeader, 3) as RLPList
 
-        val protocol = RLP.rlpDecodeInt(rlpList[0])
         var contextId = -1
         var totalFrameSize = -1
 
         if (rlpList.size > 1) {
-            contextId = rlpDecodeInt(rlpList[1])
+            contextId = RLP.decodeInt(rlpList[1])
             if (rlpList.size > 2) {
-                totalFrameSize = rlpDecodeInt(rlpList[2])
+                totalFrameSize = RLP.decodeInt(rlpList[2])
             }
             if (contextId > 0) {
                 logger.info("+++++++ Multi-frame message received $contextId $totalFrameSize")

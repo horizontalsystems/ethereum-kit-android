@@ -28,7 +28,7 @@ class GetProofsMessage : IOutMessage {
     }
 
     override fun toString(): String {
-        return "GetProofs [requestID: $requestID; proofRequests: [${proofRequests.map { it.toString() }.joinToString(separator = ",")}]]"
+        return "GetProofs [requestID: $requestID; proofRequests: [${proofRequests.joinToString(separator = ",") { it.toString() }}]]"
     }
 
     class ProofRequest(val blockHash: ByteArray, val key: ByteArray, val key2: ByteArray, val fromLevel: Int) {

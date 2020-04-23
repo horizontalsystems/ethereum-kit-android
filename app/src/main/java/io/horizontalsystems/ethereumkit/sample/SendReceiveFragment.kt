@@ -1,7 +1,6 @@
 package io.horizontalsystems.ethereumkit.sample
 
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -11,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
 
 class SendReceiveFragment : Fragment() {
 
@@ -29,9 +29,7 @@ class SendReceiveFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        activity?.let {
-            viewModel = ViewModelProviders.of(it).get(MainViewModel::class.java)
-        }
+        viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
 
         viewModel.estimateGas.observe(this, Observer { estimeGasVal ->
             estimateGasText.text = "Estimage Gas:${(estimeGasVal ?: 0)}"
@@ -39,7 +37,7 @@ class SendReceiveFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_send_receive, null)
+        return inflater.inflate(R.layout.fragment_send_receive, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

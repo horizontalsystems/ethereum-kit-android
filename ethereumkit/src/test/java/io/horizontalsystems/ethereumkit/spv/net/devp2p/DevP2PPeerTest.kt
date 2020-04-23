@@ -32,7 +32,7 @@ class DevP2PPeerTest : Spek({
     }
 
     describe("#connect") {
-        beforeEach {
+        beforeEachTest {
             devP2PPeer.connect()
         }
 
@@ -43,7 +43,7 @@ class DevP2PPeerTest : Spek({
 
     describe("#disconnect") {
         val error = Exception()
-        beforeEach {
+        beforeEachTest {
             devP2PPeer.disconnect(error)
         }
 
@@ -54,7 +54,7 @@ class DevP2PPeerTest : Spek({
 
     describe("#sendMessage") {
         val message = mock(IOutMessage::class.java)
-        beforeEach {
+        beforeEachTest {
             devP2PPeer.send(message)
         }
 
@@ -64,7 +64,7 @@ class DevP2PPeerTest : Spek({
     }
 
     describe("#didConnect") {
-        beforeEach {
+        beforeEachTest {
             devP2PPeer.didConnect()
         }
 
@@ -80,7 +80,7 @@ class DevP2PPeerTest : Spek({
 
     describe("#didDisconnect") {
         val error = Exception()
-        beforeEach {
+        beforeEachTest {
             devP2PPeer.didDisconnect(error)
         }
 
@@ -94,12 +94,12 @@ class DevP2PPeerTest : Spek({
         context("when message is HelloMessage") {
             val helloMessage = mock(HelloMessage::class.java)
             val nodeCapabilities = listOf(Capability("eth", 63))
-            beforeEach {
+            beforeEachTest {
                 whenever(helloMessage.capabilities).thenReturn(nodeCapabilities)
             }
 
             context("when has no shared capabilities") {
-                beforeEach {
+                beforeEachTest {
                     whenever(capabilityHelper.sharedCapabilities(myCapabilities, nodeCapabilities)).thenReturn(listOf())
 
                     devP2PPeer.didReceive(helloMessage)
@@ -115,7 +115,7 @@ class DevP2PPeerTest : Spek({
             context("when has shared capabilities") {
                 val sharedCapabilities = listOf(myCapabilities[0])
 
-                beforeEach {
+                beforeEachTest {
                     whenever(capabilityHelper.sharedCapabilities(myCapabilities, nodeCapabilities)).thenReturn(sharedCapabilities)
 
                     devP2PPeer.didReceive(helloMessage)
@@ -134,7 +134,7 @@ class DevP2PPeerTest : Spek({
         context("when message is DisconnectMessage") {
             val disconnectMessage = mock(DisconnectMessage::class.java)
 
-            beforeEach {
+            beforeEachTest {
                 devP2PPeer.didReceive(disconnectMessage)
             }
 
@@ -146,7 +146,7 @@ class DevP2PPeerTest : Spek({
         context("when message is PingMessage") {
             val pingMessage = mock(PingMessage::class.java)
 
-            beforeEach {
+            beforeEachTest {
                 devP2PPeer.didReceive(pingMessage)
             }
 
@@ -158,7 +158,7 @@ class DevP2PPeerTest : Spek({
         context("when message is PongMessage") {
             val pongMessage = mock(PongMessage::class.java)
 
-            beforeEach {
+            beforeEachTest {
                 devP2PPeer.didReceive(pongMessage)
             }
 
@@ -170,7 +170,7 @@ class DevP2PPeerTest : Spek({
         context("when message is another message") {
             val message = mock(IInMessage::class.java)
 
-            beforeEach {
+            beforeEachTest {
                 devP2PPeer.didReceive(message)
             }
 

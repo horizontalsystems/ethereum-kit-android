@@ -5,12 +5,13 @@ import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.xor
+import kotlin.math.min
 
 fun BigInteger.toBytes(numBytes: Int): ByteArray {
     val bytes = ByteArray(numBytes)
     val biBytes = this.toByteArray()
     val start = if (biBytes.size == numBytes + 1) 1 else 0
-    val length = Math.min(biBytes.size, numBytes)
+    val length = min(biBytes.size, numBytes)
     System.arraycopy(biBytes, start, bytes, numBytes - length, length)
     return bytes
 }

@@ -35,7 +35,7 @@ object CryptoUtils {
     private val HASH_256_ALGORITHM_NAME: String
 
     const val SECRET_SIZE = 32
-    private val KEY_SIZE = 128
+    private const val KEY_SIZE = 128
     private val ECIES_PREFIX_SIZE = 65 + KEY_SIZE / 8 + 32 // 256 bit EC public key, IV, 256 bit MAC
 
     init {
@@ -86,9 +86,7 @@ object CryptoUtils {
         val ssig = BigIntegers.asUnsignedByteArray(s)
         System.arraycopy(ssig, 0, ssigPad, ssigPad.size - ssig.size, ssig.size)
 
-        val sigBytes = rsigPad + ssigPad + byteArrayOf(recId.toByte())
-
-        return sigBytes
+        return rsigPad + ssigPad + byteArrayOf(recId.toByte())
     }
 
     fun eciesDecrypt(privateKey: BigInteger, message: ECIESEncryptedMessage): ByteArray {

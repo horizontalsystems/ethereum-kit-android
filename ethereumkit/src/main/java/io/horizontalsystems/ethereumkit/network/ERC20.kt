@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.network
 
 import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
-import java.lang.Math.max
 import java.math.BigInteger
+import kotlin.math.max
 
 object ERC20 {
     private fun buildMethodId(methodSignature: String): ByteArray {

@@ -54,7 +54,7 @@ class BlockValidatorTest : Spek({
         }
 
         context("when first return blockHeader's hash is different from fromBlockHeader's hash") {
-            beforeEach {
+            beforeEachTest {
                 val differentBlock1HashHex = fromBlockHeaderHashHex.map { (it + 1).toByte() }.toByteArray()
                 whenever(block1.hashHex).thenReturn(differentBlock1HashHex)
             }
@@ -66,7 +66,7 @@ class BlockValidatorTest : Spek({
         }
 
         context("when returned chain is not interconnected") {
-            beforeEach {
+            beforeEachTest {
                 val differentBlock3ParentHash = block2HashHex.map { (it + 1).toByte() }.toByteArray()
                 whenever(block3.parentHash).thenReturn(differentBlock3ParentHash)
             }
