@@ -12,34 +12,15 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import kotlinx.android.synthetic.main.fragment_transactions.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 class TransactionsFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
-    private lateinit var transactionsRecyclerView: RecyclerView
 
     private val transactionsAdapter = TransactionsAdapter()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
-
-        viewModel.transactions.observe(this, Observer { txs ->
-            txs?.let { transactions ->
-                transactionsAdapter.items = transactions
-                transactionsAdapter.notifyDataSetChanged()
-            }
-        })
-
-        viewModel.lastBlockHeight.observe(this, Observer { height ->
-            height?.let {
-                transactionsAdapter.lastBlockHeight = height
-            }
-        })
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_transactions, container, false)
@@ -48,12 +29,23 @@ class TransactionsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        transactionsRecyclerView = view.findViewById(R.id.transactions)
         transactionsRecyclerView.adapter = transactionsAdapter
         transactionsRecyclerView.layoutManager = LinearLayoutManager(context)
 
-        val ethFilter = view.findViewById<TextView>(R.id.ethFilter)
-        val tokenFilter = view.findViewById<TextView>(R.id.tokenFilter)
+        viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
+
+        viewModel.transactions.observe(viewLifecycleOwner, Observer { txs ->
+            txs?.let { transactions ->
+                transactionsAdapter.items = transactions
+                transactionsAdapter.notifyDataSetChanged()
+            }
+        })
+
+        viewModel.lastBlockHeight.observe(viewLifecycleOwner, Observer { height ->
+            height?.let {
+                transactionsAdapter.lastBlockHeight = height
+            }
+        })
 
         ethFilter.setOnClickListener {
             viewModel.filterTransactions(true)

@@ -50,10 +50,9 @@ class MainViewModel : ViewModel() {
 
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
-    val estimateGas = SingleLiveEvent<String>()
+    val estimatedGas = SingleLiveEvent<String>()
 
-
-    val gasPrice: Long = 5_000_000_000
+    private val gasPrice: Long = 5_000_000_000
 
 
     fun init() {
@@ -215,7 +214,7 @@ class MainViewModel : ViewModel() {
         return ethereumKit.receiveAddress
     }
 
-    fun estimageGas(toAddress: String, value: BigDecimal): Boolean {
+    fun estimateGas(toAddress: String, value: BigDecimal): Boolean {
 
         val poweredDecimal = value.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
@@ -225,11 +224,11 @@ class MainViewModel : ViewModel() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
-                    estimateGas.value = it.toString()
+                    estimatedGas.value = it.toString()
                     estimateGasLimit = it
                 }, {
                     logger.warning("Gas estimate: ${it.message}")
-                    estimateGas.value = "Gas Estimate:Error"
+                    estimatedGas.value = it.message
                 }).let { disposables.add(it) }
 
     }
@@ -241,11 +240,11 @@ class MainViewModel : ViewModel() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
-                    estimateGas.value = it.toString()
+                    estimatedGas.value = it.toString()
                     estimateGasLimit = it
                 }, {
                     logger.warning("Gas estimate: ${it.message}")
-                    estimateGas.value = "Gas Estimate:Error"
+                    estimatedGas.value = it.message
                 }).let { disposables.add(it) }
 
     }
