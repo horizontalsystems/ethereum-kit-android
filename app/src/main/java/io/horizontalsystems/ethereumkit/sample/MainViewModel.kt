@@ -43,8 +43,10 @@ class MainViewModel : ViewModel() {
     val balance = MutableLiveData<BigDecimal>()
     val fee = MutableLiveData<BigDecimal>()
     val lastBlockHeight = MutableLiveData<Long>()
-    val etherState = MutableLiveData<SyncState>()
-    val erc20State = MutableLiveData<SyncState>()
+    val syncState = MutableLiveData<SyncState>()
+    val transactionsSyncState = MutableLiveData<SyncState>()
+    val erc20SyncState = MutableLiveData<SyncState>()
+    val erc20TransactionsSyncState = MutableLiveData<SyncState>()
 
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
@@ -72,7 +74,9 @@ class MainViewModel : ViewModel() {
         updateBalance()
         updateErc20Balance()
         updateState()
+        updateTransactionsSyncState()
         updateErc20State()
+        updateErc20TransactionsSyncState()
         updateLastBlockHeight()
 
         //
@@ -103,6 +107,12 @@ class MainViewModel : ViewModel() {
             disposables.add(it)
         }
 
+        ethereumAdapter.transactionsSyncStateFlowable.subscribe {
+            updateTransactionsSyncState()
+        }.let {
+            disposables.add(it)
+        }
+
 
         //
         // ERC20
@@ -126,7 +136,14 @@ class MainViewModel : ViewModel() {
             disposables.add(it)
         }
 
+        erc20Adapter.transactionsSyncStateFlowable.subscribe {
+            updateErc20TransactionsSyncState()
+        }.let {
+            disposables.add(it)
+        }
+
         ethereumKit.start()
+        erc20Adapter.refresh()
     }
 
     private fun updateLastBlockHeight() {
@@ -134,11 +151,19 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateState() {
-        etherState.postValue(ethereumAdapter.syncState)
+        syncState.postValue(ethereumAdapter.syncState)
+    }
+
+    private fun updateTransactionsSyncState() {
+        transactionsSyncState.postValue(ethereumAdapter.transactionsSyncState)
     }
 
     private fun updateErc20State() {
-        erc20State.postValue(erc20Adapter.syncState)
+        erc20SyncState.postValue(erc20Adapter.syncState)
+    }
+
+    private fun updateErc20TransactionsSyncState() {
+        erc20TransactionsSyncState.postValue(erc20Adapter.transactionsSyncState)
     }
 
     private fun updateBalance() {
@@ -175,7 +200,8 @@ class MainViewModel : ViewModel() {
     //
 
     fun refresh() {
-        ethereumKit.refresh()
+        ethereumAdapter.refresh()
+        erc20Adapter.refresh()
         fee.postValue(ethereumKit.fee(gasPrice))
     }
 

@@ -25,11 +25,10 @@ class Erc20Adapter(
         get() = ethereumKit.lastBlockHeight
 
     override val syncState: EthereumKit.SyncState
-        get() = when (erc20Kit.syncState) {
-            Erc20Kit.SyncState.Synced -> EthereumKit.SyncState.Synced()
-            Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing()
-            Erc20Kit.SyncState.NotSynced -> EthereumKit.SyncState.NotSynced()
-        }
+        get() = convertToEthereumKitSyncState(erc20Kit.syncState)
+
+    override val transactionsSyncState: EthereumKit.SyncState
+        get() = convertToEthereumKitSyncState(erc20Kit.transactionsSyncState)
 
     override val balance: BigDecimal
         get() = erc20Kit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
@@ -43,11 +42,18 @@ class Erc20Adapter(
     override val syncStateFlowable: Flowable<Unit>
         get() = erc20Kit.syncStateFlowable.map { Unit }
 
+    override val transactionsSyncStateFlowable: Flowable<Unit>
+        get() = erc20Kit.transactionsSyncStateFlowable.map { Unit }
+
     override val balanceFlowable: Flowable<Unit>
         get() = erc20Kit.balanceFlowable.map { Unit }
 
     override val transactionsFlowable: Flowable<Unit>
         get() = erc20Kit.transactionsFlowable.map { Unit }
+
+    override fun refresh() {
+        erc20Kit.refresh()
+    }
 
     override fun validateAddress(address: String) {
         ethereumKit.validateAddress(address)
@@ -103,4 +109,13 @@ class Erc20Adapter(
 
         )
     }
+
+    private fun convertToEthereumKitSyncState(syncState: Erc20Kit.SyncState): EthereumKit.SyncState {
+        return when (syncState) {
+            Erc20Kit.SyncState.Synced -> EthereumKit.SyncState.Synced()
+            Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing()
+            Erc20Kit.SyncState.NotSynced -> EthereumKit.SyncState.NotSynced()
+        }
+    }
+
 }

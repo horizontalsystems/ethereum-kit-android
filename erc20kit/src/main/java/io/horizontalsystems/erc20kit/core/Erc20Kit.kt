@@ -58,6 +58,9 @@ class Erc20Kit(
     val syncState: SyncState
         get() = state.syncState
 
+    val transactionsSyncState: SyncState
+        get() = state.transactionsSyncState
+
     val balance: BigInteger?
         get() = state.balance
 
@@ -81,6 +84,11 @@ class Erc20Kit(
         } catch (e: Exception) {
             throw ValidationError.InvalidValue
         }
+    }
+
+    fun refresh() {
+        state.transactionsSyncState = Syncing
+        transactionManager.sync()
     }
 
     fun estimateGas(toAddress: String, contractAddress: String, value: BigInteger,
@@ -109,6 +117,9 @@ class Erc20Kit(
     val syncStateFlowable: Flowable<SyncState>
         get() = state.syncStateSubject.toFlowable(BackpressureStrategy.LATEST)
 
+    val transactionsSyncStateFlowable: Flowable<SyncState>
+        get() = state.transactionsSyncStateSubject.toFlowable(BackpressureStrategy.LATEST)
+
     val balanceFlowable: Flowable<BigInteger>
         get() = state.balanceSubject.toFlowable(BackpressureStrategy.LATEST)
 
@@ -122,21 +133,21 @@ class Erc20Kit(
     // ITransactionManagerListener
 
     override fun onSyncSuccess(transactions: List<Transaction>) {
-        state.syncState = Synced
+        state.transactionsSyncState = Synced
 
         if (transactions.isNotEmpty())
             state.transactionsSubject.onNext(transactions.map { TransactionInfo(it) })
     }
 
     override fun onSyncTransactionsError() {
-        state.syncState = NotSynced
+        state.transactionsSyncState = NotSynced
     }
 
     // IBalanceManagerListener
 
     override fun onSyncBalanceSuccess(balance: BigInteger) {
         state.balance = balance
-        transactionManager.sync()
+        state.syncState = Synced
     }
 
     override fun onSyncBalanceError() {

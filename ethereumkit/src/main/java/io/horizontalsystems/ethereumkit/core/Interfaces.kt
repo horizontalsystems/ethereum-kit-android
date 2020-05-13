@@ -77,6 +77,7 @@ interface IRpcApiProvider {
 }
 
 interface ITransactionManager {
+    val syncState: EthereumKit.SyncState
     val source: String
     var listener: ITransactionManagerListener?
 
@@ -87,6 +88,7 @@ interface ITransactionManager {
 
 interface ITransactionManagerListener {
     fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
+    fun onUpdateTransactionsSyncState(syncState: EthereumKit.SyncState)
 }
 
 interface ITransactionsProvider {

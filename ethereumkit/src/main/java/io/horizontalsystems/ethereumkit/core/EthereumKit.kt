@@ -40,6 +40,7 @@ class EthereumKit(
 
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
+    private val transactionsSyncStateSubject = PublishSubject.create<SyncState>()
     private val balanceSubject = PublishSubject.create<BigInteger>()
     private val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
 
@@ -61,6 +62,9 @@ class EthereumKit(
     val syncState: SyncState
         get() = blockchain.syncState
 
+    val transactionsSyncState: SyncState
+        get() = transactionManager.syncState
+
     val receiveAddress: String
         get() = address.toEIP55Address()
 
@@ -72,6 +76,9 @@ class EthereumKit(
 
     val syncStateFlowable: Flowable<SyncState>
         get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val transactionsSyncStateFlowable: Flowable<SyncState>
+        get() = transactionsSyncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val balanceFlowable: Flowable<BigInteger>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -228,6 +235,10 @@ class EthereumKit(
             return
 
         transactionsSubject.onNext(ethereumTransactions.map { tx -> TransactionInfo(tx) })
+    }
+
+    override fun onUpdateTransactionsSyncState(syncState: SyncState) {
+        transactionsSyncStateSubject.onNext(syncState)
     }
 
     sealed class SyncState {

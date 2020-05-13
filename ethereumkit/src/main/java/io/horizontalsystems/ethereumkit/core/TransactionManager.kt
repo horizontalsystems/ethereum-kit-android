@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -12,6 +13,14 @@ class TransactionManager(
 
     private var disposables = CompositeDisposable()
 
+    override var syncState: SyncState = SyncState.NotSynced()
+        private set(value) {
+            if (field != value) {
+                field = value
+                listener?.onUpdateTransactionsSyncState(value)
+            }
+        }
+
     override val source: String
         get() = transactionsProvider.source
 
@@ -23,13 +32,18 @@ class TransactionManager(
     }
 
     override fun refresh() {
+        syncState = SyncState.Syncing()
+
         val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight() ?: 0
 
         transactionsProvider.getTransactions(lastTransactionBlockHeight + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ transactions ->
                     update(transactions)
-                }, {}).let {
+                    syncState = SyncState.Synced()
+                }, {
+                    syncState = SyncState.NotSynced()
+                }).let {
                     disposables.add(it)
                 }
     }
