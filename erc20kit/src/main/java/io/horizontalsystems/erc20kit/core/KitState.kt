@@ -5,11 +5,19 @@ import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
 class KitState {
-    var syncState: Erc20Kit.SyncState = Erc20Kit.SyncState.Syncing
+    var syncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced
         set(value) {
             if (field != value) {
                 field = value
                 syncStateSubject.onNext(value)
+            }
+        }
+
+    var transactionsSyncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced
+        set(value) {
+            if (field != value) {
+                field = value
+                transactionsSyncStateSubject.onNext(value)
             }
         }
 
@@ -22,6 +30,7 @@ class KitState {
         }
 
     val syncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
+    val transactionsSyncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
     val balanceSubject = PublishSubject.create<BigInteger>()
     val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
 }

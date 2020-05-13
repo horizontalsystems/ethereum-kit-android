@@ -18,8 +18,10 @@ class BalanceFragment : Fragment() {
     lateinit var tokenBalanceValue: TextView
     lateinit var feeValue: TextView
     lateinit var lbhValue: TextView
-    lateinit var kitStateValue: TextView
-    lateinit var erc20StateValue: TextView
+    lateinit var syncStateValue: TextView
+    lateinit var txSyncStateValue: TextView
+    lateinit var erc20SyncStateValue: TextView
+    lateinit var erc20TxSyncStateValue: TextView
     lateinit var refreshButton: Button
     lateinit var clearButton: Button
 
@@ -43,25 +45,31 @@ class BalanceFragment : Fragment() {
         viewModel.lastBlockHeight.observe(this, Observer { lbh ->
             lbhValue.text = (lbh ?: 0).toString()
         })
-        viewModel.etherState.observe(this, Observer { kitState ->
-            kitStateValue.text = when (kitState) {
-                is EthereumKit.SyncState.Synced -> "Synced"
-                is EthereumKit.SyncState.Syncing -> "Syncing ${kitState.progress ?: ""}"
-                is EthereumKit.SyncState.NotSynced -> "NotSynced"
-                else -> "null"
-            }
+
+        viewModel.syncState.observe(this, Observer { state ->
+            syncStateValue.text = getSynStateText(state)
         })
 
-        viewModel.erc20State.observe(this, Observer { kitState ->
-            erc20StateValue.text = when (kitState) {
-                is EthereumKit.SyncState.Synced -> "Synced"
-                is EthereumKit.SyncState.Syncing -> "Syncing"
-                is EthereumKit.SyncState.NotSynced -> "NotSynced"
-                else -> "null"
-            }
+        viewModel.transactionsSyncState.observe(this, Observer { state ->
+            txSyncStateValue.text = getSynStateText(state)
+        })
+
+        viewModel.erc20SyncState.observe(this, Observer { state ->
+            erc20SyncStateValue.text = getSynStateText(state)
+        })
+
+        viewModel.erc20TransactionsSyncState.observe(this, Observer { state ->
+            erc20TxSyncStateValue.text = getSynStateText(state)
         })
 
     }
+
+    private fun getSynStateText(syncState: EthereumKit.SyncState) =
+            when (syncState) {
+                is EthereumKit.SyncState.Synced -> "Synced"
+                is EthereumKit.SyncState.Syncing -> "Syncing ${syncState.progress ?: ""}"
+                is EthereumKit.SyncState.NotSynced -> "NotSynced"
+            }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_balance, container, false)
@@ -76,8 +84,10 @@ class BalanceFragment : Fragment() {
         clearButton = view.findViewById(R.id.buttonClear)
         feeValue = view.findViewById(R.id.feeValue)
         lbhValue = view.findViewById(R.id.lbhValue)
-        kitStateValue = view.findViewById(R.id.kitStateValue)
-        erc20StateValue = view.findViewById(R.id.erc20StateValue)
+        syncStateValue = view.findViewById(R.id.syncStateValue)
+        txSyncStateValue = view.findViewById(R.id.txSyncStateValue)
+        erc20SyncStateValue = view.findViewById(R.id.erc20SyncStateValue)
+        erc20TxSyncStateValue = view.findViewById(R.id.erc20TxSyncStateValue)
 
         refreshButton.setOnClickListener {
             viewModel.refresh()

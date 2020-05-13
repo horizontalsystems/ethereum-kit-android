@@ -22,6 +22,9 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     override val syncState: EthereumKit.SyncState
         get() = ethereumKit.syncState
 
+    override val transactionsSyncState: EthereumKit.SyncState
+        get() = ethereumKit.transactionsSyncState
+
     override val balance: BigDecimal
         get() = ethereumKit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
 
@@ -34,11 +37,18 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     override val syncStateFlowable: Flowable<Unit>
         get() = ethereumKit.syncStateFlowable.map { Unit }
 
+    override val transactionsSyncStateFlowable: Flowable<Unit>
+        get() = ethereumKit.transactionsSyncStateFlowable.map { Unit }
+
     override val balanceFlowable: Flowable<Unit>
         get() = ethereumKit.syncStateFlowable.map { Unit }
 
     override val transactionsFlowable: Flowable<Unit>
         get() = ethereumKit.transactionsFlowable.map { Unit }
+
+    override fun refresh() {
+        ethereumKit.refresh()
+    }
 
     override fun validateAddress(address: String) {
         ethereumKit.validateAddress(address)
@@ -88,7 +98,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                isError = transaction.isError?.let { it != 0 }?: false
+                isError = transaction.isError?.let { it != 0 } ?: false
         )
     }
 }
