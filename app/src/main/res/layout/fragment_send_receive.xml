@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:scrollbars="vertical">
@@ -22,21 +21,6 @@
             android:text="Click the button below to get address"
             android:textIsSelectable="true"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/estimateGasText"
-            android:layout_width="wrap_content"
-            android:layout_height="23dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="228dp"
-            android:layout_marginEnd="8dp"
-            android:scrollbarAlwaysDrawHorizontalTrack="true"
-            android:text="Gas Limit:"
-            android:textIsSelectable="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.048"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -100,8 +84,23 @@
                 android:hint="Amount"
                 android:inputType="numberDecimal" />
 
-        </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:id="@+id/estimateGasText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:scrollbarAlwaysDrawHorizontalTrack="true"
+                android:text="Gas Limit:"
+                android:maxLines="5"
+                android:textIsSelectable="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.048"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/sendButton"
@@ -117,7 +116,7 @@
             app:layout_constraintTop_toBottomOf="@+id/sendAmountLayout" />
 
         <Button
-            android:id="@+id/estimateTGasButton"
+            android:id="@+id/estimateErc20GasButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -143,7 +142,7 @@
             app:layout_constraintTop_toBottomOf="@+id/sendAmountLayout" />
 
         <Button
-            android:id="@+id/sendToken"
+            android:id="@+id/sendErc20"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"

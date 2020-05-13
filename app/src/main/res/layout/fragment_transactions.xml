@@ -4,39 +4,33 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
-        android:id="@+id/actions"
+    <TextView
+        android:id="@+id/ethFilter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:padding="15dp"
+        android:text="Ethereum"
+        android:textColor="@android:color/holo_blue_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/ethFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:padding="15dp"
-            android:text="Ethereum"
-            android:textColor="@android:color/holo_blue_light" />
-
-        <TextView
-            android:id="@+id/tokenFilter"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:padding="15dp"
-            android:text="ERC20 token"
-            android:textColor="@android:color/holo_blue_light" />
-
-    </LinearLayout>
+    <TextView
+        android:id="@+id/tokenFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="15dp"
+        android:text="ERC20 token"
+        app:layout_constraintStart_toEndOf="@+id/ethFilter"
+        app:layout_constraintTop_toTopOf="@+id/ethFilter"
+        android:textColor="@android:color/holo_blue_light" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/transactions"
+        android:id="@+id/transactionsRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/actions" />
+        app:layout_constraintTop_toBottomOf="@id/ethFilter" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

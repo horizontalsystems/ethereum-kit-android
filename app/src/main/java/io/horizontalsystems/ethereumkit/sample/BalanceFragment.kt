@@ -6,62 +6,62 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import kotlinx.android.synthetic.main.fragment_balance.*
 
 class BalanceFragment : Fragment() {
 
-    lateinit var viewModel: MainViewModel
-    lateinit var balanceValue: TextView
-    lateinit var tokenBalanceValue: TextView
-    lateinit var feeValue: TextView
-    lateinit var lbhValue: TextView
-    lateinit var syncStateValue: TextView
-    lateinit var txSyncStateValue: TextView
-    lateinit var erc20SyncStateValue: TextView
-    lateinit var erc20TxSyncStateValue: TextView
-    lateinit var refreshButton: Button
-    lateinit var clearButton: Button
+    private lateinit var viewModel: MainViewModel
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_balance, container, false)
+    }
 
-        viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        viewModel.balance.observe(this, Observer { balance ->
+        viewModel = ViewModelProvider(requireActivity()).get(MainViewModel::class.java)
+
+        viewModel.balance.observe(viewLifecycleOwner, Observer { balance ->
             balanceValue.text = (balance ?: 0).toString()
         })
 
-        viewModel.erc20TokenBalance.observe(this, Observer { balance ->
+        viewModel.erc20TokenBalance.observe(viewLifecycleOwner, Observer { balance ->
             tokenBalanceValue.text = (balance ?: 0).toString()
         })
 
-        viewModel.fee.observe(this, Observer { fee ->
+        viewModel.fee.observe(viewLifecycleOwner, Observer { fee ->
             feeValue.text = fee?.toPlainString()
         })
 
-        viewModel.lastBlockHeight.observe(this, Observer { lbh ->
+        viewModel.lastBlockHeight.observe(viewLifecycleOwner, Observer { lbh ->
             lbhValue.text = (lbh ?: 0).toString()
         })
 
-        viewModel.syncState.observe(this, Observer { state ->
+        viewModel.syncState.observe(viewLifecycleOwner, Observer { state ->
             syncStateValue.text = getSynStateText(state)
         })
 
-        viewModel.transactionsSyncState.observe(this, Observer { state ->
+        viewModel.transactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
             txSyncStateValue.text = getSynStateText(state)
         })
 
-        viewModel.erc20SyncState.observe(this, Observer { state ->
+        viewModel.erc20SyncState.observe(viewLifecycleOwner, Observer { state ->
             erc20SyncStateValue.text = getSynStateText(state)
         })
 
-        viewModel.erc20TransactionsSyncState.observe(this, Observer { state ->
+        viewModel.erc20TransactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
             erc20TxSyncStateValue.text = getSynStateText(state)
         })
 
+        buttonRefresh.setOnClickListener {
+            viewModel.refresh()
+        }
+
+        buttonClear.setOnClickListener {
+            viewModel.clear()
+        }
     }
 
     private fun getSynStateText(syncState: EthereumKit.SyncState) =
@@ -71,30 +71,4 @@ class BalanceFragment : Fragment() {
                 is EthereumKit.SyncState.NotSynced -> "NotSynced"
             }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_balance, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        balanceValue = view.findViewById(R.id.balanceValue)
-        tokenBalanceValue = view.findViewById(R.id.tokenBalanceValue)
-        refreshButton = view.findViewById(R.id.buttonRefresh)
-        clearButton = view.findViewById(R.id.buttonClear)
-        feeValue = view.findViewById(R.id.feeValue)
-        lbhValue = view.findViewById(R.id.lbhValue)
-        syncStateValue = view.findViewById(R.id.syncStateValue)
-        txSyncStateValue = view.findViewById(R.id.txSyncStateValue)
-        erc20SyncStateValue = view.findViewById(R.id.erc20SyncStateValue)
-        erc20TxSyncStateValue = view.findViewById(R.id.erc20TxSyncStateValue)
-
-        refreshButton.setOnClickListener {
-            viewModel.refresh()
-        }
-
-        clearButton.setOnClickListener {
-            viewModel.clear()
-        }
-    }
 }
