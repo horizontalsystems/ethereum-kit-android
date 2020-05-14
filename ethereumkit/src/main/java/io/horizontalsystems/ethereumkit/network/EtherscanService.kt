@@ -1,8 +1,13 @@
 package io.horizontalsystems.ethereumkit.network
 
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
+import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanResponse
+import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.reactivex.Single
 import okhttp3.OkHttpClient
@@ -31,6 +36,8 @@ class EtherscanService(private val networkType: NetworkType,
             }
         }
 
+    private val gson: Gson
+
     init {
         val loggingInterceptor = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
             override fun log(message: String) {
@@ -41,7 +48,7 @@ class EtherscanService(private val networkType: NetworkType,
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
 
-        val gson = GsonBuilder()
+        gson = GsonBuilder()
                 .setLenient()
                 .create()
 
@@ -57,10 +64,41 @@ class EtherscanService(private val networkType: NetworkType,
 
     fun getTransactionList(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
         return service.getTransactionList("account", "txList", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+                .map { parseResponse(it) }
+                .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
     fun getTokenTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
         return service.getTokenTransactions("account", "tokentx", contractAddress.toHexString(), address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+                .map { parseResponse(it) }
+                .retryWhenError(RequestError.RateLimitExceed::class)
+    }
+
+    private fun parseResponse(response: JsonElement): EtherscanResponse {
+        try {
+            val responseObj = response.asJsonObject
+            val status = responseObj["status"].asJsonPrimitive.asString
+            val message = responseObj["message"].asJsonPrimitive.asString
+
+            if (status == "0" && message != "No transactions found") {
+                val result = responseObj["result"].asJsonPrimitive.asString
+                if (message == "NOTOK" && result == "Max rate limit reached") {
+                    throw RequestError.RateLimitExceed()
+                }
+            }
+            val result: List<EtherscanTransaction> = gson.fromJson(responseObj["result"], object : TypeToken<List<EtherscanTransaction>>() {}.type)
+            return EtherscanResponse(status, message, result)
+
+        } catch (rateLimitExceeded: RequestError.RateLimitExceed) {
+            throw rateLimitExceeded
+        } catch (err: Throwable) {
+            throw RequestError.ResponseError("Unexpected response: $response")
+        }
+    }
+
+    open class RequestError(message: String? = null) : Exception(message ?: "") {
+        class ResponseError(message: String) : RequestError(message)
+        class RateLimitExceed : RequestError()
     }
 
     private interface EtherscanServiceAPI {
@@ -73,7 +111,7 @@ class EtherscanService(private val networkType: NetworkType,
                 @Query("startblock") startblock: Long,
                 @Query("endblock") endblock: Long,
                 @Query("sort") sort: String,
-                @Query("apiKey") apiKey: String): Single<EtherscanResponse>
+                @Query("apiKey") apiKey: String): Single<JsonElement>
 
         @GET("/api")
         fun getTokenTransactions(
@@ -84,7 +122,7 @@ class EtherscanService(private val networkType: NetworkType,
                 @Query("startblock") startblock: Long,
                 @Query("endblock") endblock: Long,
                 @Query("sort") sort: String,
-                @Query("apiKey") apiKey: String): Single<EtherscanResponse>
+                @Query("apiKey") apiKey: String): Single<JsonElement>
     }
 
 }

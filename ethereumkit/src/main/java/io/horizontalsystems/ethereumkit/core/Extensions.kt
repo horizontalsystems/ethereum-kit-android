@@ -1,9 +1,13 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.utils.EIP55
+import io.reactivex.Flowable
+import io.reactivex.Single
+import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 
 
-fun String.removeLeadingZeros(): String{
+fun String.removeLeadingZeros(): String {
     return this.trimStart('0')
 }
 
@@ -47,4 +51,17 @@ fun Long.toByteArray(): ByteArray {
         array = tmp
     }
     return array
+}
+
+fun <T> Single<T>.retryWhenError(errorForRetry: KClass<*>, maxRetries: Int = 3): Single<T> {
+    return retryWhen { errors ->
+        var retryCounter = 0L
+        errors.flatMap { error ->
+            if (errorForRetry == error::class && retryCounter++ < maxRetries) {
+                Flowable.timer(retryCounter, TimeUnit.SECONDS)
+            } else {
+                Flowable.error(error)
+            }
+        }
+    }
 }

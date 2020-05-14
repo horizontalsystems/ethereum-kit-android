@@ -36,7 +36,7 @@ class TransactionManager(
                 .subscribe({ transactions ->
                     handleTransactions(transactions.filter { it.value != BigInteger.ZERO })
                 }, {
-                    logger.warning("Transaction sync error: ${it.message}")
+                    logger.warning("Transaction sync error: ${it.javaClass.simpleName} ${it.message}")
                     listener?.onSyncTransactionsError(it)
                 })
                 .let {
