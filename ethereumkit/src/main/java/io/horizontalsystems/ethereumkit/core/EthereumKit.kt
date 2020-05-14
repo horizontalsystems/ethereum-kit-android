@@ -33,8 +33,8 @@ class EthereumKit(
         val networkType: NetworkType,
         val walletId: String,
         val etherscanKey: String,
-        private val state: EthereumKitState = EthereumKitState())
-    : IBlockchainListener, ITransactionManagerListener {
+        private val state: EthereumKitState = EthereumKitState()
+) : IBlockchainListener, ITransactionManagerListener {
 
     private val logger = Logger.getLogger("EthereumKit")
 
@@ -138,8 +138,7 @@ class EthereumKit(
 
     fun estimateGas(contractAddress: String, value: BigInteger?, gasLimit: Long? = null, gasPrice: Long? = null,
                     data: ByteArray? = null): Single<Long> {
-        return blockchain.estimateGas(receiveAddress, to = contractAddress, value = value, gasLimit = gasLimit,
-                                      gasPrice = gasPrice, data = data)
+        return blockchain.estimateGas(receiveAddress, to = contractAddress, value = value, gasLimit = gasLimit, gasPrice = gasPrice, data = data)
     }
 
     @Throws(ValidationError::class)
@@ -243,7 +242,7 @@ class EthereumKit(
 
     sealed class SyncState {
         class Synced : SyncState()
-        class NotSynced : SyncState()
+        class NotSynced(val error: Throwable) : SyncState()
         class Syncing(val progress: Double? = null) : SyncState()
 
         override fun toString(): String = when (this) {
@@ -273,13 +272,17 @@ class EthereumKit(
         }
     }
 
+    open class SyncError : Exception() {
+        class NotStarted : SyncError()
+        class NoNetworkConnection : SyncError()
+    }
+
     companion object {
         fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType,
                         rpcApi: RpcApi, etherscanKey: String, walletId: String): EthereumKit {
             val blockchain: IBlockchain
 
-            val publicKey =
-                    CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
+            val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
             val address = CryptoUtils.sha3(publicKey).takeLast(20).toByteArray()
 
             val network = networkType.getNetwork()
@@ -296,18 +299,14 @@ class EthereumKit(
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
 
-                    blockchain =
-                            ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider,
-                                                      ConnectionManager(context))
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, ConnectionManager(context))
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
                     val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
                     val storage = SpvStorage(spvDatabase)
 
-                    blockchain =
-                            SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider,
-                                                      network, address, nodeKey)
+                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
                 }
                 is SyncMode.GethSyncMode -> {
                     throw Exception("Geth Sync Mode not supported!")
@@ -326,8 +325,7 @@ class EthereumKit(
 
             val addressValidator = AddressValidator()
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address,
-                                          networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address, networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit

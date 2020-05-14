@@ -1,11 +1,12 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.TransactionInfo
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
 class KitState {
-    var syncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced
+    var syncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced(SyncError.NotStarted())
         set(value) {
             if (field != value) {
                 field = value
@@ -13,7 +14,7 @@ class KitState {
             }
         }
 
-    var transactionsSyncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced
+    var transactionsSyncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced(SyncError.NotStarted())
         set(value) {
             if (field != value) {
                 field = value

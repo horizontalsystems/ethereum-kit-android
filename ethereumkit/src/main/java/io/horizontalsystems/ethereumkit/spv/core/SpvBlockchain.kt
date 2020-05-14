@@ -2,6 +2,8 @@ package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
@@ -58,7 +60,7 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override var syncState = EthereumKit.SyncState.NotSynced()
+    override var syncState = SyncState.NotSynced(SyncError.NotStarted())
 
     override val lastBlockHeight: Long?
         get() = storage.getLastBlockHeader()?.height

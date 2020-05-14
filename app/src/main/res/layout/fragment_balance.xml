@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                             xmlns:app="http://schemas.android.com/apk/res-auto"
-                                             xmlns:tools="http://schemas.android.com/tools"
-                                             android:layout_width="match_parent"
-                                             android:layout_height="match_parent"
-                                             android:padding="8dp"
-    >
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
 
     <TextView
         android:id="@+id/balanceTitle"
@@ -14,8 +13,7 @@
         android:text="Balance:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/balanceValue"
@@ -25,8 +23,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/balanceTitle"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="100.0"
-        />
+        tools:text="100.0" />
 
     <TextView
         android:id="@+id/tokenBalanceTitle"
@@ -36,8 +33,7 @@
         android:text="Erc20 balance:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/balanceTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/balanceTitle" />
 
     <TextView
         android:id="@+id/tokenBalanceValue"
@@ -47,8 +43,7 @@
         android:text="100.0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/tokenBalanceTitle"
-        app:layout_constraintTop_toTopOf="@+id/tokenBalanceTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/tokenBalanceTitle" />
 
     <TextView
         android:id="@+id/feeTitle"
@@ -58,8 +53,7 @@
         android:text="Fee (in ETH):"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tokenBalanceTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/tokenBalanceTitle" />
 
     <TextView
         android:id="@+id/feeValue"
@@ -69,8 +63,7 @@
         android:text="100.0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/feeTitle"
-        app:layout_constraintTop_toTopOf="@+id/feeTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/feeTitle" />
 
     <TextView
         android:id="@+id/lbhTitle"
@@ -80,8 +73,7 @@
         android:text="Last block height:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/feeTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/feeTitle" />
 
     <TextView
         android:id="@+id/lbhValue"
@@ -91,8 +83,7 @@
         android:text="0"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/lbhTitle"
-        app:layout_constraintTop_toTopOf="@+id/lbhTitle"
-        />
+        app:layout_constraintTop_toTopOf="@+id/lbhTitle" />
 
     <TextView
         android:id="@+id/syncStateTitle"
@@ -102,8 +93,7 @@
         android:text="Sync State:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lbhTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/lbhTitle" />
 
     <TextView
         android:id="@+id/syncStateValue"
@@ -113,8 +103,19 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/syncStateTitle"
         app:layout_constraintTop_toTopOf="@+id/syncStateTitle"
-        tools:text="(Synced, Syncing, NotSyncing)"
-        />
+        tools:text="(Synced, Syncing, NotSyncing)" />
+
+    <TextView
+        android:id="@+id/syncStateError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:maxLines="5"
+        android:textIsSelectable="true"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/syncStateTitle"
+        tools:text="Sync state error" />
 
     <TextView
         android:id="@+id/txSyncStateTitle"
@@ -124,8 +125,7 @@
         android:text="Tx Sync State:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/syncStateTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/syncStateError" />
 
     <TextView
         android:id="@+id/txSyncStateValue"
@@ -135,8 +135,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/txSyncStateTitle"
         app:layout_constraintTop_toTopOf="@+id/txSyncStateTitle"
-        tools:text="(Synced, Syncing, NotSyncing)"
-        />
+        tools:text="(Synced, Syncing, NotSyncing)" />
 
     <TextView
         android:id="@+id/erc20SyncStateTitle"
@@ -146,8 +145,7 @@
         android:text="Erc20 Sync State:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/txSyncStateTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/txSyncStateTitle" />
 
     <TextView
         android:id="@+id/erc20SyncStateValue"
@@ -157,8 +155,19 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/erc20SyncStateTitle"
         app:layout_constraintTop_toTopOf="@+id/erc20SyncStateTitle"
-        tools:text="(Synced, Syncing, NotSyncing)"
-        />
+        tools:text="(Synced, Syncing, NotSyncing)" />
+
+    <TextView
+        android:id="@+id/erc20SyncStateError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:maxLines="5"
+        android:textIsSelectable="true"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/erc20SyncStateTitle"
+        tools:text="Erc20 Sync state error" />
 
     <TextView
         android:id="@+id/erc20TxSyncStateTitle"
@@ -168,8 +177,7 @@
         android:text="Erc20 Tx Sync State:"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/erc20SyncStateValue"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/erc20SyncStateError" />
 
     <TextView
         android:id="@+id/erc20TxSyncStateValue"
@@ -179,33 +187,30 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         app:layout_constraintStart_toEndOf="@+id/erc20TxSyncStateTitle"
         app:layout_constraintTop_toTopOf="@+id/erc20TxSyncStateTitle"
-        tools:text="(Synced, Syncing, NotSyncing)"
-        />
+        tools:text="(Synced, Syncing, NotSyncing)" />
 
     <Button
         android:id="@+id/buttonRefresh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="60dp"
+        android:layout_marginEnd="8dp"
         android:text="Refresh"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/erc20TxSyncStateTitle"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/erc20TxSyncStateTitle" />
 
     <Button
         android:id="@+id/buttonClear"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:text="Clear"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonRefresh"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/buttonRefresh" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

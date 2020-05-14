@@ -1,6 +1,8 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
@@ -42,7 +44,7 @@ class ApiBlockchain(
     override val balance: BigInteger?
         get() = storage.getBalance()
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced()
+    override var syncState: SyncState = SyncState.NotSynced(SyncError.NotStarted())
         private set(value) {
             if (field != value) {
                 field = value
@@ -83,7 +85,7 @@ class ApiBlockchain(
     }
 
     override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
-        return rpcApiProvider.estimateGas (from, to, value, gasLimit, gasPrice, data?.toHexString())
+        return rpcApiProvider.estimateGas(from, to, value, gasLimit, gasPrice, data?.toHexString())
                 .flatMap {
                     Single.just(BigInteger(it.replace("0x", ""), 16).toLong())
                 }
@@ -157,14 +159,14 @@ class ApiBlockchain(
 
     private fun sync() {
         if (!connectionManager.isConnected) {
-            syncState = EthereumKit.SyncState.NotSynced()
+            syncState = SyncState.NotSynced(SyncError.NoNetworkConnection())
             return
         }
 
-        if (syncState is EthereumKit.SyncState.Syncing) {
+        if (syncState is SyncState.Syncing) {
             return
         }
-        syncState = EthereumKit.SyncState.Syncing()
+        syncState = SyncState.Syncing()
 
         Single.zip(
                 rpcApiProvider.getLastBlockHeight(),
@@ -175,10 +177,10 @@ class ApiBlockchain(
                     updateLastBlockHeight(result.first)
                     updateBalance(result.second)
 
-                    syncState = EthereumKit.SyncState.Synced()
+                    syncState = SyncState.Synced()
                 }, {
                     it?.printStackTrace()
-                    syncState = EthereumKit.SyncState.NotSynced()
+                    syncState = SyncState.NotSynced(it)
                 }).let {
                     disposables.add(it)
                 }

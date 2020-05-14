@@ -11,7 +11,7 @@ data class TransactionKey(val hash: ByteArray, val interTransactionIndex: Int)
 
 interface ITransactionManagerListener {
     fun onSyncSuccess(transactions: List<Transaction>)
-    fun onSyncTransactionsError()
+    fun onSyncTransactionsError(error: Throwable)
 }
 
 interface ITransactionManager {
@@ -25,7 +25,7 @@ interface ITransactionManager {
 
 interface IBalanceManagerListener {
     fun onSyncBalanceSuccess(balance: BigInteger)
-    fun onSyncBalanceError()
+    fun onSyncBalanceError(error: Throwable)
 }
 
 interface IBalanceManager {
@@ -58,7 +58,7 @@ interface IDataProvider {
     fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>>
     fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger>
     fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
-    fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray,TransactionStatus>>
+    fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>>
 }
 
 interface ITransactionBuilder {

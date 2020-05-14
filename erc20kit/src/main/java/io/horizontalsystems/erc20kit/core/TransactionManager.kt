@@ -37,7 +37,7 @@ class TransactionManager(
                     handleTransactions(transactions.filter { it.value != BigInteger.ZERO })
                 }, {
                     logger.warning("Transaction sync error: ${it.message}")
-                    listener?.onSyncTransactionsError()
+                    listener?.onSyncTransactionsError(it)
                 })
                 .let {
                     disposables.add(it)
