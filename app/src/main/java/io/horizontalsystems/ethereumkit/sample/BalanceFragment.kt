@@ -40,19 +40,33 @@ class BalanceFragment : Fragment() {
         })
 
         viewModel.syncState.observe(viewLifecycleOwner, Observer { state ->
-            syncStateValue.text = getSynStateText(state)
+            val syncStateInfo = getSynStateInfo(state)
+            syncStateValue.text = syncStateInfo.description
+            if (syncStateInfo.error == null) {
+                syncStateError.visibility = View.GONE
+            } else {
+                syncStateError.text = syncStateInfo.error.message
+                syncStateError.visibility = View.VISIBLE
+            }
         })
 
         viewModel.transactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
-            txSyncStateValue.text = getSynStateText(state)
+            txSyncStateValue.text = getSynStateInfo(state).description
         })
 
         viewModel.erc20SyncState.observe(viewLifecycleOwner, Observer { state ->
-            erc20SyncStateValue.text = getSynStateText(state)
+            val syncStateInfo = getSynStateInfo(state)
+            erc20SyncStateValue.text = syncStateInfo.description
+            if (syncStateInfo.error == null) {
+                erc20SyncStateError.visibility = View.GONE
+            } else {
+                erc20SyncStateError.text = syncStateInfo.error.message
+                erc20SyncStateError.visibility = View.VISIBLE
+            }
         })
 
         viewModel.erc20TransactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
-            erc20TxSyncStateValue.text = getSynStateText(state)
+            erc20TxSyncStateValue.text = getSynStateInfo(state).description
         })
 
         buttonRefresh.setOnClickListener {
@@ -64,11 +78,13 @@ class BalanceFragment : Fragment() {
         }
     }
 
-    private fun getSynStateText(syncState: EthereumKit.SyncState) =
+    private fun getSynStateInfo(syncState: EthereumKit.SyncState): SyncStateInfo =
             when (syncState) {
-                is EthereumKit.SyncState.Synced -> "Synced"
-                is EthereumKit.SyncState.Syncing -> "Syncing ${syncState.progress ?: ""}"
-                is EthereumKit.SyncState.NotSynced -> "NotSynced"
+                is EthereumKit.SyncState.Synced -> SyncStateInfo("Synced")
+                is EthereumKit.SyncState.Syncing -> SyncStateInfo("Syncing ${syncState.progress ?: ""}")
+                is EthereumKit.SyncState.NotSynced -> SyncStateInfo("NotSynced", syncState.error)
             }
+
+    data class SyncStateInfo(val description: String, val error: Throwable? = null)
 
 }

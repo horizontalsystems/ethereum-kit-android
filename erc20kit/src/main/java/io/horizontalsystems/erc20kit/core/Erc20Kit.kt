@@ -28,7 +28,7 @@ class Erc20Kit(
 
     sealed class SyncState {
         object Synced : SyncState()
-        object NotSynced : SyncState()
+        class NotSynced(val error: Throwable) : SyncState()
         object Syncing : SyncState()
     }
 
@@ -46,7 +46,7 @@ class Erc20Kit(
 
     private fun onSyncStateUpdate(syncState: EthereumKit.SyncState) {
         when (syncState) {
-            is EthereumKit.SyncState.NotSynced -> state.syncState = NotSynced
+            is EthereumKit.SyncState.NotSynced -> state.syncState = NotSynced(syncState.error)
             is EthereumKit.SyncState.Syncing -> state.syncState = Syncing
             is EthereumKit.SyncState.Synced -> {
                 state.syncState = Syncing
@@ -139,8 +139,8 @@ class Erc20Kit(
             state.transactionsSubject.onNext(transactions.map { TransactionInfo(it) })
     }
 
-    override fun onSyncTransactionsError() {
-        state.transactionsSyncState = NotSynced
+    override fun onSyncTransactionsError(error: Throwable) {
+        state.transactionsSyncState = NotSynced(error)
     }
 
     // IBalanceManagerListener
@@ -150,8 +150,8 @@ class Erc20Kit(
         state.syncState = Synced
     }
 
-    override fun onSyncBalanceError() {
-        state.syncState = NotSynced
+    override fun onSyncBalanceError(error: Throwable) {
+        state.syncState = NotSynced(error)
     }
 
     companion object {

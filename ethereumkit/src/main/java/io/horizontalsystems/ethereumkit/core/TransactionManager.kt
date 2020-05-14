@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.reactivex.Single
@@ -13,7 +14,7 @@ class TransactionManager(
 
     private var disposables = CompositeDisposable()
 
-    override var syncState: SyncState = SyncState.NotSynced()
+    override var syncState: SyncState = SyncState.NotSynced(SyncError.NotStarted())
         private set(value) {
             if (field != value) {
                 field = value
@@ -42,7 +43,7 @@ class TransactionManager(
                     update(transactions)
                     syncState = SyncState.Synced()
                 }, {
-                    syncState = SyncState.NotSynced()
+                    syncState = SyncState.NotSynced(it)
                 }).let {
                     disposables.add(it)
                 }
