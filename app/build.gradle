@@ -33,7 +33,7 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:0406d5f'
+    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:41d5525'
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
