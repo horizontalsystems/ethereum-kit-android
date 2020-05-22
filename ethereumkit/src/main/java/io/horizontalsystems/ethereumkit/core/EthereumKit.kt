@@ -278,8 +278,15 @@ class EthereumKit(
     }
 
     companion object {
-        fun getInstance(context: Context, privateKey: BigInteger, syncMode: SyncMode, networkType: NetworkType,
-                        rpcApi: RpcApi, etherscanKey: String, walletId: String): EthereumKit {
+        fun getInstance(
+                context: Context,
+                privateKey: BigInteger,
+                syncMode: SyncMode,
+                networkType: NetworkType,
+                rpcApi: RpcApi,
+                etherscanKey: String,
+                walletId: String
+        ): EthereumKit {
             val blockchain: IBlockchain
 
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
@@ -333,9 +340,25 @@ class EthereumKit(
             return ethereumKit
         }
 
-        fun getInstance(context: Context, words: List<String>, wordsSyncMode: WordsSyncMode, networkType: NetworkType,
-                        rpcApi: RpcApi, etherscanKey: String, walletId: String): EthereumKit {
-            val seed = Mnemonic().toSeed(words)
+        fun getInstance(
+                context: Context,
+                words: List<String>,
+                wordsSyncMode: WordsSyncMode,
+                networkType: NetworkType,
+                rpcApi: RpcApi,
+                etherscanKey: String,
+                walletId: String
+        ) = getInstance(context, Mnemonic().toSeed(words), wordsSyncMode, networkType, rpcApi, etherscanKey, walletId)
+
+        fun getInstance(
+                context: Context,
+                seed: ByteArray,
+                wordsSyncMode: WordsSyncMode,
+                networkType: NetworkType,
+                rpcApi: RpcApi,
+                etherscanKey: String,
+                walletId: String
+        ): EthereumKit {
             val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey
 
