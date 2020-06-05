@@ -4,7 +4,7 @@ import org.junit.Test
 
 class AddressValidatorTest {
 
-    private val addressValidator = AddressValidator()
+    private val addressValidator = AddressValidator
 
     @Test(expected = AddressValidator.InvalidAddressLength::class)
     fun testInvalidAddressLength() {

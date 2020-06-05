@@ -56,7 +56,7 @@ class Erc20Adapter(
     }
 
     override fun validateAddress(address: String) {
-        ethereumKit.validateAddress(address)
+        EthereumKit.validateAddress(address)
     }
 
     override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Long> {

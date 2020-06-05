@@ -27,7 +27,6 @@ import java.util.logging.Logger
 class EthereumKit(
         private val blockchain: IBlockchain,
         private val transactionManager: ITransactionManager,
-        private val addressValidator: AddressValidator,
         private val transactionBuilder: TransactionBuilder,
         private val address: ByteArray,
         val networkType: NetworkType,
@@ -104,10 +103,6 @@ class EthereumKit(
     fun refresh() {
         blockchain.refresh()
         transactionManager.refresh()
-    }
-
-    fun validateAddress(address: String) {
-        addressValidator.validate(address)
     }
 
     fun fee(gasPrice: Long): BigDecimal {
@@ -330,9 +325,7 @@ class EthereumKit(
             val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
             val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
 
-            val addressValidator = AddressValidator()
-
-            val ethereumKit = EthereumKit(blockchain, transactionManager, addressValidator, transactionBuilder, address, networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, address, networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit
@@ -377,6 +370,10 @@ class EthereumKit(
 
         fun clear(context: Context, networkType: NetworkType, walletId: String) {
             EthereumDatabaseManager.clear(context, networkType, walletId)
+        }
+
+        fun validateAddress(address: String) {
+            AddressValidator.validate(address)
         }
     }
 
