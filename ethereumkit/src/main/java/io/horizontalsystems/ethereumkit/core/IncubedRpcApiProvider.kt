@@ -149,7 +149,7 @@ class IncubedRpcApiProvider(
         }
     }
 
-    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<String> {
+    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
         logger.info("IncubedRpcApiProvider: estimateGas")
         return Single.fromCallable {
             serialExecute {
@@ -161,7 +161,7 @@ class IncubedRpcApiProvider(
                     gasPrice?.let { this.gasPrice = it }
                     data?.let { this.data = it }
                 }
-                eth1.estimateGas(request, LATEST).toString()
+                eth1.estimateGas(request, LATEST)
             }
         }
     }
