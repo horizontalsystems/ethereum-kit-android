@@ -17,7 +17,7 @@
  */
 // $Id: Keccak512.java 189 2010-05-14 21:21:46Z tp $
 
-package io.horizontalsystems.ethereumkit.spv.crypto.digest;
+package io.horizontalsystems.ethereumkit.crypto.digest;
 
 /**
  * <p>This class implements the Keccak-256 digest algorithm under the

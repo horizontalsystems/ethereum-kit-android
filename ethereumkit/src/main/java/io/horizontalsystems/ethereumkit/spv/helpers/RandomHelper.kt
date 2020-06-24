@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.helpers
 
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils.CURVE
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters

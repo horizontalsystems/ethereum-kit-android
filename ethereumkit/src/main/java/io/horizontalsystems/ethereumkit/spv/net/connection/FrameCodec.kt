@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
-import io.horizontalsystems.ethereumkit.spv.crypto.AESCipher
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.AESCipher
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import org.bouncycastle.crypto.digests.KeccakDigest

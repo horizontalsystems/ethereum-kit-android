@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.spv.net.connection
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.verifyNoMoreInteractions
 import com.nhaarman.mockito_kotlin.whenever
-import io.horizontalsystems.ethereumkit.spv.crypto.AESCipher
+import io.horizontalsystems.ethereumkit.crypto.AESCipher
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import org.bouncycastle.crypto.digests.KeccakDigest
 import org.junit.Assert.*

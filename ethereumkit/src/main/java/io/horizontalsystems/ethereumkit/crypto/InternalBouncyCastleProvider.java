@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.crypto;
+package io.horizontalsystems.ethereumkit.crypto;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -15,8 +15,8 @@ public final class InternalBouncyCastleProvider {
 
             INSTANCE = (p != null) ? p : new BouncyCastleProvider();
 
-            INSTANCE.put("MessageDigest.ETH-KECCAK-256", "io.horizontalsystems.ethereumkit.spv.crypto.digest.Keccak256");
-            INSTANCE.put("MessageDigest.ETH-KECCAK-512", "io.horizontalsystems.ethereumkit.spv.crypto.digest.Keccak512");
+            INSTANCE.put("MessageDigest.ETH-KECCAK-256", "io.horizontalsystems.ethereumkit.crypto.digest.Keccak256");
+            INSTANCE.put("MessageDigest.ETH-KECCAK-512", "io.horizontalsystems.ethereumkit.crypto.digest.Keccak512");
         }
     }
 

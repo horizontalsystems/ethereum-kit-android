@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.Node
 
 

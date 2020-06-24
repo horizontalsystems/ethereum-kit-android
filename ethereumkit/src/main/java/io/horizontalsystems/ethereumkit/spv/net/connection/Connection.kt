@@ -1,10 +1,10 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection
 
 import io.horizontalsystems.ethereumkit.spv.core.toShort
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
-import io.horizontalsystems.ethereumkit.spv.crypto.ECIESEncryptedMessage
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils.CURVE
+import io.horizontalsystems.ethereumkit.crypto.ECIESEncryptedMessage
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.net.Node
 import org.bouncycastle.math.ec.ECPoint
