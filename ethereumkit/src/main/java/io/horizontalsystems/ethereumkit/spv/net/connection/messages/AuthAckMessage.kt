@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.connection.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils.CURVE
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils.CURVE
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 import io.horizontalsystems.ethereumkit.spv.core.toInt

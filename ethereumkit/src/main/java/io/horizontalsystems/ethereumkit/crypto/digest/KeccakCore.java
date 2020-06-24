@@ -17,7 +17,7 @@
  */
 // $Id: KeccakCore.java 258 2011-07-15 22:16:50Z tp $
 
-package io.horizontalsystems.ethereumkit.spv.crypto.digest;
+package io.horizontalsystems.ethereumkit.crypto.digest;
 
 /**
  * This class implements the core operations for the Keccak digest

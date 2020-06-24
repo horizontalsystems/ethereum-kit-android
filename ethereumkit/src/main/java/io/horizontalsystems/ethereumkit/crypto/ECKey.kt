@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.crypto
+package io.horizontalsystems.ethereumkit.crypto
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import org.bouncycastle.math.ec.ECPoint

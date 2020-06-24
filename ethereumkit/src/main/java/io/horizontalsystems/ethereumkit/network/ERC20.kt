@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.network
 
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import java.math.BigInteger
 import kotlin.math.max
 

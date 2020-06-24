@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.handlers
 
 import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.spv.core.*
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader

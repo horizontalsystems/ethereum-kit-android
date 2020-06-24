@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.utils
 import io.horizontalsystems.ethereumkit.core.stripHexPrefix
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.core.toRawHexString
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import java.util.*
 
 object EIP55 {

@@ -12,7 +12,7 @@ import io.horizontalsystems.ethereumkit.network.MainNet
 import io.horizontalsystems.ethereumkit.network.Ropsten
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.storage.SpvStorage
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy

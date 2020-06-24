@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.net.les
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.spv.core.*
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node

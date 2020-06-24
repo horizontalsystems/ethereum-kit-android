@@ -1,6 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.net.devp2p
 
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.net.Node

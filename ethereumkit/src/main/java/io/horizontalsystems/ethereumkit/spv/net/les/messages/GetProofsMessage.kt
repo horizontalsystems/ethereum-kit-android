@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.net.les.messages
 
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.spv.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.spv.net.IOutMessage
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger

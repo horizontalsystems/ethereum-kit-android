@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.spv.net
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.network.INetwork
-import io.horizontalsystems.ethereumkit.spv.crypto.ECKey
+import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.net.les.LESPeer
 
 class PeerProvider(val connectionKey: ECKey,

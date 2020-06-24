@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.crypto
+package io.horizontalsystems.ethereumkit.crypto
 
 import io.horizontalsystems.ethereumkit.spv.core.toBytes
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
