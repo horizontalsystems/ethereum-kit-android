@@ -93,7 +93,7 @@ class InfuraService(
     }
 
     fun getTransactionCount(address: ByteArray): Single<Long> {
-        val request = Request("eth_getTransactionCount", listOf(address.toHexString(), "latest"))
+        val request = Request("eth_getTransactionCount", listOf(address.toHexString(), "pending"))
         return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it).map { txCount ->
                 txCount.toLong()
