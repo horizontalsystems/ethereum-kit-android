@@ -84,8 +84,8 @@ class ApiBlockchain(
                 }
     }
 
-    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
-        return rpcApiProvider.estimateGas(from, to, value, gasLimit, gasPrice, data?.toHexString())
+    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+        return rpcApiProvider.estimateGas(to, value, gasLimit, gasPrice, data?.toHexString())
     }
 
     override fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {

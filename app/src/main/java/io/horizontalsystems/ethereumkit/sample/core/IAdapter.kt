@@ -28,5 +28,5 @@ interface IAdapter {
     fun send(address: String, amount: BigDecimal, gasLimit: Long): Single<Unit>
     fun transactions(from: Pair<String, Int>? = null, limit: Int? = null): Single<List<TransactionRecord>>
 
-    fun estimatedGasLimit(toAddress: String, value: BigDecimal) : Single<Long>
+    fun estimatedGasLimit(toAddress: String?, value: BigDecimal) : Single<Long>
 }

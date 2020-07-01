@@ -13,14 +13,12 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
-import java.math.BigDecimal
 import java.math.BigInteger
 
 class Erc20Kit(
         private val ethereumKit: EthereumKit,
         private val transactionManager: ITransactionManager,
         private val balanceManager: IBalanceManager,
-        private val gasLimit: Long = 1000000,
         private val state: KitState = KitState()
 ) : ITransactionManagerListener, IBalanceManagerListener {
 
@@ -64,10 +62,6 @@ class Erc20Kit(
     val balance: BigInteger?
         get() = state.balance
 
-    fun fee(gasPrice: Long): BigDecimal {
-        return BigDecimal(gasPrice).multiply(gasLimit.toBigDecimal())
-    }
-
     @Throws(TokenError::class)
     private fun convert(address: String): ByteArray {
         try {
@@ -91,10 +85,14 @@ class Erc20Kit(
         transactionManager.sync()
     }
 
-    fun estimateGas(toAddress: String, contractAddress: String, value: BigInteger,
-                    gasPrice: Long? = null): Single<Long> {
+    fun estimateGas(toAddress: String?, contractAddress: String, value: BigInteger, gasPrice: Long?): Single<Long> {
+        // without address - provide default gas limit
+        if (toAddress == null) {
+            return Single.just(ethereumKit.defaultGasLimit)
+        }
+
         val transactionInput = transactionManager.getTransactionInput(convert(toAddress), value)
-        return ethereumKit.estimateGas(contractAddress, null, gasLimit, gasPrice, transactionInput)
+        return ethereumKit.estimateGas(contractAddress, null, gasPrice, transactionInput)
     }
 
     fun send(to: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
@@ -158,8 +156,7 @@ class Erc20Kit(
 
         fun getInstance(context: Context,
                         ethereumKit: EthereumKit,
-                        contractAddress: String,
-                        gasLimit: Long = 1_000_000): Erc20Kit {
+                        contractAddress: String): Erc20Kit {
 
             val contractAddressRaw = contractAddress.hexStringToByteArray()
             val address = ethereumKit.receiveAddressRaw
@@ -175,7 +172,7 @@ class Erc20Kit(
             val transactionManager: ITransactionManager = TransactionManager(contractAddressRaw, address, transactionStorage, transactionsProvider, dataProvider, transactionBuilder)
             val balanceManager: IBalanceManager = BalanceManager(contractAddressRaw, address, balanceStorage, dataProvider)
 
-            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, gasLimit)
+            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager)
 
             transactionManager.listener = erc20Kit
             balanceManager.listener = erc20Kit

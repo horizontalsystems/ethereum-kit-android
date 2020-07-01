@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.fragment_send_receive.*
+import java.math.BigDecimal
 
 class SendReceiveFragment : Fragment() {
 
@@ -37,19 +38,11 @@ class SendReceiveFragment : Fragment() {
         }
 
         estimateGasButton.setOnClickListener {
-            when {
-                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
-                else -> viewModel.estimateGas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
-            }
-            estimateGasText.text = viewModel.receiveAddress()
+            onTapEstimateGas(false)
         }
 
         estimateErc20GasButton.setOnClickListener {
-            when {
-                sendAddress.text.isEmpty() -> sendAddress.error = "Send address cannot be blank"
-                sendAmount.text.isEmpty() || sendAmount.text.toString().toBigDecimalOrNull() == null -> sendAmount.error = "Invalid amount"
-                else -> viewModel.estimateERC20Gas(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
-            }
+            onTapEstimateGas(true)
         }
 
         sendButton.setOnClickListener {
@@ -66,6 +59,14 @@ class SendReceiveFragment : Fragment() {
                 else -> viewModel.sendERC20(sendAddress.text.toString(), sendAmount.text.toString().toBigDecimal())
             }
         }
+    }
+
+    private fun onTapEstimateGas(isErc20: Boolean) {
+        val toAddress = sendAddress.text.toString()
+        val resolvedToAddress = if (toAddress.isNotBlank()) toAddress else null
+        val resolvedAmount = sendAmount.text.toString().toBigDecimalOrNull() ?: BigDecimal.ZERO
+
+        viewModel.estimateGas(resolvedToAddress, resolvedAmount, isErc20)
     }
 
 }
