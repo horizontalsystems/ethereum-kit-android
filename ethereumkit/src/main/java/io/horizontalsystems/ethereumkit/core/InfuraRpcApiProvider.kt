@@ -33,8 +33,8 @@ class InfuraRpcApiProvider(
         return infuraService.send(signedTransaction)
     }
 
-    override fun estimateGas(from: String?, to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
-        return infuraService.estimateGas(from, to, value, gasLimit, gasPrice, data)
+    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
+        return infuraService.estimateGas(address.toHexString(), to, value, gasLimit, gasPrice, data)
                 .flatMap {
                     Single.just(BigInteger(it.replace("0x", ""), 16).toLong())
                 }

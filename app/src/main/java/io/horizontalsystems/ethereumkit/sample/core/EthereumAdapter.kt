@@ -54,8 +54,11 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         EthereumKit.validateAddress(address)
     }
 
-    override fun estimatedGasLimit(toAddress: String, value: BigDecimal): Single<Long> {
-        return Single.just(ethereumKit.gasLimit)
+    override fun estimatedGasLimit(toAddress: String?, value: BigDecimal): Single<Long> {
+        val poweredDecimal = value.scaleByPowerOfTen(decimal)
+        val noScaleDecimal = poweredDecimal.setScale(0)
+
+        return ethereumKit.estimateGas(toAddress, noScaleDecimal.toBigInteger(), 5_000_000_000)
     }
 
     override fun send(address: String, amount: BigDecimal, gasLimit: Long): Single<Unit> {
