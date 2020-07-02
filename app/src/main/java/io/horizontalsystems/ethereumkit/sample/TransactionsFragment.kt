@@ -93,7 +93,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             - Time: ${format.format(Date(tx.timestamp * 1000))}
             - From: ${tx.from.address}
             - To: ${tx.to.address}
-            - Amount: ${tx.amount.stripTrailingZeros()}
+            - Amount: ${tx.amount.stripTrailingZeros().toPlainString()}
             - isError: ${tx.isError}
         """
 

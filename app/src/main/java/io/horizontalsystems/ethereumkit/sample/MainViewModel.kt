@@ -43,7 +43,6 @@ class MainViewModel : ViewModel() {
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
     val balance = MutableLiveData<BigDecimal>()
-    val fee = MutableLiveData<BigDecimal>()
     val lastBlockHeight = MutableLiveData<Long>()
     val syncState = MutableLiveData<SyncState>()
     val transactionsSyncState = MutableLiveData<SyncState>()
@@ -71,7 +70,6 @@ class MainViewModel : ViewModel() {
 
         erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "DAI", "DAI", contractAddress, contractDecimal)
 
-        fee.value = ethereumKit.fee(gasPrice)
         updateBalance()
         updateErc20Balance()
         updateState()
@@ -203,7 +201,6 @@ class MainViewModel : ViewModel() {
     fun refresh() {
         ethereumAdapter.refresh()
         erc20Adapter.refresh()
-        fee.postValue(ethereumKit.fee(gasPrice))
     }
 
     fun clear() {
