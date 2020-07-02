@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
@@ -38,7 +39,7 @@ class TransactionBuilder(private val address: ByteArray) {
                 RLP.encodeBigInteger(rawTransaction.value),
                 RLP.encodeElement(rawTransaction.data),
                 RLP.encodeByte(signature.v),
-                RLP.encodeElement(signature.r),
-                RLP.encodeElement(signature.s))
+                RLP.encodeBigInteger(signature.r.toBigInteger()),
+                RLP.encodeBigInteger(signature.s.toBigInteger()))
     }
 }

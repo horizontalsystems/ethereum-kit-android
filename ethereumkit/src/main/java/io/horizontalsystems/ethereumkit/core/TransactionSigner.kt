@@ -16,13 +16,13 @@ class TransactionSigner(private val network: INetwork,
         return signature(signatureData)
     }
 
-    fun signature(signatureData: ByteArray): Signature {
+    private fun signature(signatureData: ByteArray): Signature {
         return Signature(v = (signatureData[64] + if (network.id == 0) 27 else (35 + 2 * network.id)).toByte(),
                 r = signatureData.copyOfRange(0, 32),
                 s = signatureData.copyOfRange(32, 64))
     }
 
-    fun sign(rawTransaction: RawTransaction, nonce: Long): ByteArray {
+    private fun sign(rawTransaction: RawTransaction, nonce: Long): ByteArray {
         val encodedTransaction = RLP.encodeList(
                 RLP.encodeLong(nonce),
                 RLP.encodeLong(rawTransaction.gasPrice),
