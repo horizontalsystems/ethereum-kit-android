@@ -116,10 +116,6 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun fee(gasPrice: Long): BigDecimal {
-        return BigDecimal(gasPrice).multiply(defaultGasLimit.toBigDecimal())
-    }
-
     fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<TransactionInfo>> {
         return transactionManager.getTransactions(fromHash?.hexStringToByteArray(), limit)
                 .map { txs -> txs.map { TransactionInfo(it) } }

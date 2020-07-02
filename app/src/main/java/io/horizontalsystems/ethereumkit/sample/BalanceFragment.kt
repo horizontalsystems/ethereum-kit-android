@@ -31,10 +31,6 @@ class BalanceFragment : Fragment() {
             tokenBalanceValue.text = (balance ?: 0).toString()
         })
 
-        viewModel.fee.observe(viewLifecycleOwner, Observer { fee ->
-            feeValue.text = fee?.toPlainString()
-        })
-
         viewModel.lastBlockHeight.observe(viewLifecycleOwner, Observer { lbh ->
             lbhValue.text = (lbh ?: 0).toString()
         })
