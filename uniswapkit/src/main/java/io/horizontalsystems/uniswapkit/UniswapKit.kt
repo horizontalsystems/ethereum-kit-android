@@ -9,10 +9,7 @@ import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
 
-class UniswapKit(
-        private val ethereumKit: EthereumKit,
-        private val tradeManager: TradeManager
-) {
+class UniswapKit(private val tradeManager: TradeManager) {
 
     fun wethAddress(): Single<ByteArray> {
         return tradeManager.wethAddress()
@@ -62,7 +59,7 @@ class UniswapKit(
                 fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is Erc20SwapItem -> {
                     tradeManager.swapExactTokensForTokens(amountIn, amountOutMin, path)
                 }
-                else -> throw Exception("Invalid swap pairs!")
+                else -> throw UniswapKitError.InvalidPair()
             }
         } catch (error: Throwable) {
             return Single.error(error)
@@ -87,7 +84,7 @@ class UniswapKit(
                 fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is Erc20SwapItem -> {
                     tradeManager.swapTokensForExactTokens(amountOut, amountInMax, path)
                 }
-                else -> throw Exception("Invalid swap pairs!")
+                else -> throw UniswapKitError.InvalidPair()
             }
         } catch (error: Throwable) {
             return Single.error(error)
@@ -143,9 +140,8 @@ class UniswapKit(
         private val wethAddress = "0xc778417e063141139fce010982780140aa0cd5ab".hexStringToByteArray()
 
         fun getInstance(ethereumKit: EthereumKit): UniswapKit {
-            val address = ethereumKit.receiveAddressRaw
-            val tradeManager = TradeManager(ethereumKit, routerAddress, address)
-            return UniswapKit(ethereumKit, tradeManager)
+            val tradeManager = TradeManager(ethereumKit, routerAddress)
+            return UniswapKit(tradeManager)
         }
     }
 
@@ -155,6 +151,7 @@ sealed class UniswapKitError : Throwable() {
     class InvalidAmount : UniswapKitError()
     class InvalidAddress : UniswapKitError()
     class InvalidPathItems : UniswapKitError()
+    class InvalidPair : UniswapKitError()
 }
 
 sealed class SwapItem {
