@@ -1,16 +1,18 @@
 package io.horizontalsystems.uniswapkit
 
-import android.util.Log
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
+import java.util.logging.Logger
 
 class TradeManager(
         private val ethereumKit: EthereumKit,
-        private val routerAddress: ByteArray,
-        private val address: ByteArray
+        private val routerAddress: ByteArray
 ) {
+
+    private val address: ByteArray = ethereumKit.receiveAddressRaw
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     fun wethAddress(): Single<ByteArray> {
         return ethereumKit.call(routerAddress, UniswapABI.weth())
@@ -71,18 +73,18 @@ class TradeManager(
 
     private fun swap(value: BigInteger, input: ByteArray): Single<String> {
         return ethereumKit.send(routerAddress, value, input, 50_000_000_000, 500_000)
-                .map { txInfo -> txInfo.hash }
+                .map { txInfo ->
+                    logger.info("Swap tx hash: ${txInfo.hash}")
+                    txInfo.hash
+                }
     }
 
     private fun swapWithApprove(contractAddress: ByteArray, amount: BigInteger, swapSingle: Single<String>): Single<String> {
         val approveTransactionInput = Erc20ABI.approve(routerAddress, amount)
         return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, 50_000_000_000, 500_000)
                 .flatMap { txInfo ->
-                    Log.e("AAA", "APPROVE TX: ${txInfo.hash}")
+                    logger.info("Approve tx hash: ${txInfo.hash}")
                     swapSingle
-                }
-                .doOnError {
-                    Log.e("AAA", "ERROR on APPROVE: ${it.message}")
                 }
     }
 
