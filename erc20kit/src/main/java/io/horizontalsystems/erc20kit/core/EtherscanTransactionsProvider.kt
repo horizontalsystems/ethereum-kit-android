@@ -4,30 +4,36 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
+import java.math.BigInteger
 
 class EtherscanTransactionsProvider(private val etherscanService: EtherscanService) : ITransactionsProvider {
 
-    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>> {
-        return etherscanService.getTokenTransactions(contractAddress, address, from)
+    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
+        return etherscanService.getTokenTransactions(contractAddress, address, startBlock)
                 .map { response ->
                     val transactionIndexMap = mutableMapOf<String, Int>()
 
-                    response.result.map { etherscanTx ->
-                        val interTransactionIndex = transactionIndexMap[etherscanTx.hash]?.plus(1) ?: 0
-                        transactionIndexMap[etherscanTx.hash] = interTransactionIndex
+                    response.result.map { tx ->
+                        val hash = tx["hash"] ?: ""
+                        val transactionIndex = tx["transactionIndex"]?.toIntOrNull()
+                        val from = tx["from"]?.hexStringToByteArray() ?: ByteArray(0)
+                        val to = tx["to"]?.hexStringToByteArray() ?: ByteArray(0)
+                        val value = tx["value"]?.toBigIntegerOrNull() ?: BigInteger.ZERO
+                        val timestamp = tx["timeStamp"]?.toLongOrNull() ?: 0
 
-                        val transaction = Transaction(etherscanTx.hash.hexStringToByteArray(),
+                        val interTransactionIndex = transactionIndexMap[hash]?.plus(1) ?: 0
+                        transactionIndexMap[hash] = interTransactionIndex
+
+                        Transaction(hash.hexStringToByteArray(),
                                 interTransactionIndex,
-                                etherscanTx.transactionIndex.toIntOrNull(),
-                                etherscanTx.from.hexStringToByteArray(),
-                                etherscanTx.to.hexStringToByteArray(),
-                                etherscanTx.value.toBigInteger(),
-                                etherscanTx.timeStamp.toLong())
-
-                        transaction.blockHash = etherscanTx.blockHash.hexStringToByteArray()
-                        transaction.blockNumber = etherscanTx.blockNumber.toLongOrNull()
-
-                        transaction
+                                transactionIndex,
+                                from,
+                                to,
+                                value,
+                                timestamp).apply {
+                            this.blockHash = tx["blockHash"]?.hexStringToByteArray()
+                            this.blockNumber = tx["blockNumber"]?.toLongOrNull()
+                        }
                     }
                 }
     }

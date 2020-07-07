@@ -92,6 +92,14 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
             }
         }
 
+        transaction.internalTransactions.forEach { internalTransaction ->
+            var internalAmount = internalTransaction.value.toBigDecimalOrNull()?.movePointLeft(decimal)
+                    ?: BigDecimal.ZERO
+            val outgoing = internalTransaction.from == receiveAddress
+            internalAmount = if (outgoing) internalAmount.negate() else internalAmount
+            amount += internalAmount
+        }
+
         return TransactionRecord(
                 transactionHash = transaction.hash,
                 transactionIndex = transaction.transactionIndex ?: 0,

@@ -7,8 +7,9 @@ import androidx.room.TypeConverters
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
 
-@Database(entities = [EthereumTransaction::class], version = 1, exportSchema = false)
+@Database(entities = [EthereumTransaction::class, InternalTransaction::class], version = 2, exportSchema = false)
 @TypeConverters(RoomTypeConverters::class)
 abstract class TransactionDatabase : RoomDatabase() {
 

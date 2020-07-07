@@ -44,7 +44,7 @@ interface ITransactionStorage {
 }
 
 interface ITransactionsProvider {
-    fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>>
+    fun getTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long, endBlock: Long): Single<List<Transaction>>
 }
 
 interface ITokenBalanceStorage {

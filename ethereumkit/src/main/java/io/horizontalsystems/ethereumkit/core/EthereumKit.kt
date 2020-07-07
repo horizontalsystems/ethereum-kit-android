@@ -19,7 +19,6 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
-import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
 import java.util.logging.Logger
@@ -180,7 +179,7 @@ class EthereumKit(
                 .doOnSuccess { transaction ->
                     transactionManager.handle(transaction)
                 }
-                .map { TransactionInfo(it) }
+                .map { TransactionInfo(TransactionWithInternal(it)) }
     }
 
     fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long,
@@ -241,11 +240,11 @@ class EthereumKit(
     //TransactionManager.Listener
     //
 
-    override fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>) {
-        if (ethereumTransactions.isEmpty())
+    override fun onUpdateTransactions(transactions: List<TransactionWithInternal>) {
+        if (transactions.isEmpty())
             return
 
-        transactionsSubject.onNext(ethereumTransactions.map { tx -> TransactionInfo(tx) })
+        transactionsSubject.onNext(transactions.map { tx -> TransactionInfo(tx) })
     }
 
     override fun onUpdateTransactionsSyncState(syncState: SyncState) {

@@ -2,33 +2,42 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
+import java.math.BigInteger
 
 class TransactionStorage(private val database: TransactionDatabase) : ITransactionStorage {
 
-    override fun getLastTransactionBlockHeight(): Long? {
-        return database.transactionDao().getLastTransaction()?.blockNumber
+    override fun getLastTransaction(): EthereumTransaction? {
+        return database.transactionDao().getLastTransaction()
+    }
+
+    override fun getLastInternalTransactionBlockHeight(): Long? {
+        return database.transactionDao().getLastInternalTransaction()?.blockNumber
     }
 
     override fun saveTransactions(transactions: List<EthereumTransaction>) {
         database.transactionDao().insert(transactions)
     }
 
-    override fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>> {
-        val querySingle =
-                if (contractAddress == null)
-                    database.transactionDao().getTransactions()
-                else
-                    database.transactionDao().getErc20Transactions(contractAddress)
+    override fun saveInternalTransactions(transactions: List<InternalTransaction>) {
+        database.transactionDao().insertInternal(transactions)
+    }
 
-        return querySingle
+    override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>> {
+        return database.transactionDao().getTransactions()
                 .flatMap { transactionsList ->
-                    var transactions = transactionsList
+                    var transactions = transactionsList.filter { it.internalTransactions.count() > 0 || it.transaction.value > BigInteger.ZERO }
 
                     fromHash?.let { fromHash ->
-                        val tx = transactions.firstOrNull { it.hash.contentEquals(fromHash) }
-                        tx?.timestamp?.let { txTimeStamp ->
-                            transactions = transactions.filter { it.timestamp < txTimeStamp }
+                        val txFrom = transactions.firstOrNull { it.transaction.hash.contentEquals(fromHash) }?.transaction
+                        txFrom?.let {
+                            transactions = transactions.filter {
+                                it.transaction.timestamp < txFrom.timestamp ||
+                                        (it.transaction.timestamp == txFrom.timestamp && (it.transaction.transactionIndex?.compareTo(txFrom.transactionIndex ?: 0) ?: 0) < 0)
+                            }
+
                         }
                     }
 

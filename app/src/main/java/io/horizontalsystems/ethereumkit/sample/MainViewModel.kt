@@ -22,14 +22,9 @@ import java.math.BigInteger
 import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
-
-    private val decimal = 18
-
     private val logger = Logger.getLogger("MainViewModel")
 
-    private val infuraCredentials = EthereumKit.InfuraCredentials(
-            projectId = "2a1306f1d12f4c109a4d4fb9be46b02e",
-            secretKey = "fc479a9290b64a84a15fa6544a130218")
+    private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
     private val contractAddress = "0xad6d458402f60fd3bd25163575031acdce07538d" // DAI
 //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
