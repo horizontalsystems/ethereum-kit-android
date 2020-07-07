@@ -4,8 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
-import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanResponse
-import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanTransaction
+import io.horizontalsystems.ethereumkit.api.models.etherscan.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
@@ -68,6 +67,12 @@ class EtherscanService(private val networkType: NetworkType,
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
+    fun getInternalTransactionList(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTransactionList("account", "txlistinternal", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+                .map { parseResponse(it) }
+                .retryWhenError(RequestError.RateLimitExceed::class)
+    }
+
     fun getTokenTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
         return service.getTokenTransactions("account", "tokentx", contractAddress.toHexString(), address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
                 .map { parseResponse(it) }
@@ -86,7 +91,7 @@ class EtherscanService(private val networkType: NetworkType,
                     throw RequestError.RateLimitExceed()
                 }
             }
-            val result: List<EtherscanTransaction> = gson.fromJson(responseObj["result"], object : TypeToken<List<EtherscanTransaction>>() {}.type)
+            val result: List<Map<String, String>> = gson.fromJson(responseObj["result"], object : TypeToken<List<Map<String, String>>>() {}.type)
             return EtherscanResponse(status, message, result)
 
         } catch (rateLimitExceeded: RequestError.RateLimitExceed) {

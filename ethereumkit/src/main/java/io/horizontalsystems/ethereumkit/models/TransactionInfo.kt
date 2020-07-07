@@ -3,22 +3,47 @@ package io.horizontalsystems.ethereumkit.models
 import io.horizontalsystems.ethereumkit.core.toEIP55Address
 import io.horizontalsystems.ethereumkit.core.toHexString
 
-class TransactionInfo(transaction: EthereumTransaction) {
-    val hash: String = transaction.hash.toHexString()
-    val nonce: Long = transaction.nonce
-    val input: String = transaction.input.toHexString()
-    val from: String = transaction.from.toEIP55Address()
-    val to: String = transaction.to.toEIP55Address()
-    val value: String = transaction.value.toString()
-    val gasLimit: Long = transaction.gasLimit
-    val gasPrice: Long = transaction.gasPrice
-    val timestamp: Long = transaction.timestamp
+class TransactionInfo(transactionWithInternal: TransactionWithInternal) {
+    val hash: String
+    val nonce: Long
+    val input: String
+    val from: String
+    val to: String
+    val value: String
+    val gasLimit: Long
+    val gasPrice: Long
+    val timestamp: Long
 
-    val blockHash: String? = transaction.blockHash?.toHexString()
-    val blockNumber: Long? = transaction.blockNumber
-    val gasUsed: Long? = transaction.gasUsed
-    val cumulativeGasUsed: Long? = transaction.cumulativeGasUsed
-    val isError: Int? = transaction.iserror
-    val transactionIndex: Int? = transaction.transactionIndex
-    val txReceiptStatus: Int? = transaction.txReceiptStatus
+    val blockHash: String?
+    val blockNumber: Long?
+    val gasUsed: Long?
+    val cumulativeGasUsed: Long?
+    val isError: Int?
+    val transactionIndex: Int?
+    val txReceiptStatus: Int?
+
+    val internalTransactions: List<InternalTransactionInfo> = transactionWithInternal.internalTransactions.map { InternalTransactionInfo(it) }
+
+    init {
+        val transaction = transactionWithInternal.transaction
+
+        hash = transaction.hash.toHexString()
+        nonce = transaction.nonce
+        input = transaction.input.toHexString()
+        from = transaction.from.toEIP55Address()
+        to = transaction.to.toEIP55Address()
+        value = transaction.value.toString()
+        gasLimit = transaction.gasLimit
+        gasPrice = transaction.gasPrice
+        timestamp = transaction.timestamp
+
+        blockHash = transaction.blockHash?.toHexString()
+        blockNumber = transaction.blockNumber
+        gasUsed = transaction.gasUsed
+        cumulativeGasUsed = transaction.cumulativeGasUsed
+        isError = transaction.iserror
+        transactionIndex = transaction.transactionIndex
+        txReceiptStatus = transaction.txReceiptStatus
+    }
+
 }

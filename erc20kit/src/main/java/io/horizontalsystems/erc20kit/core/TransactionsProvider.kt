@@ -8,8 +8,8 @@ import io.reactivex.Single
 
 class TransactionsProvider(private val dataProvider: IDataProvider) : ITransactionsProvider {
 
-    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<Transaction>> {
-        return dataProvider.getTransactionLogs(contractAddress, address, from, to)
+    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
+        return dataProvider.getTransactionLogs(contractAddress, address, startBlock, endBlock)
                 .map { logs ->
                     logs.mapNotNull { getTransactionFromLog(it) }
                 }

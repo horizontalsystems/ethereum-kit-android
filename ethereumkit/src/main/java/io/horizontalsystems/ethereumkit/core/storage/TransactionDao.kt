@@ -1,10 +1,9 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
 
 @Dao
@@ -13,13 +12,16 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(ethereumTransactions: List<EthereumTransaction>)
 
-    @Query("SELECT * FROM EthereumTransaction WHERE length(input) = 0 ORDER BY timestamp DESC")
-    fun getTransactions(): Single<List<EthereumTransaction>>
-
-    @Query("SELECT * FROM EthereumTransaction WHERE `to` = :contractAddress ORDER BY timestamp DESC")
-    fun getErc20Transactions(contractAddress: ByteArray): Single<List<EthereumTransaction>>
+    @Transaction
+    @Query("SELECT * FROM EthereumTransaction ORDER BY timestamp DESC")
+    fun getTransactions(): Single<List<TransactionWithInternal>>
 
     @Query("SELECT * FROM EthereumTransaction ORDER BY blockNumber DESC LIMIT 1")
     fun getLastTransaction(): EthereumTransaction?
 
+    @Query("SELECT * FROM InternalTransaction ORDER BY blockNumber DESC LIMIT 1")
+    fun getLastInternalTransaction(): InternalTransaction?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertInternal(internalTransactions: List<InternalTransaction>)
 }

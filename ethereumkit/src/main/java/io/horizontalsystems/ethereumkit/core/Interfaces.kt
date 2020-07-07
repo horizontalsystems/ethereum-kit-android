@@ -1,9 +1,6 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.models.Block
-import io.horizontalsystems.ethereumkit.models.EthereumLog
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionStatus
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
@@ -82,12 +79,12 @@ interface ITransactionManager {
     var listener: ITransactionManagerListener?
 
     fun refresh()
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<EthereumTransaction>>
+    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
     fun handle(transaction: EthereumTransaction)
 }
 
 interface ITransactionManagerListener {
-    fun onUpdateTransactions(ethereumTransactions: List<EthereumTransaction>)
+    fun onUpdateTransactions(transactions: List<TransactionWithInternal>)
     fun onUpdateTransactionsSyncState(syncState: EthereumKit.SyncState)
 }
 
@@ -95,11 +92,14 @@ interface ITransactionsProvider {
     val source: String
 
     fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
+    fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
 }
 
 interface ITransactionStorage {
-    fun getLastTransactionBlockHeight(): Long?
+    fun getLastTransaction(): EthereumTransaction?
+    fun getLastInternalTransactionBlockHeight(): Long?
 
     fun saveTransactions(transactions: List<EthereumTransaction>)
-    fun getTransactions(fromHash: ByteArray?, limit: Int?, contractAddress: ByteArray?): Single<List<EthereumTransaction>>
+    fun saveInternalTransactions(transactions: List<InternalTransaction>)
+    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
 }
