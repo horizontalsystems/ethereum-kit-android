@@ -1,183 +1,90 @@
 package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
-import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.uniswapkit.SwapItem.Erc20SwapItem
-import io.horizontalsystems.uniswapkit.SwapItem.EthereumSwapItem
+import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
 import java.math.BigInteger
-import java.util.*
+import java.util.logging.Logger
 
-class UniswapKit(private val tradeManager: TradeManager) {
+class UniswapKit(
+        private val tradeManager: TradeManager,
+        private val pairSelector: PairSelector,
+        private val tokenFactory: TokenFactory
+) {
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
 
-    fun wethAddress(): Single<ByteArray> {
-        return tradeManager.wethAddress()
+    fun etherToken(): Token {
+        return tokenFactory.etherToken()
     }
 
-    fun factoryAddress(): Single<ByteArray> {
-        return tradeManager.factoryAddress()
+    fun token(contractAddress: ByteArray, decimals: Int): Token {
+        return tokenFactory.token(contractAddress, decimals)
     }
 
-    fun getAmountsOut(amountIn: String, fromItem: SwapItem, toItem: SwapItem): Single<List<PathItem>> {
-        return try {
-            val path = generatePath(fromItem, toItem)
-            tradeManager.getAmountsOut(convertAmount(amountIn), path).map { amounts ->
-                getPathItems(path, amounts)
-            }
-        } catch (error: Throwable) {
-            Single.error(error)
+    fun swapData(tokenIn: Token, tokenOut: Token): Single<SwapData> {
+        val tokenPairs = pairSelector.tokenPairs(tokenIn, tokenOut)
+        val singles = tokenPairs.map { (tokenA, tokenB) ->
+            tradeManager.getPair(tokenA, tokenB)
+        }
+
+        return Single.zip(singles) { array ->
+            val pairs = array.map { it as Pair }
+            SwapData(pairs, tokenIn, tokenOut)
         }
     }
 
-    fun getAmountsIn(amountOut: String, fromItem: SwapItem, toItem: SwapItem): Single<List<PathItem>> {
-        return try {
-            val path = generatePath(fromItem, toItem)
-            tradeManager.getAmountsIn(convertAmount(amountOut), path).map { amounts ->
-                getPathItems(path, amounts)
-            }
-        } catch (error: Throwable) {
-            Single.error(error)
-        }
-    }
-
-    fun swapExactItemForItem(pathItems: List<PathItem>): Single<String> {
+    fun bestTradeExactIn(swapData: SwapData, amountIn: BigInteger, options: TradeOptions = TradeOptions()): TradeData? {
+        val tokenAmountIn = TokenAmount(swapData.tokenIn, amountIn)
         try {
-            val path = pathItems.map { address(it.swapItem) }
-            val fromPathItem = pathItems.firstOrNull() ?: throw UniswapKitError.InvalidPathItems()
-            val toPathItem = pathItems.lastOrNull() ?: throw UniswapKitError.InvalidPathItems()
-            val amountIn = convertAmount(fromPathItem.amount)
-            val amountOutMin = convertAmount(toPathItem.amount)
+            val trades = TradeManager.bestTradeExactIn(
+                    swapData.pairs,
+                    tokenAmountIn,
+                    swapData.tokenOut
+            )
+            val trade = trades.firstOrNull() ?: return null
+            logger.info("bestTradeExactIn path: ${trade.route.path.joinToString(" > ")}")
 
-            return when {
-                fromPathItem.swapItem is EthereumSwapItem && toPathItem.swapItem is Erc20SwapItem -> {
-                    tradeManager.swapExactETHForTokens(amountIn, amountOutMin, path)
-                }
-                fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is EthereumSwapItem -> {
-                    tradeManager.swapExactTokensForETH(amountIn, amountOutMin, path)
-                }
-                fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is Erc20SwapItem -> {
-                    tradeManager.swapExactTokensForTokens(amountIn, amountOutMin, path)
-                }
-                else -> throw UniswapKitError.InvalidPair()
-            }
+            return TradeData(trade, options)
         } catch (error: Throwable) {
-            return Single.error(error)
+            logger.warning("bestTradeExactIn error: ${error.message}")
+            return null
         }
     }
 
-    fun swapItemForExactItem(pathItems: List<PathItem>): Single<String> {
+    fun bestTradeExactOut(swapData: SwapData, amountOut: BigInteger, options: TradeOptions = TradeOptions()): TradeData? {
+        val tokenAmountOut = TokenAmount(swapData.tokenOut, amountOut)
         try {
-            val path = pathItems.map { address(it.swapItem) }
-            val fromPathItem = pathItems.firstOrNull() ?: throw UniswapKitError.InvalidPathItems()
-            val toPathItem = pathItems.lastOrNull() ?: throw UniswapKitError.InvalidPathItems()
-            val amountInMax = convertAmount(fromPathItem.amount)
-            val amountOut = convertAmount(toPathItem.amount)
+            val trades = TradeManager.bestTradeExactOut(
+                    swapData.pairs,
+                    swapData.tokenIn,
+                    tokenAmountOut
+            )
+            val trade = trades.firstOrNull() ?: return null
+            logger.info("bestTradeExactOut path: ${trade.route.path.joinToString(" > ")}")
 
-            return when {
-                fromPathItem.swapItem is EthereumSwapItem && toPathItem.swapItem is Erc20SwapItem -> {
-                    tradeManager.swapETHForExactTokens(amountOut, amountInMax, path)
-                }
-                fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is EthereumSwapItem -> {
-                    tradeManager.swapTokensForExactETH(amountOut, amountInMax, path)
-                }
-                fromPathItem.swapItem is Erc20SwapItem && toPathItem.swapItem is Erc20SwapItem -> {
-                    tradeManager.swapTokensForExactTokens(amountOut, amountInMax, path)
-                }
-                else -> throw UniswapKitError.InvalidPair()
-            }
+            return TradeData(trade, options)
         } catch (error: Throwable) {
-            return Single.error(error)
+            logger.warning("bestTradeExactOut error: ${error.message}")
+            return null
         }
     }
 
-    @Throws(UniswapKitError.InvalidAddress::class)
-    private fun convertAddress(address: String): ByteArray {
-        try {
-            return address.hexStringToByteArray()
-        } catch (e: Exception) {
-            throw UniswapKitError.InvalidAddress()
-        }
-    }
-
-    @Throws(UniswapKitError.InvalidAmount::class)
-    private fun convertAmount(value: String): BigInteger {
-        try {
-            return value.toBigInteger()
-        } catch (e: Exception) {
-            throw UniswapKitError.InvalidAmount()
-        }
-    }
-
-    private fun address(item: SwapItem): ByteArray {
-        return when (item) {
-            is EthereumSwapItem -> wethAddress
-            is Erc20SwapItem -> convertAddress(item.contractAddress)
-        }
-    }
-
-    private fun generatePath(fromItem: SwapItem, toItem: SwapItem): List<ByteArray> {
-        val fromAddress = address(fromItem)
-        val toAddress = address(toItem)
-
-        return if (fromItem is Erc20SwapItem && toItem is Erc20SwapItem) {
-            listOf(fromAddress, wethAddress, toAddress)
-        } else {
-            listOf(fromAddress, toAddress)
-        }
-    }
-
-    private fun getPathItems(path: List<ByteArray>, amounts: List<BigInteger>): List<PathItem> {
-        return amounts.mapIndexed { index, amount ->
-            val address = path[index]
-            val swapItem = if (address.contentEquals(wethAddress)) EthereumSwapItem() else Erc20SwapItem(address.toHexString())
-            PathItem(swapItem, amount.toString())
-        }
+    fun swap(tradeData: TradeData): Single<String> {
+        return tradeManager.swap(tradeData)
     }
 
     companion object {
-        private val routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D".hexStringToByteArray()
-        private val wethAddress = "0xc778417e063141139fce010982780140aa0cd5ab".hexStringToByteArray()
 
-        fun getInstance(ethereumKit: EthereumKit): UniswapKit {
-            val tradeManager = TradeManager(ethereumKit, routerAddress)
-            return UniswapKit(tradeManager)
+        fun getInstance(ethereumKit: EthereumKit, networkType: EthereumKit.NetworkType): UniswapKit {
+            val tradeManager = TradeManager(ethereumKit)
+            val tokenFactory = TokenFactory(networkType)
+            val pairSelector = PairSelector(tokenFactory)
+            return UniswapKit(tradeManager, pairSelector, tokenFactory)
         }
     }
 
 }
 
 sealed class UniswapKitError : Throwable() {
-    class InvalidAmount : UniswapKitError()
-    class InvalidAddress : UniswapKitError()
-    class InvalidPathItems : UniswapKitError()
-    class InvalidPair : UniswapKitError()
+    class InsufficientReserve : UniswapKitError()
 }
-
-sealed class SwapItem {
-    class EthereumSwapItem : SwapItem()
-    class Erc20SwapItem(val contractAddress: String) : SwapItem()
-
-    override fun equals(other: Any?): Boolean {
-        if (other !is SwapItem)
-            return false
-
-        if (other.javaClass != this.javaClass)
-            return false
-
-        if (other is Erc20SwapItem && this is Erc20SwapItem) {
-            return other.contractAddress == this.contractAddress
-        }
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        if (this is Erc20SwapItem) {
-            return Objects.hashCode(this.contractAddress)
-        }
-        return Objects.hashCode(this.javaClass.name)
-    }
-}
-
-data class PathItem(val swapItem: SwapItem, val amount: String)
