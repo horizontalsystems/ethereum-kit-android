@@ -6,14 +6,16 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.horizontalsystems.uniswapkit.PathItem
-import io.horizontalsystems.uniswapkit.SwapItem
 import io.horizontalsystems.uniswapkit.UniswapKit
+import io.horizontalsystems.uniswapkit.models.SwapData
+import io.horizontalsystems.uniswapkit.models.Token
+import io.horizontalsystems.uniswapkit.models.TradeData
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -27,7 +29,8 @@ class MainViewModel : ViewModel() {
     private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
     private val contractAddress = "0xad6d458402f60fd3bd25163575031acdce07538d" // DAI
-//    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
+
+    //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
 //    private val contractAddress = "0xb603cea165119701b58d56d10d2060fbfb3efad8" // WETH
     private val contractDecimal = 18
     private val networkType: NetworkType = NetworkType.Ropsten
@@ -56,7 +59,10 @@ class MainViewModel : ViewModel() {
     private val gasPrice: Long = 5_000_000_000
 
     private lateinit var uniswapKit: UniswapKit
-    val pathItems = MutableLiveData<List<PathItem>>()
+    var swapData = MutableLiveData<SwapData?>()
+    var tradeData = MutableLiveData<TradeData?>()
+
+    val syncControls = SingleLiveEvent<Unit>()
     val swapStatus = SingleLiveEvent<Throwable?>()
 
     fun init() {
@@ -73,7 +79,7 @@ class MainViewModel : ViewModel() {
 
         erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "DAI", "DAI", contractAddress, contractDecimal)
 
-        uniswapKit = UniswapKit.getInstance(ethereumKit)
+        uniswapKit = UniswapKit.getInstance(ethereumKit, networkType)
 
         updateBalance()
         updateErc20Balance()
@@ -283,41 +289,57 @@ class MainViewModel : ViewModel() {
     // SWAP
     //
 
-    fun estimate(mode: Mode, amount: BigInteger, fromItem: SwapItem, toItem: SwapItem) {
-        val estimateMethod = when (mode) {
-            Mode.exactFrom -> uniswapKit.getAmountsOut(amount.toString(), fromItem, toItem)
-            Mode.exactTo -> uniswapKit.getAmountsIn(amount.toString(), fromItem, toItem)
-        }
-        estimateMethod.subscribeOn(Schedulers.io())
+    fun syncSwapData(erc20TokenIn: Erc20Token?, erc20TokenOut: Erc20Token?) {
+        val tokenIn = uniswapToken(erc20TokenIn)
+        val tokenOut = uniswapToken(erc20TokenOut)
+
+        uniswapKit.swapData(tokenIn, tokenOut)
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    pathItems.value = it
-                    logger.info("estimate $mode: SUCCESS")
+                    swapData.value = it
                 }, {
-                    logger.warning("estimate $mode: ERROR, error=${it.message}")
-                }).let { disposables.add(it) }
-
+                    logger.warning("swapData ERROR = ${it.message}")
+                }).let {
+                    disposables.add(it)
+                }
     }
 
-    fun swap(mode: Mode) {
-        val pathItems = this.pathItems.value ?: kotlin.run {
-            logger.info("swap $mode: pathItems are NULL")
-            return
+    private fun uniswapToken(token: Erc20Token?): Token {
+        if (token == null)
+            return uniswapKit.etherToken()
+
+        return uniswapKit.token(token.contractAddress.hexStringToByteArray(), token.decimals)
+    }
+
+
+    fun onChangeAmountIn(amountIn: BigInteger) {
+        swapData.value?.let {
+            tradeData.value = uniswapKit.bestTradeExactIn(it, amountIn)
+        } ?: syncControls.call()
+    }
+
+    fun onChangeAmountOut(amountOut: BigInteger) {
+        swapData.value?.let {
+            tradeData.value = uniswapKit.bestTradeExactOut(it, amountOut)
+        } ?: syncControls.call()
+    }
+
+
+    fun swap() {
+        tradeData.value?.let { tradeData ->
+            uniswapKit.swap(tradeData)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe({
+                        swapStatus.value = null
+                        logger.info("swap SUCCESS, txHash=$it")
+                    }, {
+                        swapStatus.value = it
+                        logger.info("swap ERROR, error=${it.message}")
+                        it.printStackTrace()
+                    }).let { disposables.add(it) }
         }
-        val swapMethod = when (mode) {
-            Mode.exactFrom -> uniswapKit.swapExactItemForItem(pathItems)
-            Mode.exactTo -> uniswapKit.swapItemForExactItem(pathItems)
-        }
-        swapMethod.subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    swapStatus.value = null
-                    logger.info("swap $mode: SUCCESS, txHash=$it")
-                }, {
-                    swapStatus.value = it
-                    logger.info("swap $mode: ERROR, error=${it.message}")
-                    it.printStackTrace()
-                }).let { disposables.add(it) }
     }
 
 }
@@ -326,10 +348,6 @@ data class Erc20Token(
         val name: String,
         val code: String,
         val contractAddress: String,
-        val decimal: Int)
+        val decimals: Int)
 
-enum class Mode {
-    exactFrom,
-    exactTo
-}
 

@@ -10,30 +10,30 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import io.horizontalsystems.uniswapkit.SwapItem
 import kotlinx.android.synthetic.main.fragment_swap.*
+import java.math.BigDecimal
 
 class SwapFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
 
-    private var mode: Mode = Mode.exactFrom
     private val tokens = listOf(
             Erc20Token("GMO coins", "GMOLW", "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32", 18),
             Erc20Token("DAI", "DAI", "0xad6d458402f60fd3bd25163575031acdce07538d", 18)
     )
 
-    private val fromToken: Erc20Token? = tokens[0]
-    private val toToken: Erc20Token? = tokens[1]
-
-    private val fromTokenDecimal = fromToken?.decimal ?: 18
-    private val toTokenDecimal = toToken?.decimal ?: 18
+    private val fromToken: Erc20Token? = tokens[1]
+    private val toToken: Erc20Token? = null //tokens[1]
 
     private val fromAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            mode = Mode.exactFrom
             setToAmount("")
-            updateLabels()
+            updateLabels(exactIn = true)
+
+            if (s != null && s.isNotEmpty()) {
+                viewModel.onChangeAmountIn(BigDecimal(s.toString()).scaleByPowerOfTen(fromToken?.decimals
+                        ?: 18).toBigInteger())
+            }
         }
 
         override fun afterTextChanged(s: Editable?) {}
@@ -42,9 +42,14 @@ class SwapFragment : Fragment() {
 
     private val toAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            mode = Mode.exactTo
             setFromAmount("")
-            updateLabels()
+            updateLabels(exactIn = false)
+
+            if (s != null && s.isNotEmpty()) {
+                viewModel.onChangeAmountOut(BigDecimal(s.toString()).scaleByPowerOfTen(toToken?.decimals
+                        ?: 18).toBigInteger())
+            }
+
         }
 
         override fun afterTextChanged(s: Editable?) {}
@@ -60,39 +65,35 @@ class SwapFragment : Fragment() {
 
         viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
 
-        viewModel.pathItems.observe(viewLifecycleOwner, Observer { pathItems ->
-            val firstAmount = pathItems.first().amount.toBigDecimal().movePointLeft(fromTokenDecimal)
-            setFromAmount(firstAmount.stripTrailingZeros().toPlainString())
-
-            val lastAmount = pathItems.last().amount.toBigDecimal().movePointLeft(toTokenDecimal)
-            setToAmount(lastAmount.stripTrailingZeros().toPlainString())
-        })
-
         viewModel.swapStatus.observe(viewLifecycleOwner, Observer { swapError ->
             val msg = if (swapError != null) swapError.localizedMessage else " Successfully swapped!"
             Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
         })
 
+        viewModel.swapData.observe(viewLifecycleOwner, Observer { swapData ->
+            fromAmount.isEnabled = swapData != null
+            toAmount.isEnabled = swapData != null
+        })
+
+        viewModel.tradeData.observe(viewLifecycleOwner, Observer { tradeData ->
+            setFromAmount(tradeData?.amountIn ?: "")
+            setToAmount(tradeData?.amountOut ?: "")
+        })
+
         fromAmount.addTextChangedListener(fromAmountListener)
         toAmount.addTextChangedListener(toAmountListener)
 
-        updateLabels()
+        updateLabels(exactIn = true)
 
-        buttonEstimate.setOnClickListener {
-            val amount = if (mode == Mode.exactFrom)
-                fromAmount.text.toString().toBigDecimal().scaleByPowerOfTen(fromTokenDecimal).toBigInteger()
-            else
-                toAmount.text.toString().toBigDecimal().scaleByPowerOfTen(toTokenDecimal).toBigInteger()
+        buttonSyncSwapData.setOnClickListener {
+            fromAmount.isEnabled = false
+            toAmount.isEnabled = false
 
-            viewModel.estimate(mode, amount,
-                    fromToken?.let { SwapItem.Erc20SwapItem(it.contractAddress) }
-                            ?: SwapItem.EthereumSwapItem(),
-                    toToken?.let { SwapItem.Erc20SwapItem(it.contractAddress) }
-                            ?: SwapItem.EthereumSwapItem())
+            viewModel.syncSwapData(fromToken, toToken)
         }
 
         buttonSwap.setOnClickListener {
-            viewModel.swap(mode)
+            viewModel.swap()
         }
 
     }
@@ -100,6 +101,7 @@ class SwapFragment : Fragment() {
     private fun setFromAmount(amount: String) {
         fromAmount.removeTextChangedListener(fromAmountListener)
         fromAmount.setText(amount)
+        fromAmount.setSelection(amount.length)
         fromAmount.addTextChangedListener(fromAmountListener)
     }
 
@@ -109,11 +111,11 @@ class SwapFragment : Fragment() {
         toAmount.addTextChangedListener(toAmountListener)
     }
 
-    private fun updateLabels() {
+    private fun updateLabels(exactIn: Boolean) {
         var fromLabel = "From ${fromToken?.code ?: "ETH"}"
         var toLabel = "To ${toToken?.code ?: "ETH"}"
 
-        if (mode == Mode.exactFrom) {
+        if (exactIn) {
             toLabel += " (estimated)"
         } else {
             fromLabel += " (estimated)"
