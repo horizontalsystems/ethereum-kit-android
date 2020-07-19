@@ -32,20 +32,20 @@ class TradeManager(
                 .map { data ->
                     logger.info("getReserves data: ${data.toHexString()}")
 
-                    var reserve0: BigInteger = BigInteger.ZERO
-                    var reserve1: BigInteger = BigInteger.ZERO
+                    var rawReserve0: BigInteger = BigInteger.ZERO
+                    var rawReserve1: BigInteger = BigInteger.ZERO
 
                     if (data.size == 3 * 32) {
-                        reserve0 = BigInteger(data.copyOfRange(0, 32))
-                        reserve1 = BigInteger(data.copyOfRange(32, 64))
+                        rawReserve0 = BigInteger(data.copyOfRange(0, 32))
+                        rawReserve1 = BigInteger(data.copyOfRange(32, 64))
                     }
 
-                    val tokenAmount0 = TokenAmount(token0, reserve0)
-                    val tokenAmount1 = TokenAmount(token1, reserve1)
+                    val reserve0 = TokenAmount(token0, rawReserve0)
+                    val reserve1 = TokenAmount(token1, rawReserve1)
 
-                    logger.info("getReserves reserve0: $tokenAmount0, reserve1: $tokenAmount1")
+                    logger.info("getReserves reserve0: $reserve0, reserve1: $reserve1")
 
-                    Pair(tokenAmount0, tokenAmount1)
+                    Pair(reserve0, reserve1)
                 }
     }
 
@@ -65,8 +65,8 @@ class TradeManager(
 
         when (trade.type) {
             TradeType.ExactIn -> {
-                val amountIn = trade.tokenAmountIn.amount
-                val amountOutMin = tradeData.tokenAmountOutMin.amount
+                val amountIn = trade.tokenAmountIn.rawAmount
+                val amountOutMin = tradeData.tokenAmountOutMin.rawAmount
 
                 amount = amountIn
 
@@ -84,8 +84,8 @@ class TradeManager(
                 }
             }
             TradeType.ExactOut -> {
-                val amountInMax = tradeData.tokenAmountInMax.amount
-                val amountOut = trade.tokenAmountOut.amount
+                val amountInMax = tradeData.tokenAmountInMax.rawAmount
+                val amountOut = trade.tokenAmountOut.rawAmount
 
                 amount = amountInMax
 
@@ -138,17 +138,14 @@ class TradeManager(
 
             val bestTrades = mutableListOf<Trade>()
             val originalTokenAmountIn = originalTokenAmountIn ?: tokenAmountIn
-            val tokenIn = tokenAmountIn.token
 
             for ((index, pair) in pairs.withIndex()) {
-                if (pair.token0 != tokenIn && pair.token1 != tokenIn) {
-                    continue
-                }
-                if (pair.reserve0 == BigInteger.ZERO || pair.reserve1 == BigInteger.ZERO) {
-                    continue
-                }
 
-                val tokenAmountOut = pair.tokenAmountOut(tokenAmountIn)
+                val tokenAmountOut = try {
+                    pair.tokenAmountOut(tokenAmountIn)
+                } catch (error: Throwable) {
+                    continue
+                }
 
                 if (tokenAmountOut.token == tokenOut) {
                     val trade = Trade(
@@ -179,28 +176,21 @@ class TradeManager(
 
             val bestTrades = mutableListOf<Trade>()
             val originalTokenAmountOut = originalTokenAmountOut ?: tokenAmountOut
-            val tokenOut = tokenAmountOut.token
 
             for ((index, pair) in pairs.withIndex()) {
-                if (pair.token0 != tokenOut && pair.token1 != tokenOut) {
-                    continue
-                }
-                if (pair.reserve0 == BigInteger.ZERO || pair.reserve1 == BigInteger.ZERO) {
-                    continue
-                }
 
                 val tokenAmountIn = try {
                     pair.tokenAmountIn(tokenAmountOut)
-                } catch (ex: Exception) {
+                } catch (error: Throwable) {
                     continue
                 }
 
-                if (tokenAmountOut.token == tokenIn) {
+                if (tokenAmountIn.token == tokenIn) {
                     val trade = Trade(
                             TradeType.ExactOut,
                             Route(listOf(pair) + currentPairs, tokenIn, originalTokenAmountOut.token),
                             tokenAmountIn,
-                            tokenAmountOut
+                            originalTokenAmountOut
                     )
                     bestTrades.add(trade)
                 } else if (maxHops > 1 && pairs.size > 1) {

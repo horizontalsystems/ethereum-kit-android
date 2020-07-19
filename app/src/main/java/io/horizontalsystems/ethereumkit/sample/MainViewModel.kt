@@ -16,11 +16,11 @@ import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeData
+import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigDecimal
-import java.math.BigInteger
 import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
@@ -33,7 +33,7 @@ class MainViewModel : ViewModel() {
     //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
 //    private val contractAddress = "0xb603cea165119701b58d56d10d2060fbfb3efad8" // WETH
     private val contractDecimal = 18
-    private val networkType: NetworkType = NetworkType.Ropsten
+    private val networkType: NetworkType = NetworkType.MainNet
     private val walletId = "walletId"
     private var estimateGasLimit: Long = 0
 
@@ -62,7 +62,6 @@ class MainViewModel : ViewModel() {
     var swapData = MutableLiveData<SwapData?>()
     var tradeData = MutableLiveData<TradeData?>()
 
-    val syncControls = SingleLiveEvent<Unit>()
     val swapStatus = SingleLiveEvent<Throwable?>()
 
     fun init() {
@@ -289,6 +288,8 @@ class MainViewModel : ViewModel() {
     // SWAP
     //
 
+    private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
+
     fun syncSwapData(erc20TokenIn: Erc20Token?, erc20TokenOut: Erc20Token?) {
         val tokenIn = uniswapToken(erc20TokenIn)
         val tokenOut = uniswapToken(erc20TokenOut)
@@ -313,16 +314,26 @@ class MainViewModel : ViewModel() {
     }
 
 
-    fun onChangeAmountIn(amountIn: BigInteger) {
+    fun onChangeAmountIn(amountIn: BigDecimal) {
         swapData.value?.let {
-            tradeData.value = uniswapKit.bestTradeExactIn(it, amountIn)
-        } ?: syncControls.call()
+            tradeData.value = try {
+                uniswapKit.bestTradeExactIn(it, amountIn, tradeOptions)
+            } catch (error: Throwable) {
+                logger.info("bestTradeExactIn error: ${error.javaClass.simpleName} (${error.localizedMessage})")
+                null
+            }
+        }
     }
 
-    fun onChangeAmountOut(amountOut: BigInteger) {
+    fun onChangeAmountOut(amountOut: BigDecimal) {
         swapData.value?.let {
-            tradeData.value = uniswapKit.bestTradeExactOut(it, amountOut)
-        } ?: syncControls.call()
+            tradeData.value = try {
+                uniswapKit.bestTradeExactOut(it, amountOut, tradeOptions)
+            } catch (error: Throwable) {
+                logger.info("bestTradeExactOut error: ${error.javaClass.simpleName} (${error.localizedMessage})")
+                null
+            }
+        }
     }
 
 
