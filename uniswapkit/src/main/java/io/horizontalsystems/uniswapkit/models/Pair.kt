@@ -2,19 +2,17 @@ package io.horizontalsystems.uniswapkit.models
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
-import io.horizontalsystems.uniswapkit.UniswapKitError
+import io.horizontalsystems.uniswapkit.PairError
 import java.math.BigInteger
 
 class Pair(
-        private val tokenAmount0: TokenAmount,
-        private val tokenAmount1: TokenAmount
+        val reserve0: TokenAmount,
+        val reserve1: TokenAmount
 ) {
-    val token0 = tokenAmount0.token
-    val token1 = tokenAmount1.token
-    val reserve0 = tokenAmount0.amount
-    val reserve1 = tokenAmount1.amount
+    val token0 = reserve0.token
+    val token1 = reserve1.token
 
-    private fun reserve(token: Token): BigInteger {
+    private fun reserve(token: Token): TokenAmount {
         return if (token == token0) reserve0 else reserve1
     }
 
@@ -27,7 +25,13 @@ class Pair(
     }
 
     fun tokenAmountOut(tokenAmountIn: TokenAmount): TokenAmount {
-        //todo validations
+        check(involves(tokenAmountIn.token)) {
+            throw PairError.NotInvolvedToken()
+        }
+
+        check(reserve0.rawAmount > BigInteger.ZERO && reserve1.rawAmount > BigInteger.ZERO) {
+            throw PairError.InsufficientReserves()
+        }
 
         val tokenIn = tokenAmountIn.token
         val tokenOut = other(tokenIn)
@@ -35,18 +39,24 @@ class Pair(
         val reserveIn = reserve(tokenIn)
         val reserveOut = reserve(tokenOut)
 
-        val amountInWithFee = tokenAmountIn.amount * BigInteger.valueOf(997)
-        val numerator = amountInWithFee * reserveOut
-        val denominator = reserveIn * BigInteger.valueOf(1000) + amountInWithFee
+        val amountInWithFee = tokenAmountIn.rawAmount * BigInteger.valueOf(997)
+        val numerator = amountInWithFee * reserveOut.rawAmount
+        val denominator = reserveIn.rawAmount * BigInteger.valueOf(1000) + amountInWithFee
         val amountOut = numerator / denominator
 
         return TokenAmount(tokenOut, amountOut)
     }
 
     fun tokenAmountIn(tokenAmountOut: TokenAmount): TokenAmount {
-        //todo validations
+        check(involves(tokenAmountOut.token)) {
+            throw PairError.NotInvolvedToken()
+        }
 
-        val amountOut = tokenAmountOut.amount
+        check(reserve0.rawAmount > BigInteger.ZERO && reserve1.rawAmount > BigInteger.ZERO) {
+            throw PairError.InsufficientReserves()
+        }
+
+        val amountOut = tokenAmountOut.rawAmount
 
         val tokenOut = tokenAmountOut.token
         val tokenIn = other(tokenOut)
@@ -54,19 +64,19 @@ class Pair(
         val reserveOut = reserve(tokenOut)
         val reserveIn = reserve(tokenIn)
 
-        check(amountOut < reserveOut) {
-            throw UniswapKitError.InsufficientReserve()
+        check(amountOut < reserveOut.rawAmount) {
+            throw PairError.InsufficientReserveOut()
         }
 
-        val numerator = reserveIn * amountOut * BigInteger.valueOf(1000)
-        val denominator = (reserveOut - amountOut) * BigInteger.valueOf(997)
+        val numerator = reserveIn.rawAmount * amountOut * BigInteger.valueOf(1000)
+        val denominator = (reserveOut.rawAmount - amountOut) * BigInteger.valueOf(997)
         val amountIn = numerator / denominator + BigInteger.ONE
 
         return TokenAmount(tokenIn, amountIn)
     }
 
     override fun toString(): String {
-        return "Pair {$tokenAmount0, $tokenAmount1}"
+        return "Pair {$reserve0, $reserve1}"
     }
 
     companion object {

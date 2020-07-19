@@ -1,8 +1,25 @@
 package io.horizontalsystems.uniswapkit.models
 
-data class TradeOptions(
-        var allowedSlippage: Double = 0.5,
+import java.math.BigDecimal
+import java.math.BigInteger
+
+class TradeOptions(
+        allowedSlippagePercent: BigDecimal = BigDecimal("0.5"),
         var ttl: Long = 20 * 60,
         var recipient: ByteArray? = null,
         var feeOnTransfer: Boolean = false
-)
+) {
+    val allowedSlippagePercent: BigDecimal
+
+    init {
+        val strippedSlippage = allowedSlippagePercent.stripTrailingZeros()
+        this.allowedSlippagePercent = strippedSlippage.setScale(strippedSlippage.scale() + 2)
+    }
+
+    val slippageFraction: Fraction
+        get() = try {
+            Fraction(allowedSlippagePercent / BigDecimal.valueOf(100))
+        } catch (error: Exception) {
+            Fraction(BigInteger.valueOf(5), BigInteger.valueOf(1000))
+        }
+}

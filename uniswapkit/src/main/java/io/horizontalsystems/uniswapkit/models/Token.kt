@@ -29,8 +29,8 @@ sealed class Token(
 
     override fun toString(): String {
         return when (this) {
-            is Ether -> "Ether (${address.toHexString()})"
-            is Erc20 -> "Erc20 (${address.toHexString()})"
+            is Ether -> "Ether"
+            is Erc20 -> "Erc20"
         }
     }
 }

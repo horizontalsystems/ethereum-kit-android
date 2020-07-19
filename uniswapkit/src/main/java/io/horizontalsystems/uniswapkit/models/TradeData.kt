@@ -8,41 +8,32 @@ class TradeData(
         val options: TradeOptions
 ) {
 
-    val tokenAmountInMax = TokenAmount(
-            trade.tokenAmountIn.token,
-            trade.tokenAmountIn.amount * ((100_00 + options.allowedSlippage * 100L).toBigDecimal().divide(BigDecimal.valueOf(100_00))).toBigInteger()
-    )
+    val tokenAmountInMax: TokenAmount
+        get() {
+            val amountInMax = ((Fraction(BigInteger.ONE) + options.slippageFraction) * Fraction(trade.tokenAmountIn.rawAmount)).quotient
+            return TokenAmount(trade.tokenAmountIn.token, amountInMax)
+        }
 
-    val tokenAmountOutMin = TokenAmount(
-            trade.tokenAmountOut.token,
-            trade.tokenAmountOut.amount * ((100_00 - options.allowedSlippage * 100L).toBigDecimal().divide(BigDecimal.valueOf(100_00))).toBigInteger()
-    )
+    val tokenAmountOutMin: TokenAmount
+        get() {
+            val amountOutMin = ((Fraction(BigInteger.ONE) + options.slippageFraction).invert() * Fraction(trade.tokenAmountOut.rawAmount)).quotient
+            return TokenAmount(trade.tokenAmountOut.token, amountOutMin)
+        }
 
     val type = trade.type
 
-    val amountIn: String
-        get() {
-            val token = trade.tokenAmountIn.token
-            val amount = trade.tokenAmountIn.amount
+    val amountIn: BigDecimal? = trade.tokenAmountIn.decimalAmount?.stripTrailingZeros()
 
-            return if (amount == BigInteger.ZERO)
-                "0"
-            else
-                amount.toBigDecimal().movePointLeft(token.decimals).stripTrailingZeros().toPlainString()
-        }
+    val amountOut: BigDecimal? = trade.tokenAmountOut.decimalAmount?.stripTrailingZeros()
 
-    val amountOut: String
-        get() {
-            val token = trade.tokenAmountOut.token
-            val amount = trade.tokenAmountOut.amount
+    val amountInMax: BigDecimal? = tokenAmountInMax.decimalAmount?.stripTrailingZeros()
 
-            return if (amount == BigInteger.ZERO)
-                "0"
-            else
-                amount.toBigDecimal().movePointLeft(token.decimals).stripTrailingZeros().toPlainString()
-        }
+    val amountOutMin: BigDecimal? = tokenAmountOutMin.decimalAmount?.stripTrailingZeros()
 
-    val amountInMax: String = tokenAmountInMax.amount.toString()
+    val executionPrice: BigDecimal? = trade.executionPrice.decimalValue?.stripTrailingZeros()
 
-    val amountOutMin: String = tokenAmountOutMin.amount.toString()
+    val midPrice: BigDecimal? = trade.route.midPrice.decimalValue?.stripTrailingZeros()
+
+    val priceImpact: BigDecimal? = trade.priceImpact.toBigDecimal(2)
+
 }

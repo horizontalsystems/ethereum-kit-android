@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import io.horizontalsystems.uniswapkit.models.TradeType
 import kotlinx.android.synthetic.main.fragment_swap.*
 import java.math.BigDecimal
 
@@ -19,20 +20,21 @@ class SwapFragment : Fragment() {
 
     private val tokens = listOf(
             Erc20Token("GMO coins", "GMOLW", "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32", 18),
-            Erc20Token("DAI", "DAI", "0xad6d458402f60fd3bd25163575031acdce07538d", 18)
+            Erc20Token("DAI", "DAI", "0xad6d458402f60fd3bd25163575031acdce07538d", 18),
+            Erc20Token("DAI-MAINNET", "DAI", "0x6b175474e89094c44da98b954eedeac495271d0f", 18)
+
+
     )
 
-    private val fromToken: Erc20Token? = tokens[1]
-    private val toToken: Erc20Token? = null //tokens[1]
+    private val fromToken: Erc20Token? = null //tokens[1]
+    private val toToken: Erc20Token? = tokens[2]
 
     private val fromAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            setToAmount("")
-            updateLabels(exactIn = true)
+            setToAmount(null)
 
             if (s != null && s.isNotEmpty()) {
-                viewModel.onChangeAmountIn(BigDecimal(s.toString()).scaleByPowerOfTen(fromToken?.decimals
-                        ?: 18).toBigInteger())
+                viewModel.onChangeAmountIn(BigDecimal(s.toString()))
             }
         }
 
@@ -42,12 +44,10 @@ class SwapFragment : Fragment() {
 
     private val toAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            setFromAmount("")
-            updateLabels(exactIn = false)
+            setFromAmount(null)
 
             if (s != null && s.isNotEmpty()) {
-                viewModel.onChangeAmountOut(BigDecimal(s.toString()).scaleByPowerOfTen(toToken?.decimals
-                        ?: 18).toBigInteger())
+                viewModel.onChangeAmountOut(BigDecimal(s.toString()))
             }
 
         }
@@ -76,46 +76,83 @@ class SwapFragment : Fragment() {
         })
 
         viewModel.tradeData.observe(viewLifecycleOwner, Observer { tradeData ->
-            setFromAmount(tradeData?.amountIn ?: "")
-            setToAmount(tradeData?.amountOut ?: "")
+
+            if (tradeData == null) {
+                minMax.text = null
+                executionPrice.text = null
+                midPrice.text = null
+                priceImpact.text = null
+            } else {
+                when (tradeData.type) {
+                    TradeType.ExactIn -> {
+                        setToAmount(tradeData.amountOut)
+                        minMax.text = "Minimum received: ${tradeData.amountOutMin?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(toToken)}" } ?: ""}"
+                    }
+                    TradeType.ExactOut -> {
+                        setFromAmount(tradeData.amountIn)
+                        minMax.text = "Maximum sold: ${tradeData.amountInMax?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(fromToken)}" } ?: ""}"
+                    }
+                }
+
+                val executionPriceStr = tradeData.executionPrice?.let {
+                    "${it.toPlainString()} ${tokenCode(toToken)} / ${tokenCode(fromToken)} "
+                }
+                executionPrice.text = "Execution price: " + (executionPriceStr ?: "")
+
+                val midPriceStr = tradeData.midPrice?.let {
+                    "${it.toPlainString()} ${tokenCode(toToken)} / ${tokenCode(fromToken)} "
+                }
+                midPrice.text = "Mid price: " + (midPriceStr ?: "")
+
+                priceImpact.text = "Price impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%"
+
+                updateLabels(tradeData.type)
+            }
         })
 
-        fromAmount.addTextChangedListener(fromAmountListener)
-        toAmount.addTextChangedListener(toAmountListener)
-
-        updateLabels(exactIn = true)
-
         buttonSyncSwapData.setOnClickListener {
-            fromAmount.isEnabled = false
-            toAmount.isEnabled = false
-
-            viewModel.syncSwapData(fromToken, toToken)
+            syncSwapData()
         }
 
         buttonSwap.setOnClickListener {
             viewModel.swap()
         }
 
+        fromAmount.addTextChangedListener(fromAmountListener)
+        toAmount.addTextChangedListener(toAmountListener)
+
+        updateLabels(TradeType.ExactIn)
+        syncSwapData()
     }
 
-    private fun setFromAmount(amount: String) {
+    private fun tokenCode(erc20Token: Erc20Token?): String {
+        return erc20Token?.code ?: "ETH"
+    }
+
+    private fun syncSwapData() {
+        fromAmount.isEnabled = false
+        toAmount.isEnabled = false
+
+        viewModel.syncSwapData(fromToken, toToken)
+    }
+
+    private fun setFromAmount(amount: BigDecimal?) {
         fromAmount.removeTextChangedListener(fromAmountListener)
-        fromAmount.setText(amount)
-        fromAmount.setSelection(amount.length)
+        fromAmount.setText(amount?.stripTrailingZeros()?.toPlainString())
         fromAmount.addTextChangedListener(fromAmountListener)
     }
 
-    private fun setToAmount(amount: String) {
+    private fun setToAmount(amount: BigDecimal?) {
         toAmount.removeTextChangedListener(toAmountListener)
-        toAmount.setText(amount)
+        toAmount.setText(amount?.stripTrailingZeros()?.toPlainString())
         toAmount.addTextChangedListener(toAmountListener)
     }
 
-    private fun updateLabels(exactIn: Boolean) {
+    private fun updateLabels(tradeType: TradeType) {
         var fromLabel = "From ${fromToken?.code ?: "ETH"}"
         var toLabel = "To ${toToken?.code ?: "ETH"}"
 
-        if (exactIn) {
+        if (tradeType == TradeType.ExactIn) {
             toLabel += " (estimated)"
         } else {
             fromLabel += " (estimated)"
