@@ -49,7 +49,7 @@ class TradeManager(
                 }
     }
 
-    fun swap(tradeData: TradeData): Single<String> {
+    fun swap(tradeData: TradeData, gasPrice: Long): Single<String> {
         val methodName: String
         val arguments: List<Argument>
         val amount: BigInteger
@@ -107,23 +107,23 @@ class TradeManager(
         val method = ContractMethod(methodName, arguments)
 
         return if (tokenIn.isEther) {
-            swap(amount, method.encodedABI())
+            swap(amount, method.encodedABI(), gasPrice)
         } else {
-            swapWithApprove(tokenIn.address, amount, swap(BigInteger.ZERO, method.encodedABI()))
+            swapWithApprove(tokenIn.address, amount, gasPrice, swap(BigInteger.ZERO, method.encodedABI(), gasPrice))
         }
     }
 
-    private fun swap(value: BigInteger, input: ByteArray): Single<String> {
-        return ethereumKit.send(routerAddress, value, input, 50_000_000_000, 500_000)
+    private fun swap(value: BigInteger, input: ByteArray, gasPrice: Long): Single<String> {
+        return ethereumKit.send(routerAddress, value, input, gasPrice, 500_000)
                 .map { txInfo ->
                     logger.info("Swap tx hash: ${txInfo.hash}")
                     txInfo.hash
                 }
     }
 
-    private fun swapWithApprove(contractAddress: ByteArray, amount: BigInteger, swapSingle: Single<String>): Single<String> {
+    private fun swapWithApprove(contractAddress: ByteArray, amount: BigInteger, gasPrice: Long, swapSingle: Single<String>): Single<String> {
         val approveTransactionInput = ContractMethod("approve", listOf(Address(routerAddress), Uint256(amount))).encodedABI()
-        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, 50_000_000_000, 500_000)
+        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, gasPrice, 500_000)
                 .flatMap { txInfo ->
                     logger.info("Approve tx hash: ${txInfo.hash}")
                     swapSingle

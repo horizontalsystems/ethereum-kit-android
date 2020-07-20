@@ -27,7 +27,7 @@ class SwapFragment : Fragment() {
     )
 
     private val fromToken: Erc20Token? = null //tokens[1]
-    private val toToken: Erc20Token? = tokens[2]
+    private val toToken: Erc20Token? = tokens[1]
 
     private val fromAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {

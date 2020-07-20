@@ -63,8 +63,8 @@ class UniswapKit(
         return TradeData(trade, options)
     }
 
-    fun swap(tradeData: TradeData): Single<String> {
-        return tradeManager.swap(tradeData)
+    fun swap(tradeData: TradeData, gasPrice: Long): Single<String> {
+        return tradeManager.swap(tradeData, gasPrice)
     }
 
     companion object {
