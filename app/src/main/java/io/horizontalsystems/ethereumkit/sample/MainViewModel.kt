@@ -33,7 +33,7 @@ class MainViewModel : ViewModel() {
     //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
 //    private val contractAddress = "0xb603cea165119701b58d56d10d2060fbfb3efad8" // WETH
     private val contractDecimal = 18
-    private val networkType: NetworkType = NetworkType.MainNet
+    private val networkType: NetworkType = NetworkType.Ropsten
     private val walletId = "walletId"
     private var estimateGasLimit: Long = 0
 
@@ -56,7 +56,7 @@ class MainViewModel : ViewModel() {
     val sendStatus = SingleLiveEvent<Throwable?>()
     val estimatedGas = SingleLiveEvent<String>()
 
-    private val gasPrice: Long = 5_000_000_000
+    private val gasPrice: Long = 50_000_000_000
 
     private lateinit var uniswapKit: UniswapKit
     var swapData = MutableLiveData<SwapData?>()
@@ -339,7 +339,7 @@ class MainViewModel : ViewModel() {
 
     fun swap() {
         tradeData.value?.let { tradeData ->
-            uniswapKit.swap(tradeData)
+            uniswapKit.swap(tradeData, gasPrice)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({
