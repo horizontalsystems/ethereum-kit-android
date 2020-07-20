@@ -36,4 +36,6 @@ class TradeData(
 
     val priceImpact: BigDecimal? = trade.priceImpact.toBigDecimal(2)
 
+    val path: List<Token> = trade.route.path
+
 }

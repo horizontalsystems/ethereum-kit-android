@@ -5,12 +5,12 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import kotlin.math.absoluteValue
 
-class TokenAmount {
+class TokenAmount : Comparable<TokenAmount> {
     val token: Token
     val amount: Fraction
 
     constructor(token: Token, rawAmount: BigInteger) {
-        check(rawAmount.signum() > 0) {
+        check(rawAmount.signum() >= 0) {
             throw TokenAmountError.NegativeAmount()
         }
         this.token = token
@@ -25,8 +25,23 @@ class TokenAmount {
     val decimalAmount: BigDecimal?
         get() = amount.toBigDecimal(token.decimals)
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        return if (other is TokenAmount) {
+            this.compareTo(other) == 0
+        } else false
+    }
+
+    override fun compareTo(other: TokenAmount): Int {
+        check(this.token == other.token)
+
+        return this.amount.compareTo(other.amount)
+    }
+
     override fun toString(): String {
-        return "{$token: $decimalAmount}"
+        return "{$token: ${decimalAmount?.stripTrailingZeros()}}"
     }
 
     companion object {

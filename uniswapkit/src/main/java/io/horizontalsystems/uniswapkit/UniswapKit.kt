@@ -35,14 +35,18 @@ class UniswapKit(
 
     fun bestTradeExactIn(swapData: SwapData, amountIn: BigDecimal, options: TradeOptions = TradeOptions()): TradeData {
         val tokenAmountIn = TokenAmount(swapData.tokenIn, amountIn)
-        val trades = TradeManager.bestTradeExactIn(
+        val sortedTrades = TradeManager.tradeExactIn(
                 swapData.pairs,
                 tokenAmountIn,
                 swapData.tokenOut
-        )
-        val trade = trades.firstOrNull() ?: throw BestTradeError.TradeNotFound()
+        ).sorted()
 
-        logger.info("bestTradeExactIn trades.size: ${trades.size}")
+        logger.info("bestTradeExactIn trades (${sortedTrades.size}):")
+        sortedTrades.forEachIndexed { index, trade ->
+            logger.info("$index: {in: ${trade.tokenAmountIn}, out: ${trade.tokenAmountOut}, impact: ${trade.priceImpact.toBigDecimal(2)}, pathSize: ${trade.route.path.size}")
+        }
+
+        val trade = sortedTrades.firstOrNull() ?: throw TradeError.TradeNotFound()
         logger.info("bestTradeExactIn path: ${trade.route.path.joinToString(" > ")}")
 
         return TradeData(trade, options)
@@ -50,14 +54,18 @@ class UniswapKit(
 
     fun bestTradeExactOut(swapData: SwapData, amountOut: BigDecimal, options: TradeOptions = TradeOptions()): TradeData {
         val tokenAmountOut = TokenAmount(swapData.tokenOut, amountOut)
-        val trades = TradeManager.bestTradeExactOut(
+        val sortedTrades = TradeManager.tradeExactOut(
                 swapData.pairs,
                 swapData.tokenIn,
                 tokenAmountOut
-        )
-        val trade = trades.firstOrNull() ?: throw BestTradeError.TradeNotFound()
+        ).sorted()
 
-        logger.info("bestTradeExactOut trades.size: ${trades.size}")
+        logger.info("bestTradeExactOut trades  ${sortedTrades.size}):")
+        sortedTrades.forEachIndexed { index, trade ->
+            logger.info("$index: {in: ${trade.tokenAmountIn}, out: ${trade.tokenAmountOut}, impact: ${trade.priceImpact}, pathSize: ${trade.route.path.size}")
+        }
+
+        val trade = sortedTrades.firstOrNull() ?: throw TradeError.TradeNotFound()
         logger.info("bestTradeExactOut path: ${trade.route.path.joinToString(" > ")}")
 
         return TradeData(trade, options)
@@ -78,8 +86,8 @@ class UniswapKit(
 
 }
 
-sealed class BestTradeError : Throwable() {
-    class TradeNotFound : BestTradeError()
+sealed class TradeError : Throwable() {
+    class TradeNotFound : TradeError()
 }
 
 sealed class TokenAmountError : Throwable() {
