@@ -1,6 +1,5 @@
 package io.horizontalsystems.uniswapkit.models
 
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.core.toRawHexString
 import java.util.*
 
@@ -20,11 +19,11 @@ sealed class Token(
         if (other !is Token)
             return false
 
-        return isEther == other.isEther && address.contentEquals(other.address)
+        return decimals == other.decimals && isEther == other.isEther && address.contentEquals(other.address)
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(isEther, address.contentHashCode())
+        return Objects.hash(isEther, decimals, address.contentHashCode())
     }
 
     override fun toString(): String {

@@ -133,10 +133,10 @@ class TradeManager(
     companion object {
         private val routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D".hexStringToByteArray()
 
-        fun bestTradeExactIn(pairs: List<Pair>, tokenAmountIn: TokenAmount, tokenOut: Token, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountIn: TokenAmount? = null): List<Trade> {
+        fun tradeExactIn(pairs: List<Pair>, tokenAmountIn: TokenAmount, tokenOut: Token, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountIn: TokenAmount? = null): List<Trade> {
             //todo validations
 
-            val bestTrades = mutableListOf<Trade>()
+            val trades = mutableListOf<Trade>()
             val originalTokenAmountIn = originalTokenAmountIn ?: tokenAmountIn
 
             for ((index, pair) in pairs.withIndex()) {
@@ -154,10 +154,10 @@ class TradeManager(
                             originalTokenAmountIn,
                             tokenAmountOut
                     )
-                    bestTrades.add(trade)
+                    trades.add(trade)
                 } else if (maxHops > 1 && pairs.size > 1) {
                     val pairsExcludingThisPair = pairs.drop(index)
-                    val trades = bestTradeExactIn(
+                    val tradesRecursion = tradeExactIn(
                             pairsExcludingThisPair,
                             tokenAmountOut,
                             tokenOut,
@@ -165,16 +165,16 @@ class TradeManager(
                             currentPairs + listOf(pair),
                             originalTokenAmountIn
                     )
-                    bestTrades.addAll(trades)
+                    trades.addAll(tradesRecursion)
                 }
             }
-            return bestTrades
+            return trades
         }
 
-        fun bestTradeExactOut(pairs: List<Pair>, tokenIn: Token, tokenAmountOut: TokenAmount, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountOut: TokenAmount? = null): List<Trade> {
+        fun tradeExactOut(pairs: List<Pair>, tokenIn: Token, tokenAmountOut: TokenAmount, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountOut: TokenAmount? = null): List<Trade> {
             //todo validations
 
-            val bestTrades = mutableListOf<Trade>()
+            val trades = mutableListOf<Trade>()
             val originalTokenAmountOut = originalTokenAmountOut ?: tokenAmountOut
 
             for ((index, pair) in pairs.withIndex()) {
@@ -192,10 +192,10 @@ class TradeManager(
                             tokenAmountIn,
                             originalTokenAmountOut
                     )
-                    bestTrades.add(trade)
+                    trades.add(trade)
                 } else if (maxHops > 1 && pairs.size > 1) {
                     val pairsExcludingThisPair = pairs.drop(index)
-                    val trades = bestTradeExactOut(
+                    val tradesRecursion = tradeExactOut(
                             pairsExcludingThisPair,
                             tokenIn,
                             tokenAmountIn,
@@ -203,10 +203,10 @@ class TradeManager(
                             currentPairs + listOf(pair),
                             originalTokenAmountOut
                     )
-                    bestTrades.addAll(trades)
+                    trades.addAll(tradesRecursion)
                 }
             }
-            return bestTrades
+            return trades
         }
 
     }

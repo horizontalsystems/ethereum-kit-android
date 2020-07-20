@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeType
 import kotlinx.android.synthetic.main.fragment_swap.*
 import java.math.BigDecimal
@@ -26,8 +28,8 @@ class SwapFragment : Fragment() {
 
     )
 
-    private val fromToken: Erc20Token? = null //tokens[1]
-    private val toToken: Erc20Token? = tokens[1]
+    private val fromToken: Erc20Token? = tokens[1]
+    private val toToken: Erc20Token? = tokens[0]
 
     private val fromAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -86,25 +88,27 @@ class SwapFragment : Fragment() {
                 when (tradeData.type) {
                     TradeType.ExactIn -> {
                         setToAmount(tradeData.amountOut)
-                        minMax.text = "Minimum received: ${tradeData.amountOutMin?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(toToken)}" } ?: ""}"
+                        minMax.text = "Minimum Received: ${tradeData.amountOutMin?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(toToken)}" } ?: ""}"
                     }
                     TradeType.ExactOut -> {
                         setFromAmount(tradeData.amountIn)
-                        minMax.text = "Maximum sold: ${tradeData.amountInMax?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(fromToken)}" } ?: ""}"
+                        minMax.text = "Maximum Sold: ${tradeData.amountInMax?.let { "${it.stripTrailingZeros().toPlainString()} ${tokenCode(fromToken)}" } ?: ""}"
                     }
                 }
 
                 val executionPriceStr = tradeData.executionPrice?.let {
                     "${it.toPlainString()} ${tokenCode(toToken)} / ${tokenCode(fromToken)} "
                 }
-                executionPrice.text = "Execution price: " + (executionPriceStr ?: "")
+                executionPrice.text = "Execution Price: " + (executionPriceStr ?: "")
 
                 val midPriceStr = tradeData.midPrice?.let {
                     "${it.toPlainString()} ${tokenCode(toToken)} / ${tokenCode(fromToken)} "
                 }
-                midPrice.text = "Mid price: " + (midPriceStr ?: "")
+                midPrice.text = "Mid Price: " + (midPriceStr ?: "")
 
-                priceImpact.text = "Price impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%"
+                priceImpact.text = "Price Impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%"
+
+                path.text = "Path: ${pathDescription(tradeData.path)}"
 
                 updateLabels(tradeData.type)
             }
@@ -123,6 +127,14 @@ class SwapFragment : Fragment() {
 
         updateLabels(TradeType.ExactIn)
         syncSwapData()
+    }
+
+    private fun pathDescription(path: List<Token>): String {
+        val parts = path.map { token ->
+            if (token.isEther) "ETH" else (tokens.firstOrNull { it.contractAddress == token.address.toHexString() }?.code
+                    ?: token.address.toHexString())
+        }
+        return parts.joinToString(" > ")
     }
 
     private fun tokenCode(erc20Token: Erc20Token?): String {
