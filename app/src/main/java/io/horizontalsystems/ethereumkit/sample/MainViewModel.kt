@@ -13,10 +13,7 @@ import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.uniswapkit.UniswapKit
-import io.horizontalsystems.uniswapkit.models.SwapData
-import io.horizontalsystems.uniswapkit.models.Token
-import io.horizontalsystems.uniswapkit.models.TradeData
-import io.horizontalsystems.uniswapkit.models.TradeOptions
+import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -289,6 +286,8 @@ class MainViewModel : ViewModel() {
     //
 
     private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
+    private val swapGasLimit = 500_000L
+    private val approveGasLimit = 500_000L
 
     fun syncSwapData(erc20TokenIn: Erc20Token?, erc20TokenOut: Erc20Token?) {
         val tokenIn = uniswapToken(erc20TokenIn)
@@ -339,7 +338,7 @@ class MainViewModel : ViewModel() {
 
     fun swap() {
         tradeData.value?.let { tradeData ->
-            uniswapKit.swap(tradeData, gasPrice)
+            uniswapKit.swap(tradeData, GasData(gasPrice, swapGasLimit, approveGasLimit))
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({
