@@ -49,7 +49,7 @@ class TradeManager(
                 }
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long): Single<String> {
+    fun swap(tradeData: TradeData, gasData: GasData): Single<String> {
         val methodName: String
         val arguments: List<Argument>
         val amount: BigInteger
@@ -62,6 +62,7 @@ class TradeManager(
         val path = Addresses(trade.route.path.map { it.address })
         val to = Address(tradeData.options.recipient ?: address)
         val deadline = Uint256((Date().time / 1000 + tradeData.options.ttl).toBigInteger())
+        val gasPrice = gasData.gasPrice
 
         when (trade.type) {
             TradeType.ExactIn -> {
@@ -107,23 +108,24 @@ class TradeManager(
         val method = ContractMethod(methodName, arguments)
 
         return if (tokenIn.isEther) {
-            swap(amount, method.encodedABI(), gasPrice)
+            swap(amount, method.encodedABI(), gasPrice, gasData.swapGasLimit)
         } else {
-            swapWithApprove(tokenIn.address, amount, gasPrice, swap(BigInteger.ZERO, method.encodedABI(), gasPrice))
+            val approveGasLimit = gasData.approveGasLimit ?: throw TradeError.GasLimitNull()
+            swapWithApprove(tokenIn.address, amount, gasPrice, approveGasLimit, swap(BigInteger.ZERO, method.encodedABI(), gasPrice, gasData.swapGasLimit))
         }
     }
 
-    private fun swap(value: BigInteger, input: ByteArray, gasPrice: Long): Single<String> {
-        return ethereumKit.send(routerAddress, value, input, gasPrice, 500_000)
+    private fun swap(value: BigInteger, input: ByteArray, gasPrice: Long, gasLimit: Long): Single<String> {
+        return ethereumKit.send(routerAddress, value, input, gasPrice, gasLimit)
                 .map { txInfo ->
                     logger.info("Swap tx hash: ${txInfo.hash}")
                     txInfo.hash
                 }
     }
 
-    private fun swapWithApprove(contractAddress: ByteArray, amount: BigInteger, gasPrice: Long, swapSingle: Single<String>): Single<String> {
+    private fun swapWithApprove(contractAddress: ByteArray, amount: BigInteger, gasPrice: Long, gasLimit: Long, swapSingle: Single<String>): Single<String> {
         val approveTransactionInput = ContractMethod("approve", listOf(Address(routerAddress), Uint256(amount))).encodedABI()
-        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, gasPrice, 500_000)
+        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, gasPrice, gasLimit)
                 .flatMap { txInfo ->
                     logger.info("Approve tx hash: ${txInfo.hash}")
                     swapSingle

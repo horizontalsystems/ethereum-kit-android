@@ -71,8 +71,8 @@ class UniswapKit(
         return TradeData(trade, options)
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long): Single<String> {
-        return tradeManager.swap(tradeData, gasPrice)
+    fun swap(tradeData: TradeData, gasData: GasData): Single<String> {
+        return tradeManager.swap(tradeData, gasData)
     }
 
     companion object {
@@ -88,6 +88,7 @@ class UniswapKit(
 
 sealed class TradeError : Throwable() {
     class TradeNotFound : TradeError()
+    class GasLimitNull : TradeError()
 }
 
 sealed class TokenAmountError : Throwable() {
