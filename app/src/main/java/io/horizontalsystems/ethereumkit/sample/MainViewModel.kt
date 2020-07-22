@@ -75,7 +75,7 @@ class MainViewModel : ViewModel() {
 
         erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "DAI", "DAI", contractAddress, contractDecimal)
 
-        uniswapKit = UniswapKit.getInstance(ethereumKit, networkType)
+        uniswapKit = UniswapKit.getInstance(ethereumKit)
 
         updateBalance()
         updateErc20Balance()
