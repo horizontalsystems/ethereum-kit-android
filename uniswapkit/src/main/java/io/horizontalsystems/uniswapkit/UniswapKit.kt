@@ -76,9 +76,9 @@ class UniswapKit(
     }
 
     companion object {
-        fun getInstance(ethereumKit: EthereumKit, networkType: EthereumKit.NetworkType): UniswapKit {
+        fun getInstance(ethereumKit: EthereumKit): UniswapKit {
             val tradeManager = TradeManager(ethereumKit)
-            val tokenFactory = TokenFactory(networkType)
+            val tokenFactory = TokenFactory(ethereumKit.networkType)
             val pairSelector = PairSelector(tokenFactory)
             return UniswapKit(tradeManager, pairSelector, tokenFactory)
         }
