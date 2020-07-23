@@ -1,10 +1,10 @@
 package io.horizontalsystems.ethereumkit.network
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import java.util.concurrent.Executors
 
 class ConnectionManager(context: Context) {
@@ -17,28 +17,42 @@ class ConnectionManager(context: Context) {
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     var listener: Listener? = null
-    var isConnected = networkIsConnected()
+    var isConnected = getInitialConnectionStatus()
+    private var callback = ConnectionStatusCallback()
 
     init {
-        context.registerReceiver(object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                executorService.execute {
-                    onUpdateStatus()
-                }
-            }
-        }, IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"))
+        try {
+            connectivityManager.unregisterNetworkCallback(callback)
+        } catch (e: Exception) {
+            //was not registered, or already unregistered
+        }
+        connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
     }
 
-    private fun onUpdateStatus() {
-        val isConnectedUpdate = networkIsConnected()
+    private fun getInitialConnectionStatus(): Boolean {
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
+    }
 
-        if (isConnected != isConnectedUpdate) {
-            isConnected = isConnectedUpdate
+    inner class ConnectionStatusCallback : ConnectivityManager.NetworkCallback() {
+
+        private val activeNetworks: MutableList<Network> = mutableListOf()
+
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            activeNetworks.removeAll { activeNetwork -> activeNetwork == network }
+            isConnected = activeNetworks.isNotEmpty()
             listener?.onConnectionChange(isConnected)
         }
-    }
 
-    private fun networkIsConnected(): Boolean {
-        return connectivityManager.activeNetworkInfo?.isConnected ?: false
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            if (activeNetworks.none { activeNetwork -> activeNetwork == network }) {
+                activeNetworks.add(network)
+            }
+            isConnected = activeNetworks.isNotEmpty()
+            listener?.onConnectionChange(isConnected)
+        }
     }
 }
