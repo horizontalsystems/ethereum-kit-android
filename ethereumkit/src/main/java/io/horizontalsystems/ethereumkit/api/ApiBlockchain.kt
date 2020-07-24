@@ -27,7 +27,7 @@ class ApiBlockchain(
 
     init {
         connectionManager.listener = object : ConnectionManager.Listener {
-            override fun onConnectionChange(isConnected: Boolean) {
+            override fun onConnectionChange() {
                 sync()
             }
         }
