@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.util.Log
 
 class ConnectionManager(context: Context) {
 
@@ -32,6 +31,7 @@ class ConnectionManager(context: Context) {
 
     private fun getInitialConnectionStatus(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
+
         hasConnection = true
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         hasValidInternet = capabilities?.let {
@@ -56,7 +56,6 @@ class ConnectionManager(context: Context) {
             super.onCapabilitiesChanged(network, networkCapabilities)
             hasValidInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-            Log.e("ConnMan", "capability changed $hasValidInternet")
             updatedConnectionState()
         }
 
@@ -74,7 +73,6 @@ class ConnectionManager(context: Context) {
         val oldValue = isConnected
         isConnected = hasConnection && hasValidInternet
         if (oldValue != isConnected) {
-            Log.e("ConnMan", "updatedConnectionState  connection: $hasConnection hasValidInternet: $hasValidInternet")
             listener?.onConnectionChange()
         }
     }
