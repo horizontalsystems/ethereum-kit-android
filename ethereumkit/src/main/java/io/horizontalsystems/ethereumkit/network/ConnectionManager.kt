@@ -5,19 +5,20 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import java.util.concurrent.Executors
+import android.util.Log
 
 class ConnectionManager(context: Context) {
 
     interface Listener {
-        fun onConnectionChange(isConnected: Boolean)
+        fun onConnectionChange()
     }
 
-    private val executorService = Executors.newSingleThreadExecutor()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     var listener: Listener? = null
     var isConnected = getInitialConnectionStatus()
+    private var hasValidInternet = false
+    private var hasConnection = false
     private var callback = ConnectionStatusCallback()
 
     init {
@@ -30,9 +31,14 @@ class ConnectionManager(context: Context) {
     }
 
     private fun getInitialConnectionStatus(): Boolean {
-        val network = connectivityManager.activeNetwork
+        val network = connectivityManager.activeNetwork ?: return false
+        hasConnection = true
         val capabilities = connectivityManager.getNetworkCapabilities(network)
-        return capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
+        hasValidInternet = capabilities?.let {
+            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        } ?: false
+
+        return hasValidInternet
     }
 
     inner class ConnectionStatusCallback : ConnectivityManager.NetworkCallback() {
@@ -42,8 +48,16 @@ class ConnectionManager(context: Context) {
         override fun onLost(network: Network) {
             super.onLost(network)
             activeNetworks.removeAll { activeNetwork -> activeNetwork == network }
-            isConnected = activeNetworks.isNotEmpty()
-            listener?.onConnectionChange(isConnected)
+            hasConnection = activeNetworks.isNotEmpty()
+            updatedConnectionState()
+        }
+
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            hasValidInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            Log.e("ConnMan", "capability changed $hasValidInternet")
+            updatedConnectionState()
         }
 
         override fun onAvailable(network: Network) {
@@ -51,8 +65,17 @@ class ConnectionManager(context: Context) {
             if (activeNetworks.none { activeNetwork -> activeNetwork == network }) {
                 activeNetworks.add(network)
             }
-            isConnected = activeNetworks.isNotEmpty()
-            listener?.onConnectionChange(isConnected)
+            hasConnection = activeNetworks.isNotEmpty()
+            updatedConnectionState()
+        }
+    }
+
+    private fun updatedConnectionState() {
+        val oldValue = isConnected
+        isConnected = hasConnection && hasValidInternet
+        if (oldValue != isConnected) {
+            Log.e("ConnMan", "updatedConnectionState  connection: $hasConnection hasValidInternet: $hasValidInternet")
+            listener?.onConnectionChange()
         }
     }
 }
