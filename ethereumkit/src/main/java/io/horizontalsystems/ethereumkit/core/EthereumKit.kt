@@ -28,6 +28,7 @@ class EthereumKit(
         private val blockchain: IBlockchain,
         private val transactionManager: ITransactionManager,
         private val transactionBuilder: TransactionBuilder,
+        private val connectionManager: ConnectionManager,
         private val address: ByteArray,
         val networkType: NetworkType,
         val walletId: String,
@@ -105,6 +106,14 @@ class EthereumKit(
     fun refresh() {
         blockchain.refresh()
         transactionManager.refresh()
+    }
+
+    fun onEnterForeground() {
+        connectionManager.onEnterForeground()
+    }
+
+    fun onEnterBackground() {
+        connectionManager.onEnterBackground()
     }
 
     fun fee(gasPrice: Long): BigDecimal {
@@ -302,6 +311,7 @@ class EthereumKit(
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
             val transactionBuilder = TransactionBuilder(address)
+            val connectionManager = ConnectionManager(context)
 
             val rpcApiProvider = when (rpcApi) {
                 is RpcApi.Infura -> InfuraRpcApiProvider.getInstance(networkType, rpcApi.infuraCredentials, address)
@@ -313,7 +323,7 @@ class EthereumKit(
                     val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
 
-                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, ConnectionManager(context))
+                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, connectionManager)
                 }
                 is SyncMode.SpvSyncMode -> {
                     val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
@@ -337,7 +347,7 @@ class EthereumKit(
             val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
             val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, address, networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, connectionManager, address, networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit
