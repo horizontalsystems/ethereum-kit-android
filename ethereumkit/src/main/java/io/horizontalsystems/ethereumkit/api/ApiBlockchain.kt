@@ -3,10 +3,7 @@ package io.horizontalsystems.ethereumkit.api
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.Block
-import io.horizontalsystems.ethereumkit.models.EthereumLog
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionStatus
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
@@ -84,7 +81,7 @@ class ApiBlockchain(
                 }
     }
 
-    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         return rpcApiProvider.estimateGas(to, value, gasLimit, gasPrice, data?.toHexString())
     }
 
@@ -96,7 +93,7 @@ class ApiBlockchain(
         return rpcApiProvider.transactionExist(transactionHash)
     }
 
-    override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
         return rpcApiProvider.getLogs(address, fromBlock, toBlock, topics)
                 .flatMap { logs ->
                     if (pullTimestamps)
@@ -138,12 +135,12 @@ class ApiBlockchain(
         }
     }
 
-    override fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+    override fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray> {
         return rpcApiProvider.getStorageAt(contractAddress, position.toHexString(), blockNumber)
                 .map { it.hexStringToByteArray() }
     }
 
-    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
+    override fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
         return rpcApiProvider.call(contractAddress, data, blockNumber).flatMap<ByteArray> { value ->
             val rawValue = try {
                 value.hexStringToByteArray()

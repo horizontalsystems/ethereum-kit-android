@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.network.INetwork
@@ -12,7 +13,6 @@ import io.horizontalsystems.ethereumkit.network.MainNet
 import io.horizontalsystems.ethereumkit.network.Ropsten
 import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
 import io.horizontalsystems.ethereumkit.spv.core.storage.SpvStorage
-import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
@@ -28,7 +28,7 @@ class EthereumKit(
         private val transactionManager: ITransactionManager,
         private val transactionBuilder: TransactionBuilder,
         private val connectionManager: ConnectionManager,
-        private val address: ByteArray,
+        private val address: Address,
         val networkType: NetworkType,
         val walletId: String,
         val etherscanKey: String,
@@ -66,10 +66,7 @@ class EthereumKit(
     val transactionsSyncState: SyncState
         get() = transactionManager.syncState
 
-    val receiveAddress: String
-        get() = address.toEIP55Address()
-
-    val receiveAddressRaw: ByteArray
+    val receiveAddress: Address
         get() = address
 
     val lastBlockHeightFlowable: Flowable<Long>
@@ -137,7 +134,7 @@ class EthereumKit(
         }
     }
 
-    fun estimateGas(to: String?, value: BigInteger, gasPrice: Long?): Single<Long> {
+    fun estimateGas(to: Address?, value: BigInteger, gasPrice: Long?): Single<Long> {
         // without address - provide default gas limit
         if (to == null) {
             return Single.just(defaultGasLimit)
@@ -149,7 +146,7 @@ class EthereumKit(
         return blockchain.estimateGas(to, resolvedAmount, maxGasLimit, gasPrice, null)
     }
 
-    fun estimateGas(to: String, value: BigInteger?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    fun estimateGas(to: Address, value: BigInteger?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
@@ -162,12 +159,12 @@ class EthereumKit(
         }
     }
 
-    fun send(toAddress: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return send(toAddress.hexStringToByteArray(), convertValue(value), ByteArray(0), gasPrice, gasLimit)
+    fun send(to: Address, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        return send(to, convertValue(value), ByteArray(0), gasPrice, gasLimit)
     }
 
-    fun send(toAddress: ByteArray, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, toAddress, value, transactionInput)
+    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, to, value, transactionInput)
         logger.info("send rawTransaction: $rawTransaction")
 
         val fee = gasPrice.toBigInteger().times(gasLimit.toBigInteger())
@@ -182,16 +179,16 @@ class EthereumKit(
                 .map { TransactionInfo(TransactionWithInternal(it)) }
     }
 
-    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long,
+    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long,
                 pullTimestamps: Boolean): Single<List<EthereumLog>> {
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 
-    fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+    fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray> {
         return blockchain.getStorageAt(contractAddress, position, blockNumber)
     }
 
-    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long? = null): Single<ByteArray> {
+    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long? = null): Single<ByteArray> {
         return blockchain.call(contractAddress, data, blockNumber)
     }
 
@@ -301,7 +298,7 @@ class EthereumKit(
             val blockchain: IBlockchain
 
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
-            val address = CryptoUtils.sha3(publicKey).takeLast(20).toByteArray()
+            val address = Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
 
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
@@ -389,9 +386,6 @@ class EthereumKit(
             EthereumDatabaseManager.clear(context, networkType, walletId)
         }
 
-        fun validateAddress(address: String) {
-            AddressValidator.validate(address)
-        }
     }
 
     sealed class RpcApi {

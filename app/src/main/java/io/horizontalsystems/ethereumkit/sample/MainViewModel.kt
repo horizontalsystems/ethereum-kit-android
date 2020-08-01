@@ -6,7 +6,7 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
@@ -25,7 +25,7 @@ class MainViewModel : ViewModel() {
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val contractAddress = "0xad6d458402f60fd3bd25163575031acdce07538d" // DAI
+    private val contractAddress = Address("0xad6d458402f60fd3bd25163575031acdce07538d") // DAI
 
     //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
 //    private val contractAddress = "0xb603cea165119701b58d56d10d2060fbfb3efad8" // WETH
@@ -217,14 +217,14 @@ class MainViewModel : ViewModel() {
     }
 
     fun receiveAddress(): String {
-        return ethereumKit.receiveAddress
+        return ethereumKit.receiveAddress.hex
     }
 
     fun estimateGas(toAddress: String?, value: BigDecimal, isErc20: Boolean) {
         val estimateSingle = if (isErc20)
-            erc20Adapter.estimatedGasLimit(toAddress, value)
+            erc20Adapter.estimatedGasLimit(toAddress?.let { Address(it) }, value)
         else
-            ethereumAdapter.estimatedGasLimit(toAddress, value)
+            ethereumAdapter.estimatedGasLimit(toAddress?.let { Address(it) }, value)
 
         estimateSingle.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -239,7 +239,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(toAddress: String, amount: BigDecimal) {
-        ethereumAdapter.send(address = toAddress, amount = amount, gasLimit = estimateGasLimit)
+        ethereumAdapter.send(address = Address(toAddress), amount = amount, gasLimit = estimateGasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -257,7 +257,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(toAddress: String, amount: BigDecimal) {
-        erc20Adapter.send(toAddress, amount, estimateGasLimit)
+        erc20Adapter.send(Address(toAddress), amount, estimateGasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -309,7 +309,7 @@ class MainViewModel : ViewModel() {
         if (token == null)
             return uniswapKit.etherToken()
 
-        return uniswapKit.token(token.contractAddress.hexStringToByteArray(), token.decimals)
+        return uniswapKit.token(token.contractAddress, token.decimals)
     }
 
 
@@ -357,7 +357,7 @@ class MainViewModel : ViewModel() {
 data class Erc20Token(
         val name: String,
         val code: String,
-        val contractAddress: String,
+        val contractAddress: Address,
         val decimals: Int)
 
 

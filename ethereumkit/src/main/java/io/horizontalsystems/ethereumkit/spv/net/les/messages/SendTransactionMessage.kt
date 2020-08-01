@@ -17,7 +17,7 @@ class SendTransactionMessage(val requestID: Long, val rawTransaction: RawTransac
                                 RLP.encodeLong(nonce),
                                 RLP.encodeLong(rawTransaction.gasPrice),
                                 RLP.encodeLong(rawTransaction.gasLimit),
-                                RLP.encodeElement(rawTransaction.to),
+                                RLP.encodeElement(rawTransaction.to.raw),
                                 RLP.encodeBigInteger(rawTransaction.value),
                                 RLP.encodeElement(rawTransaction.data),
                                 RLP.encodeByte(signature.v),

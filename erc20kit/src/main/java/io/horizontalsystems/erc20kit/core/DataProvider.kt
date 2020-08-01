@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.ERC20
@@ -15,9 +16,9 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     override val lastBlockHeight: Long
         get() = ethereumKit.lastBlockHeight ?: 0
 
-    override fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long,
+    override fun getTransactionLogs(contractAddress: Address, address: Address, from: Long,
                                     to: Long): Single<List<EthereumLog>> {
-        val addressTopic = ByteArray(12) + address
+        val addressTopic = ByteArray(12) + address.raw
 
         val outgoingTopics = listOf(ERC20.transferEventTopic, addressTopic)
         val incomingTopics = listOf(ERC20.transferEventTopic, null, addressTopic)
@@ -66,14 +67,14 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
         }
     }
 
-    override fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger> {
+    override fun getBalance(contractAddress: Address, address: Address): Single<BigInteger> {
         val balanceOfData = ERC20.encodeFunctionBalanceOf(address)
 
         return ethereumKit.call(contractAddress, balanceOfData)
                 .map { it.toBigInteger() }
     }
 
-    override fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray> {
+    override fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray> {
         return ethereumKit.send(contractAddress, BigInteger.ZERO, transactionInput, gasPrice, gasLimit).map { txInfo ->
             txInfo.hash.hexStringToByteArray()
         }

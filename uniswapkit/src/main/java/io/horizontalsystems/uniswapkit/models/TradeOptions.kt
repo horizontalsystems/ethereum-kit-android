@@ -1,12 +1,13 @@
 package io.horizontalsystems.uniswapkit.models
 
+import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigDecimal
 import java.math.BigInteger
 
 class TradeOptions(
         allowedSlippagePercent: BigDecimal = BigDecimal("0.5"),
         var ttl: Long = 20 * 60,
-        var recipient: ByteArray? = null,
+        var recipient: Address? = null,
         var feeOnTransfer: Boolean = false
 ) {
     val allowedSlippagePercent: BigDecimal

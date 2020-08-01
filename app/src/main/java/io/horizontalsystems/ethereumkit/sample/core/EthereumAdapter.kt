@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionInfo
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -28,7 +29,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     override val balance: BigDecimal
         get() = ethereumKit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
 
-    override val receiveAddress: String
+    override val receiveAddress: Address
         get() = ethereumKit.receiveAddress
 
     override val lastBlockHeightFlowable: Flowable<Unit>
@@ -50,18 +51,14 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         ethereumKit.refresh()
     }
 
-    override fun validateAddress(address: String) {
-        EthereumKit.validateAddress(address)
-    }
-
-    override fun estimatedGasLimit(toAddress: String?, value: BigDecimal): Single<Long> {
+    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal): Single<Long> {
         val poweredDecimal = value.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
         return ethereumKit.estimateGas(toAddress, noScaleDecimal.toBigInteger(), 5_000_000_000)
     }
 
-    override fun send(address: String, amount: BigDecimal, gasLimit: Long): Single<Unit> {
+    override fun send(address: Address, amount: BigDecimal, gasLimit: Long): Single<Unit> {
         val poweredDecimal = amount.scaleByPowerOfTen(decimal)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
@@ -78,10 +75,10 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         val mineAddress = ethereumKit.receiveAddress
 
         val fromAddressHex = transaction.from
-        val from = TransactionAddress(fromAddressHex, fromAddressHex == mineAddress)
+        val from = TransactionAddress(fromAddressHex, Address(fromAddressHex) == mineAddress)
 
         val toAddressHex = transaction.to
-        val to = TransactionAddress(toAddressHex, toAddressHex == mineAddress)
+        val to = TransactionAddress(toAddressHex, Address(toAddressHex) == mineAddress)
 
         var amount: BigDecimal
 
@@ -95,7 +92,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         transaction.internalTransactions.forEach { internalTransaction ->
             var internalAmount = internalTransaction.value.toBigDecimalOrNull()?.movePointLeft(decimal)
                     ?: BigDecimal.ZERO
-            val outgoing = internalTransaction.from == receiveAddress
+            val outgoing = Address(internalTransaction.from) == receiveAddress
             internalAmount = if (outgoing) internalAmount.negate() else internalAmount
             amount += internalAmount
         }

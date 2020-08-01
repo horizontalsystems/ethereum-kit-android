@@ -1,14 +1,14 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
-import java.math.BigInteger
 
 class TransactionsProvider(
         private val etherscanService: EtherscanService,
-        private val address: ByteArray
+        private val address: Address
 ) : ITransactionsProvider {
 
     override val source: String
@@ -17,25 +17,31 @@ class TransactionsProvider(
     override fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>> {
         return etherscanService.getTransactionList(address, startBlock)
                 .map { response ->
-                    response.result.distinctBy { it["hash"] }.map { tx ->
-                        val hash = tx["hash"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val nonce = tx["nonce"]?.toLongOrNull() ?: 0
-                        val input = tx["input"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val from = tx["from"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val to = tx["to"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val value = tx["value"]?.toBigIntegerOrNull() ?: BigInteger.ZERO
-                        val gasLimit = tx["gas"]?.toLongOrNull() ?: 0
-                        val gasPrice = tx["gasPrice"]?.toLongOrNull() ?: 0
-                        val timestamp = tx["timeStamp"]?.toLongOrNull() ?: 0
+                    response.result.distinctBy { it["hash"] }.mapNotNull { tx ->
+                        try {
+                            val hash = tx.getValue("hash").hexStringToByteArray()
+                            val nonce = tx.getValue("nonce").toLong()
+                            val input = tx.getValue("input").hexStringToByteArray()
+                            val from = Address(tx.getValue("from"))
+                            val to = Address(tx.getValue("to"))
+                            val value = tx.getValue("value").toBigInteger()
+                            val gasLimit = tx.getValue("gas").toLong()
+                            val gasPrice = tx.getValue("gasPrice").toLong()
+                            val timestamp = tx.getValue("timeStamp").toLong()
 
-                        EthereumTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp).apply {
-                            this.blockHash = tx["blockHash"]?.hexStringToByteArray()
-                            this.blockNumber = tx["blockNumber"]?.toLongOrNull()
-                            this.gasUsed = tx["gasUsed"]?.toLongOrNull()
-                            this.cumulativeGasUsed = tx["cumulativeGasUsed"]?.toLongOrNull()
-                            this.iserror = tx["isError"]?.toIntOrNull()
-                            this.transactionIndex = tx["transactionIndex"]?.toIntOrNull()
-                            this.txReceiptStatus = tx["txreceipt_status"]?.toIntOrNull()
+                            EthereumTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
+                                    .apply {
+                                        blockHash = tx["blockHash"]?.hexStringToByteArray()
+                                        blockNumber = tx["blockNumber"]?.toLongOrNull()
+                                        gasUsed = tx["gasUsed"]?.toLongOrNull()
+                                        cumulativeGasUsed = tx["cumulativeGasUsed"]?.toLongOrNull()
+                                        iserror = tx["isError"]?.toIntOrNull()
+                                        transactionIndex = tx["transactionIndex"]?.toIntOrNull()
+                                        txReceiptStatus = tx["txreceipt_status"]?.toIntOrNull()
+                                    }
+
+                        } catch (throwable: Throwable) {
+                            null
                         }
                     }
                 }
@@ -44,21 +50,25 @@ class TransactionsProvider(
     override fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>> {
         return etherscanService.getInternalTransactionList(address, startBlock)
                 .map { response ->
-                    response.result.map { internalTx ->
-                        val hash = internalTx["hash"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val blockNumber = internalTx["blockNumber"]?.toLongOrNull() ?: 0
-                        val from = internalTx["from"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val to = internalTx["to"]?.hexStringToByteArray() ?: ByteArray(0)
-                        val value = internalTx["value"]?.toBigIntegerOrNull() ?: BigInteger.ZERO
-                        val traceId = internalTx["traceId"]?.toIntOrNull() ?: 0
+                    response.result.mapNotNull { internalTx ->
+                        try {
+                            val hash = internalTx.getValue("hash").hexStringToByteArray()
+                            val blockNumber = internalTx.getValue("blockNumber").toLong()
+                            val from = Address(internalTx.getValue("from"))
+                            val to = Address(internalTx.getValue("to").hexStringToByteArray())
+                            val value = internalTx.getValue("value").toBigInteger()
+                            val traceId = internalTx.getValue("traceId").toInt()
 
-                        InternalTransaction(hash, blockNumber, from, to, value, traceId)
+                            InternalTransaction(hash, blockNumber, from, to, value, traceId)
+                        } catch (throwable: Throwable) {
+                            null
+                        }
                     }
                 }
     }
 
     companion object {
-        fun getInstance(networkType: EthereumKit.NetworkType, etherscanApiKey: String, address: ByteArray): TransactionsProvider {
+        fun getInstance(networkType: EthereumKit.NetworkType, etherscanApiKey: String, address: Address): TransactionsProvider {
             val etherscanService = EtherscanService(networkType, etherscanApiKey)
 
             return TransactionsProvider(etherscanService, address)

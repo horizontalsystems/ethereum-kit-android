@@ -1,6 +1,7 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.reactivex.Single
@@ -19,8 +20,8 @@ interface ITransactionManager {
 
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
     fun sync()
-    fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
-    fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray
+    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
+    fun getTransactionInput(to: Address, value: BigInteger): ByteArray
 }
 
 interface IBalanceManagerListener {
@@ -44,7 +45,7 @@ interface ITransactionStorage {
 }
 
 interface ITransactionsProvider {
-    fun getTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long, endBlock: Long): Single<List<Transaction>>
+    fun getTransactions(contractAddress: Address, address: Address, startBlock: Long, endBlock: Long): Single<List<Transaction>>
 }
 
 interface ITokenBalanceStorage {
@@ -55,12 +56,12 @@ interface ITokenBalanceStorage {
 interface IDataProvider {
     val lastBlockHeight: Long
 
-    fun getTransactionLogs(contractAddress: ByteArray, address: ByteArray, from: Long, to: Long): Single<List<EthereumLog>>
-    fun getBalance(contractAddress: ByteArray, address: ByteArray): Single<BigInteger>
-    fun send(contractAddress: ByteArray, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
+    fun getTransactionLogs(contractAddress: Address, address: Address, from: Long, to: Long): Single<List<EthereumLog>>
+    fun getBalance(contractAddress: Address, address: Address): Single<BigInteger>
+    fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
     fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>>
 }
 
 interface ITransactionBuilder {
-    fun transferTransactionInput(toAddress: ByteArray, value: BigInteger): ByteArray
+    fun transferTransactionInput(toAddress: Address, value: BigInteger): ByteArray
 }

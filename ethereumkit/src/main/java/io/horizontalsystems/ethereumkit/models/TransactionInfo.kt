@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.models
 
-import io.horizontalsystems.ethereumkit.core.toEIP55Address
 import io.horizontalsystems.ethereumkit.core.toHexString
 
 class TransactionInfo(transactionWithInternal: TransactionWithInternal) {
@@ -30,8 +29,8 @@ class TransactionInfo(transactionWithInternal: TransactionWithInternal) {
         hash = transaction.hash.toHexString()
         nonce = transaction.nonce
         input = transaction.input.toHexString()
-        from = transaction.from.toEIP55Address()
-        to = transaction.to.toEIP55Address()
+        from = transaction.from.eip55
+        to = transaction.to.eip55
         value = transaction.value.toString()
         gasLimit = transaction.gasLimit
         gasPrice = transaction.gasPrice

@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
@@ -27,7 +27,7 @@ class TransactionSigner(private val network: INetwork,
                 RLP.encodeLong(nonce),
                 RLP.encodeLong(rawTransaction.gasPrice),
                 RLP.encodeLong(rawTransaction.gasLimit),
-                RLP.encodeElement(rawTransaction.to),
+                RLP.encodeElement(rawTransaction.to.raw),
                 RLP.encodeBigInteger(rawTransaction.value),
                 RLP.encodeElement(rawTransaction.data),
                 RLP.encodeByte(network.id.toByte()),

@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.network
 
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 import kotlin.math.max
 
@@ -16,14 +17,14 @@ object ERC20 {
         return prePadding + data
     }
 
-    fun encodeFunctionBalanceOf(address: ByteArray): ByteArray {
+    fun encodeFunctionBalanceOf(address: Address): ByteArray {
         val methodId = buildMethodId("balanceOf(address)")
-        return methodId + pad(address)
+        return methodId + pad(address.raw)
     }
 
-    fun encodeFunctionTransfer(toAddress: ByteArray, value: BigInteger): ByteArray {
+    fun encodeFunctionTransfer(toAddress: Address, value: BigInteger): ByteArray {
         val methodId = buildMethodId("transfer(address,uint256)")
-        return methodId + pad(toAddress) + pad(value.toByteArray())
+        return methodId + pad(toAddress.raw) + pad(value.toByteArray())
     }
 
     val transferEventTopic = CryptoUtils.sha3("Transfer(address,address,uint256)".toByteArray())

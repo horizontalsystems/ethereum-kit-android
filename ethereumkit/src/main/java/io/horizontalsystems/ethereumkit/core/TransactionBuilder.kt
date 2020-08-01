@@ -1,16 +1,17 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class TransactionBuilder(private val address: ByteArray) {
+class TransactionBuilder(private val address: Address) {
 
-    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: ByteArray, value: BigInteger, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
+    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: Address, value: BigInteger, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
         return RawTransaction(gasPrice, gasLimit, to, value, transactionInput)
     }
 
@@ -35,7 +36,7 @@ class TransactionBuilder(private val address: ByteArray) {
                 RLP.encodeLong(nonce),
                 RLP.encodeLong(rawTransaction.gasPrice),
                 RLP.encodeLong(rawTransaction.gasLimit),
-                RLP.encodeElement(rawTransaction.to),
+                RLP.encodeElement(rawTransaction.to.raw),
                 RLP.encodeBigInteger(rawTransaction.value),
                 RLP.encodeElement(rawTransaction.data),
                 RLP.encodeByte(signature.v),

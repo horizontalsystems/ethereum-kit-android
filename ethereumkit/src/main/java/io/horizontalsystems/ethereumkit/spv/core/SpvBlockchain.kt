@@ -4,11 +4,12 @@ import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.crypto.ECKey
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.INetwork
-import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -33,7 +34,7 @@ class SpvBlockchain(
         private val network: INetwork,
         private val rpcApiProvider: IRpcApiProvider
 ) : IBlockchain, IPeerListener,
-        BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
+    BlockSyncer.Listener, AccountStateSyncer.Listener, TransactionSender.Listener {
 
     private val logger = Logger.getLogger("SpvBlockchain")
 
@@ -81,7 +82,7 @@ class SpvBlockchain(
         }
     }
 
-    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         TODO("not implemented")
     }
 
@@ -93,15 +94,15 @@ class SpvBlockchain(
         return rpcApiProvider.transactionExist(transactionHash)
     }
 
-    override fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
         TODO("not implemented")
     }
 
-    override fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+    override fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray> {
         TODO("not implemented")
     }
 
-    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
+    override fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
         return rpcApiProvider.call(contractAddress, data, blockNumber).flatMap<ByteArray> { value ->
             val rawValue = try {
                 value.hexStringToByteArray()
@@ -161,7 +162,7 @@ class SpvBlockchain(
     }
 
     companion object {
-        fun getInstance(storage: ISpvStorage, transactionSigner: TransactionSigner, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: ByteArray, nodeKey: ECKey): SpvBlockchain {
+        fun getInstance(storage: ISpvStorage, transactionSigner: TransactionSigner, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: Address, nodeKey: ECKey): SpvBlockchain {
             val peerProvider = PeerProvider(nodeKey, storage, network)
             val blockValidator = BlockValidator()
             val blockHelper = BlockHelper(storage, network)

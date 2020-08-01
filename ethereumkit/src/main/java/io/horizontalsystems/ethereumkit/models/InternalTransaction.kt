@@ -16,8 +16,8 @@ import java.math.BigInteger
 class InternalTransaction(
         val hash: ByteArray,
         val blockNumber: Long,
-        val from: ByteArray,
-        val to: ByteArray,
+        val from: Address,
+        val to: Address,
         val value: BigInteger,
         val traceId: Int,
         @PrimaryKey(autoGenerate = true) val id: Long = 0

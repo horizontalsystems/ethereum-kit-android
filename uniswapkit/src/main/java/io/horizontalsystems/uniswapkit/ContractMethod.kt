@@ -1,6 +1,7 @@
 package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 import kotlin.math.max
 
@@ -14,13 +15,13 @@ class ContractMethod(
         var arraysData = byteArrayOf()
         arguments.forEach { argument ->
             when (argument) {
-                is Argument.Uint256 -> {
+                is Argument.Uint256Argument -> {
                     data += pad(argument.value.toByteArray())
                 }
-                is Argument.Address -> {
-                    data += pad(argument.value)
+                is Argument.AddressArgument -> {
+                    data += pad(argument.value.raw)
                 }
-                is Argument.Addresses -> {
+                is Argument.AddressesArgument -> {
                     data += pad(BigInteger.valueOf(arguments.size * 32L + arraysData.size).toByteArray())
                     arraysData += encode(argument.values)
                 }
@@ -40,28 +41,28 @@ class ContractMethod(
         return prePadding + data
     }
 
-    private fun encode(array: List<ByteArray>): ByteArray {
+    private fun encode(array: List<Address>): ByteArray {
         var data = pad(BigInteger.valueOf(array.size.toLong()).toByteArray())
         for (address in array) {
-            data += pad(address)
+            data += pad(address.raw)
         }
         return data
     }
 
     sealed class Argument {
-        class Uint256(val value: BigInteger) : Argument() {
+        class Uint256Argument(val value: BigInteger) : Argument() {
             override fun toString(): String {
                 return "uint256"
             }
         }
 
-        class Address(val value: ByteArray) : Argument() {
+        class AddressArgument(val value: Address) : Argument() {
             override fun toString(): String {
                 return "address"
             }
         }
 
-        class Addresses(val values: List<ByteArray>) : Argument() {
+        class AddressesArgument(val values: List<Address>) : Argument() {
             override fun toString(): String {
                 return "address[]"
             }

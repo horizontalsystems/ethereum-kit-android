@@ -1,6 +1,7 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -10,8 +11,8 @@ import java.util.concurrent.Executors
 import java.util.logging.Logger
 
 class TransactionManager(
-        private val contractAddress: ByteArray,
-        private val address: ByteArray,
+        private val contractAddress: Address,
+        private val address: Address,
         private val storage: ITransactionStorage,
         private val transactionsProvider: ITransactionsProvider,
         private val dataProvider: IDataProvider,
@@ -50,8 +51,8 @@ class TransactionManager(
         transactions.forEach { transaction ->
             val pendingTransactionIndex = pendingTransactions.indexOfFirst {
                 it.transactionHash.contentEquals(transaction.transactionHash)
-                        && it.from.contentEquals(transaction.from)
-                        && it.to.contentEquals(transaction.to)
+                        && it.from == transaction.from
+                        && it.to == transaction.to
             }
 
             if (pendingTransactionIndex > 0) {
@@ -99,7 +100,7 @@ class TransactionManager(
         listener?.onSyncSuccess(transactions)
     }
 
-    override fun send(to: ByteArray, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
+    override fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         val transactionInput = transactionBuilder.transferTransactionInput(to, value)
 
         return dataProvider.send(contractAddress, transactionInput, gasPrice, gasLimit)
@@ -113,7 +114,7 @@ class TransactionManager(
                 }
     }
 
-    override fun getTransactionInput(to: ByteArray, value: BigInteger): ByteArray {
+    override fun getTransactionInput(to: Address, value: BigInteger): ByteArray {
         return transactionBuilder.transferTransactionInput(to, value)
     }
 }
