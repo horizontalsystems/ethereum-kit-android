@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit.InfuraCredentials
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
@@ -11,7 +12,7 @@ import java.math.BigInteger
 
 class InfuraRpcApiProvider(
         private val infuraService: InfuraService,
-        private val address: ByteArray
+        private val address: Address
 ) : IRpcApiProvider {
 
     override val source: String
@@ -33,8 +34,8 @@ class InfuraRpcApiProvider(
         return infuraService.send(signedTransaction)
     }
 
-    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
-        return infuraService.estimateGas(address.toHexString(), to, value, gasLimit, gasPrice, data)
+    override fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
+        return infuraService.estimateGas(address, to, value, gasLimit, gasPrice, data)
                 .flatMap {
                     Single.just(BigInteger(it.replace("0x", ""), 16).toLong())
                 }
@@ -48,11 +49,11 @@ class InfuraRpcApiProvider(
         return infuraService.transactionExist(transactionHash)
     }
 
-    override fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
+    override fun getStorageAt(contractAddress: Address, position: String, blockNumber: Long?): Single<String> {
         return infuraService.getStorageAt(contractAddress, position, blockNumber)
     }
 
-    override fun getLogs(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>> {
+    override fun getLogs(address: Address?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>> {
         return infuraService.getLogs(address, fromBlock, toBlock, topics)
     }
 
@@ -60,12 +61,12 @@ class InfuraRpcApiProvider(
         return infuraService.getBlockByNumber(blockNumber)
     }
 
-    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+    override fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<String> {
         return infuraService.call(contractAddress, data, blockNumber)
     }
 
     companion object {
-        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials, address: ByteArray): InfuraRpcApiProvider {
+        fun getInstance(networkType: NetworkType, infuraCredentials: InfuraCredentials, address: Address): InfuraRpcApiProvider {
             val infuraService = InfuraService(networkType, infuraCredentials)
 
             return InfuraRpcApiProvider(infuraService, address)

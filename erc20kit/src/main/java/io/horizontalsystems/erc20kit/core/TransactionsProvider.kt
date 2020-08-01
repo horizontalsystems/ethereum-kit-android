@@ -2,13 +2,14 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 
 class TransactionsProvider(private val dataProvider: IDataProvider) : ITransactionsProvider {
 
-    override fun getTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
+    override fun getTransactions(contractAddress: Address, address: Address, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
         return dataProvider.getTransactionLogs(contractAddress, address, startBlock, endBlock)
                 .map { logs ->
                     logs.mapNotNull { getTransactionFromLog(it) }
@@ -17,8 +18,8 @@ class TransactionsProvider(private val dataProvider: IDataProvider) : ITransacti
 
     private fun getTransactionFromLog(log: EthereumLog): Transaction? {
         val value = log.data.hexStringToByteArray().toBigInteger()
-        val from = log.topics[1].hexStringToByteArray().copyOfRange(12, 32)
-        val to = log.topics[2].hexStringToByteArray().copyOfRange(12, 32)
+        val from = Address(log.topics[1].hexStringToByteArray().copyOfRange(12, 32))
+        val to = Address(log.topics[2].hexStringToByteArray().copyOfRange(12, 32))
 
         val transaction = Transaction(
                 transactionHash = log.transactionHash.hexStringToByteArray(),

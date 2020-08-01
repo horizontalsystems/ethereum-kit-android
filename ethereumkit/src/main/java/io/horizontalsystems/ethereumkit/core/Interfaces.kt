@@ -38,13 +38,13 @@ interface IBlockchain {
     val balance: BigInteger?
 
     fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
-    fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
+    fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
     fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus>
     fun transactionExist(transactionHash: ByteArray): Single<Boolean>
 
-    fun getLogs(address: ByteArray?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
-    fun getStorageAt(contractAddress: ByteArray, position: ByteArray, blockNumber: Long): Single<ByteArray>
-    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<ByteArray>
+    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
+    fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray>
+    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<ByteArray>
 }
 
 interface IBlockchainListener {
@@ -64,11 +64,11 @@ interface IRpcApiProvider {
 
     fun send(signedTransaction: ByteArray): Single<Unit>
 
-    fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String>
-    fun getLogs(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>>
+    fun getStorageAt(contractAddress: Address, position: String, blockNumber: Long?): Single<String>
+    fun getLogs(address: Address?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>>
     fun getBlock(blockNumber: Long): Single<Block>
-    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String>
-    fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long>
+    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<String>
+    fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long>
     fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus>
     fun transactionExist(transactionHash: ByteArray): Single<Boolean>
 }

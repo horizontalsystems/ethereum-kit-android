@@ -1,8 +1,9 @@
 package io.horizontalsystems.ethereumkit.spv.net.handlers
 
 import io.horizontalsystems.ethereumkit.core.toRawHexString
-import io.horizontalsystems.ethereumkit.spv.core.*
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.spv.core.*
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -17,7 +18,7 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 class AccountStateTaskHandler(private var listener: Listener? = null) : ITaskHandler, IMessageHandler {
 
     interface Listener {
-        fun didReceive(accountState: AccountState, address: ByteArray, blockHeader: BlockHeader)
+        fun didReceive(accountState: AccountState, address: Address, blockHeader: BlockHeader)
     }
 
     private val tasks: MutableMap<Long, AccountStateTask> = HashMap()
@@ -54,7 +55,7 @@ class AccountStateTaskHandler(private var listener: Listener? = null) : ITaskHan
             lastNodeKey = lastNode.hash
         }
 
-        val addressHash = CryptoUtils.sha3(task.address)
+        val addressHash = CryptoUtils.sha3(task.address.raw)
 
         check(addressHash.toRawHexString() == path) {
             throw ProofError.PathDoesNotMatchAddressHash()
@@ -76,7 +77,7 @@ class AccountStateTaskHandler(private var listener: Listener? = null) : ITaskHan
 
         tasks[requestId] = task
 
-        val message = GetProofsMessage(requestId, task.blockHeader.hashHex, task.address)
+        val message = GetProofsMessage(requestId, task.blockHeader.hashHex, task.address.raw)
 
         requester.send(message)
 

@@ -1,11 +1,12 @@
 package io.horizontalsystems.erc20kit.core
 
+import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 
-class BalanceManager(private val contractAddress: ByteArray,
-                     private val address: ByteArray,
+class BalanceManager(private val contractAddress: Address,
+                     private val address: Address,
                      private val storage: ITokenBalanceStorage,
                      private val dataProvider: IDataProvider) : IBalanceManager {
 

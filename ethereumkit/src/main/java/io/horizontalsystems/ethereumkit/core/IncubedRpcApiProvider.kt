@@ -6,6 +6,7 @@ import in3.Proof
 import in3.eth1.Block.LATEST
 import in3.eth1.LogFilter
 import in3.eth1.TransactionRequest
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
@@ -16,7 +17,7 @@ import java.util.logging.Logger
 
 class IncubedRpcApiProvider(
         private val networkType: EthereumKit.NetworkType,
-        private val address: ByteArray
+        private val address: Address
 ) : IRpcApiProvider {
 
     private val logger = Logger.getLogger("IncubedRpcApiProvider")
@@ -56,7 +57,7 @@ class IncubedRpcApiProvider(
         logger.info("IncubedRpcApiProvider: getTransactionCount")
         return Single.fromCallable {
             serialExecute {
-                eth1.getTransactionCount(address.toHexString(), LATEST).toLong()
+                eth1.getTransactionCount(address.hex, LATEST).toLong()
             }
         }
     }
@@ -65,7 +66,7 @@ class IncubedRpcApiProvider(
         logger.info("IncubedRpcApiProvider: getBalance")
         return Single.fromCallable {
             serialExecute {
-                eth1.getBalance(address.toHexString(), LATEST)
+                eth1.getBalance(address.hex, LATEST)
             }
         }
     }
@@ -80,17 +81,17 @@ class IncubedRpcApiProvider(
 
     }
 
-    override fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
+    override fun getStorageAt(contractAddress: Address, position: String, blockNumber: Long?): Single<String> {
         logger.info("IncubedRpcApiProvider: getStorageAt")
         return Single.fromCallable {
             serialExecute {
-                eth1.getStorageAt(contractAddress.toHexString(), position.toBigInteger(), blockNumber
+                eth1.getStorageAt(contractAddress.hex, position.toBigInteger(), blockNumber
                         ?: LATEST)
             }
         }
     }
 
-    override fun getLogs(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>> {
+    override fun getLogs(address: Address?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>> {
         logger.info("IncubedRpcApiProvider: getLogs")
 
         return Single.fromCallable {
@@ -110,9 +111,9 @@ class IncubedRpcApiProvider(
         }
     }
 
-    private fun getLogsBlocking(address: ByteArray?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): List<EthereumLog> {
+    private fun getLogsBlocking(address: Address?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): List<EthereumLog> {
         val logFilter = LogFilter().apply {
-            this.address = address?.toHexString()
+            this.address = address?.hex
             this.fromBlock = fromBlock
             this.toBlock = toBlock
             this.topics = Array(topics.size) { topics[it]?.toHexString() }
@@ -134,12 +135,12 @@ class IncubedRpcApiProvider(
         }
     }
 
-    override fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+    override fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<String> {
         logger.info("IncubedRpcApiProvider: call")
         return Single.fromCallable {
             serialExecute {
                 val request = TransactionRequest().apply {
-                    this.to = contractAddress.toHexString()
+                    this.to = contractAddress.hex
                     this.data = data.toHexString()
 
                 }
@@ -149,13 +150,13 @@ class IncubedRpcApiProvider(
         }
     }
 
-    override fun estimateGas(to: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
+    override fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long> {
         logger.info("IncubedRpcApiProvider: estimateGas")
         return Single.fromCallable {
             serialExecute {
                 val request = TransactionRequest().apply {
-                    this.from = address.toHexString()
-                    this.to = to
+                    this.from = address.hex
+                    this.to = to.hex
                     value?.let { this.value = it }
                     gasLimit?.let { this.gas = it }
                     gasPrice?.let { this.gasPrice = it }

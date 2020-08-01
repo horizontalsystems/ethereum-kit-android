@@ -4,10 +4,10 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
-import io.horizontalsystems.ethereumkit.api.models.etherscan.*
+import io.horizontalsystems.ethereumkit.api.models.etherscan.EtherscanResponse
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.retryWhenError
-import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -61,20 +61,20 @@ class EtherscanService(private val networkType: NetworkType,
         service = retrofit.create(EtherscanServiceAPI::class.java)
     }
 
-    fun getTransactionList(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
-        return service.getTransactionList("account", "txList", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+    fun getTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTransactionList("account", "txList", address.hex, startBlock, 99_999_999, "desc", apiKey)
                 .map { parseResponse(it) }
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
-    fun getInternalTransactionList(address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
-        return service.getTransactionList("account", "txlistinternal", address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+    fun getInternalTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTransactionList("account", "txlistinternal", address.hex, startBlock, 99_999_999, "desc", apiKey)
                 .map { parseResponse(it) }
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
-    fun getTokenTransactions(contractAddress: ByteArray, address: ByteArray, startBlock: Long): Single<EtherscanResponse> {
-        return service.getTokenTransactions("account", "tokentx", contractAddress.toHexString(), address.toHexString(), startBlock, 99_999_999, "desc", apiKey)
+    fun getTokenTransactions(contractAddress: Address, address: Address, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTokenTransactions("account", "tokentx", contractAddress.hex, address.hex, startBlock, 99_999_999, "desc", apiKey)
                 .map { parseResponse(it) }
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }

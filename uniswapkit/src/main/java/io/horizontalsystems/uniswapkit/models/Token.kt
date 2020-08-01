@@ -1,29 +1,29 @@
 package io.horizontalsystems.uniswapkit.models
 
-import io.horizontalsystems.ethereumkit.core.toRawHexString
+import io.horizontalsystems.ethereumkit.models.Address
 import java.util.*
 
 sealed class Token(
-        val address: ByteArray,
+        val address: Address,
         val decimals: Int,
         val isEther: Boolean = false) {
 
-    class Ether(wethAddress: ByteArray) : Token(wethAddress, 18, true)
-    class Erc20(address: ByteArray, decimals: Int) : Token(address, decimals)
+    class Ether(wethAddress: Address) : Token(wethAddress, 18, true)
+    class Erc20(address: Address, decimals: Int) : Token(address, decimals)
 
     fun sortsBefore(token: Token): Boolean {
-        return address.toRawHexString() < token.address.toRawHexString()
+        return address.hex < token.address.hex
     }
 
     override fun equals(other: Any?): Boolean {
         if (other !is Token)
             return false
 
-        return decimals == other.decimals && isEther == other.isEther && address.contentEquals(other.address)
+        return decimals == other.decimals && isEther == other.isEther && address == other.address
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(isEther, decimals, address.contentHashCode())
+        return Objects.hash(isEther, decimals, address.hashCode())
     }
 
     override fun toString(): String {

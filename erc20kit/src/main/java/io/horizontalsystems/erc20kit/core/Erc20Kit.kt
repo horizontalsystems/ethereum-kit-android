@@ -2,11 +2,10 @@ package io.horizontalsystems.erc20kit.core
 
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
-import io.horizontalsystems.erc20kit.models.TokenError
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.ValidationError
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
@@ -62,15 +61,6 @@ class Erc20Kit(
     val balance: BigInteger?
         get() = state.balance
 
-    @Throws(TokenError::class)
-    private fun convert(address: String): ByteArray {
-        try {
-            return address.hexStringToByteArray()
-        } catch (e: Exception) {
-            throw TokenError.InvalidAddress()
-        }
-    }
-
     @Throws(ValidationError::class)
     private fun convertValue(value: String): BigInteger {
         try {
@@ -85,18 +75,18 @@ class Erc20Kit(
         transactionManager.sync()
     }
 
-    fun estimateGas(toAddress: String?, contractAddress: String, value: BigInteger, gasPrice: Long?): Single<Long> {
+    fun estimateGas(toAddress: Address?, contractAddress: Address, value: BigInteger, gasPrice: Long?): Single<Long> {
         // without address - provide default gas limit
         if (toAddress == null) {
             return Single.just(ethereumKit.defaultGasLimit)
         }
 
-        val transactionInput = transactionManager.getTransactionInput(convert(toAddress), value)
+        val transactionInput = transactionManager.getTransactionInput(toAddress, value)
         return ethereumKit.estimateGas(contractAddress, null, gasPrice, transactionInput)
     }
 
-    fun send(to: String, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return transactionManager.send(convert(to), convertValue(value), gasPrice, gasLimit)
+    fun send(to: Address, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        return transactionManager.send(to, convertValue(value), gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
                     state.transactionsSubject.onNext(listOf(txInfo))
@@ -156,10 +146,9 @@ class Erc20Kit(
 
         fun getInstance(context: Context,
                         ethereumKit: EthereumKit,
-                        contractAddress: String): Erc20Kit {
+                        contractAddress: Address): Erc20Kit {
 
-            val contractAddressRaw = contractAddress.hexStringToByteArray()
-            val address = ethereumKit.receiveAddressRaw
+            val address = ethereumKit.receiveAddress
 
             val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId, contractAddress)
             val roomStorage = Erc20Storage(erc20KitDatabase)
@@ -169,8 +158,8 @@ class Erc20Kit(
             val dataProvider: IDataProvider = DataProvider(ethereumKit)
             val transactionsProvider = EtherscanTransactionsProvider(EtherscanService(ethereumKit.networkType, ethereumKit.etherscanKey)) // TransactionsProvider(dataProvider)
             val transactionBuilder: ITransactionBuilder = TransactionBuilder()
-            val transactionManager: ITransactionManager = TransactionManager(contractAddressRaw, address, transactionStorage, transactionsProvider, dataProvider, transactionBuilder)
-            val balanceManager: IBalanceManager = BalanceManager(contractAddressRaw, address, balanceStorage, dataProvider)
+            val transactionManager: ITransactionManager = TransactionManager(contractAddress, address, transactionStorage, transactionsProvider, dataProvider, transactionBuilder)
+            val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
 
             val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager)
 

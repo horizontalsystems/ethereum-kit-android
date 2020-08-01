@@ -1,6 +1,7 @@
 package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -17,7 +18,7 @@ class UniswapKit(
         return tokenFactory.etherToken()
     }
 
-    fun token(contractAddress: ByteArray, decimals: Int): Token {
+    fun token(contractAddress: Address, decimals: Int): Token {
         return tokenFactory.token(contractAddress, decimals)
     }
 
@@ -60,7 +61,7 @@ class UniswapKit(
                 tokenAmountOut
         ).sorted()
 
-        logger.info("bestTradeExactOut trades  ${sortedTrades.size}):")
+        logger.info("bestTradeExactOut trades  (${sortedTrades.size}):")
         sortedTrades.forEachIndexed { index, trade ->
             logger.info("$index: {in: ${trade.tokenAmountIn}, out: ${trade.tokenAmountOut}, impact: ${trade.priceImpact}, pathSize: ${trade.route.path.size}")
         }

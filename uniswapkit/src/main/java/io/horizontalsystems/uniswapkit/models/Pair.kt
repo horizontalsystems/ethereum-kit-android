@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit.models
 
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.uniswapkit.PairError
 import java.math.BigInteger
 
@@ -80,13 +81,13 @@ class Pair(
     }
 
     companion object {
-        fun address(token0: Token, token1: Token): ByteArray {
+        fun address(token0: Token, token1: Token): Address {
             val data = "0xff".hexStringToByteArray() +
                     "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f".hexStringToByteArray() +
-                    CryptoUtils.sha3(token0.address + token1.address) +
+                    CryptoUtils.sha3(token0.address.raw + token1.address.raw) +
                     "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f".hexStringToByteArray()
 
-            return CryptoUtils.sha3(data).copyOfRange(12, 32)
+            return Address(CryptoUtils.sha3(data).copyOfRange(12, 32))
         }
     }
 

@@ -1,6 +1,7 @@
 package io.horizontalsystems.erc20kit.models
 
 import androidx.room.Entity
+import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 import java.util.*
 
@@ -8,8 +9,8 @@ import java.util.*
 class Transaction(var transactionHash: ByteArray,
                   var interTransactionIndex: Int = 0,
                   var transactionIndex: Int? = null,
-                  val from: ByteArray,
-                  val to: ByteArray,
+                  val from: Address,
+                  val to: Address,
                   val value: BigInteger,
                   var timestamp: Long = System.currentTimeMillis() / 1000,
                   var isError: Boolean = false) {

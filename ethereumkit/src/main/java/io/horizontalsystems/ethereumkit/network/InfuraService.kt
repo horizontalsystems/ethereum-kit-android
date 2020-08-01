@@ -9,6 +9,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.removeLeadingZeros
 import io.horizontalsystems.ethereumkit.core.stripHexPrefix
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Block
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
@@ -25,7 +26,6 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
 import java.math.BigInteger
-import java.util.*
 import java.util.logging.Logger
 
 class InfuraService(
@@ -92,8 +92,8 @@ class InfuraService(
         }
     }
 
-    fun getTransactionCount(address: ByteArray): Single<Long> {
-        val request = Request("eth_getTransactionCount", listOf(address.toHexString(), "pending"))
+    fun getTransactionCount(address: Address): Single<Long> {
+        val request = Request("eth_getTransactionCount", listOf(address.hex, "pending"))
         return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it).map { txCount ->
                 txCount.toLong()
@@ -101,8 +101,8 @@ class InfuraService(
         }
     }
 
-    fun getBalance(address: ByteArray): Single<BigInteger> {
-        val request = Request("eth_getBalance", listOf(address.toHexString(), "latest"))
+    fun getBalance(address: Address): Single<BigInteger> {
+        val request = Request("eth_getBalance", listOf(address.hex, "latest"))
         return service.makeRequestForBigInteger(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
@@ -115,7 +115,7 @@ class InfuraService(
         }.map { Unit }
     }
 
-    fun getLogs(address: ByteArray?, fromBlock: Long?, toBlock: Long?,
+    fun getLogs(address: Address?, fromBlock: Long?, toBlock: Long?,
                 topics: List<ByteArray?>): Single<List<EthereumLog>> {
         val fromBlockStr = fromBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "earliest"
         val toBlockStr = toBlock?.toBigInteger()?.toString(16)?.let { "0x$it" } ?: "latest"
@@ -125,7 +125,7 @@ class InfuraService(
                 "topics" to topics.map { it?.toHexString() })
 
         address?.let {
-            params["address"] = address.toHexString()
+            params["address"] = address.hex
         }
 
         val request = Request("eth_getLogs", listOf(params))
@@ -135,8 +135,8 @@ class InfuraService(
         }
     }
 
-    fun getStorageAt(contractAddress: ByteArray, position: String, blockNumber: Long?): Single<String> {
-        val request = Request("eth_getStorageAt", listOf(contractAddress.toHexString(), position, "latest"))
+    fun getStorageAt(contractAddress: Address, position: String, blockNumber: Long?): Single<String> {
+        val request = Request("eth_getStorageAt", listOf(contractAddress.hex, position, "latest"))
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
@@ -156,7 +156,7 @@ class InfuraService(
                     txStatusMap["status"]?.let { statusStr ->
                         val success = Integer.parseInt(statusStr.stripHexPrefix(), 16)
 
-                        if(success == 0)
+                        if (success == 0)
                             Single.just(TransactionStatus.SUCCESS)
                         else
                             Single.just(TransactionStatus.FAILED)
@@ -179,11 +179,9 @@ class InfuraService(
         }
     }
 
-    fun estimateGas(fromAddress: String?, toAddress: String, value: BigInteger?, gasLimit: Long?, gasPrice: Long?,
-                    data: String?): Single<String> {
-
-        val params: MutableMap<String, String> = mutableMapOf("to" to toAddress.toLowerCase(Locale.ENGLISH))
-        fromAddress?.let { params.put("from", fromAddress.toLowerCase(Locale.ENGLISH)) }
+    fun estimateGas(from: Address?, to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<String> {
+        val params: MutableMap<String, String> = mutableMapOf("to" to to.hex)
+        from?.let { params.put("from", from.hex) }
         gasLimit?.let { params.put("gas", "0x${gasLimit.toString(16).removeLeadingZeros()}") }
         gasPrice?.let { params.put("gasPrice", "0x${gasPrice.toString(16).removeLeadingZeros()}") }
         value?.let { params.put("value", "0x${value.toString(16).removeLeadingZeros()}") }
@@ -203,10 +201,10 @@ class InfuraService(
         }
     }
 
-    fun call(contractAddress: ByteArray, data: ByteArray, blockNumber: Long?): Single<String> {
+    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<String> {
         val request = Request("eth_call",
-                              listOf(mapOf("to" to contractAddress.toHexString(), "data" to data.toHexString()),
-                                     "latest"))
+                listOf(mapOf("to" to contractAddress.hex, "data" to data.toHexString()),
+                        "latest"))
         return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
             returnResultOrError(it)
         }
