@@ -14,6 +14,9 @@ class UniswapKit(
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
+    val routerAddress: Address
+        get() = TradeManager.routerAddress
+
     fun etherToken(): Token {
         return tokenFactory.etherToken()
     }
@@ -25,7 +28,7 @@ class UniswapKit(
     fun swapData(tokenIn: Token, tokenOut: Token): Single<SwapData> {
         val tokenPairs = pairSelector.tokenPairs(tokenIn, tokenOut)
         val singles = tokenPairs.map { (tokenA, tokenB) ->
-            tradeManager.getPair(tokenA, tokenB)
+            tradeManager.pair(tokenA, tokenB)
         }
 
         return Single.zip(singles) { array ->
@@ -72,8 +75,12 @@ class UniswapKit(
         return TradeData(trade, options)
     }
 
-    fun swap(tradeData: TradeData, gasData: GasData): Single<String> {
-        return tradeManager.swap(tradeData, gasData)
+    fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
+        return tradeManager.estimateSwap(tradeData, gasPrice)
+    }
+
+    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<String> {
+        return tradeManager.swap(tradeData, gasPrice, gasLimit)
     }
 
     companion object {

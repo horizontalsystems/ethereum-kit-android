@@ -63,5 +63,5 @@ interface IDataProvider {
 }
 
 interface ITransactionBuilder {
-    fun transferTransactionInput(toAddress: Address, value: BigInteger): ByteArray
+    fun transferTransactionInput(to: Address, value: BigInteger): ByteArray
 }

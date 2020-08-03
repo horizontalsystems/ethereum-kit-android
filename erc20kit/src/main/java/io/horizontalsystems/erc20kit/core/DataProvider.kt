@@ -1,17 +1,21 @@
 package io.horizontalsystems.erc20kit.core
 
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.AddressArgument
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
-import io.horizontalsystems.ethereumkit.network.ERC20
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.reactivex.Single
 import java.math.BigInteger
 
 class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
+
+    private val transferEventTopic = CryptoUtils.sha3("Transfer(address,address,uint256)".toByteArray())
 
     override val lastBlockHeight: Long
         get() = ethereumKit.lastBlockHeight ?: 0
@@ -20,8 +24,8 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
                                     to: Long): Single<List<EthereumLog>> {
         val addressTopic = ByteArray(12) + address.raw
 
-        val outgoingTopics = listOf(ERC20.transferEventTopic, addressTopic)
-        val incomingTopics = listOf(ERC20.transferEventTopic, null, addressTopic)
+        val outgoingTopics = listOf(transferEventTopic, addressTopic)
+        val incomingTopics = listOf(transferEventTopic, null, addressTopic)
 
         val outgoingLogsRequest = ethereumKit.getLogs(contractAddress, outgoingTopics, from, to, true)
         val incomingLogsRequest = ethereumKit.getLogs(contractAddress, incomingTopics, from, to, true)
@@ -39,7 +43,7 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
                     }
                     logs.filter { log ->
                         log.topics.count() == 3
-                                && log.topics[0] == ERC20.transferEventTopic.toHexString()
+                                && log.topics[0] == transferEventTopic.toHexString()
                                 && log.topics[1].hexStringToByteArray().count() == 32
                                 && log.topics[2].hexStringToByteArray().count() == 32
                     }
@@ -68,9 +72,9 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     }
 
     override fun getBalance(contractAddress: Address, address: Address): Single<BigInteger> {
-        val balanceOfData = ERC20.encodeFunctionBalanceOf(address)
+        val method = ContractMethod("balanceOf", listOf(AddressArgument(address)))
 
-        return ethereumKit.call(contractAddress, balanceOfData)
+        return ethereumKit.call(contractAddress, method.encodedABI())
                 .map { it.toBigInteger() }
     }
 

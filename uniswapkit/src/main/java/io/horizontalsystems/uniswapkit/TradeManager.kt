@@ -1,10 +1,11 @@
 package io.horizontalsystems.uniswapkit
 
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.uniswapkit.ContractMethod.Argument
-import io.horizontalsystems.uniswapkit.ContractMethod.Argument.*
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
 import io.horizontalsystems.uniswapkit.models.Token.Ether
@@ -19,7 +20,7 @@ class TradeManager(
     private val address: Address = ethereumKit.receiveAddress
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
-    fun getPair(tokenA: Token, tokenB: Token): Single<Pair> {
+    fun pair(tokenA: Token, tokenB: Token): Single<Pair> {
         val method = ContractMethod("getReserves")
 
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
@@ -49,7 +50,29 @@ class TradeManager(
                 }
     }
 
-    fun swap(tradeData: TradeData, gasData: GasData): Single<String> {
+    fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
+        val swapData = buildSwapData(tradeData)
+
+        return ethereumKit.estimateGas(
+                to = routerAddress,
+                value = if (swapData.amount == BigInteger.ZERO) null else swapData.amount,
+                gasPrice = gasPrice,
+                data = swapData.input
+        )
+    }
+
+    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<String> {
+        val swapData = buildSwapData(tradeData)
+
+        return ethereumKit.send(routerAddress, swapData.amount, swapData.input, gasPrice, gasLimit)
+                .map { txInfo ->
+                    txInfo.hash
+                }
+    }
+
+    private class SwapData(val amount: BigInteger, val input: ByteArray)
+
+    private fun buildSwapData(tradeData: TradeData): SwapData {
         val methodName: String
         val arguments: List<Argument>
         val amount: BigInteger
@@ -62,7 +85,6 @@ class TradeManager(
         val path = AddressesArgument(trade.route.path.map { it.address })
         val to = AddressArgument(tradeData.options.recipient ?: address)
         val deadline = Uint256Argument((Date().time / 1000 + tradeData.options.ttl).toBigInteger())
-        val gasPrice = gasData.gasPrice
 
         when (trade.type) {
             TradeType.ExactIn -> {
@@ -108,32 +130,14 @@ class TradeManager(
         val method = ContractMethod(methodName, arguments)
 
         return if (tokenIn.isEther) {
-            swap(amount, method.encodedABI(), gasPrice, gasData.swapGasLimit)
+            SwapData(amount, method.encodedABI())
         } else {
-            val approveGasLimit = gasData.approveGasLimit ?: throw TradeError.GasLimitNull()
-            swapWithApprove(tokenIn.address, amount, gasPrice, approveGasLimit, swap(BigInteger.ZERO, method.encodedABI(), gasPrice, gasData.swapGasLimit))
+            SwapData(BigInteger.ZERO, method.encodedABI())
         }
     }
 
-    private fun swap(value: BigInteger, input: ByteArray, gasPrice: Long, gasLimit: Long): Single<String> {
-        return ethereumKit.send(routerAddress, value, input, gasPrice, gasLimit)
-                .map { txInfo ->
-                    logger.info("Swap tx hash: ${txInfo.hash}")
-                    txInfo.hash
-                }
-    }
-
-    private fun swapWithApprove(contractAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long, swapSingle: Single<String>): Single<String> {
-        val approveTransactionInput = ContractMethod("approve", listOf(AddressArgument(routerAddress), Uint256Argument(amount))).encodedABI()
-        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveTransactionInput, gasPrice, gasLimit)
-                .flatMap { txInfo ->
-                    logger.info("Approve tx hash: ${txInfo.hash}")
-                    swapSingle
-                }
-    }
-
     companion object {
-        private val routerAddress = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+        val routerAddress = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
 
         fun tradeExactIn(pairs: List<Pair>, tokenAmountIn: TokenAmount, tokenOut: Token, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountIn: TokenAmount? = null): List<Trade> {
             //todo validations
