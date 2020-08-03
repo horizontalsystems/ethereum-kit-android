@@ -59,22 +59,16 @@ class Erc20Adapter(
         erc20Kit.refresh()
     }
 
-    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal): Single<Long> {
-        val poweredDecimal = value.scaleByPowerOfTen(decimals)
-        val noScaleDecimal = poweredDecimal.setScale(0)
-
-        return erc20Kit.estimateGas(toAddress = toAddress, contractAddress = contractAddress, value = noScaleDecimal.toBigInteger(), gasPrice = 5_000_000_000)
+    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal, gasPrice: Long?): Single<Long> {
+        return erc20Kit.estimateGas(toAddress, contractAddress, value.movePointRight(decimals).toBigInteger(), gasPrice)
     }
 
-    override fun send(address: Address, amount: BigDecimal, gasLimit: Long): Single<Unit> {
-        val poweredDecimal = amount.scaleByPowerOfTen(decimals)
-        val noScaleDecimal = poweredDecimal.setScale(0)
-
-        return erc20Kit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
+    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
+        return erc20Kit.send(address, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map { Unit }
     }
 
-    override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
-        return erc20Kit.transactions(from?.let { TransactionKey(from.first.hexStringToByteArray(), from.second) }, limit)
+    override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+        return erc20Kit.transactions(from?.let { TransactionKey(from.first, from.second) }, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }

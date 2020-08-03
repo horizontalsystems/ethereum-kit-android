@@ -228,9 +228,9 @@ class MainViewModel : ViewModel() {
 
     fun estimateGas(toAddress: String?, value: BigDecimal, isErc20: Boolean) {
         val estimateSingle = if (isErc20)
-            erc20Adapter.estimatedGasLimit(toAddress?.let { Address(it) }, value)
+            erc20Adapter.estimatedGasLimit(toAddress?.let { Address(it) }, value, gasPrice)
         else
-            ethereumAdapter.estimatedGasLimit(toAddress?.let { Address(it) }, value)
+            ethereumAdapter.estimatedGasLimit(toAddress?.let { Address(it) }, value, gasPrice)
 
         estimateSingle.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -245,7 +245,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun send(toAddress: String, amount: BigDecimal) {
-        ethereumAdapter.send(address = Address(toAddress), amount = amount, gasLimit = estimateGasLimit)
+        ethereumAdapter.send(Address(toAddress), amount, gasPrice, estimateGasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -263,7 +263,7 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(toAddress: String, amount: BigDecimal) {
-        erc20Adapter.send(Address(toAddress), amount, estimateGasLimit)
+        erc20Adapter.send(Address(toAddress), amount, gasPrice, estimateGasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
@@ -276,10 +276,9 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val txMethod = if (ethTx) ethereumAdapter.transactions() else erc20Adapter.transactions()
+        val transactionsSingle = if (ethTx) ethereumAdapter.transactions() else erc20Adapter.transactions()
 
-        txMethod
-                .observeOn(AndroidSchedulers.mainThread())
+        transactionsSingle.observeOn(AndroidSchedulers.mainThread())
                 .subscribe { txList: List<TransactionRecord> ->
                     transactions.value = txList
                 }.let {
@@ -398,5 +397,3 @@ data class Erc20Token(
         val code: String,
         val contractAddress: Address,
         val decimals: Int)
-
-
