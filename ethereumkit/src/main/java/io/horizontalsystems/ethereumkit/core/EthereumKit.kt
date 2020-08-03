@@ -179,8 +179,7 @@ class EthereumKit(
                 .map { TransactionInfo(TransactionWithInternal(it)) }
     }
 
-    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long,
-                pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 

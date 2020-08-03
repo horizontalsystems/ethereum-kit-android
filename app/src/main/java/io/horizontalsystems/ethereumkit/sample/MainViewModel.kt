@@ -13,7 +13,10 @@ import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.uniswapkit.UniswapKit
-import io.horizontalsystems.uniswapkit.models.*
+import io.horizontalsystems.uniswapkit.models.SwapData
+import io.horizontalsystems.uniswapkit.models.Token
+import io.horizontalsystems.uniswapkit.models.TradeData
+import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -25,11 +28,6 @@ class MainViewModel : ViewModel() {
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val contractAddress = Address("0xad6d458402f60fd3bd25163575031acdce07538d") // DAI
-
-    //    private val contractAddress = "0xbb74a24d83470f64d5f0c01688fbb49a5a251b32" // GMOLW
-//    private val contractAddress = "0xb603cea165119701b58d56d10d2060fbfb3efad8" // WETH
-    private val contractDecimal = 18
     private val networkType: NetworkType = NetworkType.Ropsten
     private val walletId = "walletId"
     private var estimateGasLimit: Long = 0
@@ -56,10 +54,18 @@ class MainViewModel : ViewModel() {
     private val gasPrice: Long = 50_000_000_000
 
     private lateinit var uniswapKit: UniswapKit
+    private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
     var swapData = MutableLiveData<SwapData?>()
     var tradeData = MutableLiveData<TradeData?>()
-
     val swapStatus = SingleLiveEvent<Throwable?>()
+
+    val tokens = listOf(
+            Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
+            Erc20Token("GMO coins", "GMOLW", Address("0xbb74a24d83470f64d5f0c01688fbb49a5a251b32"), 18),
+            Erc20Token("DAI-MAINNET", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18)
+    )
+    val fromToken: Erc20Token? = tokens[0]
+    val toToken: Erc20Token? = null //tokens[0]
 
     fun init() {
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
@@ -73,7 +79,7 @@ class MainViewModel : ViewModel() {
         ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, rpcApi, etherscanKey, walletId)
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
-        erc20Adapter = Erc20Adapter(App.instance, ethereumKit, "DAI", "DAI", contractAddress, contractDecimal)
+        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: tokens.first(), ethereumKit)
 
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
@@ -285,13 +291,10 @@ class MainViewModel : ViewModel() {
     // SWAP
     //
 
-    private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
-    private val swapGasLimit = 500_000L
-    private val approveGasLimit = 500_000L
 
-    fun syncSwapData(erc20TokenIn: Erc20Token?, erc20TokenOut: Erc20Token?) {
-        val tokenIn = uniswapToken(erc20TokenIn)
-        val tokenOut = uniswapToken(erc20TokenOut)
+    fun syncSwapData() {
+        val tokenIn = uniswapToken(fromToken)
+        val tokenOut = uniswapToken(toToken)
 
         uniswapKit.swapData(tokenIn, tokenOut)
                 .subscribeOn(Schedulers.io())
@@ -300,6 +303,38 @@ class MainViewModel : ViewModel() {
                     swapData.value = it
                 }, {
                     logger.warning("swapData ERROR = ${it.message}")
+                }).let {
+                    disposables.add(it)
+                }
+    }
+
+    fun syncAllowance() {
+        erc20Adapter.allowance(uniswapKit.routerAddress)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    logger.info("allowance: ${it.toPlainString()}")
+                }, {
+                    logger.warning("swapData ERROR = ${it.message}")
+                }).let {
+                    disposables.add(it)
+                }
+    }
+
+    fun approve(amount: BigDecimal) {
+        val spenderAddress = uniswapKit.routerAddress
+
+        erc20Adapter.estimateApprove(spenderAddress, amount, gasPrice)
+                .flatMap { gasLimit ->
+                    logger.info("gas limit: $gasLimit")
+                    erc20Adapter.approve(spenderAddress, amount, gasPrice, gasLimit)
+                }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ txHash ->
+                    logger.info("approve: $txHash")
+                }, {
+                    logger.warning("approve ERROR = ${it.message}")
                 }).let {
                     disposables.add(it)
                 }
@@ -338,7 +373,11 @@ class MainViewModel : ViewModel() {
 
     fun swap() {
         tradeData.value?.let { tradeData ->
-            uniswapKit.swap(tradeData, GasData(gasPrice, swapGasLimit, approveGasLimit))
+            uniswapKit.estimateSwap(tradeData, gasPrice)
+                    .flatMap { gasLimit ->
+                        logger.info("gas limit: $gasLimit")
+                        uniswapKit.swap(tradeData, gasPrice, gasLimit)
+                    }
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({

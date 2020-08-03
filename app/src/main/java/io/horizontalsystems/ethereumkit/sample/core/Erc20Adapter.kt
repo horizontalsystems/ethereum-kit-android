@@ -7,20 +7,23 @@ import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.sample.Erc20Token
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
 
 class Erc20Adapter(
         context: Context,
-        private val ethereumKit: EthereumKit,
-        override val name: String,
-        override val coin: String,
-        private val contractAddress: Address,
-        private val decimal: Int)
-    : IAdapter {
+        token: Erc20Token,
+        private val ethereumKit: EthereumKit
+) : IAdapter {
 
+    private val contractAddress: Address = token.contractAddress
+    private val decimals: Int = token.decimals
     private val erc20Kit = Erc20Kit.getInstance(context, ethereumKit, contractAddress)
+
+    override val name: String = token.name
+    override val coin: String = token.code
 
     override val lastBlockHeight: Long?
         get() = ethereumKit.lastBlockHeight
@@ -32,7 +35,7 @@ class Erc20Adapter(
         get() = convertToEthereumKitSyncState(erc20Kit.transactionsSyncState)
 
     override val balance: BigDecimal
-        get() = erc20Kit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
+        get() = erc20Kit.balance?.toBigDecimal()?.movePointLeft(decimals) ?: BigDecimal.ZERO
 
     override val receiveAddress: Address
         get() = ethereumKit.receiveAddress
@@ -57,14 +60,14 @@ class Erc20Adapter(
     }
 
     override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal): Single<Long> {
-        val poweredDecimal = value.scaleByPowerOfTen(decimal)
+        val poweredDecimal = value.scaleByPowerOfTen(decimals)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
         return erc20Kit.estimateGas(toAddress = toAddress, contractAddress = contractAddress, value = noScaleDecimal.toBigInteger(), gasPrice = 5_000_000_000)
     }
 
     override fun send(address: Address, amount: BigDecimal, gasLimit: Long): Single<Unit> {
-        val poweredDecimal = amount.scaleByPowerOfTen(decimal)
+        val poweredDecimal = amount.scaleByPowerOfTen(decimals)
         val noScaleDecimal = poweredDecimal.setScale(0)
 
         return erc20Kit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
@@ -77,6 +80,18 @@ class Erc20Adapter(
                 }
     }
 
+    fun allowance(spenderAddress: Address): Single<BigDecimal> {
+        return erc20Kit.allowance(spenderAddress).map { allowance -> allowance.toBigDecimal().movePointLeft(decimals) }
+    }
+
+    fun estimateApprove(spenderAddress: Address, amount: BigDecimal, gasPrice: Long): Single<Long> {
+        return erc20Kit.estimateApprove(spenderAddress, amount.movePointRight(decimals).toBigInteger(), gasPrice)
+    }
+
+    fun approve(spenderAddress: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<String> {
+        return erc20Kit.approve(spenderAddress, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit)
+    }
+
     private fun transactionRecord(transaction: TransactionInfo): TransactionRecord {
         val mineAddress = ethereumKit.receiveAddress
 
@@ -86,7 +101,7 @@ class Erc20Adapter(
         var amount: BigDecimal
 
         transaction.value.toBigDecimal().let {
-            amount = it.movePointLeft(decimal)
+            amount = it.movePointLeft(decimals)
             if (from.mine) {
                 amount = -amount
             }
