@@ -6,6 +6,7 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
@@ -79,7 +80,8 @@ class MainViewModel : ViewModel() {
         ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, rpcApi, etherscanKey, walletId)
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
-        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: tokens.first(), ethereumKit)
+        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken
+        ?: tokens.first(), ethereumKit)
 
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
@@ -379,9 +381,9 @@ class MainViewModel : ViewModel() {
                     }
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({
+                    .subscribe({ tx ->
                         swapStatus.value = null
-                        logger.info("swap SUCCESS, txHash=$it")
+                        logger.info("swap SUCCESS, txHash=${tx.transaction.hash.toHexString()}")
                     }, {
                         swapStatus.value = it
                         logger.info("swap ERROR, error=${it.message}")

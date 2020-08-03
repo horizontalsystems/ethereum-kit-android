@@ -6,6 +6,7 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -84,7 +85,7 @@ class Erc20Kit(
         return allowanceManager.estimateApprove(spenderAddress, amount, gasPrice)
     }
 
-    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<String> {
+    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
         return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
     }
 

@@ -1,8 +1,9 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionInfo
+import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -65,15 +66,12 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         }
     }
 
-    private fun transactionRecord(transaction: TransactionInfo): TransactionRecord {
+    private fun transactionRecord(transactionWithInternal: TransactionWithInternal): TransactionRecord {
+        val transaction = transactionWithInternal.transaction
         val mineAddress = ethereumKit.receiveAddress
 
-        val fromAddressHex = transaction.from
-        val from = TransactionAddress(fromAddressHex, Address(fromAddressHex) == mineAddress)
-
-        val toAddressHex = transaction.to
-        val to = TransactionAddress(toAddressHex, Address(toAddressHex) == mineAddress)
-
+        val from = TransactionAddress(transaction.from.hex, transaction.from == mineAddress)
+        val to = TransactionAddress(transaction.to.hex, transaction.to == mineAddress)
         var amount: BigDecimal
 
         transaction.value.toBigDecimal().let {
@@ -83,16 +81,14 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
             }
         }
 
-        transaction.internalTransactions.forEach { internalTransaction ->
-            var internalAmount = internalTransaction.value.toBigDecimalOrNull()?.movePointLeft(decimal)
-                    ?: BigDecimal.ZERO
-            val outgoing = Address(internalTransaction.from) == receiveAddress
-            internalAmount = if (outgoing) internalAmount.negate() else internalAmount
+        transactionWithInternal.internalTransactions.forEach { internalTransaction ->
+            var internalAmount = internalTransaction.value.toBigDecimal().movePointLeft(decimal)
+            internalAmount = if (internalTransaction.from == receiveAddress) internalAmount.negate() else internalAmount
             amount += internalAmount
         }
 
         return TransactionRecord(
-                transactionHash = transaction.hash,
+                transactionHash = transaction.hash.toHexString(),
                 transactionIndex = transaction.transactionIndex ?: 0,
                 interTransactionIndex = 0,
                 blockHeight = transaction.blockNumber,

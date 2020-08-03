@@ -79,8 +79,8 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     }
 
     override fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray> {
-        return ethereumKit.send(contractAddress, BigInteger.ZERO, transactionInput, gasPrice, gasLimit).map { txInfo ->
-            txInfo.hash.hexStringToByteArray()
+        return ethereumKit.send(contractAddress, BigInteger.ZERO, transactionInput, gasPrice, gasLimit).map { tx ->
+            tx.transaction.hash
         }
     }
 }

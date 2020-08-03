@@ -35,7 +35,7 @@ class TransactionsProvider(
                                         blockNumber = tx["blockNumber"]?.toLongOrNull()
                                         gasUsed = tx["gasUsed"]?.toLongOrNull()
                                         cumulativeGasUsed = tx["cumulativeGasUsed"]?.toLongOrNull()
-                                        iserror = tx["isError"]?.toIntOrNull()
+                                        isError = tx["isError"]?.toIntOrNull()
                                         transactionIndex = tx["transactionIndex"]?.toIntOrNull()
                                         txReceiptStatus = tx["txreceipt_status"]?.toIntOrNull()
                                     }
