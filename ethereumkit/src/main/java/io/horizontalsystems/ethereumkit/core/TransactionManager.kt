@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
@@ -30,8 +30,8 @@ class TransactionManager(
 
     override var listener: ITransactionManagerListener? = null
 
-    private fun update(ethereumTransactions: List<EthereumTransaction>, internalTransactions: List<InternalTransaction>, lastTransactionHash: ByteArray?) {
-        storage.saveTransactions(ethereumTransactions)
+    private fun update(transactions: List<Transaction>, internalTransactions: List<InternalTransaction>, lastTransactionHash: ByteArray?) {
+        storage.saveTransactions(transactions)
         storage.saveInternalTransactions(internalTransactions)
 
         storage.getTransactions(lastTransactionHash, null)
@@ -53,7 +53,7 @@ class TransactionManager(
         Single.zip(
                 transactionsProvider.getTransactions(lastTransactionBlockHeight + 1),
                 transactionsProvider.getInternalTransactions(lastInternalTransactionBlockHeight + 1),
-                BiFunction<List<EthereumTransaction>, List<InternalTransaction>, Pair<List<EthereumTransaction>, List<InternalTransaction>>> { t1, t2 -> Pair(t1, t2) })
+                BiFunction<List<Transaction>, List<InternalTransaction>, Pair<List<Transaction>, List<InternalTransaction>>> { t1, t2 -> Pair(t1, t2) })
                 .subscribeOn(Schedulers.io())
                 .subscribe({
                     update(it.first, it.second, lastTransaction?.hash)
@@ -69,7 +69,7 @@ class TransactionManager(
         return storage.getTransactions(fromHash, limit)
     }
 
-    override fun handle(transaction: EthereumTransaction) {
+    override fun handle(transaction: Transaction) {
         storage.saveTransactions(listOf(transaction))
 
         listener?.onUpdateTransactions(listOf(TransactionWithInternal(transaction)))

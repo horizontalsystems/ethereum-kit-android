@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
@@ -15,10 +15,10 @@ class TransactionBuilder(private val address: Address) {
         return RawTransaction(gasPrice, gasLimit, to, value, transactionInput)
     }
 
-    fun transaction(rawTransaction: RawTransaction, nonce: Long, signature: Signature): EthereumTransaction {
+    fun transaction(rawTransaction: RawTransaction, nonce: Long, signature: Signature): Transaction {
         val transactionHash = CryptoUtils.sha3(encode(rawTransaction, nonce, signature))
 
-        return EthereumTransaction(
+        return Transaction(
                 hash = transactionHash,
                 nonce = nonce,
                 input = rawTransaction.data,

@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.math.BigInteger
 
 @Entity
-class EthereumTransaction(
+ class Transaction(
         @PrimaryKey val hash: ByteArray,
         val nonce: Long,
         val input: ByteArray,
