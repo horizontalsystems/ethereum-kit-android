@@ -112,8 +112,8 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun transactions(fromHash: String? = null, limit: Int? = null): Single<List<TransactionInfo>> {
-        return transactionManager.getTransactions(fromHash?.hexStringToByteArray(), limit)
+    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<TransactionInfo>> {
+        return transactionManager.getTransactions(fromHash, limit)
                 .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
@@ -150,17 +150,8 @@ class EthereumKit(
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    @Throws(ValidationError::class)
-    private fun convertValue(value: String): BigInteger {
-        try {
-            return value.toBigInteger()
-        } catch (e: Exception) {
-            throw ValidationError.InvalidValue
-        }
-    }
-
-    fun send(to: Address, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return send(to, convertValue(value), ByteArray(0), gasPrice, gasLimit)
+    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        return send(to, value, ByteArray(0), gasPrice, gasLimit)
     }
 
     fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {

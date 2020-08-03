@@ -6,7 +6,6 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.ValidationError
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -62,15 +61,6 @@ class Erc20Kit(
     val balance: BigInteger?
         get() = state.balance
 
-    @Throws(ValidationError::class)
-    private fun convertValue(value: String): BigInteger {
-        try {
-            return value.toBigInteger()
-        } catch (e: Exception) {
-            throw ValidationError.InvalidValue
-        }
-    }
-
     fun refresh() {
         state.transactionsSyncState = Syncing
         transactionManager.sync()
@@ -98,8 +88,8 @@ class Erc20Kit(
         return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
     }
 
-    fun send(to: Address, value: String, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
-        return transactionManager.send(to, convertValue(value), gasPrice, gasLimit)
+    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+        return transactionManager.send(to, value, gasPrice, gasLimit)
                 .map { TransactionInfo(it) }
                 .doOnSuccess { txInfo ->
                     state.transactionsSubject.onNext(listOf(txInfo))

@@ -51,21 +51,15 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         ethereumKit.refresh()
     }
 
-    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal): Single<Long> {
-        val poweredDecimal = value.scaleByPowerOfTen(decimal)
-        val noScaleDecimal = poweredDecimal.setScale(0)
-
-        return ethereumKit.estimateGas(toAddress, noScaleDecimal.toBigInteger(), 5_000_000_000)
+    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal, gasPrice: Long?): Single<Long> {
+        return ethereumKit.estimateGas(toAddress, value.movePointRight(decimal).toBigInteger(), gasPrice)
     }
 
-    override fun send(address: Address, amount: BigDecimal, gasLimit: Long): Single<Unit> {
-        val poweredDecimal = amount.scaleByPowerOfTen(decimal)
-        val noScaleDecimal = poweredDecimal.setScale(0)
-
-        return ethereumKit.send(address, noScaleDecimal.toPlainString(), 5_000_000_000, gasLimit).map { Unit }
+    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
+        return ethereumKit.send(address, amount.movePointRight(decimal).toBigInteger(), gasPrice, gasLimit).map { Unit }
     }
 
-    override fun transactions(from: Pair<String, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+    override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
         return ethereumKit.transactions(from?.first, limit).map { transactions ->
             transactions.map { transactionRecord(it) }
         }
