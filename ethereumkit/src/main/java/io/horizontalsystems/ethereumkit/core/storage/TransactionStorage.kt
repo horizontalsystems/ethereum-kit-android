@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
@@ -9,7 +9,7 @@ import java.math.BigInteger
 
 class TransactionStorage(private val database: TransactionDatabase) : ITransactionStorage {
 
-    override fun getLastTransaction(): EthereumTransaction? {
+    override fun getLastTransaction(): Transaction? {
         return database.transactionDao().getLastTransaction()
     }
 
@@ -17,7 +17,7 @@ class TransactionStorage(private val database: TransactionDatabase) : ITransacti
         return database.transactionDao().getLastInternalTransaction()?.blockNumber
     }
 
-    override fun saveTransactions(transactions: List<EthereumTransaction>) {
+    override fun saveTransactions(transactions: List<Transaction>) {
         database.transactionDao().insert(transactions)
     }
 

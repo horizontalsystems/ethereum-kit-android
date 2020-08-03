@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.spv.core
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.core.TransactionSigner
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.net.handlers.SendTransactionTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.tasks.SendTransactionTask
@@ -13,7 +13,7 @@ class TransactionSender(private val storage: ISpvStorage,
                         private val transactionSigner: TransactionSigner) : SendTransactionTaskHandler.Listener {
 
     interface Listener {
-        fun onSendSuccess(sendId: Int, transaction: EthereumTransaction)
+        fun onSendSuccess(sendId: Int, transaction: Transaction)
         fun onSendFailure(sendId: Int, error: Throwable)
     }
 

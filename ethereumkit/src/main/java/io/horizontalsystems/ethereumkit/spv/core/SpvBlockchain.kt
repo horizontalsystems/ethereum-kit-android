@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.crypto.ECKey
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EthereumLog
-import io.horizontalsystems.ethereumkit.models.EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
@@ -38,7 +38,7 @@ class SpvBlockchain(
 
     private val logger = Logger.getLogger("SpvBlockchain")
 
-    private val sendingTransactions: MutableMap<Int, PublishSubject<EthereumTransaction>> = HashMap()
+    private val sendingTransactions: MutableMap<Int, PublishSubject<Transaction>> = HashMap()
 
     //--------------IBlockchain---------------------
 
@@ -69,11 +69,11 @@ class SpvBlockchain(
     override val balance: BigInteger?
         get() = storage.getAccountState()?.balance
 
-    override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
+    override fun send(rawTransaction: RawTransaction): Single<Transaction> {
         return try {
             val sendId = RandomHelper.randomInt()
             transactionSender.send(sendId, peer, rawTransaction)
-            val subject = PublishSubject.create<EthereumTransaction>()
+            val subject = PublishSubject.create<Transaction>()
             sendingTransactions[sendId] = subject
             Single.fromFuture(subject.toFuture())
 
@@ -148,7 +148,7 @@ class SpvBlockchain(
 
     //---------------TransactionSender.Listener------------------
 
-    override fun onSendSuccess(sendId: Int, transaction: EthereumTransaction) {
+    override fun onSendSuccess(sendId: Int, transaction: Transaction) {
         val subject = sendingTransactions.remove(sendId) ?: return
 
         subject.onNext(transaction)

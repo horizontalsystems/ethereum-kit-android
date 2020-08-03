@@ -61,7 +61,7 @@ class ApiBlockchain(
         disposables.clear()
     }
 
-    override fun send(rawTransaction: RawTransaction): Single<EthereumTransaction> {
+    override fun send(rawTransaction: RawTransaction): Single<Transaction> {
         return rpcApiProvider.getTransactionCount()
                 .flatMap { nonce ->
                     send(rawTransaction, nonce)
@@ -70,7 +70,7 @@ class ApiBlockchain(
                 }
     }
 
-    private fun send(rawTransaction: RawTransaction, nonce: Long): Single<EthereumTransaction> {
+    private fun send(rawTransaction: RawTransaction, nonce: Long): Single<Transaction> {
         val signature = transactionSigner.signature(rawTransaction, nonce)
         val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature)
         val encoded = transactionBuilder.encode(rawTransaction, nonce, signature)

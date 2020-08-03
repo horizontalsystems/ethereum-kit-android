@@ -37,7 +37,7 @@ interface IBlockchain {
     val lastBlockHeight: Long?
     val balance: BigInteger?
 
-    fun send(rawTransaction: RawTransaction): Single<EthereumTransaction>
+    fun send(rawTransaction: RawTransaction): Single<Transaction>
     fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
     fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus>
     fun transactionExist(transactionHash: ByteArray): Single<Boolean>
@@ -80,7 +80,7 @@ interface ITransactionManager {
 
     fun refresh()
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
-    fun handle(transaction: EthereumTransaction)
+    fun handle(transaction: Transaction)
 }
 
 interface ITransactionManagerListener {
@@ -91,15 +91,15 @@ interface ITransactionManagerListener {
 interface ITransactionsProvider {
     val source: String
 
-    fun getTransactions(startBlock: Long): Single<List<EthereumTransaction>>
+    fun getTransactions(startBlock: Long): Single<List<Transaction>>
     fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
 }
 
 interface ITransactionStorage {
-    fun getLastTransaction(): EthereumTransaction?
+    fun getLastTransaction(): Transaction?
     fun getLastInternalTransactionBlockHeight(): Long?
 
-    fun saveTransactions(transactions: List<EthereumTransaction>)
+    fun saveTransactions(transactions: List<Transaction>)
     fun saveInternalTransactions(transactions: List<InternalTransaction>)
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
 }

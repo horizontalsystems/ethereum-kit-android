@@ -5,7 +5,7 @@ import androidx.room.Relation
 
 data class TransactionWithInternal(
         @Embedded
-        val transaction: EthereumTransaction,
+        val transaction: Transaction,
         @Relation(parentColumn = "hash", entityColumn = "hash")
         val internalTransactions: List<InternalTransaction> = listOf()
 )

@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import java.math.BigInteger
 
 @Entity(foreignKeys = [ForeignKey(
-        entity = EthereumTransaction::class,
+        entity = Transaction::class,
         parentColumns = ["hash"],
         childColumns = ["hash"],
         onUpdate = ForeignKey.CASCADE,
