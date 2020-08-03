@@ -41,7 +41,7 @@ class EthereumKit(
     private val syncStateSubject = PublishSubject.create<SyncState>()
     private val transactionsSyncStateSubject = PublishSubject.create<SyncState>()
     private val balanceSubject = PublishSubject.create<BigInteger>()
-    private val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
+    private val transactionsSubject = PublishSubject.create<List<TransactionWithInternal>>()
 
     val defaultGasLimit: Long = 21_000
     private val maxGasLimit: Long = 1_000_000
@@ -81,7 +81,7 @@ class EthereumKit(
     val balanceFlowable: Flowable<BigInteger>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsFlowable: Flowable<List<TransactionInfo>>
+    val transactionsFlowable: Flowable<List<TransactionWithInternal>>
         get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun start() {
@@ -112,9 +112,8 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<TransactionInfo>> {
+    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<TransactionWithInternal>> {
         return transactionManager.getTransactions(fromHash, limit)
-                .map { txs -> txs.map { TransactionInfo(it) } }
     }
 
     fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
@@ -150,11 +149,11 @@ class EthereumKit(
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
         return send(to, value, ByteArray(0), gasPrice, gasLimit)
     }
 
-    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
         val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, to, value, transactionInput)
         logger.info("send rawTransaction: $rawTransaction")
 
@@ -167,7 +166,7 @@ class EthereumKit(
                 .doOnSuccess { transaction ->
                     transactionManager.handle(transaction)
                 }
-                .map { TransactionInfo(TransactionWithInternal(it)) }
+                .map { (TransactionWithInternal(it)) }
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
@@ -231,7 +230,7 @@ class EthereumKit(
         if (transactions.isEmpty())
             return
 
-        transactionsSubject.onNext(transactions.map { tx -> TransactionInfo(tx) })
+        transactionsSubject.onNext(transactions)
     }
 
     override fun onUpdateTransactionsSyncState(syncState: SyncState) {

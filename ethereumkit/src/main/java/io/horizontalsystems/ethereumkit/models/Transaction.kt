@@ -19,7 +19,7 @@ import java.math.BigInteger
         var blockNumber: Long? = null,
         var gasUsed: Long? = null,
         var cumulativeGasUsed: Long? = null,
-        var iserror: Int? = null,
+        var isError: Int? = null,
         var transactionIndex: Int? = null,
         var txReceiptStatus: Int? = null
 )

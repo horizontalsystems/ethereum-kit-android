@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -79,7 +80,7 @@ class UniswapKit(
         return tradeManager.estimateSwap(tradeData, gasPrice)
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<String> {
+    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
         return tradeManager.swap(tradeData, gasPrice, gasLimit)
     }
 
@@ -96,7 +97,6 @@ class UniswapKit(
 
 sealed class TradeError : Throwable() {
     class TradeNotFound : TradeError()
-    class GasLimitNull : TradeError()
 }
 
 sealed class TokenAmountError : Throwable() {
