@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.sample.core
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.erc20kit.core.TransactionKey
-import io.horizontalsystems.erc20kit.models.TransactionInfo
+import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
@@ -88,11 +88,11 @@ class Erc20Adapter(
         }
     }
 
-    private fun transactionRecord(transaction: TransactionInfo): TransactionRecord {
+    private fun transactionRecord(transaction: Transaction): TransactionRecord {
         val mineAddress = ethereumKit.receiveAddress
 
-        val from = TransactionAddress(transaction.from, Address(transaction.from) == mineAddress)
-        val to = TransactionAddress(transaction.to, Address(transaction.to) == mineAddress)
+        val from = TransactionAddress(transaction.from.hex, transaction.from == mineAddress)
+        val to = TransactionAddress(transaction.to.hex, transaction.to == mineAddress)
 
         var amount: BigDecimal
 
@@ -104,7 +104,7 @@ class Erc20Adapter(
         }
 
         return TransactionRecord(
-                transactionHash = transaction.transactionHash,
+                transactionHash = transaction.transactionHash.toHexString(),
                 transactionIndex = transaction.transactionIndex ?: 0,
                 interTransactionIndex = transaction.interTransactionIndex,
                 amount = amount,

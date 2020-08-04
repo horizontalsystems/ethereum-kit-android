@@ -1,6 +1,6 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.TransactionInfo
+import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
@@ -33,5 +33,5 @@ class KitState {
     val syncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
     val transactionsSyncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
     val balanceSubject = PublishSubject.create<BigInteger>()
-    val transactionsSubject = PublishSubject.create<List<TransactionInfo>>()
+    val transactionsSubject = PublishSubject.create<List<Transaction>>()
 }
