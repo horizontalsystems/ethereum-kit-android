@@ -3,7 +3,6 @@ package io.horizontalsystems.erc20kit.core
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.erc20kit.models.TransactionInfo
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
@@ -89,21 +88,15 @@ class Erc20Kit(
         return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
     }
 
-    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionInfo> {
+    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         return transactionManager.send(to, value, gasPrice, gasLimit)
-                .map { TransactionInfo(it) }
-                .doOnSuccess { txInfo ->
-                    state.transactionsSubject.onNext(listOf(txInfo))
+                .doOnSuccess { tx ->
+                    state.transactionsSubject.onNext(listOf(tx))
                 }
     }
 
-    fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionInfo>> {
+    fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return transactionManager.getTransactions(fromTransaction, limit)
-                .map { transactions ->
-                    transactions.map {
-                        TransactionInfo(it)
-                    }
-                }
     }
 
     val syncStateFlowable: Flowable<SyncState>
@@ -115,7 +108,7 @@ class Erc20Kit(
     val balanceFlowable: Flowable<BigInteger>
         get() = state.balanceSubject.toFlowable(BackpressureStrategy.LATEST)
 
-    val transactionsFlowable: Flowable<List<TransactionInfo>>
+    val transactionsFlowable: Flowable<List<Transaction>>
         get() = state.transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun stop() {
@@ -128,7 +121,7 @@ class Erc20Kit(
         state.transactionsSyncState = Synced
 
         if (transactions.isNotEmpty())
-            state.transactionsSubject.onNext(transactions.map { TransactionInfo(it) })
+            state.transactionsSubject.onNext(transactions)
     }
 
     override fun onSyncTransactionsError(error: Throwable) {
