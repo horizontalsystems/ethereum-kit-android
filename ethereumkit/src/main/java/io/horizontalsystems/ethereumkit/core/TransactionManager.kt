@@ -9,6 +9,7 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.functions.BiFunction
+import java.math.BigInteger
 
 class TransactionManager(
         private val storage: ITransactionStorage,
@@ -34,13 +35,22 @@ class TransactionManager(
         storage.saveTransactions(transactions)
         storage.saveInternalTransactions(internalTransactions)
 
-        storage.getTransactions(lastTransactionHash, null)
-                .subscribeOn(Schedulers.io())
-                .subscribe { transactions ->
-                    listener?.onUpdateTransactions(transactions)
-                }.let {
-                    disposables.add(it)
-                }
+        val transactionsWithInternal = transactions.mapNotNull { transaction ->
+            val internalTransactionList = internalTransactions.filter { it.hash.contentEquals(transaction.hash) }
+            val transactionWithInternal = TransactionWithInternal(transaction, internalTransactionList)
+
+            if (!isEmpty(transactionWithInternal)){
+                transactionWithInternal
+            } else {
+                null
+            }
+        }
+
+        listener?.onUpdateTransactions(transactionsWithInternal)
+    }
+
+    private fun isEmpty(transactionWithInternal: TransactionWithInternal) : Boolean {
+        return transactionWithInternal.transaction.value == BigInteger.ZERO && transactionWithInternal.internalTransactions.isEmpty()
     }
 
     override fun refresh() {
@@ -72,7 +82,11 @@ class TransactionManager(
     override fun handle(transaction: Transaction) {
         storage.saveTransactions(listOf(transaction))
 
-        listener?.onUpdateTransactions(listOf(TransactionWithInternal(transaction)))
+        val transactionWithInternal = TransactionWithInternal(transaction)
+
+        if (!isEmpty(transactionWithInternal)) {
+            listener?.onUpdateTransactions(listOf(transactionWithInternal))
+        }
     }
 
 }
