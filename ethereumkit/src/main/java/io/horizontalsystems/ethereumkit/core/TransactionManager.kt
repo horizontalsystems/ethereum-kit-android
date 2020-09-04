@@ -31,7 +31,7 @@ class TransactionManager(
 
     override var listener: ITransactionManagerListener? = null
 
-    private fun update(transactions: List<Transaction>, internalTransactions: List<InternalTransaction>, lastTransactionHash: ByteArray?) {
+    private fun update(transactions: List<Transaction>, internalTransactions: List<InternalTransaction>) {
         storage.saveTransactions(transactions)
         storage.saveInternalTransactions(internalTransactions)
 
@@ -56,8 +56,7 @@ class TransactionManager(
     override fun refresh() {
         syncState = SyncState.Syncing()
 
-        val lastTransaction = storage.getLastTransaction()
-        val lastTransactionBlockHeight = lastTransaction?.blockNumber ?: 0
+        val lastTransactionBlockHeight = storage.getLastTransactionBlockHeight() ?: 0
         val lastInternalTransactionBlockHeight = storage.getLastInternalTransactionBlockHeight() ?: 0
 
         Single.zip(
@@ -66,7 +65,7 @@ class TransactionManager(
                 BiFunction<List<Transaction>, List<InternalTransaction>, Pair<List<Transaction>, List<InternalTransaction>>> { t1, t2 -> Pair(t1, t2) })
                 .subscribeOn(Schedulers.io())
                 .subscribe({
-                    update(it.first, it.second, lastTransaction?.hash)
+                    update(it.first, it.second)
                     syncState = SyncState.Synced()
                 }, {
                     syncState = SyncState.NotSynced(it)
