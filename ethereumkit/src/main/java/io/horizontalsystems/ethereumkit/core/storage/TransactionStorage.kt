@@ -9,8 +9,8 @@ import java.math.BigInteger
 
 class TransactionStorage(private val database: TransactionDatabase) : ITransactionStorage {
 
-    override fun getLastTransaction(): Transaction? {
-        return database.transactionDao().getLastTransaction()
+    override fun getLastTransactionBlockHeight(): Long? {
+        return database.transactionDao().getLastTransaction()?.blockNumber
     }
 
     override fun getLastInternalTransactionBlockHeight(): Long? {

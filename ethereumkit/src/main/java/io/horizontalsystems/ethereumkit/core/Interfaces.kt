@@ -96,7 +96,7 @@ interface ITransactionsProvider {
 }
 
 interface ITransactionStorage {
-    fun getLastTransaction(): Transaction?
+    fun getLastTransactionBlockHeight(): Long?
     fun getLastInternalTransactionBlockHeight(): Long?
 
     fun saveTransactions(transactions: List<Transaction>)
