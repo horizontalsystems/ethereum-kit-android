@@ -172,12 +172,11 @@ class IncubedRpcApiProvider(
         return Single.fromCallable {
             serialExecute {
                 val receipt = eth1.getTransactionReceipt(transactionHash.toHexString())
-                logger.info("IncubedRpcApiProvider: transactionReceiptStatus receipt: ${receipt.status}")
-
-                if (receipt.status) {
-                    TransactionStatus.SUCCESS
-                } else {
-                    TransactionStatus.FAILED
+                logger.info("IncubedRpcApiProvider: transactionReceiptStatus receipt: ${receipt?.status}")
+                when (receipt?.status) {
+                    true -> TransactionStatus.SUCCESS
+                    false -> TransactionStatus.FAILED
+                    else -> TransactionStatus.NOTFOUND
                 }
             }
         }

@@ -84,7 +84,7 @@ class TransactionManager(
     private fun getFailedTransactions(pendingTransactions: List<Transaction>,
                                       statuses: Map<ByteArray, TransactionStatus>): List<Transaction> {
         return statuses.mapNotNull { (hash, status) ->
-            if (status == TransactionStatus.FAILED || status == TransactionStatus.NOTFOUND) {
+            if (status == TransactionStatus.FAILED) {
                 pendingTransactions.find { it.transactionHash.contentEquals(hash) }?.let { foundTx ->
                     foundTx.isError = true
                     foundTx
