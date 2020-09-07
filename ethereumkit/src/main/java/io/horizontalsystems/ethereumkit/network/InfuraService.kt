@@ -145,27 +145,23 @@ class InfuraService(
     fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
         val request = Request("eth_getTransactionReceipt", listOf(transactionHash.toHexString()))
 
-        return service.makeRequestForString(infuraCredentials.projectId, request).flatMap {
-            if (it.error != null)
-                Single.just(TransactionStatus.FAILED)
-            else {
-
-                it.result?.let { result ->
-                    val txStatusMap: Map<String, String> = Gson().fromJson(result, object : TypeToken<Map<String, Any>>() {}.type)
-
-                    txStatusMap["status"]?.let { statusStr ->
-                        val success = Integer.parseInt(statusStr.stripHexPrefix(), 16)
-
-                        if (success == 0)
-                            Single.just(TransactionStatus.SUCCESS)
-                        else
-                            Single.just(TransactionStatus.FAILED)
+        return service.makeRequestForString(infuraCredentials.projectId, request)
+                .flatMap {
+                    if (it.error != null)
+                        Single.just(TransactionStatus.FAILED)
+                    else {
+                        it.result?.let { result ->
+                            val txStatusMap: Map<String, String> = Gson().fromJson(result, object : TypeToken<Map<String, Any>>() {}.type)
+                            txStatusMap["status"]?.let { statusStr ->
+                                val success = Integer.parseInt(statusStr.stripHexPrefix(), 16)
+                                if (success == 0)
+                                    Single.just(TransactionStatus.SUCCESS)
+                                else
+                                    Single.just(TransactionStatus.FAILED)
+                            }
+                        } ?: Single.just(TransactionStatus.NOTFOUND)
                     }
                 }
-
-                Single.just(TransactionStatus.NOTFOUND)
-            }
-        }
     }
 
     fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
