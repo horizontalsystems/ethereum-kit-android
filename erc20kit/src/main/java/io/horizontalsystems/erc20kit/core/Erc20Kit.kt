@@ -84,8 +84,11 @@ class Erc20Kit(
         return allowanceManager.estimateApprove(spenderAddress, amount, gasPrice)
     }
 
-    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
+    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
+                .doOnSuccess { tx ->
+                    state.transactionsSubject.onNext(listOf(tx))
+                }
     }
 
     fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
@@ -157,7 +160,7 @@ class Erc20Kit(
             val transactionBuilder: ITransactionBuilder = TransactionBuilder()
             val transactionManager: ITransactionManager = TransactionManager(contractAddress, address, transactionStorage, transactionsProvider, dataProvider, transactionBuilder)
             val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
-            val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address)
+            val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address, transactionStorage)
 
             val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, allowanceManager)
 
