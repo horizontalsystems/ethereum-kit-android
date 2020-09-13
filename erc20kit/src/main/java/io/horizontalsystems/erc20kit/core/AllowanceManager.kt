@@ -1,18 +1,19 @@
 package io.horizontalsystems.erc20kit.core
 
+import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.AddressArgument
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.Uint256Argument
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
 import java.math.BigInteger
 
 class AllowanceManager(
         private val ethereumKit: EthereumKit,
         private val contractAddress: Address,
-        private val address: Address
+        private val address: Address,
+        private val storage: ITransactionStorage
 ) {
 
     fun allowance(spenderAddress: Address): Single<BigInteger> {
@@ -26,8 +27,18 @@ class AllowanceManager(
         return ethereumKit.estimateGas(contractAddress, null, gasPrice, approveMethod(spenderAddress, amount).encodedABI())
     }
 
-    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
+    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         return ethereumKit.send(contractAddress, BigInteger.ZERO, approveMethod(spenderAddress, amount).encodedABI(), gasPrice, gasLimit)
+                .map { transactionWithInternal ->
+                    Transaction(transactionHash = transactionWithInternal.transaction.hash,
+                            from = address,
+                            to = spenderAddress,
+                            value = amount,
+                            type = Transaction.TransactionType.APPROVE)
+                }.doOnSuccess { transaction ->
+                    storage.save(listOf(transaction))
+                }
+
     }
 
     private fun approveMethod(spenderAddress: Address, amount: BigInteger): ContractMethod {

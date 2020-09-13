@@ -84,7 +84,7 @@ class Erc20Adapter(
 
     fun approve(spenderAddress: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<String> {
         return erc20Kit.approve(spenderAddress, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map {
-            it.transaction.hash.toHexString()
+            it.transactionHash.toHexString()
         }
     }
 
@@ -112,8 +112,8 @@ class Erc20Adapter(
                 from = from,
                 to = to,
                 blockHeight = transaction.blockNumber,
-                isError = transaction.isError
-
+                isError = transaction.isError,
+                type = transaction.type.value
         )
     }
 

@@ -13,7 +13,19 @@ class Transaction(var transactionHash: ByteArray,
                   val to: Address,
                   val value: BigInteger,
                   var timestamp: Long = System.currentTimeMillis() / 1000,
-                  var isError: Boolean = false) {
+                  var isError: Boolean = false,
+                  var type: TransactionType = TransactionType.TRANSFER) {
+
+    enum class TransactionType(val value: String) {
+        TRANSFER("transfer"),
+        APPROVE("approve");
+
+        companion object {
+            fun valueOf(value: String?): TransactionType? {
+                return values().find { it.value == value }
+            }
+        }
+    }
 
     var logIndex: Int? = null
     var blockHash: ByteArray? = null
