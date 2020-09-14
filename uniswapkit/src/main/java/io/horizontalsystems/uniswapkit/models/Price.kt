@@ -23,9 +23,8 @@ class Price {
     val adjusted: Fraction
         get() = value * scalar
 
-
     val decimalValue: BigDecimal?
-        get() = value.toBigDecimal(quoteToken.decimals)
+        get() = adjusted.toBigDecimal(quoteToken.decimals)
 
     operator fun times(other: Price): Price {
         return Price(this.baseToken, other.quoteToken, this.value * other.value)
