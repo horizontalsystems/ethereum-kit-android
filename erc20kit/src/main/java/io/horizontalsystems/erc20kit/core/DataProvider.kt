@@ -1,7 +1,6 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.AddressArgument
+import io.horizontalsystems.erc20kit.contract.BalanceOfMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
@@ -72,9 +71,7 @@ class DataProvider(private val ethereumKit: EthereumKit) : IDataProvider {
     }
 
     override fun getBalance(contractAddress: Address, address: Address): Single<BigInteger> {
-        val method = ContractMethod("balanceOf", listOf(AddressArgument(address)))
-
-        return ethereumKit.call(contractAddress, method.encodedABI())
+        return ethereumKit.call(contractAddress, BalanceOfMethod(address).encodedABI())
                 .map { it.toBigInteger() }
     }
 

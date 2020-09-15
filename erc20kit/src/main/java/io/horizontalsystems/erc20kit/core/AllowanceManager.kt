@@ -1,9 +1,8 @@
 package io.horizontalsystems.erc20kit.core
 
+import io.horizontalsystems.erc20kit.contract.AllowanceMethod
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.AddressArgument
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
@@ -17,8 +16,7 @@ class AllowanceManager(
 ) {
 
     fun allowance(spenderAddress: Address): Single<BigInteger> {
-        val method = ContractMethod("allowance", listOf(AddressArgument(address), AddressArgument(spenderAddress)))
-        return ethereumKit.call(contractAddress, method.encodedABI()).map { result ->
+        return ethereumKit.call(contractAddress, AllowanceMethod(address, spenderAddress).encodedABI()).map { result ->
             BigInteger(result.sliceArray(0..31))
         }
     }
