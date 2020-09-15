@@ -1,6 +1,6 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.contract.Erc20SmartContract
+import io.horizontalsystems.erc20kit.contract.Erc20Contract
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.Address
@@ -10,13 +10,13 @@ import io.reactivex.functions.BiFunction
 
 class EtherscanTransactionsProvider(private val etherscanService: EtherscanService) : ITransactionsProvider {
 
-    private val erc20SmartContract = Erc20SmartContract()
+    private val erc20SmartContract = Erc20Contract()
 
     override fun getTransactions(contractAddress: Address, address: Address, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
         val fromInput = getEthereumTransactions(address, contractAddress, startBlock)
                 .map {
                     it.map { ethTx ->
-                        erc20SmartContract.getPotentialErc20TransactionsFromEthTransaction(ethTx)
+                        erc20SmartContract.getErc20TransactionsFromEthTransaction(ethTx)
                     }.flatten()
                 }
 
