@@ -1,9 +1,9 @@
 package io.horizontalsystems.erc20kit.core
 
+import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.AddressArgument
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.Uint256Argument
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
@@ -24,25 +24,18 @@ class AllowanceManager(
     }
 
     fun estimateApprove(spenderAddress: Address, amount: BigInteger, gasPrice: Long): Single<Long> {
-        return ethereumKit.estimateGas(contractAddress, null, gasPrice, approveMethod(spenderAddress, amount).encodedABI())
+        return ethereumKit.estimateGas(contractAddress, null, gasPrice, ApproveMethod(spenderAddress, amount).encodedABI())
     }
 
     fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
-        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveMethod(spenderAddress, amount).encodedABI(), gasPrice, gasLimit)
+        val approveMethod = ApproveMethod(spenderAddress, amount)
+
+        return ethereumKit.send(contractAddress, BigInteger.ZERO, approveMethod.encodedABI(), gasPrice, gasLimit)
                 .map { transactionWithInternal ->
-                    Transaction(transactionHash = transactionWithInternal.transaction.hash,
-                            from = address,
-                            to = spenderAddress,
-                            value = amount,
-                            type = Transaction.TransactionType.APPROVE)
+                    approveMethod.getErc20Transactions(transactionWithInternal.transaction).first()
                 }.doOnSuccess { transaction ->
                     storage.save(listOf(transaction))
                 }
 
     }
-
-    private fun approveMethod(spenderAddress: Address, amount: BigInteger): ContractMethod {
-        return ContractMethod("approve", listOf(AddressArgument(spenderAddress), Uint256Argument(amount)))
-    }
-
 }
