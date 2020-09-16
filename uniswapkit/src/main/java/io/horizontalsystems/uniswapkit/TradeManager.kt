@@ -1,12 +1,11 @@
 package io.horizontalsystems.uniswapkit
 
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument
-import io.horizontalsystems.ethereumkit.contracts.ContractMethod.Argument.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
+import io.horizontalsystems.uniswapkit.ContractMethod.Argument
+import io.horizontalsystems.uniswapkit.ContractMethod.Argument.*
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
 import io.horizontalsystems.uniswapkit.models.Token.Ether
