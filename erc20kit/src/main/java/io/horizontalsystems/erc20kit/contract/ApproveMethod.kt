@@ -4,7 +4,7 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class ApproveMethod(val spender: Address, val value: BigInteger) : Erc20Method() {
+class ApproveMethod(val spender: Address, val value: BigInteger) : Erc20Method(), Erc20ContractMethodWithTransactions {
 
     override val methodSignature = "approve(address,uint256)"
     override fun getArguments() = listOf(spender, value)
