@@ -1,11 +1,14 @@
 package io.horizontalsystems.erc20kit.contract
 
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class ApproveMethod(val spender: Address, val value: BigInteger) : Erc20Method {
+class ApproveMethod(val spender: Address, val value: BigInteger) : Erc20Method() {
+
+    override val methodSignature = "approve(address,uint256)"
+    override fun getArguments() = listOf(spender, value)
+
     override fun getErc20Transactions(ethTx: io.horizontalsystems.ethereumkit.models.Transaction): List<Transaction> {
         return listOf(
                 Transaction(
@@ -24,11 +27,4 @@ class ApproveMethod(val spender: Address, val value: BigInteger) : Erc20Method {
         )
     }
 
-    override fun encodedABI(): ByteArray {
-        return ContractMethodHelper.encodedABI(methodId, listOf(spender, value))
-    }
-
-    companion object {
-        val methodId = ContractMethodHelper.getMethodId("approve(address,uint256)")
-    }
 }
