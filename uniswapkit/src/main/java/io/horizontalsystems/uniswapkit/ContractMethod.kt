@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.contracts
+package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
