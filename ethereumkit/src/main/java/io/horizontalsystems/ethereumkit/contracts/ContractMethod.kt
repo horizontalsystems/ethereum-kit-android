@@ -1,8 +1,6 @@
-package io.horizontalsystems.erc20kit.contract
+package io.horizontalsystems.ethereumkit.contracts
 
-import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
-
-abstract class Erc20Method {
+abstract class ContractMethod {
     val methodId: ByteArray by lazy { ContractMethodHelper.getMethodId(methodSignature) }
 
     protected abstract val methodSignature: String

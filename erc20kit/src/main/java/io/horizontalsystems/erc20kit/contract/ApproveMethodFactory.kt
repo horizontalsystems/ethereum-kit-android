@@ -1,10 +1,11 @@
 package io.horizontalsystems.erc20kit.contract
 
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactory
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 
-object ApproveMethodFactory : Erc20MethodFactory {
+object ApproveMethodFactory : ContractMethodFactory {
 
     override val methodId = ContractMethodHelper.getMethodId("approve(address,uint256)")
 
