@@ -1,11 +1,11 @@
 package io.horizontalsystems.uniswapkit
 
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
-import io.horizontalsystems.uniswapkit.ContractMethod.Argument
-import io.horizontalsystems.uniswapkit.ContractMethod.Argument.*
+import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
 import io.horizontalsystems.uniswapkit.models.Token.Ether
@@ -21,7 +21,6 @@ class TradeManager(
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     fun pair(tokenA: Token, tokenB: Token): Single<Pair> {
-        val method = ContractMethod("getReserves")
 
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
 
@@ -29,7 +28,7 @@ class TradeManager(
 
         logger.info("pairAddress: ${pairAddress.hex}")
 
-        return ethereumKit.call(pairAddress, method.encodedABI())
+        return ethereumKit.call(pairAddress, GetReservesMethod().encodedABI())
                 .map { data ->
                     logger.info("getReserves data: ${data.toHexString()}")
 
@@ -70,8 +69,6 @@ class TradeManager(
     private class SwapData(val amount: BigInteger, val input: ByteArray)
 
     private fun buildSwapData(tradeData: TradeData): SwapData {
-        val methodName: String
-        val arguments: List<Argument>
         val amount: BigInteger
 
         val trade = tradeData.trade
@@ -79,9 +76,11 @@ class TradeManager(
         val tokenIn = trade.tokenAmountIn.token
         val tokenOut = trade.tokenAmountOut.token
 
-        val path = AddressesArgument(trade.route.path.map { it.address })
-        val to = AddressArgument(tradeData.options.recipient ?: address)
-        val deadline = Uint256Argument((Date().time / 1000 + tradeData.options.ttl).toBigInteger())
+        val path = trade.route.path.map { it.address }
+        val to = tradeData.options.recipient ?: address
+        val deadline = (Date().time / 1000 + tradeData.options.ttl).toBigInteger()
+
+        val method: ContractMethod
 
         when (trade.type) {
             TradeType.ExactIn -> {
@@ -91,14 +90,23 @@ class TradeManager(
                 amount = amountIn
 
                 if (tokenIn is Ether && tokenOut is Erc20) {
-                    methodName = if (tradeData.options.feeOnTransfer) "swapExactETHForTokensSupportingFeeOnTransferTokens" else "swapExactETHForTokens"
-                    arguments = listOf(Uint256Argument(amountOutMin), path, to, deadline)
+                    method = if (tradeData.options.feeOnTransfer) {
+                        SwapExactETHForTokensSupportingFeeOnTransferTokensMethod(amountOutMin, path, to, deadline)
+                    } else {
+                        SwapExactETHForTokensMethod(amountOutMin, path, to, deadline)
+                    }
                 } else if (tokenIn is Erc20 && tokenOut is Ether) {
-                    methodName = if (tradeData.options.feeOnTransfer) "swapExactTokensForETHSupportingFeeOnTransferTokens" else "swapExactTokensForETH"
-                    arguments = listOf(Uint256Argument(amountIn), Uint256Argument(amountOutMin), path, to, deadline)
+                    method = if (tradeData.options.feeOnTransfer) {
+                        SwapExactTokensForETHSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
+                    } else {
+                        SwapExactTokensForETHMethod(amountIn, amountOutMin, path, to, deadline)
+                    }
                 } else if (tokenIn is Erc20 && tokenOut is Erc20) {
-                    methodName = if (tradeData.options.feeOnTransfer) "swapExactTokensForTokensSupportingFeeOnTransferTokens" else "swapExactTokensForTokens"
-                    arguments = listOf(Uint256Argument(amountIn), Uint256Argument(amountOutMin), path, to, deadline)
+                    method = if (tradeData.options.feeOnTransfer) {
+                        SwapExactTokensForTokensSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
+                    } else {
+                        SwapExactTokensForTokensMethod(amountIn, amountOutMin, path, to, deadline)
+                    }
                 } else {
                     throw Exception("Invalid tokenIn/Out for swap!")
                 }
@@ -110,21 +118,16 @@ class TradeManager(
                 amount = amountInMax
 
                 if (tokenIn is Ether && tokenOut is Erc20) {
-                    methodName = "swapETHForExactTokens"
-                    arguments = listOf(Uint256Argument(amountOut), path, to, deadline)
+                    method = SwapETHForExactTokensMethod(amountOut, path, to, deadline)
                 } else if (tokenIn is Erc20 && tokenOut is Ether) {
-                    methodName = "swapTokensForExactETH"
-                    arguments = listOf(Uint256Argument(amountOut), Uint256Argument(amountInMax), path, to, deadline)
+                    method = SwapTokensForExactETHMethod(amountOut, amountInMax, path, to, deadline)
                 } else if (tokenIn is Erc20 && tokenOut is Erc20) {
-                    methodName = "swapTokensForExactTokens"
-                    arguments = listOf(Uint256Argument(amountOut), Uint256Argument(amountInMax), path, to, deadline)
+                    method = SwapTokensForExactTokensMethod(amountOut, amountInMax, path, to, deadline)
                 } else {
                     throw Exception("Invalid tokenIn/Out for swap!")
                 }
             }
         }
-
-        val method = ContractMethod(methodName, arguments)
 
         return if (tokenIn.isEther) {
             SwapData(amount, method.encodedABI())
