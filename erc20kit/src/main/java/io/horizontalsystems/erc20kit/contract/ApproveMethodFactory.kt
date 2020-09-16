@@ -5,7 +5,8 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 
 object ApproveMethodFactory : Erc20MethodFactory {
-    private val methodId = ContractMethodHelper.getMethodId("approve(address,uint256)")
+
+    override val methodId = ContractMethodHelper.getMethodId("approve(address,uint256)")
 
     override fun createMethod(inputArguments: ByteArray): ApproveMethod {
         val address = Address(inputArguments.copyOfRange(12, 32))
@@ -14,7 +15,4 @@ object ApproveMethodFactory : Erc20MethodFactory {
         return ApproveMethod(address, value)
     }
 
-    override fun canCreateMethod(methodId: ByteArray): Boolean {
-        return this.methodId.contentEquals(methodId)
-    }
 }
