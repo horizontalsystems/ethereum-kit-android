@@ -160,7 +160,7 @@ class TradeManager(
                     )
                     trades.add(trade)
                 } else if (maxHops > 1 && pairs.size > 1) {
-                    val pairsExcludingThisPair = pairs.drop(index)
+                    val pairsExcludingThisPair = pairs.toMutableList().apply { removeAt(index) }
                     val tradesRecursion = tradeExactIn(
                             pairsExcludingThisPair,
                             tokenAmountOut,
@@ -198,7 +198,7 @@ class TradeManager(
                     )
                     trades.add(trade)
                 } else if (maxHops > 1 && pairs.size > 1) {
-                    val pairsExcludingThisPair = pairs.drop(index)
+                    val pairsExcludingThisPair = pairs.toMutableList().apply { removeAt(index) }
                     val tradesRecursion = tradeExactOut(
                             pairsExcludingThisPair,
                             tokenIn,
