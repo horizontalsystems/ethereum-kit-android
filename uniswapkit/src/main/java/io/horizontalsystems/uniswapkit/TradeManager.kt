@@ -69,8 +69,6 @@ class TradeManager(
     private class SwapData(val amount: BigInteger, val input: ByteArray)
 
     private fun buildSwapData(tradeData: TradeData): SwapData {
-        val amount: BigInteger
-
         val trade = tradeData.trade
 
         val tokenIn = trade.tokenAmountIn.token
@@ -80,59 +78,62 @@ class TradeManager(
         val to = tradeData.options.recipient ?: address
         val deadline = (Date().time / 1000 + tradeData.options.ttl).toBigInteger()
 
-        val method: ContractMethod
-
-        when (trade.type) {
+        val method = when (trade.type) {
+            TradeType.ExactOut -> buildMethodForExactOut(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
             TradeType.ExactIn -> {
-                val amountIn = trade.tokenAmountIn.rawAmount
-                val amountOutMin = tradeData.tokenAmountOutMin.rawAmount
-
-                amount = amountIn
-
-                if (tokenIn is Ether && tokenOut is Erc20) {
-                    method = if (tradeData.options.feeOnTransfer) {
-                        SwapExactETHForTokensSupportingFeeOnTransferTokensMethod(amountOutMin, path, to, deadline)
-                    } else {
-                        SwapExactETHForTokensMethod(amountOutMin, path, to, deadline)
-                    }
-                } else if (tokenIn is Erc20 && tokenOut is Ether) {
-                    method = if (tradeData.options.feeOnTransfer) {
-                        SwapExactTokensForETHSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
-                    } else {
-                        SwapExactTokensForETHMethod(amountIn, amountOutMin, path, to, deadline)
-                    }
-                } else if (tokenIn is Erc20 && tokenOut is Erc20) {
-                    method = if (tradeData.options.feeOnTransfer) {
-                        SwapExactTokensForTokensSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
-                    } else {
-                        SwapExactTokensForTokensMethod(amountIn, amountOutMin, path, to, deadline)
-                    }
+                if (tradeData.options.feeOnTransfer) {
+                    buildMethodForExactInSupportingFeeOnTransferTokens(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
                 } else {
-                    throw Exception("Invalid tokenIn/Out for swap!")
-                }
-            }
-            TradeType.ExactOut -> {
-                val amountInMax = tradeData.tokenAmountInMax.rawAmount
-                val amountOut = trade.tokenAmountOut.rawAmount
-
-                amount = amountInMax
-
-                if (tokenIn is Ether && tokenOut is Erc20) {
-                    method = SwapETHForExactTokensMethod(amountOut, path, to, deadline)
-                } else if (tokenIn is Erc20 && tokenOut is Ether) {
-                    method = SwapTokensForExactETHMethod(amountOut, amountInMax, path, to, deadline)
-                } else if (tokenIn is Erc20 && tokenOut is Erc20) {
-                    method = SwapTokensForExactTokensMethod(amountOut, amountInMax, path, to, deadline)
-                } else {
-                    throw Exception("Invalid tokenIn/Out for swap!")
+                    buildMethodForExactIn(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
                 }
             }
         }
 
         return if (tokenIn.isEther) {
+            val amount = when (trade.type) {
+                TradeType.ExactIn -> trade.tokenAmountIn.rawAmount
+                TradeType.ExactOut -> tradeData.tokenAmountInMax.rawAmount
+            }
+
             SwapData(amount, method.encodedABI())
         } else {
             SwapData(BigInteger.ZERO, method.encodedABI())
+        }
+    }
+
+    private fun buildMethodForExactOut(tokenIn: Token, tokenOut: Token, path: List<Address>, to: Address, deadline: BigInteger, tradeData: TradeData, trade: Trade): ContractMethod {
+        val amountInMax = tradeData.tokenAmountInMax.rawAmount
+        val amountOut = trade.tokenAmountOut.rawAmount
+
+        return when {
+            tokenIn is Ether && tokenOut is Erc20 -> SwapETHForExactTokensMethod(amountOut, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Ether -> SwapTokensForExactETHMethod(amountOut, amountInMax, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Erc20 -> SwapTokensForExactTokensMethod(amountOut, amountInMax, path, to, deadline)
+            else -> throw Exception("Invalid tokenIn/Out for swap!")
+        }
+    }
+
+    private fun buildMethodForExactInSupportingFeeOnTransferTokens(tokenIn: Token, tokenOut: Token, path: List<Address>, to: Address, deadline: BigInteger, tradeData: TradeData, trade: Trade): ContractMethod {
+        val amountIn = trade.tokenAmountIn.rawAmount
+        val amountOutMin = tradeData.tokenAmountOutMin.rawAmount
+
+        return when {
+            tokenIn is Ether && tokenOut is Erc20 -> SwapExactETHForTokensSupportingFeeOnTransferTokensMethod(amountOutMin, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Ether -> SwapExactTokensForETHSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Erc20 -> SwapExactTokensForTokensSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
+            else -> throw Exception("Invalid tokenIn/Out for swap!")
+        }
+    }
+
+    private fun buildMethodForExactIn(tokenIn: Token, tokenOut: Token, path: List<Address>, to: Address, deadline: BigInteger, tradeData: TradeData, trade: Trade): ContractMethod {
+        val amountIn = trade.tokenAmountIn.rawAmount
+        val amountOutMin = tradeData.tokenAmountOutMin.rawAmount
+
+        return when {
+            tokenIn is Ether && tokenOut is Erc20 -> SwapExactETHForTokensMethod(amountOutMin, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Ether -> SwapExactTokensForETHMethod(amountIn, amountOutMin, path, to, deadline)
+            tokenIn is Erc20 && tokenOut is Erc20 -> SwapExactTokensForTokensMethod(amountIn, amountOutMin, path, to, deadline)
+            else -> throw Exception("Invalid tokenIn/Out for swap!")
         }
     }
 
