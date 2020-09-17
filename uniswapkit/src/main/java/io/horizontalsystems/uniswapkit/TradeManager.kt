@@ -89,16 +89,16 @@ class TradeManager(
             }
         }
 
-        return if (tokenIn.isEther) {
-            val amount = when (trade.type) {
+        val amount = if (tokenIn.isEther) {
+            when (trade.type) {
                 TradeType.ExactIn -> trade.tokenAmountIn.rawAmount
                 TradeType.ExactOut -> tradeData.tokenAmountInMax.rawAmount
             }
-
-            SwapData(amount, method.encodedABI())
         } else {
-            SwapData(BigInteger.ZERO, method.encodedABI())
+            BigInteger.ZERO
         }
+
+        return SwapData(amount, method.encodedABI())
     }
 
     private fun buildMethodForExactOut(tokenIn: Token, tokenOut: Token, path: List<Address>, to: Address, deadline: BigInteger, tradeData: TradeData, trade: Trade): ContractMethod {
