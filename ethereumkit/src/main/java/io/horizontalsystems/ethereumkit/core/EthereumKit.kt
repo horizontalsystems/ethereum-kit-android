@@ -1,18 +1,19 @@
 package io.horizontalsystems.ethereumkit.core
 
+import android.app.Application
 import android.content.Context
-import io.horizontalsystems.ethereumkit.api.ApiBlockchain
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import io.horizontalsystems.ethereumkit.api.ApiRpcSyncer
+import io.horizontalsystems.ethereumkit.api.IRpcSyncer
+import io.horizontalsystems.ethereumkit.api.RpcBlockchain
+import io.horizontalsystems.ethereumkit.api.WebSocketRpcSyncer
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.*
-import io.horizontalsystems.ethereumkit.network.ConnectionManager
-import io.horizontalsystems.ethereumkit.network.INetwork
-import io.horizontalsystems.ethereumkit.network.MainNet
-import io.horizontalsystems.ethereumkit.network.Ropsten
-import io.horizontalsystems.ethereumkit.spv.core.SpvBlockchain
-import io.horizontalsystems.ethereumkit.spv.core.storage.SpvStorage
+import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
@@ -117,20 +118,26 @@ class EthereumKit(
     }
 
     fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
-
-        return blockchain.transactionReceiptStatus(transactionHash).flatMap { transactionStatus ->
-
-            if (transactionStatus == TransactionStatus.SUCCESS || transactionStatus == TransactionStatus.FAILED)
-                Single.just(transactionStatus)
-            else {
-                blockchain.transactionExist(transactionHash).flatMap { exist ->
-                    if (exist)
-                        Single.just(TransactionStatus.PENDING)
-                    else
-                        Single.just(TransactionStatus.NOTFOUND)
+        return blockchain.getTransactionReceipt(transactionHash)
+                .flatMap { receipt ->
+                    when {
+                        receipt.isPresent -> {
+                            if (receipt.get().status == 1) {
+                                Single.just(TransactionStatus.SUCCESS)
+                            } else {
+                                Single.just(TransactionStatus.FAILED)
+                            }
+                        }
+                        else -> blockchain.getTransaction(transactionHash)
+                                .map { transaction ->
+                                    if (transaction.isPresent) {
+                                        TransactionStatus.PENDING
+                                    } else {
+                                        TransactionStatus.NOTFOUND
+                                    }
+                                }
+                    }
                 }
-            }
-        }
     }
 
     fun estimateGas(to: Address?, value: BigInteger, gasPrice: Long?): Single<Long> {
@@ -173,12 +180,12 @@ class EthereumKit(
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 
-    fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray> {
-        return blockchain.getStorageAt(contractAddress, position, blockNumber)
+    fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+        return blockchain.getStorageAt(contractAddress, position, defaultBlockParameter)
     }
 
-    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long? = null): Single<ByteArray> {
-        return blockchain.call(contractAddress, data, blockNumber)
+    fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<ByteArray> {
+        return blockchain.call(contractAddress, data, defaultBlockParameter)
     }
 
     fun debugInfo(): String {
@@ -276,45 +283,67 @@ class EthereumKit(
 
     companion object {
         fun getInstance(
-                context: Context,
+                application: Application,
                 privateKey: BigInteger,
                 syncMode: SyncMode,
                 networkType: NetworkType,
-                rpcApi: RpcApi,
+                syncSource: SyncSource,
                 etherscanKey: String,
                 walletId: String
         ): EthereumKit {
-            val blockchain: IBlockchain
-
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
             val address = Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
 
             val network = networkType.getNetwork()
             val transactionSigner = TransactionSigner(network, privateKey)
             val transactionBuilder = TransactionBuilder(address)
-            val connectionManager = ConnectionManager(context)
+            val connectionManager = ConnectionManager(application)
 
-            val rpcApiProvider = when (rpcApi) {
-                is RpcApi.Infura -> InfuraRpcApiProvider.getInstance(networkType, rpcApi.infuraCredentials, address)
-                is RpcApi.Incubed -> IncubedRpcApiProvider(networkType, address)
+            val infuraDomain = when (networkType) {
+                NetworkType.MainNet -> "mainnet.infura.io"
+                NetworkType.Ropsten -> "ropsten.infura.io"
+                NetworkType.Kovan -> "kovan.infura.io"
+                NetworkType.Rinkeby -> "rinkeby.infura.io"
+            }
+            val gson = GsonBuilder()
+                    .setLenient()
+                    .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
+                    .registerTypeAdapter(Long::class.java, LongTypeAdapter())
+                    .registerTypeAdapter(object : TypeToken<Long?>() {}.type, LongTypeAdapter())
+                    .registerTypeAdapter(Int::class.java, IntTypeAdapter())
+                    .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
+                    .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
+                    .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
+                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(Transaction::class.java))
+                    .registerTypeAdapter(object : TypeToken<Optional<TransactionReceipt>>() {}.type, OptionalTypeAdapter<TransactionReceipt>(TransactionReceipt::class.java))
+                    .create()
+
+            val syncer: IRpcSyncer = when (syncSource) {
+                is SyncSource.Infura -> {
+                    ApiRpcSyncer.instance(address, infuraDomain, syncSource.id, syncSource.secret, connectionManager, gson)
+                }
+                is SyncSource.InfuraWebSocket -> {
+                    WebSocketRpcSyncer.instance(address, infuraDomain, syncSource.id, syncSource.secret, application, gson)
+                }
             }
 
-            when (syncMode) {
+            val blockchain: IBlockchain = when (syncMode) {
                 is SyncMode.ApiSyncMode -> {
-                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
+                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)
                     val storage = ApiStorage(apiDatabase)
 
-                    blockchain = ApiBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, connectionManager)
+                    RpcBlockchain.instance(address, storage, syncer, transactionSigner, transactionBuilder)
                 }
                 is SyncMode.SpvSyncMode -> {
-                    val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
-                    val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
-                    val storage = SpvStorage(spvDatabase)
-
-                    blockchain = SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
+                    throw Exception("SPV Sync Mode is not supported!")
+//                    val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
+//                    val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
+//                    val storage = SpvStorage(spvDatabase)
+//
+//                    SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
                 }
                 is SyncMode.GethSyncMode -> {
-                    throw Exception("Geth Sync Mode not supported!")
+                    throw Exception("Geth Sync Mode is not supported!")
 //                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
 //                    val storage = ApiStorage(apiDatabase)
 //                    val nodeDirectory = context.filesDir.path + "/gethNode"
@@ -323,8 +352,9 @@ class EthereumKit(
                 }
             }
 
-            val transactionsProvider = TransactionsProvider.getInstance(networkType, etherscanKey, address)
-            val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(context, walletId, networkType)
+            val etherscanService = EtherscanService(networkType, etherscanKey)
+            val transactionsProvider = TransactionsProvider(etherscanService, address)
+            val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
             val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
             val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
 
@@ -337,21 +367,21 @@ class EthereumKit(
         }
 
         fun getInstance(
-                context: Context,
+                application: Application,
                 words: List<String>,
                 wordsSyncMode: WordsSyncMode,
                 networkType: NetworkType,
-                rpcApi: RpcApi,
+                syncSource: SyncSource,
                 etherscanKey: String,
                 walletId: String
-        ) = getInstance(context, Mnemonic().toSeed(words), wordsSyncMode, networkType, rpcApi, etherscanKey, walletId)
+        ) = getInstance(application, Mnemonic().toSeed(words), wordsSyncMode, networkType, syncSource, etherscanKey, walletId)
 
         fun getInstance(
-                context: Context,
+                application: Application,
                 seed: ByteArray,
                 wordsSyncMode: WordsSyncMode,
                 networkType: NetworkType,
-                rpcApi: RpcApi,
+                syncSource: SyncSource,
                 etherscanKey: String,
                 walletId: String
         ): EthereumKit {
@@ -368,7 +398,7 @@ class EthereumKit(
                 }
             }
 
-            return getInstance(context, privateKey, syncMode, networkType, rpcApi, etherscanKey, walletId)
+            return getInstance(application, privateKey, syncMode, networkType, syncSource, etherscanKey, walletId)
         }
 
         fun clear(context: Context, networkType: NetworkType, walletId: String) {
@@ -377,9 +407,9 @@ class EthereumKit(
 
     }
 
-    sealed class RpcApi {
-        class Infura(val infuraCredentials: InfuraCredentials) : RpcApi()
-        class Incubed : RpcApi()
+    sealed class SyncSource {
+        class InfuraWebSocket(val id: String, val secret: String?) : SyncSource()
+        class Infura(val id: String, val secret: String?) : SyncSource()
     }
 
     sealed class WordsSyncMode {

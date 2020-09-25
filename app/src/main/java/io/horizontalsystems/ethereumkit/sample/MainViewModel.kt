@@ -63,10 +63,11 @@ class MainViewModel : ViewModel() {
     val tokens = listOf(
             Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
             Erc20Token("GMO coins", "GMOLW", Address("0xbb74a24d83470f64d5f0c01688fbb49a5a251b32"), 18),
+            Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
             Erc20Token("DAI-MAINNET", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18)
     )
-    val fromToken: Erc20Token? = tokens[0]
-    val toToken: Erc20Token? = null //tokens[0]
+    val fromToken: Erc20Token? = tokens[1]
+    val toToken: Erc20Token? = tokens[0]
 
     fun init() {
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
@@ -74,10 +75,9 @@ class MainViewModel : ViewModel() {
         val seed = Mnemonic().toSeed(words)
         val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
         val privateKey = hdWallet.privateKey(0, 0, true).privKey
-        val nodePrivateKey = hdWallet.privateKey(102, 102, true).privKey
-        val rpcApi = EthereumKit.RpcApi.Infura(infuraCredentials)
+        val syncSource = EthereumKit.SyncSource.InfuraWebSocket(infuraCredentials.projectId, infuraCredentials.secretKey)
 
-        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, rpcApi, etherscanKey, walletId)
+        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, syncSource, etherscanKey, walletId)
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
         erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken

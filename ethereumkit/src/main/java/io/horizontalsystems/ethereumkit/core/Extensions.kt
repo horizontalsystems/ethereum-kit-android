@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.utils.EIP55
 import io.reactivex.Flowable
 import io.reactivex.Single
+import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
@@ -30,6 +30,18 @@ fun String.hexStringToByteArray(): ByteArray {
     }
 }
 
+@Throws(NumberFormatException::class)
+fun String.hexStringToByteArrayOrNull(): ByteArray? {
+    return try {
+        val hexWithoutPrefix = this.stripHexPrefix()
+        ByteArray(hexWithoutPrefix.length / 2) {
+            hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+        }
+    } catch (error: Throwable) {
+        null
+    }
+}
+
 fun String.stripHexPrefix(): String {
     return if (this.startsWith("0x", true)) {
         this.substring(2)
@@ -38,8 +50,28 @@ fun String.stripHexPrefix(): String {
     }
 }
 
-fun ByteArray.toEIP55Address(): String {
-    return EIP55.encode(this)
+fun Long.toHexString(): String {
+    return "0x${this.toString(16)}"
+}
+
+fun Int.toHexString(): String {
+    return "0x${this.toString(16)}"
+}
+
+fun String.hexStringToLongOrNull(): Long? {
+    return this.stripHexPrefix().toLongOrNull(16)
+}
+
+fun String.hexStringToIntOrNull(): Int? {
+    return this.stripHexPrefix().toIntOrNull(16)
+}
+
+fun BigInteger.toHexString(): String {
+    return "0x${this.toString(16)}"
+}
+
+fun String.hexStringToBigIntegerOrNull(): BigInteger? {
+    return this.stripHexPrefix().toBigIntegerOrNull(16)
 }
 
 // Converts positive long values to a byte array without leading zero byte (for sign bit)
