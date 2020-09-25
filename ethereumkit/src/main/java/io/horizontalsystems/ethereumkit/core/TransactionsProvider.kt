@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
@@ -67,11 +67,4 @@ class TransactionsProvider(
                 }
     }
 
-    companion object {
-        fun getInstance(networkType: EthereumKit.NetworkType, etherscanApiKey: String, address: Address): TransactionsProvider {
-            val etherscanService = EtherscanService(networkType, etherscanApiKey)
-
-            return TransactionsProvider(etherscanService, address)
-        }
-    }
 }

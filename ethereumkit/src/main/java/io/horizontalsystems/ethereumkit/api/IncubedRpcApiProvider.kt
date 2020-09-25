@@ -1,5 +1,6 @@
-package io.horizontalsystems.ethereumkit.core
+package io.horizontalsystems.ethereumkit.api
 
+/*
 import in3.Chain
 import in3.IN3
 import in3.Proof
@@ -120,7 +121,9 @@ class IncubedRpcApiProvider(
         }
 
         return eth1.getLogs(logFilter).map {
-            EthereumLog(it.address, it.blockHash, it.blockNumber, "" /* TODO JNI Log class from in3-c doesn't have field 'data', need to add */, it.logIndex, it.isRemoved, it.topics.toList(), it.transactionHash, it.gettTansactionIndex())
+            EthereumLog(it.address, it.blockHash, it.blockNumber, "" */
+/* TODO JNI Log class from in3-c doesn't have field 'data', need to add *//*
+, it.logIndex, it.isRemoved, it.topics.toList(), it.transactionHash, it.gettTansactionIndex())
         }
     }
 
@@ -193,3 +196,4 @@ class IncubedRpcApiProvider(
     }
 
 }
+*/

@@ -127,7 +127,6 @@ class SwapFragment : Fragment() {
         toAmount.addTextChangedListener(toAmountListener)
 
         updateLabels(TradeType.ExactIn)
-        syncSwapData()
     }
 
     private fun pathDescription(path: List<Token>): String {

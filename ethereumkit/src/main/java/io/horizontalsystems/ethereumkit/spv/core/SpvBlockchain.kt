@@ -1,14 +1,10 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
-import io.horizontalsystems.ethereumkit.api.ApiBlockchain
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.crypto.ECKey
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.EthereumLog
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionStatus
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
@@ -23,7 +19,9 @@ import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+import java.util.*
 import java.util.logging.Logger
+import kotlin.collections.HashMap
 
 class SpvBlockchain(
         private val peer: IPeer,
@@ -82,35 +80,28 @@ class SpvBlockchain(
         }
     }
 
-    override fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         TODO("not implemented")
     }
 
-    override fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus> {
-        return rpcApiProvider.transactionReceiptStatus(transactionHash)
+    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>> {
+        TODO("not implemented")
     }
 
-    override fun transactionExist(transactionHash: ByteArray): Single<Boolean> {
-        return rpcApiProvider.transactionExist(transactionHash)
+    override fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>> {
+        TODO("not implemented")
     }
 
     override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
         TODO("not implemented")
     }
 
-    override fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray> {
+    override fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
         TODO("not implemented")
     }
 
-    override fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<ByteArray> {
-        return rpcApiProvider.call(contractAddress, data, blockNumber).flatMap<ByteArray> { value ->
-            val rawValue = try {
-                value.hexStringToByteArray()
-            } catch (ex: Exception) {
-                return@flatMap Single.error(ApiBlockchain.ApiException.InvalidData())
-            }
-            Single.just(rawValue)
-        }
+    override fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+        TODO("not implemented")
     }
 
     //-------------IPeerListener--------------------

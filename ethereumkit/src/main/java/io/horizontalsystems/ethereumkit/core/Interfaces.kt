@@ -1,11 +1,13 @@
 package io.horizontalsystems.ethereumkit.core
 
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
 import java.math.BigInteger
+import java.util.*
 
 
 interface IApiStorage {
@@ -38,13 +40,13 @@ interface IBlockchain {
     val balance: BigInteger?
 
     fun send(rawTransaction: RawTransaction): Single<Transaction>
-    fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
-    fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus>
-    fun transactionExist(transactionHash: ByteArray): Single<Boolean>
+    fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
+    fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>>
+    fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>>
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
-    fun getStorageAt(contractAddress: Address, position: ByteArray, blockNumber: Long): Single<ByteArray>
-    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<ByteArray>
+    fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
+    fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
 }
 
 interface IBlockchainListener {
@@ -57,20 +59,7 @@ interface IBlockchainListener {
 interface IRpcApiProvider {
     val source: String
 
-    fun getLastBlockHeight(): Single<Long>
-    fun getTransactionCount(): Single<Long>
-
-    fun getBalance(): Single<BigInteger>
-
-    fun send(signedTransaction: ByteArray): Single<Unit>
-
-    fun getStorageAt(contractAddress: Address, position: String, blockNumber: Long?): Single<String>
-    fun getLogs(address: Address?, fromBlock: Long, toBlock: Long, topics: List<ByteArray?>): Single<List<EthereumLog>>
-    fun getBlock(blockNumber: Long): Single<Block>
-    fun call(contractAddress: Address, data: ByteArray, blockNumber: Long?): Single<String>
-    fun estimateGas(to: Address, value: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: String?): Single<Long>
-    fun transactionReceiptStatus(transactionHash: ByteArray): Single<TransactionStatus>
-    fun transactionExist(transactionHash: ByteArray): Single<Boolean>
+    fun <T> single(rpc: JsonRpc<T>): Single<T>
 }
 
 interface ITransactionManager {
