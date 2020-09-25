@@ -4,10 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.horizontalsystems.ethereumkit.api.ApiRpcSyncer
-import io.horizontalsystems.ethereumkit.api.IRpcSyncer
-import io.horizontalsystems.ethereumkit.api.RpcBlockchain
-import io.horizontalsystems.ethereumkit.api.WebSocketRpcSyncer
+import io.horizontalsystems.ethereumkit.api.*
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
@@ -320,10 +317,18 @@ class EthereumKit(
 
             val syncer: IRpcSyncer = when (syncSource) {
                 is SyncSource.Infura -> {
-                    ApiRpcSyncer.instance(address, infuraDomain, syncSource.id, syncSource.secret, connectionManager, gson)
+                    ApiRpcSyncer(address, InfuraRpcApiProvider(infuraDomain, syncSource.id, syncSource.secret, gson), connectionManager)
                 }
                 is SyncSource.InfuraWebSocket -> {
-                    WebSocketRpcSyncer.instance(address, infuraDomain, syncSource.id, syncSource.secret, application, gson)
+                    val rpcWebSocket: IRpcWebSocket = InfuraRpcWebSocket(infuraDomain, syncSource.id, syncSource.secret, application, gson)
+                    val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
+
+                    rpcWebSocket.listener = webSocketRpcSyncer
+
+                    webSocketRpcSyncer
+                }
+                is SyncSource.Incubed -> {
+                    ApiRpcSyncer(address, IncubedRpcApiProvider(networkType, gson), connectionManager)
                 }
             }
 
@@ -410,6 +415,7 @@ class EthereumKit(
     sealed class SyncSource {
         class InfuraWebSocket(val id: String, val secret: String?) : SyncSource()
         class Infura(val id: String, val secret: String?) : SyncSource()
+        object Incubed : SyncSource()
     }
 
     sealed class WordsSyncMode {
