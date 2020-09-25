@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.api
 
-import android.app.Application
 import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
@@ -116,7 +115,7 @@ class WebSocketRpcSyncer(
         try {
             send(rpc) { response ->
                 try {
-                    onSuccess(rpc.parse(response, gson))
+                    onSuccess(rpc.parseResponse(response, gson))
                 } catch (error: Throwable) {
                     onError(error)
                 }
@@ -199,16 +198,4 @@ class WebSocketRpcSyncer(
     private fun onFailSync(error: Throwable) {
         syncState = EthereumKit.SyncState.NotSynced(error)
     }
-
-    companion object {
-        fun instance(address: Address, domain: String, projectId: String, projectSecret: String?, app: Application, gson: Gson): WebSocketRpcSyncer {
-            val infuraRpcWebSocket = InfuraRpcWebSocket(domain, projectId, projectSecret, app, gson)
-            val webSocketRpcSyncer = WebSocketRpcSyncer(address, infuraRpcWebSocket, gson)
-
-            infuraRpcWebSocket.listener = webSocketRpcSyncer
-
-            return webSocketRpcSyncer
-        }
-    }
-
 }

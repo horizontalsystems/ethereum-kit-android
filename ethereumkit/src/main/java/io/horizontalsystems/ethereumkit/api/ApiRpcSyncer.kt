@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.api
 
-import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
@@ -95,12 +94,4 @@ class ApiRpcSyncer(
                     disposables.add(it)
                 }
     }
-
-    companion object {
-        fun instance(address: Address, domain: String, projectId: String, projectSecret: String?, connectionManager: ConnectionManager, gson: Gson): ApiRpcSyncer {
-            val infuraRpcApiProvider = InfuraRpcApiProvider(domain, projectId, projectSecret, gson)
-            return ApiRpcSyncer(address, infuraRpcApiProvider, connectionManager)
-        }
-    }
-
 }

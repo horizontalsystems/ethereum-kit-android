@@ -64,7 +64,7 @@ class InfuraRpcApiProvider(
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
         return service.single(projectId, gson.toJson(rpc))
                 .map { response ->
-                    rpc.parse(response, gson)
+                    rpc.parseResponse(response, gson)
                 }
     }
 
