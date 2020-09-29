@@ -184,7 +184,7 @@ class WebSocketRpcSyncer(
                     onFailSync(error)
                 },
                 successHandler = { header ->
-//                    delegate?.didUpdate(header.logsBloom) TODO
+                    listener?.didUpdateLastBlockLogsBloom(header.logsBloom)
                     listener?.didUpdateLastBlockHeight(lastBlockHeight = header.number)
                     fetchBalance()
                 },

@@ -51,9 +51,9 @@ interface IBlockchain {
 
 interface IBlockchainListener {
     fun onUpdateLastBlockHeight(lastBlockHeight: Long)
-
     fun onUpdateBalance(balance: BigInteger)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
+    fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter)
 }
 
 interface IRpcApiProvider {
