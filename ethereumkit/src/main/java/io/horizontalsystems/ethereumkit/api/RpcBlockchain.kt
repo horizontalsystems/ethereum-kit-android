@@ -127,13 +127,17 @@ class RpcBlockchain(
     }
     //endregion
 
-    //region IRpcSyncerDelegate
+    //region IRpcSyncerListener
     override fun didUpdateSyncState(syncState: SyncState) {
         listener?.onUpdateSyncState(syncState)
     }
 
     override fun didUpdateLastBlockLogsBloom(lastBlockLogsBloom: String) {
-        //TODO
+        val bloomFilter = BloomFilter(lastBlockLogsBloom)
+
+        if (bloomFilter.mayContainUserAddress(address)) {
+            listener?.onUpdateLogsBloomFilter(bloomFilter)
+        }
     }
 
     override fun didUpdateLastBlockHeight(lastBlockHeight: Long) {

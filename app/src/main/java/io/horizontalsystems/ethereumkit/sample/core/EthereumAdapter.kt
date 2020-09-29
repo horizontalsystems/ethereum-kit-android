@@ -43,7 +43,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         get() = ethereumKit.transactionsSyncStateFlowable.map { Unit }
 
     override val balanceFlowable: Flowable<Unit>
-        get() = ethereumKit.syncStateFlowable.map { Unit }
+        get() = ethereumKit.balanceFlowable.map { Unit }
 
     override val transactionsFlowable: Flowable<Unit>
         get() = ethereumKit.transactionsFlowable.map { Unit }

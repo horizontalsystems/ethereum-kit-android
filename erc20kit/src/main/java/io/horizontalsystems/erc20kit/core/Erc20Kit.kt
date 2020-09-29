@@ -5,7 +5,7 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
+import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -14,6 +14,7 @@ import io.reactivex.disposables.CompositeDisposable
 import java.math.BigInteger
 
 class Erc20Kit(
+        private val contractAddress: Address,
         private val ethereumKit: EthereumKit,
         private val transactionManager: ITransactionManager,
         private val balanceManager: IBalanceManager,
@@ -34,8 +35,15 @@ class Erc20Kit(
         state.balance = balanceManager.balance
 
         ethereumKit.syncStateFlowable
-                .subscribe { syncState ->
-                    onSyncStateUpdate(syncState)
+                .subscribe {
+                    onSyncStateUpdate(it)
+                }.let {
+                    disposables.add(it)
+                }
+
+        ethereumKit.lastBlockBloomFilterFlowable
+                .subscribe {
+                    onUpdateLastBlockBloomFilter(it)
                 }.let {
                     disposables.add(it)
                 }
@@ -49,6 +57,12 @@ class Erc20Kit(
                 state.syncState = Syncing
                 balanceManager.sync()
             }
+        }
+    }
+
+    private fun onUpdateLastBlockBloomFilter(bloomFilter: BloomFilter) {
+        if (bloomFilter.mayContainContractAddress(contractAddress)) {
+            balanceManager.sync()
         }
     }
 
@@ -162,7 +176,7 @@ class Erc20Kit(
             val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
             val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address, transactionStorage)
 
-            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, allowanceManager)
+            val erc20Kit = Erc20Kit(contractAddress, ethereumKit, transactionManager, balanceManager, allowanceManager)
 
             transactionManager.listener = erc20Kit
             balanceManager.listener = erc20Kit

@@ -35,6 +35,7 @@ class EthereumKit(
 
     private val logger = Logger.getLogger("EthereumKit")
 
+    private val lastBlockBloomFilterSubject = PublishSubject.create<BloomFilter>()
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
     private val transactionsSyncStateSubject = PublishSubject.create<SyncState>()
@@ -69,6 +70,9 @@ class EthereumKit(
 
     val lastBlockHeightFlowable: Flowable<Long>
         get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
+
+    val lastBlockBloomFilterFlowable: Flowable<BloomFilter>
+        get() = lastBlockBloomFilterSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val syncStateFlowable: Flowable<SyncState>
         get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -203,7 +207,7 @@ class EthereumKit(
     }
 
     //
-    //IBlockchain
+    //IBlockchainListener
     //
 
     override fun onUpdateLastBlockHeight(lastBlockHeight: Long) {
@@ -224,6 +228,10 @@ class EthereumKit(
 
         state.balance = balance
         balanceSubject.onNext(balance)
+    }
+
+    override fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter) {
+        lastBlockBloomFilterSubject.onNext(bloomFilter)
     }
 
     //
