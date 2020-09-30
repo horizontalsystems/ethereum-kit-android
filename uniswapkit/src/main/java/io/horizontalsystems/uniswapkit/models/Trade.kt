@@ -10,6 +10,7 @@ class Trade(
 ) : Comparable<Trade> {
     val executionPrice = Price(baseTokenAmount = tokenAmountIn, quoteTokenAmount = tokenAmountOut)
     val priceImpact = computePriceImpact(route.midPrice, tokenAmountIn, tokenAmountOut)
+    val liquidityProviderFee = computeLiquidityProviderFee(route.pairs.size)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -41,6 +42,10 @@ class Trade(
         private fun computePriceImpact(midPrice: Price, tokenAmountIn: TokenAmount, tokenAmountOut: TokenAmount): Fraction {
             val exactQuote = midPrice.value * Fraction(tokenAmountIn.rawAmount) * Fraction(BigInteger.valueOf(997), BigInteger.valueOf(1000))
             return (exactQuote - Fraction(tokenAmountOut.rawAmount)) / exactQuote * Fraction(BigInteger.valueOf(100))
+        }
+
+        private fun computeLiquidityProviderFee(routeLength: Int): Fraction {
+            return Fraction(BigInteger.ONE) - Fraction(BigInteger.valueOf(997).pow(routeLength), BigInteger.valueOf(1000).pow(routeLength))
         }
     }
 }
