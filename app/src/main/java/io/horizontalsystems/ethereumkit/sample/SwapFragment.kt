@@ -95,6 +95,8 @@ class SwapFragment : Fragment() {
 
                 priceImpact.text = "Price Impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%"
 
+                providerFee.text = "Provider Fee: ${tradeData.providerFee?.toPlainString() ?: ""}"
+
                 path.text = "Path: ${pathDescription(tradeData.path)}"
 
                 updateLabels(tradeData.type)

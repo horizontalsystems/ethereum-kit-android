@@ -36,6 +36,15 @@ class TradeData(
 
     val priceImpact: BigDecimal? = trade.priceImpact.toBigDecimal(2)
 
+    val providerFee: BigDecimal?
+        get() {
+            val amount = (if (type == TradeType.ExactIn) amountIn else amountInMax) ?: return null
+
+            return trade.liquidityProviderFee.toBigDecimal(trade.tokenAmountIn.token.decimals)?.let {
+                it * amount
+            }
+        }
+
     val path: List<Token> = trade.route.path
 
 }
