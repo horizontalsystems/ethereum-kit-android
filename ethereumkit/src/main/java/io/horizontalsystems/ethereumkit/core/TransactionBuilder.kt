@@ -11,16 +11,16 @@ import java.math.BigInteger
 
 class TransactionBuilder(private val address: Address) {
 
-    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: Address, value: BigInteger, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
-        return RawTransaction(gasPrice, gasLimit, to, value, transactionInput)
+    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: Address, value: BigInteger, nonce: Long, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
+        return RawTransaction(gasPrice, gasLimit, to, value, nonce, transactionInput)
     }
 
-    fun transaction(rawTransaction: RawTransaction, nonce: Long, signature: Signature): Transaction {
-        val transactionHash = CryptoUtils.sha3(encode(rawTransaction, nonce, signature))
+    fun transaction(rawTransaction: RawTransaction, signature: Signature): Transaction {
+        val transactionHash = CryptoUtils.sha3(encode(rawTransaction, signature))
 
         return Transaction(
                 hash = transactionHash,
-                nonce = nonce,
+                nonce = rawTransaction.nonce,
                 input = rawTransaction.data,
                 from = address,
                 to = rawTransaction.to,
@@ -31,9 +31,9 @@ class TransactionBuilder(private val address: Address) {
         )
     }
 
-    fun encode(rawTransaction: RawTransaction, nonce: Long, signature: Signature): ByteArray {
+    fun encode(rawTransaction: RawTransaction, signature: Signature): ByteArray {
         return RLP.encodeList(
-                RLP.encodeLong(nonce),
+                RLP.encodeLong(rawTransaction.nonce),
                 RLP.encodeLong(rawTransaction.gasPrice),
                 RLP.encodeLong(rawTransaction.gasLimit),
                 RLP.encodeElement(rawTransaction.to.raw),

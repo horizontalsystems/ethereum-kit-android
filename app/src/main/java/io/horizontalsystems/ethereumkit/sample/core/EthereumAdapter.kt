@@ -57,7 +57,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     }
 
     override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
-        return ethereumKit.send(address, amount.movePointRight(decimal).toBigInteger(), gasPrice, gasLimit).map { Unit }
+        return ethereumKit.send(address, amount.movePointRight(decimal).toBigInteger(), byteArrayOf(), gasPrice, gasLimit).map { Unit }
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {

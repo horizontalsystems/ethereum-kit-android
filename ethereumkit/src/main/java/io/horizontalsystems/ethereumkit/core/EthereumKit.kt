@@ -157,24 +157,20 @@ class EthereumKit(
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
-        return send(to, value, ByteArray(0), gasPrice, gasLimit)
-    }
+    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<TransactionWithInternal> {
+        val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce()
 
-    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, to, value, transactionInput)
-        logger.info("send rawTransaction: $rawTransaction")
+        return nonceSingle.flatMap { nonce ->
+            val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, to, value, nonce, transactionInput)
+            logger.info("send rawTransaction: $rawTransaction")
 
-        val fee = gasPrice.toBigInteger().times(gasLimit.toBigInteger())
-        val totalValue = value.add(fee)
-
-        logger.info("fee = $fee, total value = $totalValue, balance = $balance")
-
-        return blockchain.send(rawTransaction)
-                .doOnSuccess { transaction ->
-                    transactionManager.handle(transaction)
-                }
-                .map { (TransactionWithInternal(it)) }
+            blockchain.send(rawTransaction)
+                    .doOnSuccess { transaction ->
+                        transactionManager.handle(transaction)
+                    }.map {
+                        TransactionWithInternal(it)
+                    }
+        }
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {

@@ -45,23 +45,16 @@ class RpcBlockchain(
     }
 
     override fun send(rawTransaction: RawTransaction): Single<Transaction> {
-        return syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Pending))
-                .flatMap { nonce ->
-                    send(rawTransaction, nonce)
-                }.doOnSuccess {
-//                    sync() TODO is sync needed?
-                }
-    }
-
-    private fun send(rawTransaction: RawTransaction, nonce: Long): Single<Transaction> {
-        val signature = transactionSigner.signature(rawTransaction, nonce)
-        val transaction = transactionBuilder.transaction(rawTransaction, nonce, signature)
-        val encoded = transactionBuilder.encode(rawTransaction, nonce, signature)
+        val signature = transactionSigner.signature(rawTransaction)
+        val transaction = transactionBuilder.transaction(rawTransaction, signature)
+        val encoded = transactionBuilder.encode(rawTransaction, signature)
 
         return syncer.single(SendRawTransactionJsonRpc(encoded))
-                .map {
-                    transaction
-                }
+                .map { transaction }
+    }
+
+    override fun getNonce(): Single<Long> {
+        return syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Pending))
     }
 
     override fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {

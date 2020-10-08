@@ -26,7 +26,7 @@ class SendTransactionTaskHandler(val listener: Listener? = null) : ITaskHandler,
 
         tasks[requestId] = task
 
-        val message = SendTransactionMessage(requestId, task.rawTransaction, task.nonce, task.signature)
+        val message = SendTransactionMessage(requestId, task.rawTransaction, task.signature)
 
         requester.send(message)
 
