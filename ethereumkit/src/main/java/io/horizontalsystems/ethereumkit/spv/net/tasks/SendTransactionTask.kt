@@ -6,5 +6,4 @@ import io.horizontalsystems.ethereumkit.spv.models.Signature
 
 class SendTransactionTask(val sendId: Int,
                           val rawTransaction: RawTransaction,
-                          val nonce: Long,
                           val signature: Signature) : ITask

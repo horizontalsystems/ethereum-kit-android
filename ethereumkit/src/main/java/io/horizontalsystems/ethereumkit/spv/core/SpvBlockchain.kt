@@ -80,6 +80,10 @@ class SpvBlockchain(
         }
     }
 
+    override fun getNonce(): Single<Long> {
+        TODO("not implemented")
+    }
+
     override fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         TODO("not implemented")
     }
@@ -161,7 +165,7 @@ class SpvBlockchain(
 
             val blockSyncer = BlockSyncer(storage, blockHelper, blockValidator)
             val accountStateSyncer = AccountStateSyncer(storage, address)
-            val transactionSender = TransactionSender(storage, transactionBuilder, transactionSigner)
+            val transactionSender = TransactionSender(transactionBuilder, transactionSigner)
 
             val spvBlockchain = SpvBlockchain(peer, blockSyncer, accountStateSyncer, transactionSender, storage, network, rpcApiProvider)
 

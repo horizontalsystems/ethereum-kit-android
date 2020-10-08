@@ -7,11 +7,13 @@ import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
-class TransactionSigner(private val network: INetwork,
-                        private val privateKey: BigInteger) {
+class TransactionSigner(
+        private val network: INetwork,
+        private val privateKey: BigInteger
+) {
 
-    fun signature(rawTransaction: RawTransaction, nonce: Long): Signature {
-        val signatureData = sign(rawTransaction, nonce)
+    fun signature(rawTransaction: RawTransaction): Signature {
+        val signatureData = sign(rawTransaction)
 
         return signature(signatureData)
     }
@@ -22,9 +24,9 @@ class TransactionSigner(private val network: INetwork,
                 s = signatureData.copyOfRange(32, 64))
     }
 
-    private fun sign(rawTransaction: RawTransaction, nonce: Long): ByteArray {
+    private fun sign(rawTransaction: RawTransaction): ByteArray {
         val encodedTransaction = RLP.encodeList(
-                RLP.encodeLong(nonce),
+                RLP.encodeLong(rawTransaction.nonce),
                 RLP.encodeLong(rawTransaction.gasPrice),
                 RLP.encodeLong(rawTransaction.gasLimit),
                 RLP.encodeElement(rawTransaction.to.raw),
