@@ -25,6 +25,7 @@ class EthereumKit(
         private val blockchain: IBlockchain,
         private val transactionManager: ITransactionManager,
         private val transactionBuilder: TransactionBuilder,
+        private val transactionSigner: TransactionSigner,
         private val connectionManager: ConnectionManager,
         private val address: Address,
         val networkType: NetworkType,
@@ -171,6 +172,12 @@ class EthereumKit(
                         TransactionWithInternal(it)
                     }
         }
+    }
+
+    fun signedTransaction(address: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long): ByteArray {
+        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput)
+        val signature = transactionSigner.signature(rawTransaction)
+        return transactionBuilder.encode(rawTransaction, signature)
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
@@ -367,7 +374,7 @@ class EthereumKit(
             val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
             val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, connectionManager, address, networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
             transactionManager.listener = ethereumKit
