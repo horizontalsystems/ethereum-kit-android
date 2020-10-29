@@ -61,4 +61,5 @@ interface IRpcSyncerListener {
     fun didUpdateLastBlockLogsBloom(lastBlockLogsBloom: String)
     fun didUpdateLastBlockHeight(lastBlockHeight: Long)
     fun didUpdateBalance(balance: BigInteger)
+    fun didUpdateNonce(nonce: Long)
 }

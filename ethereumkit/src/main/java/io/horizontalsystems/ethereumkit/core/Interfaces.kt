@@ -55,6 +55,7 @@ interface IBlockchainListener {
     fun onUpdateBalance(balance: BigInteger)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
     fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter)
+    fun onUpdateNonce(nonce: Long)
 }
 
 interface IRpcApiProvider {
@@ -68,7 +69,7 @@ interface ITransactionManager {
     val source: String
     var listener: ITransactionManagerListener?
 
-    fun refresh()
+    fun refresh(delay: Boolean)
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
     fun handle(transaction: Transaction)
 }

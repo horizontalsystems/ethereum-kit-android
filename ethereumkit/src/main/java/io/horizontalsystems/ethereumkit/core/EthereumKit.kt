@@ -93,7 +93,6 @@ class EthereumKit(
         started = true
 
         blockchain.start()
-        transactionManager.refresh()
     }
 
     fun stop() {
@@ -103,8 +102,8 @@ class EthereumKit(
     }
 
     fun refresh() {
-        blockchain.refresh()
-        transactionManager.refresh()
+//        blockchain.refresh()
+//        transactionManager.refresh(false)
     }
 
     fun onEnterForeground() {
@@ -226,15 +225,22 @@ class EthereumKit(
     }
 
     override fun onUpdateBalance(balance: BigInteger) {
-        if (state.balance == balance)
-            return
+        if (state.balance == balance) return
 
+        transactionManager.refresh(state.balance != null)
         state.balance = balance
         balanceSubject.onNext(balance)
     }
 
     override fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter) {
         lastBlockBloomFilterSubject.onNext(bloomFilter)
+    }
+
+    override fun onUpdateNonce(nonce: Long) {
+        if (state.nonce == nonce) return
+
+        transactionManager.refresh(state.nonce != null)
+        state.nonce = nonce
     }
 
     //
