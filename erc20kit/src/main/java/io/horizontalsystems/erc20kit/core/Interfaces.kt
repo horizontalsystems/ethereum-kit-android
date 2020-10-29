@@ -11,6 +11,7 @@ import java.math.BigInteger
 data class TransactionKey(val hash: ByteArray, val interTransactionIndex: Int)
 
 interface ITransactionManagerListener {
+    fun onSyncStarted()
     fun onSyncSuccess(transactions: List<Transaction>)
     fun onSyncTransactionsError(error: Throwable)
 }
@@ -18,8 +19,10 @@ interface ITransactionManagerListener {
 interface ITransactionManager {
     var listener: ITransactionManagerListener?
 
+    fun immediateSync()
+    fun delayedSync(expectTransaction: Boolean)
+
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
-    fun sync()
     fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
     fun getTransactionInput(to: Address, value: BigInteger): ByteArray
 }

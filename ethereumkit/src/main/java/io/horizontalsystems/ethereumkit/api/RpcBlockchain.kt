@@ -142,6 +142,11 @@ class RpcBlockchain(
         storage.saveBalance(balance)
         listener?.onUpdateBalance(balance)
     }
+
+    override fun didUpdateNonce(nonce: Long) {
+        listener?.onUpdateNonce(nonce)
+    }
+
     //endregion
 
     companion object {

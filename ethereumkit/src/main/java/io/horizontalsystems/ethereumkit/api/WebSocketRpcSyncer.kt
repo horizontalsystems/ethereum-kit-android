@@ -1,10 +1,7 @@
 package io.horizontalsystems.ethereumkit.api
 
 import com.google.gson.Gson
-import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.SubscribeJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.*
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.NewHeadsRpcSubscription
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.RpcSubscription
 import io.horizontalsystems.ethereumkit.core.EthereumKit
@@ -150,6 +147,7 @@ class WebSocketRpcSyncer(
                 onSuccess = { lastBlockHeight ->
                     listener?.didUpdateLastBlockHeight(lastBlockHeight)
                     fetchBalance()
+                    fetchNonce()
                 },
                 onError = { error ->
                     onFailSync(error)
@@ -163,6 +161,18 @@ class WebSocketRpcSyncer(
                 onSuccess = { balance ->
                     listener?.didUpdateBalance(balance)
                     syncState = EthereumKit.SyncState.Synced()
+                },
+                onError = { error ->
+                    onFailSync(error)
+                }
+        )
+    }
+
+    private fun fetchNonce() {
+        send(
+                rpc = GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest),
+                onSuccess = { nonce ->
+                    listener?.didUpdateNonce(nonce)
                 },
                 onError = { error ->
                     onFailSync(error)
@@ -187,6 +197,7 @@ class WebSocketRpcSyncer(
                     listener?.didUpdateLastBlockLogsBloom(header.logsBloom)
                     listener?.didUpdateLastBlockHeight(lastBlockHeight = header.number)
                     fetchBalance()
+                    fetchNonce()
                 },
                 errorHandler = { error ->
                     error.printStackTrace()

@@ -56,6 +56,7 @@ class Erc20Kit(
             is EthereumKit.SyncState.Synced -> {
                 state.syncState = Syncing
                 balanceManager.sync()
+                transactionManager.immediateSync()
             }
         }
     }
@@ -76,8 +77,8 @@ class Erc20Kit(
         get() = state.balance
 
     fun refresh() {
-        state.transactionsSyncState = Syncing
-        transactionManager.sync()
+//        state.transactionsSyncState = Syncing
+//        transactionManager.immediateSync()
     }
 
     fun estimateGas(toAddress: Address?, contractAddress: Address, value: BigInteger, gasPrice: Long?): Single<Long> {
@@ -134,6 +135,10 @@ class Erc20Kit(
 
     // ITransactionManagerListener
 
+    override fun onSyncStarted() {
+       state.transactionsSyncState = Syncing
+    }
+
     override fun onSyncSuccess(transactions: List<Transaction>) {
         state.transactionsSyncState = Synced
 
@@ -148,6 +153,14 @@ class Erc20Kit(
     // IBalanceManagerListener
 
     override fun onSyncBalanceSuccess(balance: BigInteger) {
+        if (state.balance == balance) {
+            if (state.syncState == Synced) {
+                transactionManager.delayedSync(false)
+            }
+        } else {
+            transactionManager.delayedSync(true)
+        }
+
         state.balance = balance
         state.syncState = Synced
     }
