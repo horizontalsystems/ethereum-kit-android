@@ -151,7 +151,7 @@ class EthereumKit(
         return blockchain.estimateGas(to, resolvedAmount, maxGasLimit, gasPrice, null)
     }
 
-    fun estimateGas(to: Address, value: BigInteger?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    fun estimateGas(to: Address?, value: BigInteger?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
