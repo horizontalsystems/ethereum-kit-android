@@ -41,7 +41,7 @@ interface IBlockchain {
 
     fun send(rawTransaction: RawTransaction): Single<Transaction>
     fun getNonce(): Single<Long>
-    fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
+    fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
     fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>>
     fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>>
 

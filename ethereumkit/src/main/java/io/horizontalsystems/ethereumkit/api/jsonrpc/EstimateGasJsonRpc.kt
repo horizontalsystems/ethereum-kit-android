@@ -6,7 +6,7 @@ import java.math.BigInteger
 
 class EstimateGasJsonRpc(
         @Transient val from: Address,
-        @Transient val to: Address,
+        @Transient val to: Address?,
         @Transient val amount: BigInteger?,
         @Transient val gasLimit: Long?,
         @Transient val gasPrice: Long?,
@@ -18,7 +18,7 @@ class EstimateGasJsonRpc(
 
     data class EstimateGasParams(
             val from: Address,
-            val to: Address,
+            val to: Address?,
             @SerializedName("value")
             val amount: BigInteger?,
             @SerializedName("gas")

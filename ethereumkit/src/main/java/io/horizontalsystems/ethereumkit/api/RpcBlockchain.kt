@@ -57,7 +57,7 @@ class RpcBlockchain(
         return syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Pending))
     }
 
-    override fun estimateGas(to: Address, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
         return syncer.single(EstimateGasJsonRpc(address, to, amount, gasLimit, gasPrice, data))
     }
 
