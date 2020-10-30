@@ -77,8 +77,6 @@ class Erc20Kit(
         get() = state.balance
 
     fun refresh() {
-//        state.transactionsSyncState = Syncing
-//        transactionManager.immediateSync()
     }
 
     fun estimateGas(toAddress: Address?, contractAddress: Address, value: BigInteger, gasPrice: Long?): Single<Long> {

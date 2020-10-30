@@ -102,8 +102,6 @@ class EthereumKit(
     }
 
     fun refresh() {
-//        blockchain.refresh()
-//        transactionManager.refresh(false)
     }
 
     fun onEnterForeground() {
