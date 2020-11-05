@@ -322,13 +322,18 @@ class MainViewModel : ViewModel() {
                 }
     }
 
-    fun approve(amount: BigDecimal) {
+    fun approve(decimalAmount: BigDecimal) {
         val spenderAddress = uniswapKit.routerAddress
 
-        erc20Adapter.estimateApprove(spenderAddress, amount, gasPrice)
+        val token = fromToken ?: return
+        val amount = decimalAmount.movePointRight(token.decimals).toBigInteger()
+
+        val transactionData = erc20Adapter.approveTransactionData(spenderAddress, amount)
+
+        ethereumKit.estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
                 .flatMap { gasLimit ->
                     logger.info("gas limit: $gasLimit")
-                    erc20Adapter.approve(spenderAddress, amount, gasPrice, gasLimit)
+                    ethereumKit.send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit)
                 }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
