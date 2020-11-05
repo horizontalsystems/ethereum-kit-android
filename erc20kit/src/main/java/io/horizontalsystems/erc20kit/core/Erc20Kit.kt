@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.core
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
@@ -93,15 +94,8 @@ class Erc20Kit(
         return allowanceManager.allowance(spenderAddress)
     }
 
-    fun estimateApprove(spenderAddress: Address, amount: BigInteger, gasPrice: Long): Single<Long> {
-        return allowanceManager.estimateApprove(spenderAddress, amount, gasPrice)
-    }
-
-    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
-        return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
-                .doOnSuccess { tx ->
-                    state.transactionsSubject.onNext(listOf(tx))
-                }
+    fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
+        return allowanceManager.approveTransactionData(spenderAddress, amount)
     }
 
     fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {

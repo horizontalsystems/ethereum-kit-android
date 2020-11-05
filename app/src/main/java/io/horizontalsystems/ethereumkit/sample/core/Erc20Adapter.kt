@@ -7,10 +7,12 @@ import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.sample.Erc20Token
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
+import java.math.BigInteger
 
 class Erc20Adapter(
         context: Context,
@@ -78,14 +80,8 @@ class Erc20Adapter(
         return erc20Kit.allowance(spenderAddress).map { allowance -> allowance.toBigDecimal().movePointLeft(decimals) }
     }
 
-    fun estimateApprove(spenderAddress: Address, amount: BigDecimal, gasPrice: Long): Single<Long> {
-        return erc20Kit.estimateApprove(spenderAddress, amount.movePointRight(decimals).toBigInteger(), gasPrice)
-    }
-
-    fun approve(spenderAddress: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<String> {
-        return erc20Kit.approve(spenderAddress, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map {
-            it.transactionHash.toHexString()
-        }
+    fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
+        return erc20Kit.approveTransactionData(spenderAddress, amount)
     }
 
     private fun transactionRecord(transaction: Transaction): TransactionRecord {
