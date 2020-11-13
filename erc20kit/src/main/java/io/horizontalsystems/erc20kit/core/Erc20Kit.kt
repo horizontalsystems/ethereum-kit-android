@@ -94,6 +94,13 @@ class Erc20Kit(
         return allowanceManager.allowance(spenderAddress)
     }
 
+    fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
+        return allowanceManager.approve(spenderAddress, amount, gasPrice, gasLimit)
+                .doOnSuccess { tx ->
+                    state.transactionsSubject.onNext(listOf(tx))
+                }
+    }
+
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
         return allowanceManager.approveTransactionData(spenderAddress, amount)
     }
