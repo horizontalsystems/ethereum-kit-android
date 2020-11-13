@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
@@ -78,6 +79,10 @@ class UniswapKit(
 
     fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
         return tradeManager.estimateSwap(tradeData, gasPrice)
+    }
+
+    fun transactionData(tradeData: TradeData): TransactionData {
+        return tradeManager.transactionData(tradeData)
     }
 
     fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {

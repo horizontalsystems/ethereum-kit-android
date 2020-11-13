@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
@@ -47,6 +48,12 @@ class TradeManager(
 
                     Pair(reserve0, reserve1)
                 }
+    }
+
+    fun transactionData(tradeData: TradeData): TransactionData {
+        return buildSwapData(tradeData).let {
+            TransactionData(routerAddress, it.amount, it.input)
+        }
     }
 
     fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
