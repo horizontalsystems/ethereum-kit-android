@@ -10,8 +10,8 @@ import java.math.BigInteger
         parentColumns = ["hash"],
         childColumns = ["hash"],
         onUpdate = ForeignKey.CASCADE,
-        onDelete = ForeignKey.CASCADE,
-        deferred = true)
+        onDelete = ForeignKey.CASCADE
+)
 ])
 class InternalTransaction(
         val hash: ByteArray,
