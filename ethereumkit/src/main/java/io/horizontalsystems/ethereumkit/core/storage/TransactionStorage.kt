@@ -1,8 +1,8 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
 import java.math.BigInteger
@@ -22,7 +22,13 @@ class TransactionStorage(private val database: TransactionDatabase) : ITransacti
     }
 
     override fun saveInternalTransactions(transactions: List<InternalTransaction>) {
-        database.transactionDao().insertInternal(transactions)
+        transactions.forEach {
+            try {
+                database.transactionDao().insertInternal(it)
+            } catch (error: Throwable) {
+                //ignore internal tx if no main tx exists
+            }
+        }
     }
 
     override fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>> {

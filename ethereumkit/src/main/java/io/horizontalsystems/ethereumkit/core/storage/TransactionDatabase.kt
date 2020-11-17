@@ -9,7 +9,7 @@ import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 
-@Database(entities = [Transaction::class, InternalTransaction::class], version = 3, exportSchema = false)
+@Database(entities = [Transaction::class, InternalTransaction::class], version = 4, exportSchema = false)
 @TypeConverters(RoomTypeConverters::class)
 abstract class TransactionDatabase : RoomDatabase() {
 

@@ -26,5 +26,5 @@ interface TransactionDao {
     fun getLastInternalTransaction(): InternalTransaction?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertInternal(internalTransactions: List<InternalTransaction>)
+    fun insertInternal(internalTransaction: InternalTransaction)
 }
