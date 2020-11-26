@@ -5,6 +5,7 @@ import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.reactivex.Single
 import java.math.BigInteger
@@ -16,10 +17,12 @@ class AllowanceManager(
         private val storage: ITransactionStorage
 ) {
 
-    fun allowance(spenderAddress: Address): Single<BigInteger> {
-        return ethereumKit.call(contractAddress, AllowanceMethod(address, spenderAddress).encodedABI()).map { result ->
-            BigInteger(result.sliceArray(0..31))
-        }
+    fun allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter): Single<BigInteger> {
+        return ethereumKit
+                .call(contractAddress, AllowanceMethod(address, spenderAddress).encodedABI(), defaultBlockParameter)
+                .map { result ->
+                    BigInteger(result.sliceArray(0..31))
+                }
     }
 
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {

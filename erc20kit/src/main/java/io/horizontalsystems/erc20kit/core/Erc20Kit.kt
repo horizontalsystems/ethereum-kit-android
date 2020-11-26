@@ -7,6 +7,7 @@ import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -90,8 +91,8 @@ class Erc20Kit(
         return ethereumKit.estimateGas(contractAddress, null, gasPrice, transactionInput)
     }
 
-    fun allowance(spenderAddress: Address): Single<BigInteger> {
-        return allowanceManager.allowance(spenderAddress)
+    fun allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<BigInteger> {
+        return allowanceManager.allowance(spenderAddress, defaultBlockParameter)
     }
 
     fun approve(spenderAddress: Address, amount: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction> {
