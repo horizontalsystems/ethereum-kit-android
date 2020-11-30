@@ -23,6 +23,7 @@ interface ITransactionManager {
     fun delayedSync(expectTransaction: Boolean)
 
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
+    fun getPendingTransactions(): List<Transaction>
     fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
     fun getTransactionInput(to: Address, value: BigInteger): ByteArray
 }
