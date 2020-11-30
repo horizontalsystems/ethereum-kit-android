@@ -35,6 +35,10 @@ class TransactionManager(
         return storage.getTransactions(fromTransaction, limit)
     }
 
+    override fun getPendingTransactions(): List<Transaction> {
+        return storage.getPendingTransactions()
+    }
+
     override fun immediateSync() {
         if (syncing.getAndSet(true)) return
 

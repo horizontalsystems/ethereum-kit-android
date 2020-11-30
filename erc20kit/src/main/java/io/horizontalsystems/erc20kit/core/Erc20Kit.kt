@@ -3,11 +3,11 @@ package io.horizontalsystems.erc20kit.core
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -117,6 +117,10 @@ class Erc20Kit(
         return transactionManager.getTransactions(fromTransaction, limit)
     }
 
+    fun pendingTransactions(): List<Transaction> {
+        return transactionManager.getPendingTransactions()
+    }
+
     val syncStateFlowable: Flowable<SyncState>
         get() = state.syncStateSubject.toFlowable(BackpressureStrategy.LATEST)
 
@@ -136,7 +140,7 @@ class Erc20Kit(
     // ITransactionManagerListener
 
     override fun onSyncStarted() {
-       state.transactionsSyncState = Syncing
+        state.transactionsSyncState = Syncing
     }
 
     override fun onSyncSuccess(transactions: List<Transaction>) {
