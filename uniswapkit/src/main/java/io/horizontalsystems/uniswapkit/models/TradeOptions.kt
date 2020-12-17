@@ -5,22 +5,23 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 class TradeOptions(
-        allowedSlippagePercent: BigDecimal = BigDecimal("0.5"),
-        var ttl: Long = 20 * 60,
+        var allowedSlippagePercent: BigDecimal = defaultAllowedSlippage,
+        var ttl: Long = defaultTtl,
         var recipient: Address? = null,
         var feeOnTransfer: Boolean = false
 ) {
-    val allowedSlippagePercent: BigDecimal
-
-    init {
-        val strippedSlippage = allowedSlippagePercent.stripTrailingZeros()
-        this.allowedSlippagePercent = strippedSlippage.setScale(strippedSlippage.scale() + 2)
-    }
 
     val slippageFraction: Fraction
         get() = try {
-            Fraction(allowedSlippagePercent / BigDecimal.valueOf(100))
+            val strippedSlippage = allowedSlippagePercent.stripTrailingZeros()
+            val scaledSlippage = strippedSlippage.setScale(strippedSlippage.scale() + 2)
+            Fraction(scaledSlippage / BigDecimal.valueOf(100))
         } catch (error: Exception) {
             Fraction(BigInteger.valueOf(5), BigInteger.valueOf(1000))
         }
+
+    companion object {
+        val defaultAllowedSlippage = BigDecimal("0.5")
+        val defaultTtl: Long = 20 * 60
+    }
 }
