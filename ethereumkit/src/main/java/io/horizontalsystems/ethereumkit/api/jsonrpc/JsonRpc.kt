@@ -18,6 +18,9 @@ abstract class JsonRpc<T>(
 
     fun parseResponse(response: RpcResponse, gson: Gson): T {
         if (response.error != null) {
+            if (ResponseError.InsufficientBalance.causes.firstOrNull { response.error.message.contains(it) } != null){
+                throw ResponseError.InsufficientBalance(response.error)
+            }
             throw ResponseError.RpcError(response.error)
         }
         return parseResult(response.result, gson)
@@ -34,5 +37,10 @@ abstract class JsonRpc<T>(
     sealed class ResponseError : Throwable() {
         class RpcError(val error: RpcResponse.Error) : ResponseError()
         class InvalidResult(val result: Any?) : ResponseError()
+        class InsufficientBalance(val result: Any?) : ResponseError(){
+            companion object{
+                val causes = listOf("execution reverted", "gas required exceeds")
+            }
+        }
     }
 }
