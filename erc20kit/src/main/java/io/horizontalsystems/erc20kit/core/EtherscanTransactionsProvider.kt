@@ -52,7 +52,7 @@ class EtherscanTransactionsProvider(private val etherscanService: EtherscanServi
         })
     }
 
-    private fun getEthereumTransactions(address: Address, contractAddress: Address, startBlock: Long): Single<List<io.horizontalsystems.ethereumkit.models.Transaction>> {
+    private fun getEthereumTransactions(address: Address, contractAddress: Address, startBlock: Long): Single<List<io.horizontalsystems.ethereumkit.models.EtherscanTransaction>> {
         return etherscanService.getTransactionList(address, startBlock)
                 .map {
                     it.result.mapNotNull { tx ->
@@ -70,7 +70,7 @@ class EtherscanTransactionsProvider(private val etherscanService: EtherscanServi
                             val gasPrice = tx.getValue("gasPrice").toLong()
                             val timestamp = tx.getValue("timeStamp").toLong()
 
-                            io.horizontalsystems.ethereumkit.models.Transaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
+                            io.horizontalsystems.ethereumkit.models.EtherscanTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
                                     .apply {
                                         blockHash = tx["blockHash"]?.hexStringToByteArray()
                                         blockNumber = tx["blockNumber"]?.toLongOrNull()

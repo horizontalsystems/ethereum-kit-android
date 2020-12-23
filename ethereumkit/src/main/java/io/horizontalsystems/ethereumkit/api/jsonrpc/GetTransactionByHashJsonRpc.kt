@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.api.jsonrpc
 
 import com.google.gson.reflect.TypeToken
-import io.horizontalsystems.ethereumkit.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import java.lang.reflect.Type
 import java.util.*
 

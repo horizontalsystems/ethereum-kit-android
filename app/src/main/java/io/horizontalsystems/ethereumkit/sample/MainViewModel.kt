@@ -6,6 +6,9 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.refactoring.IStorage
+import io.horizontalsystems.ethereumkit.core.refactoring.TransactionSyncer
+import io.horizontalsystems.ethereumkit.core.refactoring.NotSyncedTransactionPool
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
@@ -66,11 +69,11 @@ class MainViewModel : ViewModel() {
             Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
             Erc20Token("DAI-MAINNET", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18)
     )
-    val fromToken: Erc20Token? = tokens[1]
-    val toToken: Erc20Token? = tokens[0]
+    val fromToken: Erc20Token? = tokens[0]
+    val toToken: Erc20Token? = null//tokens[0]
 
     fun init() {
-        val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
+        val words = "".split(" ")
 
         val seed = Mnemonic().toSeed(words)
         val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
@@ -214,8 +217,13 @@ class MainViewModel : ViewModel() {
     //
 
     fun refresh() {
-        ethereumAdapter.refresh()
-        erc20Adapter.refresh()
+//        ethereumAdapter.refresh()
+//        erc20Adapter.refresh()
+
+//        val storage = io.horizontalsystems.ethereumkit.core.refactoring.Storage()
+//        val hashPool = NotSyncedTransactionPool(storage)
+//        val syncer = TransactionSyncer(hashPool, ethereumKit.blockchain)
+
     }
 
     fun clear() {
@@ -388,7 +396,7 @@ class MainViewModel : ViewModel() {
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe({ tx ->
                         swapStatus.value = null
-                        logger.info("swap SUCCESS, txHash=${tx.transaction.hash.toHexString()}")
+                        logger.info("swap SUCCESS, txHash=${tx.hash.toHexString()}")
                     }, {
                         swapStatus.value = it
                         logger.info("swap ERROR, error=${it.message}")

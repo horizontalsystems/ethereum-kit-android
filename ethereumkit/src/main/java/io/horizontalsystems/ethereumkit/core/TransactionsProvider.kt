@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
@@ -14,7 +14,7 @@ class TransactionsProvider(
     override val source: String
         get() = "etherscan.io"
 
-    override fun getTransactions(startBlock: Long): Single<List<Transaction>> {
+    override fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>> {
         return etherscanService.getTransactionList(address, startBlock)
                 .map { response ->
                     response.result.distinctBy { it["hash"] }.mapNotNull { tx ->
@@ -29,7 +29,7 @@ class TransactionsProvider(
                             val gasPrice = tx.getValue("gasPrice").toLong()
                             val timestamp = tx.getValue("timeStamp").toLong()
 
-                            Transaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
+                            EtherscanTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
                                     .apply {
                                         blockHash = tx["blockHash"]?.hexStringToByteArray()
                                         blockNumber = tx["blockNumber"]?.toLongOrNull()

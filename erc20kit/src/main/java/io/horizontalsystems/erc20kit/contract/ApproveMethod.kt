@@ -14,17 +14,12 @@ class ApproveMethod(val spender: Address, val value: BigInteger) : ContractMetho
         return listOf(
                 Transaction(
                         transactionHash = ethTx.hash,
-                        interTransactionIndex = 0,
-                        transactionIndex = ethTx.transactionIndex,
                         from = ethTx.from,
                         to = spender,
                         value = value,
                         timestamp = ethTx.timestamp,
                         type = Transaction.TransactionType.APPROVE
-                ).apply {
-                    blockHash = ethTx.blockHash
-                    blockNumber = ethTx.blockNumber
-                }
+                )
         )
     }
 

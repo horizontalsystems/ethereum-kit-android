@@ -2,7 +2,7 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.EthereumLog
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.reactivex.Single
 import java.math.BigInteger
@@ -60,7 +60,7 @@ interface ITokenBalanceStorage {
 interface IDataProvider {
     val lastBlockHeight: Long
 
-    fun getTransactionLogs(contractAddress: Address, address: Address, from: Long, to: Long): Single<List<EthereumLog>>
+//    fun getTransactionLogs(contractAddress: Address, address: Address, from: Long, to: Long): Single<List<TransactionLog>>
     fun getBalance(contractAddress: Address, address: Address): Single<BigInteger>
     fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
     fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>>

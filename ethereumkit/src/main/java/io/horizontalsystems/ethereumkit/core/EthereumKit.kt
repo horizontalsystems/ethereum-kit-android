@@ -5,9 +5,14 @@ import android.content.Context
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.*
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
+import io.horizontalsystems.ethereumkit.core.refactoring.Storage
+import io.horizontalsystems.ethereumkit.core.refactoring.TransactionManager
+import io.horizontalsystems.ethereumkit.core.refactoring.TransactionSyncManager
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
@@ -22,8 +27,9 @@ import java.util.*
 import java.util.logging.Logger
 
 class EthereumKit(
-        private val blockchain: IBlockchain,
-        private val transactionManager: ITransactionManager,
+        val blockchain: IBlockchain, // make public for testing
+        private val transactionManager: TransactionManager,
+        private val transactionSyncManager: TransactionSyncManager,
         private val transactionBuilder: TransactionBuilder,
         private val transactionSigner: TransactionSigner,
         private val connectionManager: ConnectionManager,
@@ -32,16 +38,15 @@ class EthereumKit(
         val walletId: String,
         val etherscanKey: String,
         private val state: EthereumKitState = EthereumKitState()
-) : IBlockchainListener, ITransactionManagerListener {
+) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
 
     private val lastBlockBloomFilterSubject = PublishSubject.create<BloomFilter>()
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
-    private val transactionsSyncStateSubject = PublishSubject.create<SyncState>()
     private val balanceSubject = PublishSubject.create<BigInteger>()
-    private val transactionsSubject = PublishSubject.create<List<TransactionWithInternal>>()
+    private val nonceSubject = PublishSubject.create<Long>()
 
     val defaultGasLimit: Long = 21_000
     private val maxGasLimit: Long = 1_000_000
@@ -64,7 +69,7 @@ class EthereumKit(
         get() = blockchain.syncState
 
     val transactionsSyncState: SyncState
-        get() = transactionManager.syncState
+        get() = transactionSyncManager.state
 
     val receiveAddress: Address
         get() = address
@@ -79,13 +84,16 @@ class EthereumKit(
         get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val transactionsSyncStateFlowable: Flowable<SyncState>
-        get() = transactionsSyncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+        get() = transactionSyncManager.stateFlowable
 
     val balanceFlowable: Flowable<BigInteger>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsFlowable: Flowable<List<TransactionWithInternal>>
-        get() = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val transactionsFlowable: Flowable<List<FullTransaction>>
+        get() = transactionManager.etherTransactionsFlowable
+
+    val nonceFlowable: Flowable<Long>
+        get() = nonceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun start() {
         if (started)
@@ -112,8 +120,8 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<TransactionWithInternal>> {
-        return transactionManager.getTransactions(fromHash, limit)
+    fun etherTransactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
+        return transactionManager.getEtherTransactions(fromHash, limit)
     }
 
     fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
@@ -155,7 +163,7 @@ class EthereumKit(
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<TransactionWithInternal> {
+    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<Transaction> {
         val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce()
 
         return nonceSingle.flatMap { nonce ->
@@ -166,7 +174,7 @@ class EthereumKit(
                     .doOnSuccess { transaction ->
                         transactionManager.handle(transaction)
                     }.map {
-                        TransactionWithInternal(it)
+                        it
                     }
         }
     }
@@ -177,7 +185,7 @@ class EthereumKit(
         return transactionBuilder.encode(rawTransaction, signature)
     }
 
-    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 
@@ -201,7 +209,7 @@ class EthereumKit(
         statusInfo["Last Block Height"] = state.lastBlockHeight ?: "N/A"
         statusInfo["Sync State"] = blockchain.syncState
         statusInfo["Blockchain source"] = blockchain.source
-        statusInfo["Transactions source"] = transactionManager.source
+        statusInfo["Transactions source"] = "Infura, Etherscan" //TODO
 
         return statusInfo
     }
@@ -225,7 +233,6 @@ class EthereumKit(
     override fun onUpdateBalance(balance: BigInteger) {
         if (state.balance == balance) return
 
-        transactionManager.refresh(state.balance != null)
         state.balance = balance
         balanceSubject.onNext(balance)
     }
@@ -237,23 +244,8 @@ class EthereumKit(
     override fun onUpdateNonce(nonce: Long) {
         if (state.nonce == nonce) return
 
-        transactionManager.refresh(state.nonce != null)
         state.nonce = nonce
-    }
-
-    //
-    //TransactionManager.Listener
-    //
-
-    override fun onUpdateTransactions(transactions: List<TransactionWithInternal>) {
-        if (transactions.isEmpty())
-            return
-
-        transactionsSubject.onNext(transactions)
-    }
-
-    override fun onUpdateTransactionsSyncState(syncState: SyncState) {
-        transactionsSyncStateSubject.onNext(syncState)
+        nonceSubject.onNext(nonce)
     }
 
     sealed class SyncState {
@@ -326,8 +318,9 @@ class EthereumKit(
                     .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
                     .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
                     .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
-                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(Transaction::class.java))
-                    .registerTypeAdapter(object : TypeToken<Optional<TransactionReceipt>>() {}.type, OptionalTypeAdapter<TransactionReceipt>(TransactionReceipt::class.java))
+                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
+                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
+                    .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
                     .create()
 
             val syncer: IRpcSyncer = when (syncSource) {
@@ -375,13 +368,15 @@ class EthereumKit(
             val etherscanService = EtherscanService(networkType, etherscanKey)
             val transactionsProvider = TransactionsProvider(etherscanService, address)
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
-            val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
-            val transactionManager = TransactionManager(transactionStorage, transactionsProvider)
+//            val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
+            val transactionSyncManager = TransactionSyncManager()
+            val storage = Storage(transactionDatabase)
+            val transactionManager = TransactionManager(address, transactionSyncManager, storage)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)
 
             blockchain.listener = ethereumKit
-            transactionManager.listener = ethereumKit
+            transactionSyncManager.set(ethereumKit)
 
             return ethereumKit
         }

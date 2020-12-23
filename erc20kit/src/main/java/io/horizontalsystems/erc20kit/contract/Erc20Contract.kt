@@ -2,7 +2,7 @@ package io.horizontalsystems.erc20kit.contract
 
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
-import io.horizontalsystems.ethereumkit.models.Transaction as EthereumTransaction
+import io.horizontalsystems.ethereumkit.models.EtherscanTransaction as EthereumTransaction
 
 class Erc20Contract {
 
@@ -13,7 +13,7 @@ class Erc20Contract {
     fun getErc20TransactionsFromEthTransaction(ethTx: EthereumTransaction): List<Transaction> {
         val contractMethod = ContractMethodFactories.createMethodFromInput(ethTx.input)
 
-        return (contractMethod as? Erc20ContractMethodWithTransactions)?.getErc20Transactions(ethTx) ?: listOf()
+        return listOf()//(contractMethod as? Erc20ContractMethodWithTransactions)?.getErc20Transactions(ethTx) ?: listOf()
     }
 
 }
