@@ -24,21 +24,25 @@ fun ByteArray?.toHexString(): String {
 
 @Throws(NumberFormatException::class)
 fun String.hexStringToByteArray(): ByteArray {
-    val hexWithoutPrefix = this.stripHexPrefix()
-    return ByteArray(hexWithoutPrefix.length / 2) {
-        hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
-    }
+    return this.getByteArray()
 }
 
 @Throws(NumberFormatException::class)
 fun String.hexStringToByteArrayOrNull(): ByteArray? {
     return try {
-        val hexWithoutPrefix = this.stripHexPrefix()
-        ByteArray(hexWithoutPrefix.length / 2) {
-            hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
-        }
+        this.getByteArray()
     } catch (error: Throwable) {
         null
+    }
+}
+
+private fun String.getByteArray(): ByteArray {
+    var hexWithoutPrefix = this.stripHexPrefix()
+    if (hexWithoutPrefix.length % 2 == 1) {
+        hexWithoutPrefix = "0$hexWithoutPrefix"
+    }
+    return ByteArray(hexWithoutPrefix.length / 2) {
+        hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
     }
 }
 
