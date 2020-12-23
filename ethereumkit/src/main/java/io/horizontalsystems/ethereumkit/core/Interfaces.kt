@@ -1,6 +1,10 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountState
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -42,10 +46,11 @@ interface IBlockchain {
     fun send(rawTransaction: RawTransaction): Single<Transaction>
     fun getNonce(): Single<Long>
     fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
-    fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>>
+    fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>>
     fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>>
+    fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>>
 
-    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>>
+    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>>
     fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
     fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
 }
@@ -56,6 +61,7 @@ interface IBlockchainListener {
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
     fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter)
     fun onUpdateNonce(nonce: Long)
+
 }
 
 interface IRpcApiProvider {
@@ -71,7 +77,7 @@ interface ITransactionManager {
 
     fun refresh(delay: Boolean)
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
-    fun handle(transaction: Transaction)
+    fun handle(transaction: EtherscanTransaction)
 }
 
 interface ITransactionManagerListener {
@@ -82,7 +88,7 @@ interface ITransactionManagerListener {
 interface ITransactionsProvider {
     val source: String
 
-    fun getTransactions(startBlock: Long): Single<List<Transaction>>
+    fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>>
     fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
 }
 
@@ -90,7 +96,7 @@ interface ITransactionStorage {
     fun getLastTransactionBlockHeight(): Long?
     fun getLastInternalTransactionBlockHeight(): Long?
 
-    fun saveTransactions(transactions: List<Transaction>)
+    fun saveTransactions(transactions: List<EtherscanTransaction>)
     fun saveInternalTransactions(transactions: List<InternalTransaction>)
     fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
 }

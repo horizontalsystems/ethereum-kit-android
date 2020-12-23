@@ -1,6 +1,9 @@
 package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.*
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.*
@@ -61,7 +64,7 @@ class RpcBlockchain(
         return syncer.single(EstimateGasJsonRpc(address, to, amount, gasLimit, gasPrice, data))
     }
 
-    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>> {
+    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>> {
         return syncer.single(GetTransactionReceiptJsonRpc(transactionHash))
     }
 
@@ -69,7 +72,11 @@ class RpcBlockchain(
         return syncer.single(GetTransactionByHashJsonRpc(transactionHash))
     }
 
-    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    override fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>> {
+        return syncer.single(GetBlockByNumberJsonRpc(blockNumber))
+    }
+
+    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
         return syncer.single(GetLogsJsonRpc(address, DefaultBlockParameter.BlockNumber(fromBlock), DefaultBlockParameter.BlockNumber(toBlock), topics))
                 .flatMap { logs ->
                     if (pullTimestamps) {
@@ -80,26 +87,27 @@ class RpcBlockchain(
                 }
     }
 
-    private fun pullTransactionTimestamps(ethereumLogs: List<EthereumLog>): Single<List<EthereumLog>> {
-        val logsByBlockNumber: MutableMap<Long, MutableList<EthereumLog>> = mutableMapOf()
+    private fun pullTransactionTimestamps(logs: List<TransactionLog>): Single<List<TransactionLog>> {
+        val logsByBlockNumber: MutableMap<Long, MutableList<TransactionLog>> = mutableMapOf()
 
-        for (log in ethereumLogs) {
-            val logs: MutableList<EthereumLog> = logsByBlockNumber[log.blockNumber]
+        for (log in logs) {
+            val logs: MutableList<TransactionLog> = logsByBlockNumber[log.blockNumber]
                     ?: mutableListOf()
             logs.add(log)
             logsByBlockNumber[log.blockNumber] = logs
         }
 
-        val requestSingles: MutableList<Single<Block>> = mutableListOf()
+        val requestSingles: MutableList<Single<Optional<RpcBlock>>> = mutableListOf()
 
         for ((blockNumber, _) in logsByBlockNumber) {
             requestSingles.add(syncer.single(GetBlockByNumberJsonRpc(blockNumber)))
         }
 
         return Single.merge(requestSingles).toList().map { blocks ->
-            val resultLogs: MutableList<EthereumLog> = mutableListOf()
+            val resultLogs: MutableList<TransactionLog> = mutableListOf()
 
-            for (block in blocks) {
+            for (blockOptional in blocks) {
+                val block = blockOptional.orElse(null) ?: continue
                 val logsOfBlock = logsByBlockNumber[block.number] ?: continue
 
                 for (log in logsOfBlock) {

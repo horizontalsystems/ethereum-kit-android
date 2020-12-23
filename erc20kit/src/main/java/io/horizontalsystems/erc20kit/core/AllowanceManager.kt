@@ -33,8 +33,8 @@ class AllowanceManager(
         val approveMethod = ApproveMethod(spenderAddress, amount)
 
         return ethereumKit.send(contractAddress, BigInteger.ZERO, approveMethod.encodedABI(), gasPrice, gasLimit)
-                .map { transactionWithInternal ->
-                    approveMethod.getErc20Transactions(transactionWithInternal.transaction).first()
+                .map { transaction ->
+                    approveMethod.getErc20Transactions(transaction).first()
                 }.doOnSuccess { transaction ->
                     storage.save(listOf(transaction))
                 }

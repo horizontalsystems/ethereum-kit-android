@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.sample.core
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -61,17 +61,18 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
-        return ethereumKit.transactions(from?.first, limit).map { transactions ->
+        return ethereumKit.etherTransactions(from?.first, limit).map { transactions ->
             transactions.map { transactionRecord(it) }
         }
     }
 
-    private fun transactionRecord(transactionWithInternal: TransactionWithInternal): TransactionRecord {
-        val transaction = transactionWithInternal.transaction
+    private fun transactionRecord(fullTransaction: FullTransaction): TransactionRecord {
+        val transaction = fullTransaction.transaction
+        val receipt = fullTransaction.receiptWithLogs?.receipt
         val mineAddress = ethereumKit.receiveAddress
 
         val from = TransactionAddress(transaction.from.hex, transaction.from == mineAddress)
-        val to = TransactionAddress(transaction.to.hex, transaction.to == mineAddress)
+        val to = TransactionAddress(transaction.to!!.hex, transaction.to == mineAddress)
         var amount: BigDecimal
 
         transaction.value.toBigDecimal().let {
@@ -81,7 +82,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
             }
         }
 
-        transactionWithInternal.internalTransactions.forEach { internalTransaction ->
+        fullTransaction.internalTransactions.forEach { internalTransaction ->
             var internalAmount = internalTransaction.value.toBigDecimal().movePointLeft(decimal)
             internalAmount = if (internalTransaction.from == receiveAddress) internalAmount.negate() else internalAmount
             amount += internalAmount
@@ -89,14 +90,14 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
 
         return TransactionRecord(
                 transactionHash = transaction.hash.toHexString(),
-                transactionIndex = transaction.transactionIndex ?: 0,
+                transactionIndex = receipt?.transactionIndex ?: 0,
                 interTransactionIndex = 0,
-                blockHeight = transaction.blockNumber,
+                blockHeight = receipt?.blockNumber,
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                isError = transaction.isError?.let { it != 0 } ?: false
+                isError = fullTransaction.isFailed
         )
     }
 }

@@ -4,8 +4,8 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
@@ -67,7 +67,7 @@ class TradeManager(
         )
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<TransactionWithInternal> {
+    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<Transaction> {
         val swapData = buildSwapData(tradeData)
 
         return ethereumKit.send(routerAddress, swapData.amount, swapData.input, gasPrice, gasLimit)

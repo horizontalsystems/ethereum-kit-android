@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.core
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -36,7 +36,7 @@ class TransactionManager(
 
     override var listener: ITransactionManagerListener? = null
 
-    private fun update(transactions: List<Transaction>, internalTransactions: List<InternalTransaction>) {
+    private fun update(transactions: List<EtherscanTransaction>, internalTransactions: List<InternalTransaction>) {
         storage.saveTransactions(transactions)
         storage.saveInternalTransactions(internalTransactions)
 
@@ -63,9 +63,11 @@ class TransactionManager(
         val lastInternalTransactionBlockHeight = storage.getLastInternalTransactionBlockHeight() ?: 0
 
         var requestsSingle = Single.zip(
-                transactionsProvider.getTransactions(lastTransactionBlockHeight + 1),
-                transactionsProvider.getInternalTransactions(lastInternalTransactionBlockHeight + 1),
-                BiFunction<List<Transaction>, List<InternalTransaction>, Pair<List<Transaction>, List<InternalTransaction>>> { t1, t2 -> Pair(t1, t2) }
+                Single.just(listOf()),
+                Single.just(listOf()),
+//                transactionsProvider.getTransactions(lastTransactionBlockHeight + 1),
+//                transactionsProvider.getInternalTransactions(lastInternalTransactionBlockHeight + 1),
+                BiFunction<List<EtherscanTransaction>, List<InternalTransaction>, Pair<List<EtherscanTransaction>, List<InternalTransaction>>> { t1, t2 -> Pair(t1, t2) }
         )
 
         delayTimeInSeconds?.let {
@@ -113,7 +115,7 @@ class TransactionManager(
         return storage.getTransactions(fromHash, limit)
     }
 
-    override fun handle(transaction: Transaction) {
+    override fun handle(transaction: EtherscanTransaction) {
         storage.saveTransactions(listOf(transaction))
 
         val transactionWithInternal = TransactionWithInternal(transaction)

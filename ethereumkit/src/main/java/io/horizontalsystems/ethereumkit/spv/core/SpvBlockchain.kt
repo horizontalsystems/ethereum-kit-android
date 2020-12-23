@@ -1,5 +1,9 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
@@ -88,7 +92,7 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<TransactionReceipt>> {
+    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>> {
         TODO("not implemented")
     }
 
@@ -96,7 +100,11 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<EthereumLog>> {
+    override fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>> {
+        TODO("not implemented")
+    }
+
+    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
         TODO("not implemented")
     }
 

@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.core.TransactionSigner
+import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.net.handlers.SendTransactionTaskHandler

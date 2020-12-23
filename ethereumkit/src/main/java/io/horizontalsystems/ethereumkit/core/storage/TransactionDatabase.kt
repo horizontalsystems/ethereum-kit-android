@@ -1,19 +1,31 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
+import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import android.content.Context
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.NotSyncTransactionRecord
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 
-@Database(entities = [Transaction::class, InternalTransaction::class], version = 4, exportSchema = false)
+@Database(
+        entities = [
+            NotSyncTransactionRecord::class,
+            Transaction::class,
+            TransactionReceipt::class,
+            InternalTransaction::class
+        ],
+        version = 5,
+        exportSchema = false
+)
 @TypeConverters(RoomTypeConverters::class)
 abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+    abstract fun notSyncedTransactionDao(): NotSyncedTransactionDao
 
     companion object {
 
