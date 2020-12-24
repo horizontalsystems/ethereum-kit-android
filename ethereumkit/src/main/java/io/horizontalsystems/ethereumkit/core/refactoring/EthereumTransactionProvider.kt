@@ -10,11 +10,14 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+import java.util.logging.Logger
 
 class EthereumTransactionProvider(
         private val ethereumTransactionProvider: ITransactionsProvider,
         private val notSyncedTransactionPool: NotSyncedTransactionPool
 ) : ITransactionSyncer {
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
+
     private val disposables = CompositeDisposable()
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
 
@@ -31,6 +34,8 @@ class EthereumTransactionProvider(
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     override fun sync() {
+        logger.info("---> sync() state: $state")
+
         if (state is EthereumKit.SyncState.Syncing) return
 
         state = EthereumKit.SyncState.Syncing()
@@ -63,6 +68,9 @@ class EthereumTransactionProvider(
                 }
                 .subscribeOn(Schedulers.io())
                 .subscribe({ notSyncedTransactions ->
+
+                    logger.info("---> sync() onFetched notSyncedTransactions: ${notSyncedTransactions.size}")
+
                     notSyncedTransactionPool.add(notSyncedTransactions)
                     state = EthereumKit.SyncState.Synced()
                 }, {

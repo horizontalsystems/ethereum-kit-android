@@ -5,13 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 
-@Entity(foreignKeys = [ForeignKey(
-        entity = Transaction::class,
-        parentColumns = ["hash"],
-        childColumns = ["transactionHash"],
-        onDelete = ForeignKey.CASCADE
-)
-])
+@Entity
 data class TransactionReceipt(
         @PrimaryKey
         val transactionHash: ByteArray,

@@ -10,9 +10,8 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.core.refactoring.Storage
+import io.horizontalsystems.ethereumkit.core.refactoring.*
 import io.horizontalsystems.ethereumkit.core.refactoring.TransactionManager
-import io.horizontalsystems.ethereumkit.core.refactoring.TransactionSyncManager
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
@@ -121,7 +120,7 @@ class EthereumKit(
     }
 
     fun etherTransactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
-        return transactionManager.getEtherTransactions(fromHash, limit)
+        return transactionManager.etherTransactionsSingle(fromHash, limit)
     }
 
     fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
@@ -366,11 +365,20 @@ class EthereumKit(
             }
 
             val etherscanService = EtherscanService(networkType, etherscanKey)
-            val transactionsProvider = TransactionsProvider(etherscanService, address)
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
-//            val transactionStorage: ITransactionStorage = TransactionStorage(transactionDatabase)
-            val transactionSyncManager = TransactionSyncManager()
             val storage = Storage(transactionDatabase)
+            val notSyncedTransactionPool = NotSyncedTransactionPool(storage)
+
+            val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
+            val ethereumTransactionsProvider = EthereumTransactionProvider(etherscanTransactionsProvider, notSyncedTransactionPool)
+
+            val transactionSyncer = TransactionSyncer(notSyncedTransactionPool, blockchain, storage)
+
+            val transactionSyncManager = TransactionSyncManager()
+            transactionSyncer.listener = transactionSyncManager
+            transactionSyncManager.add(transactionSyncer)
+            transactionSyncManager.add(ethereumTransactionsProvider)
+
             val transactionManager = TransactionManager(address, transactionSyncManager, storage)
 
             val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)

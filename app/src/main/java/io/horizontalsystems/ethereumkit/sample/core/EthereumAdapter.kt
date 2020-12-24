@@ -97,7 +97,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                isError = fullTransaction.isFailed
+                isError = fullTransaction.isFailed()
         )
     }
 }

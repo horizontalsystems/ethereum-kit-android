@@ -20,7 +20,6 @@ data class NotSyncTransactionRecord(
         val gasLimit: Long?,
         val input: ByteArray?,
         val timestamp: Long?
-
 ) {
 
     constructor(notSynced: NotSyncedTransaction) : this(
