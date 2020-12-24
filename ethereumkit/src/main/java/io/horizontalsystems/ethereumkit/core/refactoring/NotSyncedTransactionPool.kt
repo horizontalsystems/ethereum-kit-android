@@ -4,22 +4,32 @@ import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
+import java.util.logging.Logger
 
 class NotSyncedTransactionPool(
         private val storage: IStorage
 ) {
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
+
     private val notSyncedTransactionsSubject = PublishSubject.create<Unit>()
 
     val notSyncedTransactionsSignal: Flowable<Unit>
         get() = notSyncedTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun add(notSyncedTransactions: List<NotSyncedTransaction>) {
-        val syncedTransactionHashes = storage.getHashesFromTransactions()
+        val syncedTransactionHashes = storage.getTransactionHashes()
 
-        val newTransactions = notSyncedTransactions.filter { syncedTransactionHashes.contains(it.hash) }
+        val newTransactions = notSyncedTransactions.filter { notSyncedTransaction ->
+            syncedTransactionHashes.none { notSyncedTransaction.hash.contentEquals(it) }
+        }
         storage.addNotSyncedTransactions(newTransactions)
 
-        notSyncedTransactionsSubject.onNext(Unit)
+        logger.info("---> add notSyncedTransactions: ${newTransactions.size}")
+        if (newTransactions.isNotEmpty()) {
+            notSyncedTransactionsSubject.onNext(Unit)
+
+            logger.info("---> notSyncedTransactionsSubject.onNext")
+        }
     }
 
     fun remove(notSyncedTransaction: NotSyncedTransaction) {

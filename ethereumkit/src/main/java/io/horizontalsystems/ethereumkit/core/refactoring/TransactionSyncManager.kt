@@ -9,6 +9,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+import java.util.logging.Logger
 
 interface ITransactionSyncer {
     val state: EthereumKit.SyncState
@@ -21,7 +22,9 @@ interface ITransactionSyncer {
     fun onUpdateBalance(balance: BigInteger) {}
 }
 
-class TransactionSyncManager {
+class TransactionSyncManager : ITransactionSyncerListener {
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
+
     private val disposables = CompositeDisposable()
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val transactionsSubject = PublishSubject.create<List<FullTransaction>>()
@@ -38,11 +41,25 @@ class TransactionSyncManager {
 
     val transactionsFlowable = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-
     fun set(ethereumKit: EthereumKit) {
         this.ethereumKit = ethereumKit
 
         subscribe(ethereumKit)
+    }
+
+    fun add(syncer: ITransactionSyncer) {
+        syncers.add(syncer)
+
+        syncer.stateFlowable
+                .subscribeOn(Schedulers.io())
+                .subscribe { syncState() }
+                .let { disposables.add(it) }
+
+        syncState()
+    }
+
+    override fun onTransactionsSynced(transactions: List<FullTransaction>) {
+        transactionsSubject.onNext(transactions)
     }
 
     private fun subscribe(ethereumKit: EthereumKit) {
@@ -76,6 +93,8 @@ class TransactionSyncManager {
     }
 
     private fun onEthereumKitSyncState(state: EthereumKit.SyncState) {
+        logger.info(" ---> onEthKitSyncState: $state, syncers: ${syncers.size}")
+
         if (state is EthereumKit.SyncState.Synced) { //?? resync on network reconnection
             performOnSyncers { syncer -> syncer.sync() }
         }
@@ -106,14 +125,5 @@ class TransactionSyncManager {
         }
     }
 
-    fun add(syncer: ITransactionSyncer) {
-        syncers.add(syncer)
-
-        syncer.stateFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe { syncState() }
-                .let { disposables.add(it) }
-        syncState()
-    }
 
 }

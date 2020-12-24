@@ -4,6 +4,8 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IBlockchain
+import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
@@ -14,21 +16,32 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.*
+import java.util.logging.Logger
+
+
+interface ITransactionSyncerListener {
+    fun onTransactionsSynced(transactions: List<FullTransaction>)
+}
 
 class TransactionSyncer(
         private val pool: NotSyncedTransactionPool,
         private val blockchain: IBlockchain,
         private val storage: IStorage
 ) : ITransactionSyncer {
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
+
     private val disposables = CompositeDisposable()
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val txSyncBatchSize = 10
+
+    var listener: ITransactionSyncerListener? = null
 
     init {
         //subscribe to txHashPool and sync when new hashes received
         pool.notSyncedTransactionsSignal
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info("---> notSyncedTransactionsSignal")
                     sync()
                 }
                 .let { disposables.add(it) }
@@ -42,31 +55,39 @@ class TransactionSyncer(
     override val stateFlowable: Flowable<EthereumKit.SyncState>
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
+
     override fun sync() {
+        logger.info("---> sync()  $state")
         if (state is EthereumKit.SyncState.Syncing) return
 
+        doSync()
+    }
+
+    private fun doSync() {
         val notSyncedTransactions = pool.getNotSyncedTransactions(txSyncBatchSize)
+        logger.info("---> notSyncedTransactions: ${notSyncedTransactions.size} ")
 
         if (notSyncedTransactions.isEmpty()) {
             state = EthereumKit.SyncState.Synced()
+            return
         } else {
             state = EthereumKit.SyncState.Syncing()
-
-            sync(notSyncedTransactions)
         }
-    }
 
-    private fun sync(notSyncedTransactions: List<NotSyncedTransaction>) {
         Single
                 .zip(notSyncedTransactions.map { syncSingle(it) }) { singleResults ->
                     singleResults.mapNotNull { it as? Optional<ByteArray> }
                 }
                 .subscribeOn(Schedulers.io())
-                .subscribe({
-                    // TODO pass to observers
+                .subscribe({ syncedTxHashes ->
+                    logger.info("---> synced batch: ${syncedTxHashes.map { it.orElse(null)?.toHexString() }.joinToString { ", " }}")
 
-                    sync()
+                    val txHashes = syncedTxHashes.mapNotNull { it.orElse(null) }
+                    listener?.onTransactionsSynced(storage.getTransactions(txHashes))
+
+                    doSync()
                 }, {
+                    it.printStackTrace()
                     state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
@@ -132,12 +153,12 @@ class TransactionSyncer(
 
     private fun syncReceiptSingle(transaction: RpcTransaction): Single<Optional<Pair<RpcTransaction, RpcTransactionReceipt?>>> {
         if (transaction.blockNumber == null) {
-            return Single.just<Optional<Pair<RpcTransaction, RpcTransactionReceipt?>>>(Optional.of(Pair(transaction, null)))
+            return Single.just(Optional.of(Pair(transaction, null)))
         }
 
-        val transactionReceipt = storage.getTransactionReceipt()
+        val transactionReceipt = storage.getTransactionReceipt(transaction.hash)
         if (transactionReceipt != null) {
-            return Single.just<Optional<Pair<RpcTransaction, RpcTransactionReceipt?>>>(Optional.of(Pair(transaction, RpcTransactionReceipt(transactionReceipt, emptyList()))))
+            return Single.just(Optional.of(Pair(transaction, RpcTransactionReceipt(transactionReceipt, emptyList()))))
         } else {
             return blockchain.getTransactionReceipt(transaction.hash)
                     .doOnSuccess {
@@ -147,7 +168,7 @@ class TransactionSyncer(
                             storage.save(rpcReceipt.logs)
                         }
                     }
-                    .map<Optional<Pair<RpcTransaction, RpcTransactionReceipt?>>> {
+                    .map {
                         if (!it.isPresent) {
                             Optional.empty()
                         } else {
@@ -169,7 +190,7 @@ class TransactionSyncer(
         }
 
         return blockchain.getBlock(transactionReceipt.blockNumber)
-                .map<Optional<Pair<RpcTransaction, Long>>> {
+                .map {
                     if (!it.isPresent) {
                         Optional.empty()
                     } else {

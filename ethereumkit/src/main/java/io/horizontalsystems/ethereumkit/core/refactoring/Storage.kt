@@ -10,11 +10,12 @@ interface IStorage {
     fun update(notSyncedTransaction: NotSyncedTransaction)
     fun remove(transaction: NotSyncedTransaction)
 
-    fun getHashesFromTransactions(): List<ByteArray>
-    fun getEtherTransactions(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
+    fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
+    fun getTransactionHashes(): List<ByteArray>
+    fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
     fun save(transaction: Transaction)
 
-    fun getTransactionReceipt(): TransactionReceipt?
+    fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
     fun save(transactionReceipt: TransactionReceipt)
 
     fun save(logs: List<TransactionLog>)
@@ -23,7 +24,7 @@ interface IStorage {
 
 class Storage(
         private val database: TransactionDatabase
-) : IStorage { //TODO rename to TransactionStorage
+) : IStorage { // TODO rename to TransactionStorage
 
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
@@ -47,12 +48,34 @@ class Storage(
     //endregion
 
     //region Transaction
-    override fun getHashesFromTransactions(): List<ByteArray> {
+    override fun getTransactionHashes(): List<ByteArray> {
         return transactionDao.getTransactionHashes()
     }
 
-    override fun getEtherTransactions(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
-        TODO("not implemented")
+    override fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
+        return transactionDao.getTransactionsAsync()
+                .map { fullTransactions ->
+                    var etherTransactions = fullTransactions.filter { it.hasEtherTransfer(address) }
+
+                    fromHash?.let {
+                        val fullTxFrom = etherTransactions.firstOrNull { it.transaction.hash.contentEquals(fromHash) }
+                        fullTxFrom?.let {
+                            etherTransactions = etherTransactions.filter {
+                                it.transaction.timestamp < fullTxFrom.transaction.timestamp ||
+                                        (it.transaction.timestamp == fullTxFrom.transaction.timestamp
+                                                && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex ?: 0) ?: 0) < 0)
+                            }
+                        }
+                    }
+                    limit?.let {
+                        etherTransactions = etherTransactions.take(limit)
+                    }
+                    etherTransactions
+                }
+    }
+
+    override fun getTransactions(hashes: List<ByteArray>): List<FullTransaction> {
+        return transactionDao.getTransactions(hashes)
     }
 
     override fun save(transaction: Transaction) {
@@ -63,17 +86,17 @@ class Storage(
 
     //region TransactionReceipt
     override fun save(transactionReceipt: TransactionReceipt) {
-        TODO("not implemented")
+       transactionDao.insert(transactionReceipt)
     }
 
-    override fun getTransactionReceipt(): TransactionReceipt? {
-        TODO("not implemented")
+    override fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt? {
+        return transactionDao.getTransactionReceipt(transactionHash)
     }
     //endregion
 
     //region TransactionLog
     override fun save(logs: List<TransactionLog>) {
-        TODO("not implemented")
+        transactionDao.insert(logs)
     }
     //endregion
 }

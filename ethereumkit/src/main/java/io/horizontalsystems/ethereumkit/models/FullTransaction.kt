@@ -1,17 +1,38 @@
 package io.horizontalsystems.ethereumkit.models
 
+import androidx.room.Embedded
+import androidx.room.Relation
+import java.math.BigInteger
+
 class FullTransaction(
+        @Embedded
         val transaction: Transaction,
-        val receiptWithLogs: TransactionReceiptWithLogs?,
-        val internalTransactions: List<InternalTransaction>
+        @Relation(
+                entity = TransactionReceipt::class,
+                parentColumn = "hash",
+                entityColumn = "transactionHash"
+        )
+        val receiptWithLogs: TransactionReceiptWithLogs? = null,
+        @Relation(
+                entity = InternalTransaction::class,
+                parentColumn = "hash",
+                entityColumn = "hash"
+        )
+        val internalTransactions: List<InternalTransaction> = listOf()
+
 ) {
-    val isFailed: Boolean
-        get() {
-            val receipt = receiptWithLogs?.receipt
-            return when {
-                receipt == null -> false
-                receipt.status == null -> transaction.gasLimit == receipt.cumulativeGasUsed
-                else -> receipt.status != 0
-            }
+    fun isFailed(): Boolean {
+        val receipt = receiptWithLogs?.receipt
+        return when {
+            receipt == null -> false
+            receipt.status == null -> transaction.gasLimit == receipt.cumulativeGasUsed
+            else -> receipt.status == 0
         }
+    }
+
+    fun hasEtherTransfer(address: Address): Boolean =
+            transaction.from == address && transaction.value > BigInteger.ZERO ||
+                    transaction.to == address ||
+                    internalTransactions.any { it.to == address }
+
 }

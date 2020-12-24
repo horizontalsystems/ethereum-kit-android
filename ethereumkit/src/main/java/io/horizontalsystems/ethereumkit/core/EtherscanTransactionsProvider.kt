@@ -1,12 +1,12 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
-class TransactionsProvider(
+class EtherscanTransactionsProvider(
         private val etherscanService: EtherscanService,
         private val address: Address
 ) : ITransactionsProvider {
