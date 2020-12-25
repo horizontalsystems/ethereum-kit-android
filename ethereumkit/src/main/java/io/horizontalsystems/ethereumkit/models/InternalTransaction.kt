@@ -6,13 +6,7 @@ import androidx.room.PrimaryKey
 import java.math.BigInteger
 import java.util.*
 
-@Entity(foreignKeys = [ForeignKey(
-        entity = Transaction::class,
-        parentColumns = ["hash"],
-        childColumns = ["hash"],
-        onDelete = ForeignKey.CASCADE
-)
-])
+@Entity
 data class InternalTransaction(
         val hash: ByteArray,
         val blockNumber: Long,
