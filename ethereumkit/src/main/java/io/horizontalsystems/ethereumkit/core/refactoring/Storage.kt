@@ -15,6 +15,9 @@ interface IStorage {
     fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
     fun save(transaction: Transaction)
 
+    fun getLastInternalTransactionBlockHeight(): Long?
+    fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
+
     fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
     fun save(transactionReceipt: TransactionReceipt)
 
@@ -63,7 +66,8 @@ class Storage(
                             etherTransactions = etherTransactions.filter {
                                 it.transaction.timestamp < fullTxFrom.transaction.timestamp ||
                                         (it.transaction.timestamp == fullTxFrom.transaction.timestamp
-                                                && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex ?: 0) ?: 0) < 0)
+                                                && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex
+                                                ?: 0) ?: 0) < 0)
                             }
                         }
                     }
@@ -81,12 +85,21 @@ class Storage(
     override fun save(transaction: Transaction) {
         transactionDao.insert(transaction)
     }
+    //endregion
 
+    //region InternalTransactions
+    override fun getLastInternalTransactionBlockHeight(): Long? {
+        return transactionDao.getLastInternalTransactionBlockNumber()
+    }
+
+    override fun saveInternalTransactions(internalTransactions: List<InternalTransaction>) {
+        transactionDao.insertInternalTransactions(internalTransactions)
+    }
     //endregion
 
     //region TransactionReceipt
     override fun save(transactionReceipt: TransactionReceipt) {
-       transactionDao.insert(transactionReceipt)
+        transactionDao.insert(transactionReceipt)
     }
 
     override fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt? {

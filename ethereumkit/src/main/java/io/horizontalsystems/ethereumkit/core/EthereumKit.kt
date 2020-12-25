@@ -371,6 +371,7 @@ class EthereumKit(
 
             val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
             val ethereumTransactionsProvider = EthereumTransactionProvider(etherscanTransactionsProvider, notSyncedTransactionPool)
+            val internalTransactionsProvider = InternalTransactionsProvider(etherscanTransactionsProvider, notSyncedTransactionPool, storage)
 
             val transactionSyncer = TransactionSyncer(notSyncedTransactionPool, blockchain, storage)
 
@@ -378,6 +379,7 @@ class EthereumKit(
             transactionSyncer.listener = transactionSyncManager
             transactionSyncManager.add(transactionSyncer)
             transactionSyncManager.add(ethereumTransactionsProvider)
+            transactionSyncManager.add(internalTransactionsProvider)
 
             val transactionManager = TransactionManager(address, transactionSyncManager, storage)
 
