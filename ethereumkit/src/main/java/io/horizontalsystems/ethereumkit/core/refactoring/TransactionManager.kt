@@ -9,7 +9,6 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import java.math.BigInteger
 
 
 class TransactionManager(
@@ -21,17 +20,17 @@ class TransactionManager(
     private val etherTransactionSubject = PublishSubject.create<List<FullTransaction>>()
 
     init {
-        transactionSyncManager.transactionsFlowable
+        transactionSyncManager.transactionsAsync
                 .subscribeOn(Schedulers.io())
                 .subscribe { transactions ->
-                    etherTransactionSubject.onNext(transactions.filter { isEtherTransferred(it) })
+                    etherTransactionSubject.onNext(transactions.filter { it.hasEtherTransfer(address)})
                 }
                 .let { disposables.add(it) }
     }
 
-    val etherTransactionsFlowable: Flowable<List<FullTransaction>> = etherTransactionSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val etherTransactionsAsync: Flowable<List<FullTransaction>> = etherTransactionSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    fun etherTransactionsSingle(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
+    fun getEtherTransactionsAsync(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
         return storage.getEtherTransactionsAsync(address, fromHash, limit)
     }
 
@@ -40,10 +39,5 @@ class TransactionManager(
 
         etherTransactionSubject.onNext(listOf(FullTransaction(transaction)))
     }
-
-    private fun isEtherTransferred(fullTransaction: FullTransaction): Boolean =
-            fullTransaction.transaction.from == address && fullTransaction.transaction.value > BigInteger.ZERO ||
-                    fullTransaction.transaction.to == address ||
-                    fullTransaction.internalTransactions.any { it.to == address }
 
 }

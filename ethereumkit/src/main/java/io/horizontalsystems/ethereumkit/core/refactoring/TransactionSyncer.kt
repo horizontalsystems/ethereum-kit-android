@@ -29,7 +29,6 @@ class TransactionSyncer(
         private val storage: IStorage
 ) : ITransactionSyncer {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-
     private val disposables = CompositeDisposable()
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val txSyncBatchSize = 10
@@ -47,18 +46,20 @@ class TransactionSyncer(
                 .let { disposables.add(it) }
     }
 
-    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override val id: String = "full_transaction_syncer"
+
+    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
         }
-    override val stateFlowable: Flowable<EthereumKit.SyncState>
+    override val stateAsync: Flowable<EthereumKit.SyncState>
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
 
     override fun sync() {
-        logger.info("---> sync()  $state")
-        if (state is EthereumKit.SyncState.Syncing) return
+        logger.info("---> sync()  $syncState")
+        if (syncState is EthereumKit.SyncState.Syncing) return
 
         doSync()
     }
@@ -68,10 +69,10 @@ class TransactionSyncer(
         logger.info("---> notSyncedTransactions: ${notSyncedTransactions.size} ")
 
         if (notSyncedTransactions.isEmpty()) {
-            state = EthereumKit.SyncState.Synced()
+            syncState = EthereumKit.SyncState.Synced()
             return
         } else {
-            state = EthereumKit.SyncState.Syncing()
+            syncState = EthereumKit.SyncState.Syncing()
         }
 
         Single
@@ -88,7 +89,7 @@ class TransactionSyncer(
                     doSync()
                 }, {
                     it.printStackTrace()
-                    state = EthereumKit.SyncState.NotSynced(it)
+                    syncState = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
     }

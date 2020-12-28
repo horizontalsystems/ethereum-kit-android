@@ -23,14 +23,15 @@ interface IStorage {
 
     fun save(logs: List<TransactionLog>)
 
+    fun getTransactionSyncerState(id: String): TransactionSyncerState?
+    fun save(transactionSyncerState: TransactionSyncerState)
 }
 
-class Storage(
-        private val database: TransactionDatabase
-) : IStorage { // TODO rename to TransactionStorage
+class Storage(database: TransactionDatabase) : IStorage {
 
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
+    private val transactionSyncerStateDao = database.transactionSyncerStateDao()
 
     //region NotSyncedTransaction
     override fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction> {
@@ -110,6 +111,16 @@ class Storage(
     //region TransactionLog
     override fun save(logs: List<TransactionLog>) {
         transactionDao.insert(logs)
+    }
+    //endregion
+
+    //region TransactionSyncerState
+    override fun getTransactionSyncerState(id: String): TransactionSyncerState? {
+        return transactionSyncerStateDao.getTransactionSyncerState(id)
+    }
+
+    override fun save(transactionSyncerState: TransactionSyncerState) {
+        transactionSyncerStateDao.insert(transactionSyncerState)
     }
     //endregion
 }

@@ -12,7 +12,7 @@ import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 
-class TransactionManager(
+/*class TransactionManager(
         private val storage: ITransactionStorage,
         private val transactionsProvider: ITransactionsProvider
 ) : ITransactionManager {
@@ -125,4 +125,4 @@ class TransactionManager(
         }
     }
 
-}
+}*/
