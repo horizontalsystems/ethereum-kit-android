@@ -21,7 +21,7 @@ interface TransactionDao {
     fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
 
     @androidx.room.Transaction
-    @Query("SELECT * FROM `Transaction`")
+    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
     fun getTransactionsAsync(): Single<List<FullTransaction>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -38,5 +38,17 @@ interface TransactionDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
+
+    @androidx.room.Transaction
+    @Query("""
+        SELECT tx.* 
+            FROM `Transaction` as tx
+            LEFT JOIN TransactionReceipt as receipt
+            ON tx.hash == receipt.transactionHash 
+            WHERE receipt.blockHash IS NULL 
+            ORDER BY tx.nonce
+            LIMIT 1
+            """)
+    fun getFirstPendingTransaction(): Transaction?
 
 }

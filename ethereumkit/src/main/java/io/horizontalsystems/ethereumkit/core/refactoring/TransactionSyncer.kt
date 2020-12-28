@@ -48,7 +48,7 @@ class TransactionSyncer(
 
     override val id: String = "full_transaction_syncer"
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
@@ -57,9 +57,13 @@ class TransactionSyncer(
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
 
-    override fun sync() {
-        logger.info("---> sync()  $syncState")
-        if (syncState is EthereumKit.SyncState.Syncing) return
+    override fun onEthereumKitSynced() {
+        sync()
+    }
+
+    private fun sync() {
+        logger.info("---> sync()  $state")
+        if (state is EthereumKit.SyncState.Syncing) return
 
         doSync()
     }
@@ -69,10 +73,10 @@ class TransactionSyncer(
         logger.info("---> notSyncedTransactions: ${notSyncedTransactions.size} ")
 
         if (notSyncedTransactions.isEmpty()) {
-            syncState = EthereumKit.SyncState.Synced()
+            state = EthereumKit.SyncState.Synced()
             return
         } else {
-            syncState = EthereumKit.SyncState.Syncing()
+            state = EthereumKit.SyncState.Syncing()
         }
 
         Single
@@ -89,7 +93,7 @@ class TransactionSyncer(
                     doSync()
                 }, {
                     it.printStackTrace()
-                    syncState = EthereumKit.SyncState.NotSynced(it)
+                    state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
     }

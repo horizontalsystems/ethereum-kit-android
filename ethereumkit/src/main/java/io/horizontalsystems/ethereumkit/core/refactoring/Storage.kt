@@ -25,6 +25,8 @@ interface IStorage {
 
     fun getTransactionSyncerState(id: String): TransactionSyncerState?
     fun save(transactionSyncerState: TransactionSyncerState)
+
+    fun getFirstPendingTransaction(): Transaction?
 }
 
 class Storage(database: TransactionDatabase) : IStorage {
@@ -86,6 +88,11 @@ class Storage(database: TransactionDatabase) : IStorage {
     override fun save(transaction: Transaction) {
         transactionDao.insert(transaction)
     }
+
+    override fun getFirstPendingTransaction(): Transaction? {
+        return transactionDao.getFirstPendingTransaction()
+    }
+
     //endregion
 
     //region InternalTransactions

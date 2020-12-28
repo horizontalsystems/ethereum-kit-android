@@ -31,7 +31,7 @@ class InternalTransactionSyncer(
             storage.save(TransactionSyncerState(id, value))
         }
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
@@ -40,12 +40,12 @@ class InternalTransactionSyncer(
     override val stateAsync: Flowable<EthereumKit.SyncState>
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    override fun sync() {
-        logger.info("---> sync() state: $syncState")
+    private fun sync() {
+        logger.info("---> sync() state: $state")
 
-        if (syncState is EthereumKit.SyncState.Syncing) return
+        if (state is EthereumKit.SyncState.Syncing) return
 
-        syncState = EthereumKit.SyncState.Syncing()
+        state = EthereumKit.SyncState.Syncing()
 
         etherscanTransactionsProvider.getInternalTransactions(lastSyncBlockNumber + 1)
                 .subscribeOn(Schedulers.io())
@@ -59,11 +59,15 @@ class InternalTransactionSyncer(
                     transactions.firstOrNull()?.blockNumber?.let {
                         lastSyncBlockNumber = it
                     }
-                    syncState = EthereumKit.SyncState.Synced()
+                    state = EthereumKit.SyncState.Synced()
                 }, {
-                    syncState = EthereumKit.SyncState.NotSynced(it)
+                    state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
+    }
+
+    override fun onEthereumKitSynced() {
+        sync()
     }
 
     override fun onUpdateNonce(nonce: Long) {

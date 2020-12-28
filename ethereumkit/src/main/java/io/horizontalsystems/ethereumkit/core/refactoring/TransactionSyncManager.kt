@@ -14,14 +14,14 @@ import java.util.logging.Logger
 
 interface ITransactionSyncer {
     val id: String
-    val syncState: EthereumKit.SyncState
+    val state: EthereumKit.SyncState
     val stateAsync: Flowable<EthereumKit.SyncState>
 
-    fun sync()
-
+    fun onEthereumKitSynced()
     fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {}
     fun onUpdateNonce(nonce: Long) {}
     fun onUpdateBalance(balance: BigInteger) {}
+    fun onLastBlockNumber(blockNumber: Long) {}
 }
 
 class TransactionSyncManager : ITransactionSyncerListener {
@@ -94,6 +94,12 @@ class TransactionSyncManager : ITransactionSyncerListener {
                 }
                 .let { disposables.add(it) }
 
+        ethereumKit.lastBlockHeightFlowable
+                .subscribeOn(Schedulers.io())
+                .subscribe {
+                    onLastBlockNumber(it)
+                }
+                .let { disposables.add(it) }
         ethereumKit.syncStateFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
@@ -106,7 +112,7 @@ class TransactionSyncManager : ITransactionSyncerListener {
         logger.info(" ---> onEthKitSyncState: $state, syncers: ${syncers.size}")
 
         if (state is EthereumKit.SyncState.Synced) { //?? resync on network reconnection
-            performOnSyncers { syncer -> syncer.sync() }
+            performOnSyncers { syncer -> syncer.onEthereumKitSynced() }
         }
     }
 
@@ -122,15 +128,19 @@ class TransactionSyncManager : ITransactionSyncerListener {
         performOnSyncers { syncer -> syncer.onUpdateBalance(balance) }
     }
 
+    private fun onLastBlockNumber(blockNumber: Long) {
+        performOnSyncers { syncer -> syncer.onLastBlockNumber(blockNumber) }
+    }
+
     private fun performOnSyncers(action: (ITransactionSyncer) -> Unit) {
         syncers.forEach { action(it) }
     }
 
     private fun syncState() {
-        val notSyncedSyncerState = syncers.firstOrNull { it.syncState is EthereumKit.SyncState.NotSynced }?.syncState as? EthereumKit.SyncState.NotSynced
+        val notSyncedSyncerState = syncers.firstOrNull { it.state is EthereumKit.SyncState.NotSynced }?.state as? EthereumKit.SyncState.NotSynced
         syncState = when {
             notSyncedSyncerState != null -> EthereumKit.SyncState.NotSynced(notSyncedSyncerState.error)
-            syncers.any { it.syncState is EthereumKit.SyncState.Syncing } -> EthereumKit.SyncState.Syncing()
+            syncers.any { it.state is EthereumKit.SyncState.Syncing } -> EthereumKit.SyncState.Syncing()
             else -> EthereumKit.SyncState.Synced()
         }
     }
