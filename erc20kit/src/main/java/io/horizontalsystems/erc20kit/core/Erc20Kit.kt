@@ -1,9 +1,9 @@
 package io.horizontalsystems.erc20kit.core
 
 import android.content.Context
-import io.horizontalsystems.erc20kit.core.Erc20Kit.SyncState.*
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
@@ -26,12 +26,6 @@ class Erc20Kit(
 
     private val disposables = CompositeDisposable()
 
-    sealed class SyncState {
-        object Synced : SyncState()
-        class NotSynced(val error: Throwable) : SyncState()
-        object Syncing : SyncState()
-    }
-
     init {
         onSyncStateUpdate(ethereumKit.syncState)
         state.balance = balanceManager.balance
@@ -51,12 +45,12 @@ class Erc20Kit(
                 }
     }
 
-    private fun onSyncStateUpdate(syncState: EthereumKit.SyncState) {
+    private fun onSyncStateUpdate(syncState: SyncState) {
         when (syncState) {
-            is EthereumKit.SyncState.NotSynced -> state.syncState = NotSynced(syncState.error)
-            is EthereumKit.SyncState.Syncing -> state.syncState = Syncing
-            is EthereumKit.SyncState.Synced -> {
-                state.syncState = Syncing
+            is SyncState.NotSynced -> state.syncState = SyncState.NotSynced(syncState.error)
+            is SyncState.Syncing -> state.syncState = SyncState.Syncing()
+            is SyncState.Synced -> {
+                state.syncState = SyncState.Syncing()
                 balanceManager.sync()
                 transactionManager.immediateSync()
             }
@@ -140,25 +134,25 @@ class Erc20Kit(
     // ITransactionManagerListener
 
     override fun onSyncStarted() {
-        state.transactionsSyncState = Syncing
+        state.transactionsSyncState = SyncState.Syncing()
     }
 
     override fun onSyncSuccess(transactions: List<Transaction>) {
-        state.transactionsSyncState = Synced
+        state.transactionsSyncState = SyncState.Synced()
 
         if (transactions.isNotEmpty())
             state.transactionsSubject.onNext(transactions)
     }
 
     override fun onSyncTransactionsError(error: Throwable) {
-        state.transactionsSyncState = NotSynced(error)
+        state.transactionsSyncState = SyncState.NotSynced(error)
     }
 
     // IBalanceManagerListener
 
     override fun onSyncBalanceSuccess(balance: BigInteger) {
         if (state.balance == balance) {
-            if (state.syncState == Synced) {
+            if (state.syncState is SyncState.Synced) {
                 transactionManager.delayedSync(false)
             }
         } else {
@@ -166,11 +160,11 @@ class Erc20Kit(
         }
 
         state.balance = balance
-        state.syncState = Synced
+        state.syncState = SyncState.Synced()
     }
 
     override fun onSyncBalanceError(error: Throwable) {
-        state.syncState = NotSynced(error)
+        state.syncState = SyncState.NotSynced(error)
     }
 
     companion object {
