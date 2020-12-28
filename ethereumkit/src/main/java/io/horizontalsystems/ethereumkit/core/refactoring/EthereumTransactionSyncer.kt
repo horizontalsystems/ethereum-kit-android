@@ -32,7 +32,7 @@ class EthereumTransactionSyncer(
             storage.save(TransactionSyncerState(id, value))
         }
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
@@ -41,12 +41,24 @@ class EthereumTransactionSyncer(
     override val stateAsync: Flowable<EthereumKit.SyncState>
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    override fun sync() {
-        logger.info("---> sync() state: $syncState")
+    override fun onUpdateNonce(nonce: Long) {
+        sync()
+    }
 
-        if (syncState is EthereumKit.SyncState.Syncing) return
+    override fun onUpdateBalance(balance: BigInteger) {
+        sync()
+    }
 
-        syncState = EthereumKit.SyncState.Syncing()
+    override fun onEthereumKitSynced() {
+        sync()
+    }
+
+    private fun sync() {
+        logger.info("---> sync() state: $state")
+
+        if (state is EthereumKit.SyncState.Syncing) return
+
+        state = EthereumKit.SyncState.Syncing()
 
         // gets transaction starting from last tx's block height
         etherscanTransactionsProvider
@@ -81,19 +93,11 @@ class EthereumTransactionSyncer(
                     notSyncedTransactions.firstOrNull()?.transaction?.blockNumber?.let {
                         lastSyncBlockNumber = it
                     }
-                    syncState = EthereumKit.SyncState.Synced()
+                    state = EthereumKit.SyncState.Synced()
                 }, {
-                    syncState = EthereumKit.SyncState.NotSynced(it)
+                    state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
-    }
-
-    override fun onUpdateNonce(nonce: Long) {
-        sync()
-    }
-
-    override fun onUpdateBalance(balance: BigInteger) {
-        sync()
     }
 
 }

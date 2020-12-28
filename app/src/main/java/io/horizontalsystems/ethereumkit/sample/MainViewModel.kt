@@ -99,6 +99,7 @@ class MainViewModel : ViewModel() {
 
         ethereumAdapter.lastBlockHeightFlowable.subscribe {
             updateLastBlockHeight()
+            updateTransactions()
         }.let {
             disposables.add(it)
         }
