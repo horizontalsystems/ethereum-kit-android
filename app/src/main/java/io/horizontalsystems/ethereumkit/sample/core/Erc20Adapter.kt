@@ -5,6 +5,7 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.erc20kit.core.TransactionKey
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -30,10 +31,10 @@ class Erc20Adapter(
     override val lastBlockHeight: Long?
         get() = ethereumKit.lastBlockHeight
 
-    override val syncState: EthereumKit.SyncState
+    override val syncState: SyncState
         get() = convertToEthereumKitSyncState(erc20Kit.syncState)
 
-    override val transactionsSyncState: EthereumKit.SyncState
+    override val transactionsSyncState: SyncState
         get() = convertToEthereumKitSyncState(erc20Kit.transactionsSyncState)
 
     override val balance: BigDecimal
@@ -113,11 +114,11 @@ class Erc20Adapter(
         )
     }
 
-    private fun convertToEthereumKitSyncState(syncState: Erc20Kit.SyncState): EthereumKit.SyncState {
+    private fun convertToEthereumKitSyncState(syncState: SyncState): SyncState {
         return when (syncState) {
-            Erc20Kit.SyncState.Synced -> EthereumKit.SyncState.Synced()
-            Erc20Kit.SyncState.Syncing -> EthereumKit.SyncState.Syncing()
-            is Erc20Kit.SyncState.NotSynced -> EthereumKit.SyncState.NotSynced(syncState.error)
+            is SyncState.Synced -> SyncState.Synced()
+            is SyncState.Syncing -> SyncState.Syncing()
+            is SyncState.NotSynced -> SyncState.NotSynced(syncState.error)
         }
     }
 

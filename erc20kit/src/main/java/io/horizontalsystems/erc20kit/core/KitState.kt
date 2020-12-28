@@ -2,11 +2,12 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
+import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
 class KitState {
-    var syncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced(SyncError.NotStarted())
+    var syncState: SyncState = SyncState.NotSynced(SyncError.NotStarted())
         set(value) {
             if (field != value) {
                 field = value
@@ -14,7 +15,7 @@ class KitState {
             }
         }
 
-    var transactionsSyncState: Erc20Kit.SyncState = Erc20Kit.SyncState.NotSynced(SyncError.NotStarted())
+    var transactionsSyncState: SyncState = SyncState.NotSynced(SyncError.NotStarted())
         set(value) {
             if (field != value) {
                 field = value
@@ -30,8 +31,8 @@ class KitState {
             }
         }
 
-    val syncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
-    val transactionsSyncStateSubject = PublishSubject.create<Erc20Kit.SyncState>()
+    val syncStateSubject = PublishSubject.create<SyncState>()
+    val transactionsSyncStateSubject = PublishSubject.create<SyncState>()
     val balanceSubject = PublishSubject.create<BigInteger>()
     val transactionsSubject = PublishSubject.create<List<Transaction>>()
 }
