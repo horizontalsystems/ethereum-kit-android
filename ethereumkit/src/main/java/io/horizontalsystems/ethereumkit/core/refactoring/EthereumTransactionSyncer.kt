@@ -2,8 +2,9 @@ package io.horizontalsystems.ethereumkit.core.refactoring
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.ITransactionsProvider
+import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
@@ -12,41 +13,46 @@ import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 import java.util.logging.Logger
 
-class EthereumTransactionProvider(
-        private val ethereumTransactionProvider: ITransactionsProvider,
-        private val notSyncedTransactionPool: NotSyncedTransactionPool
+class EthereumTransactionSyncer(
+        private val etherscanTransactionsProvider: EtherscanTransactionsProvider,
+        private val notSyncedTransactionPool: NotSyncedTransactionPool,
+        private val storage: IStorage
 ) : ITransactionSyncer {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
+
+    override val id: String = "ethereum_transaction_syncer"
 
     private val disposables = CompositeDisposable()
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
 
-    //TODO persist to db
-    private var lastSyncBlockHeight: Long? = null
+    private var lastSyncBlockNumber: Long = storage.getTransactionSyncerState(id)?.lastBlockNumber ?: 0
+        set(value) {
+            field = value
+            logger.info("---> set lastSyncBlockNumber: $value")
+            storage.save(TransactionSyncerState(id, value))
+        }
 
-    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
         }
 
-    override val stateFlowable: Flowable<EthereumKit.SyncState>
+    override val stateAsync: Flowable<EthereumKit.SyncState>
         get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     override fun sync() {
-        logger.info("---> sync() state: $state")
+        logger.info("---> sync() state: $syncState")
 
-        if (state is EthereumKit.SyncState.Syncing) return
+        if (syncState is EthereumKit.SyncState.Syncing) return
 
-        state = EthereumKit.SyncState.Syncing()
+        syncState = EthereumKit.SyncState.Syncing()
 
         // gets transaction starting from last tx's block height
-        ethereumTransactionProvider
-                .getTransactions(lastSyncBlockHeight ?: 0)
-                .map { txList ->
-                    lastSyncBlockHeight = txList.lastOrNull()?.blockNumber
-
-                    txList.map { etherscanTransaction ->
+        etherscanTransactionsProvider
+                .getTransactions(lastSyncBlockNumber + 1)
+                .map { transactions ->
+                    transactions.map { etherscanTransaction ->
                         NotSyncedTransaction(
                                 hash = etherscanTransaction.hash,
                                 transaction = RpcTransaction(
@@ -69,12 +75,15 @@ class EthereumTransactionProvider(
                 .subscribeOn(Schedulers.io())
                 .subscribe({ notSyncedTransactions ->
 
-                    logger.info("---> sync() onFetched notSyncedTransactions: ${notSyncedTransactions.size}")
+                    logger.info("---> sync() onFetched: ${notSyncedTransactions.size}")
 
                     notSyncedTransactionPool.add(notSyncedTransactions)
-                    state = EthereumKit.SyncState.Synced()
+                    notSyncedTransactions.firstOrNull()?.transaction?.blockNumber?.let {
+                        lastSyncBlockNumber = it
+                    }
+                    syncState = EthereumKit.SyncState.Synced()
                 }, {
-                    state = EthereumKit.SyncState.NotSynced(it)
+                    syncState = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
     }

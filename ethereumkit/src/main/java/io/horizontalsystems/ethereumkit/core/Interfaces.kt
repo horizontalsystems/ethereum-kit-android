@@ -70,28 +70,6 @@ interface IRpcApiProvider {
     fun <T> single(rpc: JsonRpc<T>): Single<T>
 }
 
-interface ITransactionManager {
-    val syncState: EthereumKit.SyncState
-    val source: String
-    var listener: ITransactionManagerListener?
-
-    fun refresh(delay: Boolean)
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
-    fun handle(transaction: EtherscanTransaction)
-}
-
-interface ITransactionManagerListener {
-    fun onUpdateTransactions(transactions: List<TransactionWithInternal>)
-    fun onUpdateTransactionsSyncState(syncState: EthereumKit.SyncState)
-}
-
-interface ITransactionsProvider {
-    val source: String
-
-    fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>>
-    fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
-}
-
 interface ITransactionStorage {
     fun getLastTransactionBlockHeight(): Long?
     fun getLastInternalTransactionBlockHeight(): Long?

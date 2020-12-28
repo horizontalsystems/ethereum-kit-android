@@ -6,14 +6,16 @@ import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 import java.util.logging.Logger
 
 interface ITransactionSyncer {
-    val state: EthereumKit.SyncState
-    val stateFlowable: Flowable<EthereumKit.SyncState>
+    val id: String
+    val syncState: EthereumKit.SyncState
+    val stateAsync: Flowable<EthereumKit.SyncState>
 
     fun sync()
 
@@ -26,20 +28,22 @@ class TransactionSyncManager : ITransactionSyncerListener {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     private val disposables = CompositeDisposable()
+    private val syncerStateDisposables = hashMapOf<String, Disposable>()
+
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val transactionsSubject = PublishSubject.create<List<FullTransaction>>()
     private val syncers: MutableList<ITransactionSyncer> = mutableListOf()
 
     private lateinit var ethereumKit: EthereumKit
 
-    var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
             stateSubject.onNext(value)
         }
-    val stateFlowable: Flowable<EthereumKit.SyncState> = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val syncStateAsync: Flowable<EthereumKit.SyncState> = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsFlowable = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val transactionsAsync: Flowable<List<FullTransaction>> = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun set(ethereumKit: EthereumKit) {
         this.ethereumKit = ethereumKit
@@ -50,12 +54,18 @@ class TransactionSyncManager : ITransactionSyncerListener {
     fun add(syncer: ITransactionSyncer) {
         syncers.add(syncer)
 
-        syncer.stateFlowable
+        syncer.stateAsync
                 .subscribeOn(Schedulers.io())
                 .subscribe { syncState() }
-                .let { disposables.add(it) }
+                .let { syncerStateDisposables[syncer.id] = it }
 
         syncState()
+    }
+
+    fun removeSyncer(id: String) {
+        syncerStateDisposables.remove(id)?.dispose()
+
+        syncers.removeIf { it.id == id }
     }
 
     override fun onTransactionsSynced(transactions: List<FullTransaction>) {
@@ -117,10 +127,10 @@ class TransactionSyncManager : ITransactionSyncerListener {
     }
 
     private fun syncState() {
-        val notSyncedSyncerState = syncers.firstOrNull { it.state is EthereumKit.SyncState.NotSynced }?.state as? EthereumKit.SyncState.NotSynced
-        state = when {
+        val notSyncedSyncerState = syncers.firstOrNull { it.syncState is EthereumKit.SyncState.NotSynced }?.syncState as? EthereumKit.SyncState.NotSynced
+        syncState = when {
             notSyncedSyncerState != null -> EthereumKit.SyncState.NotSynced(notSyncedSyncerState.error)
-            syncers.any { it.state is EthereumKit.SyncState.Syncing } -> EthereumKit.SyncState.Syncing()
+            syncers.any { it.syncState is EthereumKit.SyncState.Syncing } -> EthereumKit.SyncState.Syncing()
             else -> EthereumKit.SyncState.Synced()
         }
     }

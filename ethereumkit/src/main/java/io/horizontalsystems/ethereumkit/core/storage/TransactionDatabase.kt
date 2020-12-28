@@ -13,7 +13,8 @@ import io.horizontalsystems.ethereumkit.models.Transaction
             Transaction::class,
             TransactionReceipt::class,
             TransactionLog::class,
-            InternalTransaction::class
+            InternalTransaction::class,
+            TransactionSyncerState::class
         ],
         version = 5,
         exportSchema = false
@@ -23,6 +24,7 @@ abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
     abstract fun notSyncedTransactionDao(): NotSyncedTransactionDao
+    abstract fun transactionSyncerStateDao(): TransactionSyncerStateDao
 
     companion object {
 

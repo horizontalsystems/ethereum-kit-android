@@ -9,12 +9,9 @@ import io.reactivex.Single
 class EtherscanTransactionsProvider(
         private val etherscanService: EtherscanService,
         private val address: Address
-) : ITransactionsProvider {
+) {
 
-    override val source: String
-        get() = "etherscan.io"
-
-    override fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>> {
+    fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>> {
         return etherscanService.getTransactionList(address, startBlock)
                 .map { response ->
                     response.result.distinctBy { it["hash"] }.mapNotNull { tx ->
@@ -47,7 +44,7 @@ class EtherscanTransactionsProvider(
                 }
     }
 
-    override fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>> {
+    fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>> {
         return etherscanService.getInternalTransactionList(address, startBlock)
                 .map { response ->
                     response.result.mapNotNull { internalTx ->

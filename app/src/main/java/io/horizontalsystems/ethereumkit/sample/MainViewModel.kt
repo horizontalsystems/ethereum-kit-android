@@ -6,9 +6,6 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.refactoring.IStorage
-import io.horizontalsystems.ethereumkit.core.refactoring.TransactionSyncer
-import io.horizontalsystems.ethereumkit.core.refactoring.NotSyncedTransactionPool
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
