@@ -4,13 +4,19 @@ import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.Single
 
+interface ITransactionSyncerStateStorage {
+    fun getTransactionSyncerState(id: String): TransactionSyncerState?
+    fun save(transactionSyncerState: TransactionSyncerState)
+}
+
 interface IStorage {
     fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
     fun addNotSyncedTransactions(transactions: List<NotSyncedTransaction>)
     fun update(notSyncedTransaction: NotSyncedTransaction)
     fun remove(transaction: NotSyncedTransaction)
 
-    fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
+    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
+    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction>
     fun getTransactionHashes(): List<ByteArray>
     fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
     fun save(transaction: Transaction)
@@ -23,13 +29,10 @@ interface IStorage {
 
     fun save(logs: List<TransactionLog>)
 
-    fun getTransactionSyncerState(id: String): TransactionSyncerState?
-    fun save(transactionSyncerState: TransactionSyncerState)
-
     fun getFirstPendingTransaction(): Transaction?
 }
 
-class Storage(database: TransactionDatabase) : IStorage {
+class Storage(database: TransactionDatabase) : IStorage, ITransactionSyncerStateStorage {
 
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
@@ -81,8 +84,26 @@ class Storage(database: TransactionDatabase) : IStorage {
                 }
     }
 
-    override fun getTransactions(hashes: List<ByteArray>): List<FullTransaction> {
+    override fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return transactionDao.getTransactions(hashes)
+    }
+
+    override fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
+        val fullTransactions = transactionDao.getTransactions()
+
+        return fromHash?.let {
+            val fullTxFrom = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(fromHash) }
+
+            fullTxFrom?.let {
+                fullTransactions.filter {
+                    it.transaction.timestamp < fullTxFrom.transaction.timestamp ||
+                            (it.transaction.timestamp == fullTxFrom.transaction.timestamp
+                                    && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex
+                                    ?: 0) ?: 0) < 0)
+                }
+            }
+
+        } ?: fullTransactions
     }
 
     override fun save(transaction: Transaction) {

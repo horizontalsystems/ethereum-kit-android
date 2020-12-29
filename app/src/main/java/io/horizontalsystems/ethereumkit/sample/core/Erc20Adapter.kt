@@ -58,6 +58,14 @@ class Erc20Adapter(
     override val transactionsFlowable: Flowable<Unit>
         get() = erc20Kit.transactionsFlowable.map { Unit }
 
+    override fun start() {
+        erc20Kit.start()
+    }
+
+    override fun stop() {
+        erc20Kit.stop()
+    }
+
     override fun refresh() {
         erc20Kit.refresh()
     }
@@ -67,14 +75,17 @@ class Erc20Adapter(
     }
 
     override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
-        return erc20Kit.send(address, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map { Unit }
+        TODO()
+        //        return erc20Kit.send(address, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map { Unit }
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
+
         return erc20Kit.transactions(from?.let { TransactionKey(from.first, from.second) }, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }
+
     }
 
     fun allowance(spenderAddress: Address): Single<BigDecimal> {
@@ -108,7 +119,7 @@ class Erc20Adapter(
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                blockHeight = transaction.blockNumber,
+                blockHeight = transaction.fullTransaction.receiptWithLogs?.receipt?.blockNumber,
                 isError = transaction.isError,
                 type = transaction.type.value
         )

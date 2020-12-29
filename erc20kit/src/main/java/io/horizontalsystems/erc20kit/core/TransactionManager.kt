@@ -1,17 +1,6 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionStatus
-import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
-import java.math.BigInteger
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.logging.Logger
-
+/*
 class TransactionManager(
         private val contractAddress: Address,
         private val address: Address,
@@ -32,11 +21,13 @@ class TransactionManager(
     override var listener: ITransactionManagerListener? = null
 
     override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
-        return storage.getTransactions(fromTransaction, limit)
+        TODO()
+//        return storage.getTransactions(fromTransaction, limit)
     }
 
     override fun getPendingTransactions(): List<Transaction> {
-        return storage.getPendingTransactions()
+        TODO()
+        //        return storage.getPendingTransactions()
     }
 
     override fun immediateSync() {
@@ -65,9 +56,11 @@ class TransactionManager(
                             from = address,
                             to = to,
                             value = value)
-                }.doOnSuccess { transaction ->
+                }*/
+/*.doOnSuccess { transaction ->
                     storage.save(listOf(transaction))
-                }
+                }*//*
+
     }
 
     override fun getTransactionInput(to: Address, value: BigInteger): ByteArray {
@@ -76,7 +69,7 @@ class TransactionManager(
 
     private fun sync(delayTime: Int? = null) {
         val lastBlockHeight = dataProvider.lastBlockHeight
-        val lastTransactionBlockHeight = storage.lastTransactionBlockHeight ?: 0
+        val lastTransactionBlockHeight = 0L//storage.lastTransactionBlockHeight ?: 0
 
         var single = transactionsProvider
                 .getTransactions(contractAddress, address, lastTransactionBlockHeight + 1, lastBlockHeight)
@@ -99,7 +92,7 @@ class TransactionManager(
     }
 
     private fun processTransactions(transactions: List<Transaction>): Single<List<Transaction>> {
-        val pendingTransactions = storage.getPendingTransactions().toMutableList()
+        val pendingTransactions = mutableListOf<Transaction>()//storage.getPendingTransactions().toMutableList()
 
         transactions.forEach { transaction ->
             val pendingTransactionIndex = pendingTransactions.indexOfFirst {
@@ -149,7 +142,7 @@ class TransactionManager(
         }
         syncing.set(false)
         retryCount = 0
-        storage.save(transactions)
+//        storage.save(transactions)
         listener?.onSyncSuccess(transactions)
     }
 
@@ -162,3 +155,4 @@ class TransactionManager(
     }
 
 }
+*/

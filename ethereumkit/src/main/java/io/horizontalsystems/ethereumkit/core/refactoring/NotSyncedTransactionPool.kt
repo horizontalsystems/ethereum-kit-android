@@ -6,17 +6,26 @@ import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
 import java.util.logging.Logger
 
+interface INotSyncedTransactionPool {
+    val notSyncedTransactionsSignal: Flowable<Unit>
+
+    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
+    fun remove(notSyncedTransaction: NotSyncedTransaction)
+    fun update(notSyncedTransaction: NotSyncedTransaction)
+    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+}
+
 class NotSyncedTransactionPool(
         private val storage: IStorage
-) {
+): INotSyncedTransactionPool {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     private val notSyncedTransactionsSubject = PublishSubject.create<Unit>()
 
-    val notSyncedTransactionsSignal: Flowable<Unit>
+    override val notSyncedTransactionsSignal: Flowable<Unit>
         get() = notSyncedTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    fun add(notSyncedTransactions: List<NotSyncedTransaction>) {
+    override fun add(notSyncedTransactions: List<NotSyncedTransaction>) {
         val syncedTransactionHashes = storage.getTransactionHashes()
 
         val newTransactions = notSyncedTransactions.filter { notSyncedTransaction ->
@@ -32,15 +41,15 @@ class NotSyncedTransactionPool(
         }
     }
 
-    fun remove(notSyncedTransaction: NotSyncedTransaction) {
+    override fun remove(notSyncedTransaction: NotSyncedTransaction) {
         storage.remove(notSyncedTransaction)
     }
 
-    fun update(notSyncedTransaction: NotSyncedTransaction) {
+    override fun update(notSyncedTransaction: NotSyncedTransaction) {
         storage.update(notSyncedTransaction)
     }
 
-    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction> {
+    override fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction> {
         return storage.getNotSyncedTransactions(limit)
     }
 

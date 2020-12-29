@@ -3,36 +3,20 @@ package io.horizontalsystems.ethereumkit.core.refactoring
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
 import java.util.logging.Logger
 
 class OutgoingPendingTransactionSyncer(
         private val blockchain: IBlockchain,
-        private val storage: Storage
-) : ITransactionSyncer {
+        private val storage: IStorage
+) : AbstractTransactionSyncer("outgoing_pending_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-
-    override val id: String = "outgoing_pending_transaction_syncer"
-
     private val disposables = CompositeDisposable()
-    private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
 
     var listener: ITransactionSyncerListener? = null
-
-    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
-        private set(value) {
-            field = value
-            stateSubject.onNext(value)
-        }
-
-    override val stateAsync: Flowable<EthereumKit.SyncState>
-        get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     override fun onEthereumKitSynced() {
         sync()
@@ -70,7 +54,7 @@ class OutgoingPendingTransactionSyncer(
                         storage.save(TransactionReceipt(rpcReceipt))
                         storage.save(rpcReceipt.logs)
 
-                        listener?.onTransactionsSynced(storage.getTransactions(listOf(rpcReceipt.transactionHash)))
+                        listener?.onTransactionsSynced(storage.getFullTransactions(listOf(rpcReceipt.transactionHash)))
 
                         doSync()
                     } else {

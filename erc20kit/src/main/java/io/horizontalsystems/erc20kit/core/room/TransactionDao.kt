@@ -1,25 +1,25 @@
 package io.horizontalsystems.erc20kit.core.room
 
-import androidx.room.*
-import io.horizontalsystems.erc20kit.models.Transaction
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import io.horizontalsystems.erc20kit.models.TransactionRecord
 import io.reactivex.Single
 
 @Dao
 interface TransactionDao {
 
-    @Query("SELECT * FROM `Transaction` ORDER BY blockNumber DESC, logIndex DESC LIMIT 1")
-    fun getLastTransaction(): Transaction?
+    @Query("SELECT * FROM `TransactionRecord` ORDER BY timestamp DESC, interTransactionIndex DESC LIMIT 1")
+    fun getLastTransaction(): TransactionRecord?
 
-    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC, transactionIndex DESC, interTransactionIndex DESC")
-    fun getAllTransactions(): Single<List<Transaction>>
+    @Query("SELECT * FROM `TransactionRecord` ORDER BY timestamp DESC, interTransactionIndex DESC, interTransactionIndex DESC")
+    fun getAllTransactions(): Single<List<TransactionRecord>>
 
-    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NULL")
-    fun getPendingTransactions(): List<Transaction>
+    @Query("SELECT * FROM `TransactionRecord` WHERE logIndex IS NULL")
+    fun getPendingTransactions(): List<TransactionRecord>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transactions: List<Transaction>)
-
-    @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun update(transaction: Transaction)
+    fun insert(transaction: TransactionRecord)
 
 }

@@ -46,7 +46,16 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         get() = ethereumKit.balanceFlowable.map { Unit }
 
     override val transactionsFlowable: Flowable<Unit>
-        get() = ethereumKit.transactionsFlowable.map { Unit }
+        get() = ethereumKit.etherTransactionsFlowable.map { Unit }
+
+
+    override fun start() {
+        ethereumKit.start()
+    }
+
+    override fun stop() {
+        ethereumKit.stop()
+    }
 
     override fun refresh() {
         ethereumKit.refresh()

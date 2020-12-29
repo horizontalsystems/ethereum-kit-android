@@ -1,32 +1,13 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.erc20kit.models.TransactionRecord
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.models.TransactionStatus
 import io.reactivex.Single
 import java.math.BigInteger
 
 
 data class TransactionKey(val hash: ByteArray, val interTransactionIndex: Int)
-
-interface ITransactionManagerListener {
-    fun onSyncStarted()
-    fun onSyncSuccess(transactions: List<Transaction>)
-    fun onSyncTransactionsError(error: Throwable)
-}
-
-interface ITransactionManager {
-    var listener: ITransactionManagerListener?
-
-    fun immediateSync()
-    fun delayedSync(expectTransaction: Boolean)
-
-    fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
-    fun getPendingTransactions(): List<Transaction>
-    fun send(to: Address, value: BigInteger, gasPrice: Long, gasLimit: Long): Single<Transaction>
-    fun getTransactionInput(to: Address, value: BigInteger): ByteArray
-}
 
 interface IBalanceManagerListener {
     fun onSyncBalanceSuccess(balance: BigInteger)
@@ -41,15 +22,10 @@ interface IBalanceManager {
 }
 
 interface ITransactionStorage {
-    val lastTransactionBlockHeight: Long?
-
-    fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>>
-    fun getPendingTransactions(): List<Transaction>
-    fun save(transactions: List<Transaction>)
-}
-
-interface ITransactionsProvider {
-    fun getTransactions(contractAddress: Address, address: Address, startBlock: Long, endBlock: Long): Single<List<Transaction>>
+    fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionRecord>>
+    fun getPendingTransactions(): List<TransactionRecord>
+    fun save(transaction: TransactionRecord)
+    fun getLastTransaction(): TransactionRecord?
 }
 
 interface ITokenBalanceStorage {
@@ -60,12 +36,7 @@ interface ITokenBalanceStorage {
 interface IDataProvider {
     val lastBlockHeight: Long
 
-//    fun getTransactionLogs(contractAddress: Address, address: Address, from: Long, to: Long): Single<List<TransactionLog>>
     fun getBalance(contractAddress: Address, address: Address): Single<BigInteger>
     fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
     fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>>
-}
-
-interface ITransactionBuilder {
-    fun transferTransactionInput(to: Address, value: BigInteger): ByteArray
 }

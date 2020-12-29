@@ -2,29 +2,36 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.core.room.Erc20KitDatabase
 import io.horizontalsystems.erc20kit.models.TokenBalance
-import io.horizontalsystems.erc20kit.models.Transaction
+import io.horizontalsystems.erc20kit.models.TransactionRecord
 import io.reactivex.Single
 import java.math.BigInteger
 
-class Erc20Storage(private val database: Erc20KitDatabase) : ITransactionStorage, ITokenBalanceStorage {
+class Erc20Storage(
+        database: Erc20KitDatabase
+) : ITransactionStorage, ITokenBalanceStorage {
+
+    private val transactionDao = database.transactionDao
+    private val tokenBalanceDao = database.tokenBalanceDao
 
     // ITransactionStorage
 
-    override val lastTransactionBlockHeight: Long?
-        get() = database.transactionDao.getLastTransaction()?.blockNumber
+    override fun getLastTransaction(): TransactionRecord? {
+        return transactionDao.getLastTransaction()
+    }
 
+    override fun save(transaction: TransactionRecord) {
+        transactionDao.insert(transaction)
+    }
 
-    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
-        return database.transactionDao.getAllTransactions().flatMap { transactionsList ->
+    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionRecord>> {
+        return transactionDao.getAllTransactions().flatMap { transactionsList ->
             var transactions = transactionsList
 
             fromTransaction?.let { fromTxKey ->
-                transactions.firstOrNull { it.transactionHash.contentEquals(fromTxKey.hash) && it.interTransactionIndex == fromTxKey.interTransactionIndex }?.let { txFrom ->
+                transactions.firstOrNull { it.hash.contentEquals(fromTxKey.hash) && it.interTransactionIndex == fromTxKey.interTransactionIndex }?.let { txFrom ->
                     transactions = transactions
                             .filter {
-                                it.timestamp < txFrom.timestamp ||
-                                        it.timestamp == txFrom.timestamp && (it.transactionIndex?.compareTo(txFrom.transactionIndex ?:0 ) ?: 0) < 0 ||
-                                        it.timestamp == txFrom.timestamp && it.transactionIndex == txFrom.transactionIndex && it.interTransactionIndex < fromTransaction.interTransactionIndex
+                                it.timestamp < txFrom.timestamp || it.timestamp == txFrom.timestamp && (it.interTransactionIndex.compareTo(txFrom.interTransactionIndex)) < 0
                             }
                 }
             }
@@ -36,23 +43,18 @@ class Erc20Storage(private val database: Erc20KitDatabase) : ITransactionStorage
         }
     }
 
-    override fun getPendingTransactions(): List<Transaction> {
-        return database.transactionDao.getPendingTransactions()
+    override fun getPendingTransactions(): List<TransactionRecord> {
+        return transactionDao.getPendingTransactions()
     }
-
-    override fun save(transactions: List<Transaction>) {
-        database.transactionDao.insert(transactions)
-    }
-
 
     // ITokenBalanceStorage
 
     override fun getBalance(): BigInteger? {
-        return database.tokenBalanceDao.getBalance()?.value
+        return tokenBalanceDao.getBalance()?.value
     }
 
     override fun save(balance: BigInteger) {
-        database.tokenBalanceDao.insert(TokenBalance(balance))
+        tokenBalanceDao.insert(TokenBalance(balance))
     }
 
 }

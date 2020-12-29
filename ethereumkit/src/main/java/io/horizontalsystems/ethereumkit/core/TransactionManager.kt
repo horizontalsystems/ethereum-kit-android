@@ -1,17 +1,5 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
-import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
-import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.BiFunction
-import io.reactivex.schedulers.Schedulers
-import java.math.BigInteger
-import java.util.concurrent.TimeUnit
-
 /*class TransactionManager(
         private val storage: ITransactionStorage,
         private val transactionsProvider: ITransactionsProvider

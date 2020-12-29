@@ -22,6 +22,10 @@ interface TransactionDao {
 
     @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
+    fun getTransactions(): List<FullTransaction>
+
+    @androidx.room.Transaction
+    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
     fun getTransactionsAsync(): Single<List<FullTransaction>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
