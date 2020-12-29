@@ -87,8 +87,11 @@ class EthereumKit(
     val balanceFlowable: Flowable<BigInteger>
         get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsFlowable: Flowable<List<FullTransaction>>
+    val etherTransactionsFlowable: Flowable<List<FullTransaction>>
         get() = transactionManager.etherTransactionsAsync
+
+    val allTransactionsFlowable: Flowable<List<FullTransaction>>
+        get() = transactionManager.allTransactionsAsync
 
     val nonceFlowable: Flowable<Long>
         get() = nonceSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -108,6 +111,7 @@ class EthereumKit(
     }
 
     fun refresh() {
+        blockchain.refresh()
     }
 
     fun onEnterForeground() {
@@ -120,6 +124,14 @@ class EthereumKit(
 
     fun etherTransactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
         return transactionManager.getEtherTransactionsAsync(fromHash, limit)
+    }
+
+    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
+        return transactionManager.getFullTransactions(fromHash)
+    }
+
+    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
+        return transactionManager.getFullTransactions(hashes)
     }
 
     fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
@@ -246,6 +258,14 @@ class EthereumKit(
         nonceSubject.onNext(nonce)
     }
 
+    fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {
+        transactionSyncManager.add(transactionSyncer)
+    }
+
+    fun removeTransactionSyncer(id: String) {
+        transactionSyncManager.removeSyncer(id)
+    }
+
     sealed class SyncState {
         class Synced : SyncState()
         class NotSynced(val error: Throwable) : SyncState()
@@ -369,19 +389,21 @@ class EthereumKit(
             val notSyncedTransactionPool = NotSyncedTransactionPool(storage)
 
             val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
-            val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider, notSyncedTransactionPool, storage)
-            val internalTransactionsProvider = InternalTransactionSyncer(etherscanTransactionsProvider, notSyncedTransactionPool, storage)
+            val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider)
+            val internalTransactionsProvider = InternalTransactionSyncer(etherscanTransactionsProvider, storage)
             val outgoingPendingTransactionSyncer = OutgoingPendingTransactionSyncer(blockchain, storage)
 
-            val transactionSyncer = TransactionSyncer(notSyncedTransactionPool, blockchain, storage)
+            val transactionSyncer = TransactionSyncer(blockchain, storage)
 
-            val transactionSyncManager = TransactionSyncManager()
+            val notSyncedTransactionManager = NotSyncedTransactionManager(notSyncedTransactionPool, storage)
+
+            val transactionSyncManager = TransactionSyncManager(notSyncedTransactionManager)
             transactionSyncer.listener = transactionSyncManager
             outgoingPendingTransactionSyncer.listener = transactionSyncManager
 
-            transactionSyncManager.add(transactionSyncer)
-            transactionSyncManager.add(ethereumTransactionsProvider)
             transactionSyncManager.add(internalTransactionsProvider)
+            transactionSyncManager.add(ethereumTransactionsProvider)
+            transactionSyncManager.add(transactionSyncer)
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
 
             val transactionManager = TransactionManager(address, transactionSyncManager, storage)

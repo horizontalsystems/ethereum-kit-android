@@ -3,6 +3,8 @@ package io.horizontalsystems.ethereumkit.core.refactoring
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
@@ -18,13 +20,29 @@ interface ITransactionSyncer {
     val stateAsync: Flowable<EthereumKit.SyncState>
 
     fun onEthereumKitSynced()
-    fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {}
-    fun onUpdateNonce(nonce: Long) {}
-    fun onUpdateBalance(balance: BigInteger) {}
-    fun onLastBlockNumber(blockNumber: Long) {}
+    fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
+    fun onUpdateNonce(nonce: Long)
+    fun onUpdateBalance(balance: BigInteger)
+    fun onLastBlockNumber(blockNumber: Long)
+
+    fun set(delegate: ITransactionSyncerDelegate)
 }
 
-class TransactionSyncManager : ITransactionSyncerListener {
+interface ITransactionSyncerDelegate {
+    val notSyncedTransactionsSignal: Flowable<Unit>
+
+    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
+    fun remove(notSyncedTransaction: NotSyncedTransaction)
+    fun update(notSyncedTransaction: NotSyncedTransaction)
+
+    fun getTransactionSyncerState(id: String): TransactionSyncerState?
+    fun update(transactionSyncerState: TransactionSyncerState)
+}
+
+class TransactionSyncManager(
+        private val notSyncedTransactionManager: NotSyncedTransactionManager
+) : ITransactionSyncerListener {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     private val disposables = CompositeDisposable()
@@ -52,6 +70,8 @@ class TransactionSyncManager : ITransactionSyncerListener {
     }
 
     fun add(syncer: ITransactionSyncer) {
+        syncer.set(delegate = notSyncedTransactionManager)
+
         syncers.add(syncer)
 
         syncer.stateAsync
@@ -76,6 +96,7 @@ class TransactionSyncManager : ITransactionSyncerListener {
         ethereumKit.balanceFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info(" ---> balanceFlowable: $it, syncers: ${syncers.size}")
                     onUpdateBalance(it)
                 }
                 .let { disposables.add(it) }
@@ -83,6 +104,7 @@ class TransactionSyncManager : ITransactionSyncerListener {
         ethereumKit.nonceFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info(" ---> nonceFlowable: $it, syncers: ${syncers.size}")
                     onUpdateNonce(it)
                 }
                 .let { disposables.add(it) }
@@ -90,6 +112,7 @@ class TransactionSyncManager : ITransactionSyncerListener {
         ethereumKit.lastBlockBloomFilterFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info(" ---> lastBlockBloomFilterFlowable: $it, syncers: ${syncers.size}")
                     onLastBlockBloomFilter(it)
                 }
                 .let { disposables.add(it) }
@@ -97,12 +120,15 @@ class TransactionSyncManager : ITransactionSyncerListener {
         ethereumKit.lastBlockHeightFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info(" ---> lastBlockHeightFlowable: $it, syncers: ${syncers.size}")
                     onLastBlockNumber(it)
                 }
                 .let { disposables.add(it) }
+
         ethereumKit.syncStateFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
+                    logger.info(" ---> syncStateFlowable: $it, syncers: ${syncers.size}")
                     onEthereumKitSyncState(it)
                 }
                 .let { disposables.add(it) }

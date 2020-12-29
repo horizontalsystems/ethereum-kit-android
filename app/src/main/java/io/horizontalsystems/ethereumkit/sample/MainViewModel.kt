@@ -157,8 +157,8 @@ class MainViewModel : ViewModel() {
             disposables.add(it)
         }
 
-        ethereumKit.start()
-        erc20Adapter.refresh()
+        ethereumAdapter.start()
+        erc20Adapter.start()
     }
 
     private fun updateLastBlockHeight() {

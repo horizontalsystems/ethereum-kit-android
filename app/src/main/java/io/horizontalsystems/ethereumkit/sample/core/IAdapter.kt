@@ -24,6 +24,8 @@ interface IAdapter {
     val balanceFlowable: Flowable<Unit>
     val transactionsFlowable: Flowable<Unit>
 
+    fun start()
+    fun stop()
     fun refresh()
     fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit>
     fun transactions(from: Pair<ByteArray, Int>? = null, limit: Int? = null): Single<List<TransactionRecord>>

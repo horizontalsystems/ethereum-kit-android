@@ -39,7 +39,7 @@ abstract class TransactionDatabase : RoomDatabase() {
     class TypeConverters {
         @TypeConverter
         fun toString(list: List<String>): String {
-            return list.joinToString(separator = ", ")
+            return list.joinToString(separator = ",")
         }
 
         @TypeConverter

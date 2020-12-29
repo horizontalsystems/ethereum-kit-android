@@ -9,12 +9,9 @@ import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
 import java.util.*
 import java.util.logging.Logger
 
@@ -24,38 +21,14 @@ interface ITransactionSyncerListener {
 }
 
 class TransactionSyncer(
-        private val pool: NotSyncedTransactionPool,
         private val blockchain: IBlockchain,
         private val storage: IStorage
-) : ITransactionSyncer {
+) : AbstractTransactionSyncer("full_transaction_syncer") {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val disposables = CompositeDisposable()
-    private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val txSyncBatchSize = 10
 
     var listener: ITransactionSyncerListener? = null
-
-    init {
-        //subscribe to txHashPool and sync when new hashes received
-        pool.notSyncedTransactionsSignal
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info("---> notSyncedTransactionsSignal")
-                    sync()
-                }
-                .let { disposables.add(it) }
-    }
-
-    override val id: String = "full_transaction_syncer"
-
-    override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
-        private set(value) {
-            field = value
-            stateSubject.onNext(value)
-        }
-    override val stateAsync: Flowable<EthereumKit.SyncState>
-        get() = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
-
 
     override fun onEthereumKitSynced() {
         sync()
@@ -69,7 +42,7 @@ class TransactionSyncer(
     }
 
     private fun doSync() {
-        val notSyncedTransactions = pool.getNotSyncedTransactions(txSyncBatchSize)
+        val notSyncedTransactions = delegate.getNotSyncedTransactions(txSyncBatchSize)
         logger.info("---> notSyncedTransactions: ${notSyncedTransactions.size} ")
 
         if (notSyncedTransactions.isEmpty()) {
@@ -88,7 +61,7 @@ class TransactionSyncer(
                     logger.info("---> synced batch: ${syncedTxHashes.map { it.orElse(null)?.toHexString() }.joinToString { ", " }}")
 
                     val txHashes = syncedTxHashes.mapNotNull { it.orElse(null) }
-                    listener?.onTransactionsSynced(storage.getTransactions(txHashes))
+                    listener?.onTransactionsSynced(storage.getFullTransactions(txHashes))
 
                     doSync()
                 }, {
@@ -139,7 +112,7 @@ class TransactionSyncer(
         )
         storage.save(transactionEntity)
 
-        pool.remove(notSyncedTransaction)
+        delegate.remove(notSyncedTransaction)
     }
 
     private fun syncTransactionSingle(notSyncedTransaction: NotSyncedTransaction): Single<Optional<RpcTransaction>> {
@@ -150,7 +123,7 @@ class TransactionSyncer(
                     .doOnSuccess {
                         it.orElse(null)?.let { transaction ->
                             notSyncedTransaction.transaction = transaction
-                            pool.update(notSyncedTransaction)
+                            delegate.update(notSyncedTransaction)
                         }
                     }
         }
@@ -204,4 +177,16 @@ class TransactionSyncer(
                 }
     }
 
+    override fun set(delegate: ITransactionSyncerDelegate) {
+        super.set(delegate)
+
+        //subscribe to txHashPool and sync when new hashes received
+        delegate.notSyncedTransactionsSignal
+                .subscribeOn(Schedulers.io())
+                .subscribe {
+                    logger.info("---> notSyncedTransactionsSignal")
+                    sync()
+                }
+                .let { disposables.add(it) }
+    }
 }

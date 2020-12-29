@@ -18,17 +18,20 @@ class TransactionManager(
 ) {
     private val disposables = CompositeDisposable()
     private val etherTransactionSubject = PublishSubject.create<List<FullTransaction>>()
+    private val allTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
 
     init {
         transactionSyncManager.transactionsAsync
                 .subscribeOn(Schedulers.io())
                 .subscribe { transactions ->
-                    etherTransactionSubject.onNext(transactions.filter { it.hasEtherTransfer(address)})
+                    etherTransactionSubject.onNext(transactions.filter { it.hasEtherTransfer(address) })
+                    allTransactionsSubject.onNext(transactions)
                 }
                 .let { disposables.add(it) }
     }
 
     val etherTransactionsAsync: Flowable<List<FullTransaction>> = etherTransactionSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val allTransactionsAsync: Flowable<List<FullTransaction>> = allTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun getEtherTransactionsAsync(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
         return storage.getEtherTransactionsAsync(address, fromHash, limit)
@@ -37,7 +40,21 @@ class TransactionManager(
     fun handle(transaction: Transaction) {
         storage.save(transaction)
 
-        etherTransactionSubject.onNext(listOf(FullTransaction(transaction)))
+        val fullTransaction = FullTransaction(transaction)
+        if (fullTransaction.hasEtherTransfer(address)) {
+            etherTransactionSubject.onNext(listOf(fullTransaction))
+        }
+        allTransactionsSubject.onNext(listOf(fullTransaction))
+
     }
+
+    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
+        return storage.getFullTransactions(fromHash)
+    }
+
+    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
+        return storage.getFullTransactions(hashes)
+    }
+
 
 }

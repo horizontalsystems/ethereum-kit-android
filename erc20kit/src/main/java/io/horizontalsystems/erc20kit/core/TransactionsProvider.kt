@@ -1,10 +1,5 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.TransactionLog
-import io.reactivex.Single
-
 //class TransactionsProvider(private val dataProvider: IDataProvider) : ITransactionsProvider {
 //
 //    override fun getTransactions(contractAddress: Address, address: Address, startBlock: Long, endBlock: Long): Single<List<Transaction>> {
