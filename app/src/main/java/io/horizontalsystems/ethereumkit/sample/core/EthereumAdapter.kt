@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -61,12 +62,12 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         ethereumKit.refresh()
     }
 
-    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal, gasPrice: Long?): Single<Long> {
+    override fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: Long?): Single<Long> {
         return ethereumKit.estimateGas(toAddress, value.movePointRight(decimal).toBigInteger(), gasPrice)
     }
 
-    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
-        return ethereumKit.send(address, amount.movePointRight(decimal).toBigInteger(), byteArrayOf(), gasPrice, gasLimit).map { Unit }
+    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Transaction> {
+        return ethereumKit.send(address, amount.movePointRight(decimal).toBigInteger(), byteArrayOf(), gasPrice, gasLimit)
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {

@@ -31,7 +31,6 @@ class MainViewModel : ViewModel() {
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
     private val networkType: NetworkType = NetworkType.Ropsten
     private val walletId = "walletId"
-    private var estimateGasLimit: Long = 0
 
     private val disposables = CompositeDisposable()
 
@@ -235,29 +234,40 @@ class MainViewModel : ViewModel() {
     }
 
     fun estimateGas(toAddress: String?, value: BigDecimal, isErc20: Boolean) {
+        estimatedGas.postValue(null)
+
+        if (toAddress == null) return
+
         val estimateSingle = if (isErc20)
-            erc20Adapter.estimatedGasLimit(toAddress?.let { Address(it) }, value, gasPrice)
+            erc20Adapter.estimatedGasLimit(Address(toAddress), value, gasPrice)
         else
-            ethereumAdapter.estimatedGasLimit(toAddress?.let { Address(it) }, value, gasPrice)
+            ethereumAdapter.estimatedGasLimit(Address(toAddress), value, gasPrice)
 
         estimateSingle.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
                     estimatedGas.value = it.toString()
-                    estimateGasLimit = it
                 }, {
                     logger.warning("Gas estimate: ${it.message}")
                     estimatedGas.value = it.message
-                }).let { disposables.add(it) }
+                })
+                .let { disposables.add(it) }
     }
 
     fun send(toAddress: String, amount: BigDecimal) {
-        ethereumAdapter.send(Address(toAddress), amount, gasPrice, estimateGasLimit)
+        val gasLimit = estimatedGas.value?.toLongOrNull() ?: kotlin.run {
+            sendStatus.value = Exception("No gas limit!!")
+            return
+        }
+
+        ethereumAdapter.send(Address(toAddress), amount, gasPrice, gasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
+                    logger.info("Successfully sent, hash: ${it.hash.toHexString()}")
+
                     sendStatus.value = null
                 }, {
                     logger.warning("Ether send failed: ${it.message}")
@@ -271,10 +281,16 @@ class MainViewModel : ViewModel() {
     //
 
     fun sendERC20(toAddress: String, amount: BigDecimal) {
-        erc20Adapter.send(Address(toAddress), amount, gasPrice, estimateGasLimit)
+        val gasLimit = estimatedGas.value?.toLongOrNull() ?: kotlin.run {
+            sendStatus.value = Exception("No gas limit!!")
+            return
+        }
+
+        erc20Adapter.send(Address(toAddress), amount, gasPrice, gasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
+                    logger.info("Successfully sent, hash: ${it.hash.toHexString()}")
                     //success
                     sendStatus.value = null
                 }, {

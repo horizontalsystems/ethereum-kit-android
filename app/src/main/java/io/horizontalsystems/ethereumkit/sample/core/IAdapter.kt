@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -27,8 +28,8 @@ interface IAdapter {
     fun start()
     fun stop()
     fun refresh()
-    fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit>
+    fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Transaction>
     fun transactions(from: Pair<ByteArray, Int>? = null, limit: Int? = null): Single<List<TransactionRecord>>
 
-    fun estimatedGasLimit(toAddress: Address?, value: BigDecimal, gasPrice: Long?): Single<Long>
+    fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: Long?): Single<Long>
 }

@@ -9,14 +9,14 @@ interface ITransactionSyncerStateStorage {
     fun save(transactionSyncerState: TransactionSyncerState)
 }
 
-interface IStorage {
+interface ITransactionStorage {
     fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
     fun addNotSyncedTransactions(transactions: List<NotSyncedTransaction>)
     fun update(notSyncedTransaction: NotSyncedTransaction)
     fun remove(transaction: NotSyncedTransaction)
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
-    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction>
+    fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction>
     fun getTransactionHashes(): List<ByteArray>
     fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
     fun save(transaction: Transaction)
@@ -32,7 +32,7 @@ interface IStorage {
     fun getFirstPendingTransaction(): Transaction?
 }
 
-class Storage(database: TransactionDatabase) : IStorage, ITransactionSyncerStateStorage {
+class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, ITransactionSyncerStateStorage {
 
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
@@ -88,18 +88,18 @@ class Storage(database: TransactionDatabase) : IStorage, ITransactionSyncerState
         return transactionDao.getTransactions(hashes)
     }
 
-    override fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
+    override fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction> {
         val fullTransactions = transactionDao.getTransactions()
 
-        return fromHash?.let {
-            val fullTxFrom = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(fromHash) }
+        return hash?.let {
+            val fullTxFrom = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(hash) }
 
             fullTxFrom?.let {
                 fullTransactions.filter {
-                    it.transaction.timestamp < fullTxFrom.transaction.timestamp ||
+                    it.transaction.timestamp > fullTxFrom.transaction.timestamp ||
                             (it.transaction.timestamp == fullTxFrom.transaction.timestamp
                                     && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex
-                                    ?: 0) ?: 0) < 0)
+                                    ?: 0) ?: 0) > 0)
                 }
             }
 

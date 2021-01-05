@@ -22,7 +22,7 @@ interface ITransactionSyncerListener {
 
 class TransactionSyncer(
         private val blockchain: IBlockchain,
-        private val storage: IStorage
+        private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("full_transaction_syncer") {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val disposables = CompositeDisposable()
