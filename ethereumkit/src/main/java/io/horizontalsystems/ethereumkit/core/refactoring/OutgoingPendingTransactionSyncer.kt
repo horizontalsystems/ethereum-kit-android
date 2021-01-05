@@ -10,7 +10,7 @@ import java.util.logging.Logger
 
 class OutgoingPendingTransactionSyncer(
         private val blockchain: IBlockchain,
-        private val storage: IStorage
+        private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("outgoing_pending_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)

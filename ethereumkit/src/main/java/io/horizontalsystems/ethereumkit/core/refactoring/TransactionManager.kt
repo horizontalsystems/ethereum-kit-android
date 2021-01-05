@@ -10,11 +10,10 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 
-
 class TransactionManager(
         private val address: Address,
         private val transactionSyncManager: TransactionSyncManager,
-        private val storage: IStorage
+        private val storage: ITransactionStorage
 ) {
     private val disposables = CompositeDisposable()
     private val etherTransactionSubject = PublishSubject.create<List<FullTransaction>>()
@@ -49,7 +48,7 @@ class TransactionManager(
     }
 
     fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
-        return storage.getFullTransactions(fromHash)
+        return storage.getFullTransactionsAfter(fromHash)
     }
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {

@@ -10,7 +10,7 @@ import java.util.logging.Logger
 
 class InternalTransactionSyncer(
         private val etherscanTransactionsProvider: EtherscanTransactionsProvider,
-        private val storage: IStorage
+        private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("internal_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)

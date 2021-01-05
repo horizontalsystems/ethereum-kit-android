@@ -5,15 +5,15 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 
-object ApproveMethodFactory : ContractMethodFactory {
+object TransferMethodFactory : ContractMethodFactory {
 
-    override val methodId = ContractMethodHelper.getMethodId(ApproveMethod.methodSignature)
+    override val methodId = ContractMethodHelper.getMethodId(TransferMethod.methodSignature)
 
-    override fun createMethod(inputArguments: ByteArray): ApproveMethod {
+    override fun createMethod(inputArguments: ByteArray): TransferMethod {
         val address = Address(inputArguments.copyOfRange(12, 32))
         val value = inputArguments.copyOfRange(32, 64).toBigInteger()
 
-        return ApproveMethod(address, value)
+        return TransferMethod(address, value)
     }
 
 }

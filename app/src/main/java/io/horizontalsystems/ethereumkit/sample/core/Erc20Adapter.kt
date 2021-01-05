@@ -70,13 +70,17 @@ class Erc20Adapter(
         erc20Kit.refresh()
     }
 
-    override fun estimatedGasLimit(toAddress: Address?, value: BigDecimal, gasPrice: Long?): Single<Long> {
-        return erc20Kit.estimateGas(toAddress, contractAddress, value.movePointRight(decimals).toBigInteger(), gasPrice)
+    override fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: Long?): Single<Long> {
+        val valueBigInteger = value.movePointRight(decimals).toBigInteger()
+        val transactionData = erc20Kit.transferTransactionData(toAddress, valueBigInteger)
+        return ethereumKit.estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
     }
 
-    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<Unit> {
-        TODO()
-        //        return erc20Kit.send(address, amount.movePointRight(decimals).toBigInteger(), gasPrice, gasLimit).map { Unit }
+    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<io.horizontalsystems.ethereumkit.models.Transaction> {
+        val valueBigInteger = amount.movePointRight(decimals).toBigInteger()
+        val transactionData = erc20Kit.transferTransactionData(address, valueBigInteger)
+
+        return ethereumKit.send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit)
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {

@@ -13,6 +13,7 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -23,7 +24,7 @@ import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
 
-class TransactionManagerNew(
+class TransactionManager(
         private val contractAddress: Address,
         private val ethereumKit: EthereumKit,
         private val contractMethodFactories: ContractMethodFactories,
@@ -51,8 +52,8 @@ class TransactionManagerNew(
         processTransactions(fullTransactions)
     }
 
-    fun getTransactionInput(to: Address, value: BigInteger): ByteArray {
-        return TransferMethod(to, value).encodedABI()
+    fun getTransferTransactionData(to: Address, value: BigInteger): TransactionData {
+        return TransactionData(to = contractAddress, value = value, TransferMethod(to, value).encodedABI())
     }
 
     fun getTransactionsAsync(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {

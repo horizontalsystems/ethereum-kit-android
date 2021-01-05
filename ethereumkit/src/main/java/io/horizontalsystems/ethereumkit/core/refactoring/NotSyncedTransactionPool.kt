@@ -16,7 +16,7 @@ interface INotSyncedTransactionPool {
 }
 
 class NotSyncedTransactionPool(
-        private val storage: IStorage
+        private val storage: ITransactionStorage
 ): INotSyncedTransactionPool {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 

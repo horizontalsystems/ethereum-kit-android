@@ -385,17 +385,17 @@ class EthereumKit(
 
             val etherscanService = EtherscanService(networkType, etherscanKey)
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
-            val storage = Storage(transactionDatabase)
-            val notSyncedTransactionPool = NotSyncedTransactionPool(storage)
+            val transactionStorage = TransactionStorage(transactionDatabase)
+            val notSyncedTransactionPool = NotSyncedTransactionPool(transactionStorage)
 
             val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
             val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider)
-            val internalTransactionsProvider = InternalTransactionSyncer(etherscanTransactionsProvider, storage)
-            val outgoingPendingTransactionSyncer = OutgoingPendingTransactionSyncer(blockchain, storage)
+            val internalTransactionsProvider = InternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
+            val outgoingPendingTransactionSyncer = OutgoingPendingTransactionSyncer(blockchain, transactionStorage)
 
-            val transactionSyncer = TransactionSyncer(blockchain, storage)
+            val transactionSyncer = TransactionSyncer(blockchain, transactionStorage)
 
-            val notSyncedTransactionManager = NotSyncedTransactionManager(notSyncedTransactionPool, storage)
+            val notSyncedTransactionManager = NotSyncedTransactionManager(notSyncedTransactionPool, transactionStorage)
 
             val transactionSyncManager = TransactionSyncManager(notSyncedTransactionManager)
             transactionSyncer.listener = transactionSyncManager
@@ -406,7 +406,7 @@ class EthereumKit(
             transactionSyncManager.add(transactionSyncer)
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
 
-            val transactionManager = TransactionManager(address, transactionSyncManager, storage)
+            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
 
             val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)
 
