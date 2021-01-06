@@ -84,23 +84,23 @@ class Erc20Kit(
 
     fun refresh() {}
 
-    fun allowance(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<BigInteger> {
+    fun getAllowanceAsync(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<BigInteger> {
         return allowanceManager.allowance(spenderAddress, defaultBlockParameter)
     }
 
-    fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
+    fun buildApproveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
         return allowanceManager.approveTransactionData(spenderAddress, amount)
     }
 
-    fun transferTransactionData(to: Address, value: BigInteger): TransactionData {
-        return transactionManager.getTransferTransactionData(to, value)
+    fun buildTransferTransactionData(to: Address, value: BigInteger): TransactionData {
+        return transactionManager.buildTransferTransactionData(to, value)
     }
 
-    fun transactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
+    fun getTransactionsAsync(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return transactionManager.getTransactionsAsync(fromTransaction, limit)
     }
 
-    fun pendingTransactions(): List<Transaction> {
+    fun getPendingTransactions(): List<Transaction> {
         return transactionManager.getPendingTransactions()
     }
 

@@ -264,9 +264,9 @@ class MainViewModel : ViewModel() {
         ethereumAdapter.send(Address(toAddress), amount, gasPrice, gasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
+                .subscribe({ fullTransaction ->
                     //success
-                    logger.info("Successfully sent, hash: ${it.hash.toHexString()}")
+                    logger.info("Successfully sent, hash: ${fullTransaction.transaction.hash.toHexString()}")
 
                     sendStatus.value = null
                 }, {
@@ -289,8 +289,8 @@ class MainViewModel : ViewModel() {
         erc20Adapter.send(Address(toAddress), amount, gasPrice, gasLimit)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    logger.info("Successfully sent, hash: ${it.hash.toHexString()}")
+                .subscribe({ fullTransaction ->
+                    logger.info("Successfully sent, hash: ${fullTransaction.transaction.hash.toHexString()}")
                     //success
                     sendStatus.value = null
                 }, {
@@ -352,10 +352,10 @@ class MainViewModel : ViewModel() {
 
         val transactionData = erc20Adapter.approveTransactionData(spenderAddress, amount)
 
-        ethereumKit.estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
+        ethereumKit.estimateGas(transactionData, gasPrice)
                 .flatMap { gasLimit ->
                     logger.info("gas limit: $gasLimit")
-                    ethereumKit.send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit)
+                    ethereumKit.send(transactionData, gasPrice, gasLimit)
                 }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -404,13 +404,15 @@ class MainViewModel : ViewModel() {
             uniswapKit.estimateSwap(tradeData, gasPrice)
                     .flatMap { gasLimit ->
                         logger.info("gas limit: $gasLimit")
-                        uniswapKit.swap(tradeData, gasPrice, gasLimit)
+
+                        val transactionData = uniswapKit.transactionData(tradeData)
+                        ethereumKit.send(transactionData, gasPrice, gasLimit)
                     }
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({ tx ->
+                    .subscribe({ fullTransaction ->
                         swapStatus.value = null
-                        logger.info("swap SUCCESS, txHash=${tx.hash.toHexString()}")
+                        logger.info("swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
                     }, {
                         swapStatus.value = it
                         logger.info("swap ERROR, error=${it.message}")

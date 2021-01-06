@@ -67,12 +67,6 @@ class TradeManager(
         )
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<Transaction> {
-        val swapData = buildSwapData(tradeData)
-
-        return ethereumKit.send(routerAddress, swapData.amount, swapData.input, gasPrice, gasLimit)
-    }
-
     private class SwapData(val amount: BigInteger, val input: ByteArray)
 
     private fun buildSwapData(tradeData: TradeData): SwapData {

@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.sample.Erc20Token
 import io.reactivex.Flowable
@@ -72,20 +73,20 @@ class Erc20Adapter(
 
     override fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: Long?): Single<Long> {
         val valueBigInteger = value.movePointRight(decimals).toBigInteger()
-        val transactionData = erc20Kit.transferTransactionData(toAddress, valueBigInteger)
-        return ethereumKit.estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
+        val transactionData = erc20Kit.buildTransferTransactionData(toAddress, valueBigInteger)
+        return ethereumKit.estimateGas(transactionData, gasPrice)
     }
 
-    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<io.horizontalsystems.ethereumkit.models.Transaction> {
+    override fun send(address: Address, amount: BigDecimal, gasPrice: Long, gasLimit: Long): Single<FullTransaction> {
         val valueBigInteger = amount.movePointRight(decimals).toBigInteger()
-        val transactionData = erc20Kit.transferTransactionData(address, valueBigInteger)
+        val transactionData = erc20Kit.buildTransferTransactionData(address, valueBigInteger)
 
-        return ethereumKit.send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit)
+        return ethereumKit.send(transactionData, gasPrice, gasLimit)
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
 
-        return erc20Kit.transactions(from?.let { TransactionKey(from.first, from.second) }, limit)
+        return erc20Kit.getTransactionsAsync(from?.let { TransactionKey(from.first, from.second) }, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }
@@ -93,11 +94,11 @@ class Erc20Adapter(
     }
 
     fun allowance(spenderAddress: Address): Single<BigDecimal> {
-        return erc20Kit.allowance(spenderAddress).map { allowance -> allowance.toBigDecimal().movePointLeft(decimals) }
+        return erc20Kit.getAllowanceAsync(spenderAddress).map { allowance -> allowance.toBigDecimal().movePointLeft(decimals) }
     }
 
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
-        return erc20Kit.approveTransactionData(spenderAddress, amount)
+        return erc20Kit.buildApproveTransactionData(spenderAddress, amount)
     }
 
     private fun transactionRecord(transaction: Transaction): TransactionRecord {

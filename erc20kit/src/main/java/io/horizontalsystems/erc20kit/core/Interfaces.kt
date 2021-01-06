@@ -34,9 +34,5 @@ interface ITokenBalanceStorage {
 }
 
 interface IDataProvider {
-    val lastBlockHeight: Long
-
     fun getBalance(contractAddress: Address, address: Address): Single<BigInteger>
-    fun send(contractAddress: Address, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long): Single<ByteArray>
-    fun getTransactionStatuses(transactionHashes: List<ByteArray>): Single<Map<ByteArray, TransactionStatus>>
 }
