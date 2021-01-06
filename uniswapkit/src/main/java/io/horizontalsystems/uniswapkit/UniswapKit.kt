@@ -86,10 +86,6 @@ class UniswapKit(
         return tradeManager.transactionData(tradeData)
     }
 
-    fun swap(tradeData: TradeData, gasPrice: Long, gasLimit: Long): Single<Transaction> {
-        return tradeManager.swap(tradeData, gasPrice, gasLimit)
-    }
-
     companion object {
         fun getInstance(ethereumKit: EthereumKit): UniswapKit {
             val tradeManager = TradeManager(ethereumKit)

@@ -173,7 +173,11 @@ class EthereumKit(
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<Transaction> {
+    fun estimateGas(transactionData: TransactionData, gasPrice: Long?): Single<Long> {
+        return estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
+    }
+
+    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
         val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce()
 
         return nonceSingle.flatMap { nonce ->
@@ -184,9 +188,13 @@ class EthereumKit(
                     .doOnSuccess { transaction ->
                         transactionManager.handle(transaction)
                     }.map {
-                        it
+                        FullTransaction(it)
                     }
         }
+    }
+
+    fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
+        return send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit, nonce)
     }
 
     fun signedTransaction(address: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long): ByteArray {

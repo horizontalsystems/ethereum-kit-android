@@ -23,7 +23,6 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
-
 class TransactionManager(
         private val contractAddress: Address,
         private val ethereumKit: EthereumKit,
@@ -52,8 +51,8 @@ class TransactionManager(
         processTransactions(fullTransactions)
     }
 
-    fun getTransferTransactionData(to: Address, value: BigInteger): TransactionData {
-        return TransactionData(to = contractAddress, value = value, TransferMethod(to, value).encodedABI())
+    fun buildTransferTransactionData(to: Address, value: BigInteger): TransactionData {
+        return TransactionData(to = contractAddress, value = BigInteger.ZERO, TransferMethod(to, value).encodedABI())
     }
 
     fun getTransactionsAsync(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
