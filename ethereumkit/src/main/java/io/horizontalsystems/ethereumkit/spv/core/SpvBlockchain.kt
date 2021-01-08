@@ -3,15 +3,18 @@ package io.horizontalsystems.ethereumkit.spv.core
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
-import io.horizontalsystems.ethereumkit.models.TransactionLog
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.crypto.ECKey
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
+import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.net.BlockHelper
@@ -68,8 +71,8 @@ class SpvBlockchain(
     override val lastBlockHeight: Long?
         get() = storage.getLastBlockHeader()?.height
 
-    override val balance: BigInteger?
-        get() = storage.getAccountState()?.balance
+    override val accountState: AccountState?
+        get() = storage.getAccountState()?.let { AccountState(it.balance, it.nonce) }
 
     override fun send(rawTransaction: RawTransaction): Single<Transaction> {
         return try {
@@ -145,8 +148,8 @@ class SpvBlockchain(
 
     //-------------AccountStateSyncer.Listener------------------
 
-    override fun onUpdate(accountState: AccountState) {
-        listener?.onUpdateBalance(accountState.balance)
+    override fun onUpdate(accountState: AccountStateSpv) {
+        listener?.onUpdateAccountState(accountState.let { AccountState(it.balance, it.nonce) })
     }
 
     //---------------TransactionSender.Listener------------------

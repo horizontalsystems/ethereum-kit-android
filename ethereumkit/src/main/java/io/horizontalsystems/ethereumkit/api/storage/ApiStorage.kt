@@ -1,15 +1,12 @@
 package io.horizontalsystems.ethereumkit.api.storage
 
-import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 import io.horizontalsystems.ethereumkit.core.IApiStorage
-import java.math.BigInteger
 
-class ApiStorage(private val database: ApiDatabase) : IApiStorage {
-
-    override fun getBalance(): BigInteger? {
-        return database.balanceDao().getBalance()?.balance
-    }
+class ApiStorage(
+        private val database: ApiDatabase
+) : IApiStorage {
 
     override fun getLastBlockHeight(): Long? {
         return database.lastBlockHeightDao().getLastBlockHeight()?.height
@@ -19,8 +16,12 @@ class ApiStorage(private val database: ApiDatabase) : IApiStorage {
         database.lastBlockHeightDao().insert(LastBlockHeight(lastBlockHeight))
     }
 
-    override fun saveBalance(balance: BigInteger) {
-        database.balanceDao().insert(EthereumBalance(balance))
+    override fun saveAccountState(state: AccountState) {
+        database.balanceDao().insert(state)
+    }
+
+    override fun getAccountState(): AccountState? {
+        return database.balanceDao().getAccountState()
     }
 
 }

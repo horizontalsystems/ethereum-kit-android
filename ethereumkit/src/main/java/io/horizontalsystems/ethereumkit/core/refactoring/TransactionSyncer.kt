@@ -58,7 +58,7 @@ class TransactionSyncer(
                 }
                 .subscribeOn(Schedulers.io())
                 .subscribe({ syncedTxHashes ->
-                    logger.info("---> synced batch: ${syncedTxHashes.map { it.orElse(null)?.toHexString() }.joinToString { ", " }}")
+                    logger.info("---> synced batch: ${syncedTxHashes.joinToString(separator = ",") { it.orElse(null)?.toHexString() ?: "null" }}")
 
                     val txHashes = syncedTxHashes.mapNotNull { it.orElse(null) }
                     listener?.onTransactionsSynced(storage.getFullTransactions(txHashes))

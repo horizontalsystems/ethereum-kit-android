@@ -1,12 +1,12 @@
 package io.horizontalsystems.ethereumkit.core.refactoring
 
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
-import java.math.BigInteger
 
 abstract class AbstractTransactionSyncer(
         override val id: String
@@ -38,9 +38,7 @@ abstract class AbstractTransactionSyncer(
 
     override fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {}
 
-    override fun onUpdateNonce(nonce: Long) {}
-
-    override fun onUpdateBalance(balance: BigInteger) {}
+    override fun onAccountState(accountState: AccountState) {}
 
     override fun onLastBlockNumber(blockNumber: Long) {}
 

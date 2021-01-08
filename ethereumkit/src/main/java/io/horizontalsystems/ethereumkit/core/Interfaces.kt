@@ -4,9 +4,9 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
-import io.horizontalsystems.ethereumkit.models.TransactionLog
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.models.*
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
+import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
@@ -18,8 +18,8 @@ interface IApiStorage {
     fun getLastBlockHeight(): Long?
     fun saveLastBlockHeight(lastBlockHeight: Long)
 
-    fun getBalance(): BigInteger?
-    fun saveBalance(balance: BigInteger)
+    fun getAccountState(): AccountState?
+    fun saveAccountState(state: AccountState)
 }
 
 interface ISpvStorage {
@@ -27,8 +27,8 @@ interface ISpvStorage {
     fun saveBlockHeaders(blockHeaders: List<BlockHeader>)
     fun getBlockHeadersReversed(fromBlockHeight: Long, limit: Int): List<BlockHeader>
 
-    fun getAccountState(): AccountState?
-    fun saveAccountSate(accountState: AccountState)
+    fun getAccountState(): AccountStateSpv?
+    fun saveAccountSate(accountState: AccountStateSpv)
 }
 
 interface IBlockchain {
@@ -41,7 +41,7 @@ interface IBlockchain {
 
     val syncState: EthereumKit.SyncState
     val lastBlockHeight: Long?
-    val balance: BigInteger?
+    val accountState: AccountState?
 
     fun send(rawTransaction: RawTransaction): Single<Transaction>
     fun getNonce(): Single<Long>
@@ -57,24 +57,13 @@ interface IBlockchain {
 
 interface IBlockchainListener {
     fun onUpdateLastBlockHeight(lastBlockHeight: Long)
-    fun onUpdateBalance(balance: BigInteger)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
     fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter)
-    fun onUpdateNonce(nonce: Long)
-
+    fun onUpdateAccountState(accountState: AccountState)
 }
 
 interface IRpcApiProvider {
     val source: String
 
     fun <T> single(rpc: JsonRpc<T>): Single<T>
-}
-
-interface ITransactionStorage {
-    fun getLastTransactionBlockHeight(): Long?
-    fun getLastInternalTransactionBlockHeight(): Long?
-
-    fun saveTransactions(transactions: List<EtherscanTransaction>)
-    fun saveInternalTransactions(transactions: List<InternalTransaction>)
-    fun getTransactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionWithInternal>>
 }

@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.api.*
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.core.refactoring.*
@@ -43,8 +44,7 @@ class EthereumKit(
     private val lastBlockBloomFilterSubject = PublishSubject.create<BloomFilter>()
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
-    private val balanceSubject = PublishSubject.create<BigInteger>()
-    private val nonceSubject = PublishSubject.create<Long>()
+    private val accountStateSubject = PublishSubject.create<AccountState>()
 
     val defaultGasLimit: Long = 21_000
     private val maxGasLimit: Long = 1_000_000
@@ -53,15 +53,15 @@ class EthereumKit(
     private var started = false
 
     init {
-        state.balance = blockchain.balance
         state.lastBlockHeight = blockchain.lastBlockHeight
+        state.accountState = blockchain.accountState
     }
 
     val lastBlockHeight: Long?
         get() = state.lastBlockHeight
 
-    val balance: BigInteger?
-        get() = state.balance
+    val accountState: AccountState?
+        get() = state.accountState
 
     val syncState: SyncState
         get() = blockchain.syncState
@@ -84,17 +84,14 @@ class EthereumKit(
     val transactionsSyncStateFlowable: Flowable<SyncState>
         get() = transactionSyncManager.syncStateAsync
 
-    val balanceFlowable: Flowable<BigInteger>
-        get() = balanceSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val accountStateFlowable: Flowable<AccountState>
+        get() = accountStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val etherTransactionsFlowable: Flowable<List<FullTransaction>>
         get() = transactionManager.etherTransactionsAsync
 
     val allTransactionsFlowable: Flowable<List<FullTransaction>>
         get() = transactionManager.allTransactionsAsync
-
-    val nonceFlowable: Flowable<Long>
-        get() = nonceSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun start() {
         if (started)
@@ -132,29 +129,6 @@ class EthereumKit(
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return transactionManager.getFullTransactions(hashes)
-    }
-
-    fun transactionStatus(transactionHash: ByteArray): Single<TransactionStatus> {
-        return blockchain.getTransactionReceipt(transactionHash)
-                .flatMap { receipt ->
-                    when {
-                        receipt.isPresent -> {
-                            if (receipt.get().status == 1) {
-                                Single.just(TransactionStatus.SUCCESS)
-                            } else {
-                                Single.just(TransactionStatus.FAILED)
-                            }
-                        }
-                        else -> blockchain.getTransaction(transactionHash)
-                                .map { transaction ->
-                                    if (transaction.isPresent) {
-                                        TransactionStatus.PENDING
-                                    } else {
-                                        TransactionStatus.NOTFOUND
-                                    }
-                                }
-                    }
-                }
     }
 
     fun estimateGas(to: Address?, value: BigInteger, gasPrice: Long?): Single<Long> {
@@ -248,22 +222,15 @@ class EthereumKit(
         syncStateSubject.onNext(syncState)
     }
 
-    override fun onUpdateBalance(balance: BigInteger) {
-        if (state.balance == balance) return
+    override fun onUpdateAccountState(accountState: AccountState) {
+        if (state.accountState == accountState) return
 
-        state.balance = balance
-        balanceSubject.onNext(balance)
+        state.accountState = accountState
+        accountStateSubject.onNext(accountState)
     }
 
     override fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter) {
         lastBlockBloomFilterSubject.onNext(bloomFilter)
-    }
-
-    override fun onUpdateNonce(nonce: Long) {
-        if (state.nonce == nonce) return
-
-        state.nonce = nonce
-        nonceSubject.onNext(nonce)
     }
 
     fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {

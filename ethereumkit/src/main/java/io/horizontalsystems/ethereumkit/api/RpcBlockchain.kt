@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.*
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.*
@@ -29,8 +30,8 @@ class RpcBlockchain(
     override val lastBlockHeight: Long?
         get() = storage.getLastBlockHeight()
 
-    override val balance: BigInteger?
-        get() = storage.getBalance()
+    override val accountState: AccountState?
+        get() = storage.getAccountState()
 
     override val syncState: SyncState
         get() = syncer.syncState
@@ -146,15 +147,10 @@ class RpcBlockchain(
         listener?.onUpdateLastBlockHeight(lastBlockHeight)
     }
 
-    override fun didUpdateBalance(balance: BigInteger) {
-        storage.saveBalance(balance)
-        listener?.onUpdateBalance(balance)
+    override fun didUpdateAccountState(state: AccountState) {
+        storage.saveAccountState(state)
+        listener?.onUpdateAccountState(state)
     }
-
-    override fun didUpdateNonce(nonce: Long) {
-        listener?.onUpdateNonce(nonce)
-    }
-
     //endregion
 
     companion object {

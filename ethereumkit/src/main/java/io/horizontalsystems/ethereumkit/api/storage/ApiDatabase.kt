@@ -5,15 +5,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
-import io.horizontalsystems.ethereumkit.api.models.EthereumBalance
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.LastBlockHeight
 
 
-@Database(entities = [EthereumBalance::class, LastBlockHeight::class], version = 2, exportSchema = false)
+@Database(entities = [AccountState::class, LastBlockHeight::class], version = 3, exportSchema = false)
 @TypeConverters(RoomTypeConverters::class)
 abstract class ApiDatabase : RoomDatabase() {
 
-    abstract fun balanceDao(): BalanceDao
+    abstract fun balanceDao(): AccountStateDao
     abstract fun lastBlockHeightDao(): LastBlockHeightDao
 
     companion object {

@@ -1,15 +1,11 @@
 package io.horizontalsystems.ethereumkit.api.models
 
-import java.math.BigInteger
-
 class EthereumKitState {
-    var balance: BigInteger? = null
+    var accountState: AccountState? = null
     var lastBlockHeight: Long? = null
-    var nonce: Long? = null
 
     fun clear() {
-        balance = null
+        accountState = null
         lastBlockHeight = null
-        nonce = null
     }
 }
