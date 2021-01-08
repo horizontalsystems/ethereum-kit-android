@@ -4,7 +4,6 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -29,25 +28,25 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         get() = ethereumKit.transactionsSyncState
 
     override val balance: BigDecimal
-        get() = ethereumKit.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
+        get() = ethereumKit.accountState?.balance?.toBigDecimal()?.movePointLeft(decimal) ?: BigDecimal.ZERO
 
     override val receiveAddress: Address
         get() = ethereumKit.receiveAddress
 
     override val lastBlockHeightFlowable: Flowable<Unit>
-        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
+        get() = ethereumKit.lastBlockHeightFlowable.map { }
 
     override val syncStateFlowable: Flowable<Unit>
-        get() = ethereumKit.syncStateFlowable.map { Unit }
+        get() = ethereumKit.syncStateFlowable.map { }
 
     override val transactionsSyncStateFlowable: Flowable<Unit>
-        get() = ethereumKit.transactionsSyncStateFlowable.map { Unit }
+        get() = ethereumKit.transactionsSyncStateFlowable.map { }
 
     override val balanceFlowable: Flowable<Unit>
-        get() = ethereumKit.balanceFlowable.map { Unit }
+        get() = ethereumKit.accountStateFlowable.map { }
 
     override val transactionsFlowable: Flowable<Unit>
-        get() = ethereumKit.etherTransactionsFlowable.map { Unit }
+        get() = ethereumKit.etherTransactionsFlowable.map { }
 
 
     override fun start() {

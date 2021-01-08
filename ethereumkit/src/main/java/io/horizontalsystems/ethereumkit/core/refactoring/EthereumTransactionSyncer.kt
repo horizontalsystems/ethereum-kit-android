@@ -1,12 +1,15 @@
 package io.horizontalsystems.ethereumkit.core.refactoring
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
+import io.horizontalsystems.ethereumkit.core.RetryOptions
+import io.horizontalsystems.ethereumkit.core.retryWith
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import java.math.BigInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
 
 class EthereumTransactionSyncer(
@@ -15,29 +18,37 @@ class EthereumTransactionSyncer(
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val disposables = CompositeDisposable()
-
-    override fun onUpdateNonce(nonce: Long) {
-        sync()
-    }
-
-    override fun onUpdateBalance(balance: BigInteger) {
-        sync()
-    }
+    private val reSync = AtomicBoolean(false)
 
     override fun onEthereumKitSynced() {
         sync()
     }
 
-    private fun sync() {
+    override fun onAccountState(accountState: AccountState) {
+        sync(retry = true)
+    }
+
+    private fun sync(retry: Boolean = false) {
         logger.info("---> sync() state: $state")
 
-        if (state is EthereumKit.SyncState.Syncing) return
+        if (state is EthereumKit.SyncState.Syncing) {
+            if (retry) {
+                reSync.set(true)
+            }
+            return
+        }
 
         state = EthereumKit.SyncState.Syncing()
+        doSync(retry)
+    }
 
-        // gets transaction starting from last tx's block height
-        etherscanTransactionsProvider
-                .getTransactions(lastSyncBlockNumber + 1)
+    private fun doSync(retry: Boolean) {
+        var getTransactionsSingle = etherscanTransactionsProvider.getTransactions(lastSyncBlockNumber + 1)
+        if (retry) {
+            getTransactionsSingle = getTransactionsSingle.retryWith(RetryOptions { it.isEmpty() })
+        }
+
+        getTransactionsSingle
                 .map { transactions ->
                     transactions.map { etherscanTransaction ->
                         NotSyncedTransaction(
@@ -71,7 +82,11 @@ class EthereumTransactionSyncer(
                         }
                     }
 
-                    state = EthereumKit.SyncState.Synced()
+                    if (reSync.compareAndSet(true, false)) {
+                        doSync(retry = true)
+                    } else {
+                        state = EthereumKit.SyncState.Synced()
+                    }
                 }, {
                     logger.info("---> sync() onError: ${it.message}")
 

@@ -4,6 +4,8 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
 
 
@@ -100,4 +102,33 @@ fun <T> Single<T>.retryWhenError(errorForRetry: KClass<*>, maxRetries: Int = 3):
             }
         }
     }
+}
+
+object MustRetry : Exception()
+
+data class RetryOptions<T : Any>(
+        val maxRetryCount: Int = 3,
+        val delayTime: Long = 5, //seconds
+        val delayTimeIncreaseFactor: Int = 3,
+        val mustRetry: (T) -> Boolean
+)
+
+fun <T : Any> Single<T>.retryWith(options: RetryOptions<T>): Single<T> {
+    val retryCount = AtomicInteger(1)
+
+    return delay(options.delayTime, TimeUnit.SECONDS)
+            .map {
+                if (options.mustRetry(it) && retryCount.getAndIncrement() < options.maxRetryCount)
+                    throw MustRetry
+                it
+            }
+            .retryWhen { errors ->
+                val delayTime = AtomicLong(options.delayTime)
+
+                errors.takeWhile { it == MustRetry }
+                        .flatMap {
+                            delayTime.set(delayTime.get() * options.delayTimeIncreaseFactor)
+                            Flowable.timer(delayTime.get(), TimeUnit.SECONDS)
+                        }
+            }
 }

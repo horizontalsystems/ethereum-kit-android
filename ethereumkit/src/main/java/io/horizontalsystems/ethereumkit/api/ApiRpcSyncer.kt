@@ -2,7 +2,9 @@ package io.horizontalsystems.ethereumkit.api
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionCountJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IRpcApiProvider
 import io.horizontalsystems.ethereumkit.models.Address
@@ -10,9 +12,7 @@ import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
-import java.math.BigInteger
 
 class ApiRpcSyncer(
         private val address: Address,
@@ -80,11 +80,12 @@ class ApiRpcSyncer(
         Single.zip(
                 rpcApiProvider.single(BlockNumberJsonRpc()),
                 rpcApiProvider.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
-                BiFunction<Long, BigInteger, Pair<Long, BigInteger>> { t1, t2 -> Pair(t1, t2) })
+                rpcApiProvider.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest)),
+                { t1, t2, t3 -> Triple(t1, t2, t3) })
                 .subscribeOn(Schedulers.io())
-                .subscribe({ result ->
-                    listener?.didUpdateLastBlockHeight(result.first)
-                    listener?.didUpdateBalance(result.second)
+                .subscribe({ (lastBlockNumber, balance, nonce) ->
+                    listener?.didUpdateLastBlockHeight(lastBlockNumber)
+                    listener?.didUpdateAccountState(AccountState(balance, nonce))
 
                     syncState = EthereumKit.SyncState.Synced()
                 }, {

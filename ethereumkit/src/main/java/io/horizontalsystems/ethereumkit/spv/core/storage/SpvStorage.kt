@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.core.storage
 
 import io.horizontalsystems.ethereumkit.core.ISpvStorage
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
+import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 
 class SpvStorage(private val database: SpvDatabase) : ISpvStorage {
@@ -18,11 +18,11 @@ class SpvStorage(private val database: SpvDatabase) : ISpvStorage {
         return database.blockHeaderDao().getByBlockHeightRange(fromBlockHeight - limit, fromBlockHeight)
     }
 
-    override fun getAccountState(): AccountState? {
+    override fun getAccountState(): AccountStateSpv? {
         return database.accountStateDao().getAccountState()
     }
 
-    override fun saveAccountSate(accountState: AccountState) {
+    override fun saveAccountSate(accountState: AccountStateSpv) {
         database.accountStateDao().insert(accountState)
     }
 

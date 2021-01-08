@@ -12,9 +12,4 @@ interface LastBlockHeightDao {
     @Query("SELECT * FROM LastBlockHeight")
     fun getLastBlockHeight(): LastBlockHeight?
 
-    @Delete
-    fun delete(lastBlockHeight: LastBlockHeight)
-
-    @Query("DELETE FROM LastBlockHeight")
-    fun deleteAll()
 }

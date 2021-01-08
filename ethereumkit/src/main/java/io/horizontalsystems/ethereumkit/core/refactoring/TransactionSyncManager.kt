@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.core.refactoring
 
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.FullTransaction
@@ -11,7 +12,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import java.math.BigInteger
 import java.util.logging.Logger
 
 interface ITransactionSyncer {
@@ -21,8 +21,7 @@ interface ITransactionSyncer {
 
     fun onEthereumKitSynced()
     fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
-    fun onUpdateNonce(nonce: Long)
-    fun onUpdateBalance(balance: BigInteger)
+    fun onAccountState(accountState: AccountState)
     fun onLastBlockNumber(blockNumber: Long)
 
     fun set(delegate: ITransactionSyncerDelegate)
@@ -53,6 +52,7 @@ class TransactionSyncManager(
     private val syncers: MutableList<ITransactionSyncer> = mutableListOf()
 
     private lateinit var ethereumKit: EthereumKit
+    private var accountState: AccountState? = null
 
     var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
@@ -93,19 +93,13 @@ class TransactionSyncManager(
     }
 
     private fun subscribe(ethereumKit: EthereumKit) {
-        ethereumKit.balanceFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info(" ---> balanceFlowable: $it, syncers: ${syncers.size}")
-                    onUpdateBalance(it)
-                }
-                .let { disposables.add(it) }
+        accountState = ethereumKit.accountState
 
-        ethereumKit.nonceFlowable
+        ethereumKit.accountStateFlowable
                 .subscribeOn(Schedulers.io())
                 .subscribe {
-                    logger.info(" ---> nonceFlowable: $it, syncers: ${syncers.size}")
-                    onUpdateNonce(it)
+                    logger.info(" ---> accountStateFlowable: $it, syncers: ${syncers.size}")
+                    onAccountState(it)
                 }
                 .let { disposables.add(it) }
 
@@ -146,12 +140,11 @@ class TransactionSyncManager(
         performOnSyncers { syncer -> syncer.onLastBlockBloomFilter(bloomFilter) }
     }
 
-    private fun onUpdateNonce(nonce: Long) {
-        performOnSyncers { syncer -> syncer.onUpdateNonce(nonce) }
-    }
-
-    private fun onUpdateBalance(balance: BigInteger) {
-        performOnSyncers { syncer -> syncer.onUpdateBalance(balance) }
+    private fun onAccountState(accountState: AccountState) {
+        if(this.accountState != null) {
+            performOnSyncers { syncer -> syncer.onAccountState(accountState) }
+        }
+        this.accountState = accountState
     }
 
     private fun onLastBlockNumber(blockNumber: Long) {

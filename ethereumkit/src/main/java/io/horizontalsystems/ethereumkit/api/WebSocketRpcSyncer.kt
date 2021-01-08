@@ -4,10 +4,12 @@ import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.*
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.NewHeadsRpcSubscription
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.RpcSubscription
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.reactivex.Single
+import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
@@ -146,8 +148,7 @@ class WebSocketRpcSyncer(
                 rpc = BlockNumberJsonRpc(),
                 onSuccess = { lastBlockHeight ->
                     listener?.didUpdateLastBlockHeight(lastBlockHeight)
-                    fetchBalance()
-                    fetchNonce()
+                    fetchAccountState()
                 },
                 onError = { error ->
                     onFailSync(error)
@@ -155,25 +156,29 @@ class WebSocketRpcSyncer(
         )
     }
 
-    private fun fetchBalance() {
+    private fun fetchAccountState() {
+        fetchBalance { balance ->
+            fetchNonce { nonce ->
+                listener?.didUpdateAccountState(AccountState(balance, nonce))
+                syncState = EthereumKit.SyncState.Synced()
+            }
+        }
+    }
+
+    private fun fetchBalance(onSuccess: (BigInteger) -> Unit) {
         send(
                 rpc = GetBalanceJsonRpc(address, DefaultBlockParameter.Latest),
-                onSuccess = { balance ->
-                    listener?.didUpdateBalance(balance)
-                    syncState = EthereumKit.SyncState.Synced()
-                },
+                onSuccess = onSuccess,
                 onError = { error ->
                     onFailSync(error)
                 }
         )
     }
 
-    private fun fetchNonce() {
+    private fun fetchNonce(onSuccess: (Long) -> Unit) {
         send(
                 rpc = GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest),
-                onSuccess = { nonce ->
-                    listener?.didUpdateNonce(nonce)
-                },
+                onSuccess = onSuccess,
                 onError = { error ->
                     onFailSync(error)
                 }
@@ -196,8 +201,7 @@ class WebSocketRpcSyncer(
                 successHandler = { header ->
                     listener?.didUpdateLastBlockLogsBloom(header.logsBloom)
                     listener?.didUpdateLastBlockHeight(lastBlockHeight = header.number)
-                    fetchBalance()
-                    fetchNonce()
+                    fetchAccountState()
                 },
                 errorHandler = { error ->
                     error.printStackTrace()

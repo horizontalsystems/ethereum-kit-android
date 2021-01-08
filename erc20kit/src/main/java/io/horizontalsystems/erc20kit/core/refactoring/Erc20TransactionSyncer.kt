@@ -2,12 +2,15 @@ package io.horizontalsystems.erc20kit.core.refactoring
 
 import io.horizontalsystems.erc20kit.core.EtherscanTransactionsProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.RetryOptions
 import io.horizontalsystems.ethereumkit.core.refactoring.AbstractTransactionSyncer
+import io.horizontalsystems.ethereumkit.core.retryWith
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
 
 class Erc20TransactionSyncer(
@@ -19,6 +22,7 @@ class Erc20TransactionSyncer(
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val disposables = CompositeDisposable()
+    private val reSync = AtomicBoolean(false)
 
     override fun onEthereumKitSynced() {
         sync()
@@ -26,18 +30,31 @@ class Erc20TransactionSyncer(
 
     override fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {
         if (bloomFilter.mayContainContractAddress(contractAddress)) {
-            sync()
+            sync(retry = true)
         }
     }
 
-    private fun sync() {
+    private fun sync(retry: Boolean = false) {
         logger.info("---> sync() state: $state")
 
-        if (state is EthereumKit.SyncState.Syncing) return
+        if (state is EthereumKit.SyncState.Syncing) {
+            if (retry) {
+                reSync.set(true)
+            }
+            return
+        }
 
         state = EthereumKit.SyncState.Syncing()
+        doSync(retry)
+    }
 
-        etherscanTransactionsProvider.getTokenTransactions(address, contractAddress, lastSyncBlockNumber + 1)
+    private fun doSync(retry: Boolean) {
+        var getTransactionsSingle = etherscanTransactionsProvider.getTokenTransactions(address, contractAddress, lastSyncBlockNumber + 1)
+        if (retry) {
+            getTransactionsSingle = getTransactionsSingle.retryWith(RetryOptions { it.isEmpty() })
+        }
+
+        getTransactionsSingle
                 .subscribeOn(Schedulers.io())
                 .subscribe({ tokenTransactions ->
                     logger.info("---> sync() onFetched: ${tokenTransactions.size}")
@@ -52,7 +69,11 @@ class Erc20TransactionSyncer(
                         delegate.add(notSyncedTransactions)
                     }
 
-                    state = EthereumKit.SyncState.Synced()
+                    if (reSync.compareAndSet(true, false)) {
+                        doSync(retry = true)
+                    } else {
+                        state = EthereumKit.SyncState.Synced()
+                    }
                 }, {
                     logger.info("---> sync() onError: ${it.message}")
 

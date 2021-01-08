@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.api
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.reactivex.Single
 import java.math.BigInteger
@@ -60,6 +61,5 @@ interface IRpcSyncerListener {
     fun didUpdateSyncState(syncState: SyncState)
     fun didUpdateLastBlockLogsBloom(lastBlockLogsBloom: String)
     fun didUpdateLastBlockHeight(lastBlockHeight: Long)
-    fun didUpdateBalance(balance: BigInteger)
-    fun didUpdateNonce(nonce: Long)
+    fun didUpdateAccountState(state: AccountState)
 }

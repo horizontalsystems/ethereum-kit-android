@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.spv.core.*
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
-import io.horizontalsystems.ethereumkit.spv.models.AccountState
+import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.net.IInMessage
 import io.horizontalsystems.ethereumkit.spv.net.les.TrieNode
@@ -18,12 +18,12 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLPList
 class AccountStateTaskHandler(private var listener: Listener? = null) : ITaskHandler, IMessageHandler {
 
     interface Listener {
-        fun didReceive(accountState: AccountState, address: Address, blockHeader: BlockHeader)
+        fun didReceive(accountState: AccountStateSpv, address: Address, blockHeader: BlockHeader)
     }
 
     private val tasks: MutableMap<Long, AccountStateTask> = HashMap()
 
-    private fun parse(proofsMessage: ProofsMessage, task: AccountStateTask): AccountState {
+    private fun parse(proofsMessage: ProofsMessage, task: AccountStateTask): AccountStateSpv {
         val nodes = proofsMessage.nodes
 
         var lastNode = nodes.lastOrNull() ?: throw ProofError.NoNodes()
@@ -65,7 +65,7 @@ class AccountStateTaskHandler(private var listener: Listener? = null) : ITaskHan
             throw ProofError.RootHashDoesNotMatchStateRoot()
         }
 
-        return AccountState(task.address, nonce, balance, storageRoot, codeHash)
+        return AccountStateSpv(task.address, nonce, balance, storageRoot, codeHash)
     }
 
     override fun perform(task: ITask, requester: ITaskHandlerRequester): Boolean {

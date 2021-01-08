@@ -7,12 +7,14 @@ import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
 @Entity
-class AccountState(@PrimaryKey
-                   val address: Address,
-                   val nonce: Long,
-                   val balance: BigInteger,
-                   val storageHash: ByteArray,
-                   val codeHash: ByteArray) {
+class AccountStateSpv(
+        @PrimaryKey
+        val address: Address,
+        val nonce: Long,
+        val balance: BigInteger,
+        val storageHash: ByteArray,
+        val codeHash: ByteArray
+) {
 
     override fun toString(): String {
         return "(\n" +
