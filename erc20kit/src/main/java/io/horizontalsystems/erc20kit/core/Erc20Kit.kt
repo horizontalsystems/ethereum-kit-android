@@ -3,13 +3,10 @@ package io.horizontalsystems.erc20kit.core
 import android.content.Context
 import io.horizontalsystems.erc20kit.contract.ApproveMethodFactory
 import io.horizontalsystems.erc20kit.contract.TransferMethodFactory
-import io.horizontalsystems.erc20kit.core.refactoring.Erc20TransactionSyncer
-import io.horizontalsystems.erc20kit.core.refactoring.TransactionManager
 import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.refactoring.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
@@ -167,7 +164,7 @@ class Erc20Kit(
 
             val syncerId = getTransactionSyncerId(contractAddress)
             val transactionsProvider = EtherscanTransactionsProvider(EtherscanService(ethereumKit.networkType, ethereumKit.etherscanKey))
-            val erc20TransactionSyncer: ITransactionSyncer = Erc20TransactionSyncer(syncerId, address, contractAddress, transactionsProvider)
+            val erc20TransactionSyncer = Erc20TransactionSyncer(syncerId, address, contractAddress, transactionsProvider)
 
             ethereumKit.addTransactionSyncer(erc20TransactionSyncer)
 

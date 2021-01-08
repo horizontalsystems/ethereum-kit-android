@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.api
+package io.horizontalsystems.ethereumkit.api.core
 
 import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.*

@@ -85,12 +85,10 @@ class Erc20Adapter(
     }
 
     override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
-
         return erc20Kit.getTransactionsAsync(from?.let { TransactionKey(from.first, from.second) }, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }
-
     }
 
     fun allowance(spenderAddress: Address): Single<BigDecimal> {

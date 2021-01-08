@@ -1,5 +1,6 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
@@ -54,6 +55,5 @@ class TransactionManager(
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return storage.getFullTransactions(hashes)
     }
-
 
 }

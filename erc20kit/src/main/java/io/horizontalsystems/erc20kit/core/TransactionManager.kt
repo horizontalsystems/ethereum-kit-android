@@ -1,20 +1,16 @@
-package io.horizontalsystems.erc20kit.core.refactoring
+package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.contract.TransferMethod
-import io.horizontalsystems.erc20kit.core.ITransactionStorage
-import io.horizontalsystems.erc20kit.core.TransactionKey
+import io.horizontalsystems.erc20kit.models.Erc20LogEvent
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.erc20kit.models.TransactionRecord
+import io.horizontalsystems.erc20kit.models.TransactionCache
 import io.horizontalsystems.erc20kit.models.TransactionType
-import io.horizontalsystems.ethereumkit.contracts.ContractEvent
-import io.horizontalsystems.ethereumkit.contracts.ContractEvent.Argument
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -57,65 +53,65 @@ class TransactionManager(
 
     fun getTransactionsAsync(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
         return storage.getTransactions(fromTransaction, limit)
-                .map { transactionRecords ->
-                    val fullTransactions = ethereumKit.getFullTransactions(transactionRecords.map { it.hash })
-                    makeTransactions(transactionRecords, fullTransactions)
+                .map { cachedTransactions ->
+                    val fullTransactions = ethereumKit.getFullTransactions(cachedTransactions.map { it.hash })
+                    makeTransactions(cachedTransactions, fullTransactions)
                 }
     }
 
     fun getPendingTransactions(): List<Transaction> {
-        val transactionRecords = storage.getPendingTransactions()
-        val fullTransactions = ethereumKit.getFullTransactions(transactionRecords.map { it.hash })
+        val pendingTransactions = storage.getPendingTransactions()
+        val fullTransactions = ethereumKit.getFullTransactions(pendingTransactions.map { it.hash })
 
-        return makeTransactions(transactionRecords, fullTransactions)
+        return makeTransactions(pendingTransactions, fullTransactions)
     }
 
     private fun processTransactions(fullTransactions: List<FullTransaction>) {
-        val erc20TransactionRecords = mutableListOf<TransactionRecord>()
+        val cachedErc20Transaction = mutableListOf<TransactionCache>()
 
         fullTransactions.forEach {
-            erc20TransactionRecords.addAll(extractErc20TransactionRecords(it))
+            cachedErc20Transaction.addAll(extractErc20Transactions(it))
         }
 
-        if (erc20TransactionRecords.isEmpty()) return
+        if (cachedErc20Transaction.isEmpty()) return
 
-        val pendingTransactionRecords = storage.getPendingTransactions().toMutableList()
+        val pendingTransactions = storage.getPendingTransactions().toMutableList()
 
-        erc20TransactionRecords.forEach { transaction ->
-            val pendingTransactionRecord = pendingTransactionRecords.firstOrNull {
+        cachedErc20Transaction.forEach { transaction ->
+            val pendingTransaction = pendingTransactions.firstOrNull {
                 it.hash.contentEquals(transaction.hash)
             }
 
-            if (pendingTransactionRecord != null) {
-                transaction.interTransactionIndex = pendingTransactionRecord.interTransactionIndex
+            if (pendingTransaction != null) {
+                transaction.interTransactionIndex = pendingTransaction.interTransactionIndex
                 storage.save(transaction)
 
-                pendingTransactionRecords.remove(pendingTransactionRecord)
+                pendingTransactions.remove(pendingTransaction)
             } else {
                 storage.save(transaction)
             }
         }
 
-        val erc20Transactions: List<Transaction> = makeTransactions(erc20TransactionRecords, fullTransactions)
+        val erc20Transactions: List<Transaction> = makeTransactions(cachedErc20Transaction, fullTransactions)
 
         transactionsSubject.onNext(erc20Transactions)
     }
 
-    private fun makeTransactions(erc20TransactionRecords: List<TransactionRecord>, fullTransactions: List<FullTransaction>): List<Transaction> {
-        return erc20TransactionRecords.mapNotNull { transactionRecord ->
-            val fullTransaction = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(transactionRecord.hash) }
+    private fun makeTransactions(cachedErc20Transactions: List<TransactionCache>, fullTransactions: List<FullTransaction>): List<Transaction> {
+        return cachedErc20Transactions.mapNotNull { transaction ->
+            val fullTransaction = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(transaction.hash) }
 
             fullTransaction?.let {
                 Transaction(
-                        transactionHash = transactionRecord.hash,
-                        interTransactionIndex = transactionRecord.interTransactionIndex,
+                        transactionHash = transaction.hash,
+                        interTransactionIndex = transaction.interTransactionIndex,
                         transactionIndex = fullTransaction.receiptWithLogs?.receipt?.transactionIndex,
-                        from = transactionRecord.from,
-                        to = transactionRecord.to,
-                        value = transactionRecord.value,
-                        timestamp = transactionRecord.timestamp,
+                        from = transaction.from,
+                        to = transaction.to,
+                        value = transaction.value,
+                        timestamp = transaction.timestamp,
                         isError = fullTransaction.isFailed(),
-                        type = transactionRecord.type,
+                        type = transaction.type,
                         fullTransaction = fullTransaction
                 )
             }
@@ -123,7 +119,7 @@ class TransactionManager(
         }
     }
 
-    private fun extractErc20TransactionRecords(fullTransaction: FullTransaction): List<TransactionRecord> {
+    private fun extractErc20Transactions(fullTransaction: FullTransaction): List<TransactionCache> {
         val receiptWithLogs = fullTransaction.receiptWithLogs
         val transaction = fullTransaction.transaction
 
@@ -155,7 +151,7 @@ class TransactionManager(
                     else -> return@mapNotNull null
                 }
 
-                TransactionRecord(
+                TransactionCache(
                         hash = transaction.hash,
                         interTransactionIndex = log.logIndex,
                         logIndex = log.logIndex,
@@ -192,7 +188,7 @@ class TransactionManager(
                 else -> return listOf()
             }
 
-            listOf(TransactionRecord(
+            listOf(TransactionCache(
                     hash = transaction.hash,
                     interTransactionIndex = 0,
                     logIndex = null,
@@ -202,41 +198,6 @@ class TransactionManager(
                     timestamp = transaction.timestamp,
                     type = transactionType
             ))
-        }
-    }
-
-    sealed class Erc20LogEvent {
-        class Transfer(val from: Address, val to: Address, val value: BigInteger) : Erc20LogEvent() {
-            companion object {
-                val signature = ContractEvent("Transfer", listOf(Argument.Address, Argument.Address, Argument.Uint256)).signature
-            }
-        }
-
-        class Approve(val owner: Address, val spender: Address, val value: BigInteger) : Erc20LogEvent() {
-            companion object {
-                val signature = ContractEvent("Approval", listOf(Argument.Address, Argument.Address, Argument.Uint256)).signature
-            }
-        }
-    }
-
-    private fun TransactionLog.getErc20Event(address: Address): Erc20LogEvent? {
-        return try {
-            val signature = topics.getOrNull(0)?.hexStringToByteArrayOrNull()
-            val firstParam = topics.getOrNull(1)?.let { Address(it.stripHexPrefix().removeLeadingZeros()) }
-            val secondParam = topics.getOrNull(2)?.let { Address(it.stripHexPrefix().removeLeadingZeros()) }
-
-            when {
-                signature.contentEquals(Erc20LogEvent.Transfer.signature) && firstParam != null && secondParam != null && (firstParam == address || secondParam == address) -> {
-                    Erc20LogEvent.Transfer(firstParam, secondParam, BigInteger(data))
-                }
-                signature.contentEquals(Erc20LogEvent.Approve.signature) && firstParam == address && secondParam != null -> {
-                    Erc20LogEvent.Approve(firstParam, secondParam, BigInteger(data))
-                }
-                else -> null
-            }
-        } catch (error: Throwable) {
-            error.printStackTrace()
-            null
         }
     }
 }

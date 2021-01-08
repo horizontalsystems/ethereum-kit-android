@@ -9,6 +9,7 @@ import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
@@ -66,4 +67,70 @@ interface IRpcApiProvider {
     val source: String
 
     fun <T> single(rpc: JsonRpc<T>): Single<T>
+}
+
+interface INotSyncedTransactionPool {
+    val notSyncedTransactionsSignal: Flowable<Unit>
+
+    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
+    fun remove(notSyncedTransaction: NotSyncedTransaction)
+    fun update(notSyncedTransaction: NotSyncedTransaction)
+    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+}
+
+interface ITransactionSyncerStateStorage {
+    fun getTransactionSyncerState(id: String): TransactionSyncerState?
+    fun save(transactionSyncerState: TransactionSyncerState)
+}
+
+interface ITransactionStorage {
+    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+    fun addNotSyncedTransactions(transactions: List<NotSyncedTransaction>)
+    fun update(notSyncedTransaction: NotSyncedTransaction)
+    fun remove(transaction: NotSyncedTransaction)
+
+    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
+    fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction>
+    fun getTransactionHashes(): List<ByteArray>
+    fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
+    fun save(transaction: Transaction)
+
+    fun getLastInternalTransactionBlockHeight(): Long?
+    fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
+
+    fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
+    fun save(transactionReceipt: TransactionReceipt)
+
+    fun save(logs: List<TransactionLog>)
+
+    fun getFirstPendingTransaction(): Transaction?
+}
+
+interface ITransactionSyncerListener {
+    fun onTransactionsSynced(transactions: List<FullTransaction>)
+}
+
+interface ITransactionSyncer {
+    val id: String
+    val state: EthereumKit.SyncState
+    val stateAsync: Flowable<EthereumKit.SyncState>
+
+    fun onEthereumKitSynced()
+    fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
+    fun onAccountState(accountState: AccountState)
+    fun onLastBlockNumber(blockNumber: Long)
+
+    fun set(delegate: ITransactionSyncerDelegate)
+}
+
+interface ITransactionSyncerDelegate {
+    val notSyncedTransactionsSignal: Flowable<Unit>
+
+    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
+    fun remove(notSyncedTransaction: NotSyncedTransaction)
+    fun update(notSyncedTransaction: NotSyncedTransaction)
+
+    fun getTransactionSyncerState(id: String): TransactionSyncerState?
+    fun update(transactionSyncerState: TransactionSyncerState)
 }

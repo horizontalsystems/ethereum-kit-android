@@ -1,11 +1,8 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IBlockchain
-import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
@@ -14,11 +11,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.logging.Logger
-
-
-interface ITransactionSyncerListener {
-    fun onTransactionsSynced(transactions: List<FullTransaction>)
-}
 
 class TransactionSyncer(
         private val blockchain: IBlockchain,
@@ -189,4 +181,5 @@ class TransactionSyncer(
                 }
                 .let { disposables.add(it) }
     }
+
 }

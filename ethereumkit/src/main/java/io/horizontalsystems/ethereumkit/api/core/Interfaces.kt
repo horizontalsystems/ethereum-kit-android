@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.api
+package io.horizontalsystems.ethereumkit.api.core
 
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
@@ -6,7 +6,6 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.reactivex.Single
-import java.math.BigInteger
 
 typealias RpcHandler = (RpcResponse) -> Unit
 typealias SubscriptionHandler = (RpcSubscriptionResponse) -> Unit

@@ -1,23 +1,16 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.core.INotSyncedTransactionPool
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.subjects.PublishSubject
 import java.util.logging.Logger
 
-interface INotSyncedTransactionPool {
-    val notSyncedTransactionsSignal: Flowable<Unit>
-
-    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
-    fun remove(notSyncedTransaction: NotSyncedTransaction)
-    fun update(notSyncedTransaction: NotSyncedTransaction)
-    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
-}
-
 class NotSyncedTransactionPool(
         private val storage: ITransactionStorage
-): INotSyncedTransactionPool {
+) : INotSyncedTransactionPool {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     private val notSyncedTransactionsSubject = PublishSubject.create<Unit>()

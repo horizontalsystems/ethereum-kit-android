@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.api
+package io.horizontalsystems.ethereumkit.api.core
 
 import android.app.Application
 import com.google.gson.Gson

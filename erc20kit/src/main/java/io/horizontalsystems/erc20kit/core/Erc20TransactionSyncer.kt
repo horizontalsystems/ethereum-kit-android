@@ -1,9 +1,8 @@
-package io.horizontalsystems.erc20kit.core.refactoring
+package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.core.EtherscanTransactionsProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.RetryOptions
-import io.horizontalsystems.ethereumkit.core.refactoring.AbstractTransactionSyncer
+import io.horizontalsystems.ethereumkit.transactionsyncers.AbstractTransactionSyncer
 import io.horizontalsystems.ethereumkit.core.retryWith
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter

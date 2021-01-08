@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.api
+package io.horizontalsystems.ethereumkit.api.core
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.*
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
