@@ -39,7 +39,7 @@ abstract class JsonRpc<T>(
         class InvalidResult(val result: Any?) : ResponseError()
         class InsufficientBalance(val result: Any?) : ResponseError() {
             companion object {
-                val causes = listOf("execution reverted", "gas required exceeds")
+                val causes = listOf("execution reverted", "gas required exceeds", "insufficient funds for transfer")
             }
         }
     }
