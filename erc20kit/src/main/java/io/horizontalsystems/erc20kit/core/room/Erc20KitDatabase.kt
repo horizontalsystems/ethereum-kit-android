@@ -3,11 +3,11 @@ package io.horizontalsystems.erc20kit.core.room
 import android.content.Context
 import androidx.room.*
 import io.horizontalsystems.erc20kit.models.TokenBalance
-import io.horizontalsystems.erc20kit.models.TransactionRecord
+import io.horizontalsystems.erc20kit.models.TransactionCache
 import io.horizontalsystems.erc20kit.models.TransactionType
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 
-@Database(entities = [TransactionRecord::class, TokenBalance::class], version = 4, exportSchema = true)
+@Database(entities = [TransactionCache::class, TokenBalance::class], version = 4, exportSchema = true)
 @TypeConverters(RoomTypeConverters::class, Erc20KitDatabase.TypeConverters::class)
 abstract class Erc20KitDatabase : RoomDatabase() {
 

@@ -3,7 +3,7 @@ package io.horizontalsystems.ethereumkit.api.jsonrpc
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
-import io.horizontalsystems.ethereumkit.api.RpcResponse
+import io.horizontalsystems.ethereumkit.api.core.RpcResponse
 import java.lang.reflect.Type
 
 abstract class JsonRpc<T>(

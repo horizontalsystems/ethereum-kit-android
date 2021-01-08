@@ -1,9 +1,11 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.core.INotSyncedTransactionPool
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerDelegate
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerStateStorage
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.Flowable
-
 
 class NotSyncedTransactionManager(
         private val pool: INotSyncedTransactionPool,

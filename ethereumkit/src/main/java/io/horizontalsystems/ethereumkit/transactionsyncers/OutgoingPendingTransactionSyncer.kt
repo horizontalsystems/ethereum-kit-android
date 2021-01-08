@@ -1,7 +1,9 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IBlockchain
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable

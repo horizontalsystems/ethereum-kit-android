@@ -1,36 +1,10 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerStateStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.Single
-
-interface ITransactionSyncerStateStorage {
-    fun getTransactionSyncerState(id: String): TransactionSyncerState?
-    fun save(transactionSyncerState: TransactionSyncerState)
-}
-
-interface ITransactionStorage {
-    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
-    fun addNotSyncedTransactions(transactions: List<NotSyncedTransaction>)
-    fun update(notSyncedTransaction: NotSyncedTransaction)
-    fun remove(transaction: NotSyncedTransaction)
-
-    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
-    fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction>
-    fun getTransactionHashes(): List<ByteArray>
-    fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
-    fun save(transaction: Transaction)
-
-    fun getLastInternalTransactionBlockHeight(): Long?
-    fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
-
-    fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
-    fun save(transactionReceipt: TransactionReceipt)
-
-    fun save(logs: List<TransactionLog>)
-
-    fun getFirstPendingTransaction(): Transaction?
-}
 
 class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, ITransactionSyncerStateStorage {
 
@@ -151,4 +125,5 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         transactionSyncerStateDao.insert(transactionSyncerState)
     }
     //endregion
+
 }

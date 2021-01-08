@@ -1,10 +1,7 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
-import io.horizontalsystems.ethereumkit.core.RetryOptions
-import io.horizontalsystems.ethereumkit.core.retryWith
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers

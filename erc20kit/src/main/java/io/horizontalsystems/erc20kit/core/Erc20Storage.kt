@@ -2,7 +2,7 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.core.room.Erc20KitDatabase
 import io.horizontalsystems.erc20kit.models.TokenBalance
-import io.horizontalsystems.erc20kit.models.TransactionRecord
+import io.horizontalsystems.erc20kit.models.TransactionCache
 import io.reactivex.Single
 import java.math.BigInteger
 
@@ -15,15 +15,15 @@ class Erc20Storage(
 
     // ITransactionStorage
 
-    override fun getLastTransaction(): TransactionRecord? {
+    override fun getLastTransaction(): TransactionCache? {
         return transactionDao.getLastTransaction()
     }
 
-    override fun save(transaction: TransactionRecord) {
+    override fun save(transaction: TransactionCache) {
         transactionDao.insert(transaction)
     }
 
-    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionRecord>> {
+    override fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionCache>> {
         return transactionDao.getAllTransactions().flatMap { transactionsList ->
             var transactions = transactionsList
 
@@ -43,7 +43,7 @@ class Erc20Storage(
         }
     }
 
-    override fun getPendingTransactions(): List<TransactionRecord> {
+    override fun getPendingTransactions(): List<TransactionCache> {
         return transactionDao.getPendingTransactions()
     }
 

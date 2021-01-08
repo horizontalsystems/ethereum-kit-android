@@ -1,7 +1,9 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerDelegate
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy

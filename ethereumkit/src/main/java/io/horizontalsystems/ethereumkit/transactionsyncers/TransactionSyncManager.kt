@@ -1,11 +1,11 @@
-package io.horizontalsystems.ethereumkit.core.refactoring
+package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.FullTransaction
-import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
@@ -13,31 +13,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.logging.Logger
-
-interface ITransactionSyncer {
-    val id: String
-    val state: EthereumKit.SyncState
-    val stateAsync: Flowable<EthereumKit.SyncState>
-
-    fun onEthereumKitSynced()
-    fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
-    fun onAccountState(accountState: AccountState)
-    fun onLastBlockNumber(blockNumber: Long)
-
-    fun set(delegate: ITransactionSyncerDelegate)
-}
-
-interface ITransactionSyncerDelegate {
-    val notSyncedTransactionsSignal: Flowable<Unit>
-
-    fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
-    fun add(notSyncedTransactions: List<NotSyncedTransaction>)
-    fun remove(notSyncedTransaction: NotSyncedTransaction)
-    fun update(notSyncedTransaction: NotSyncedTransaction)
-
-    fun getTransactionSyncerState(id: String): TransactionSyncerState?
-    fun update(transactionSyncerState: TransactionSyncerState)
-}
 
 class TransactionSyncManager(
         private val notSyncedTransactionManager: NotSyncedTransactionManager
@@ -141,7 +116,7 @@ class TransactionSyncManager(
     }
 
     private fun onAccountState(accountState: AccountState) {
-        if(this.accountState != null) {
+        if (this.accountState != null) {
             performOnSyncers { syncer -> syncer.onAccountState(accountState) }
         }
         this.accountState = accountState
@@ -163,6 +138,5 @@ class TransactionSyncManager(
             else -> EthereumKit.SyncState.Synced()
         }
     }
-
 
 }
