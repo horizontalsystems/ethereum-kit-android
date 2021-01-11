@@ -89,6 +89,7 @@ interface ITransactionStorage {
     fun update(notSyncedTransaction: NotSyncedTransaction)
     fun remove(transaction: NotSyncedTransaction)
 
+    fun getFullTransaction(hash: ByteArray): FullTransaction?
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
     fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction>
     fun getTransactionHashes(): List<ByteArray>

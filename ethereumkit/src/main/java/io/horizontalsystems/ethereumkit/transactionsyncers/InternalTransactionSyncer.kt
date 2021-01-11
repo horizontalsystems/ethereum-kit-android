@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -16,6 +17,8 @@ class InternalTransactionSyncer(
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val disposables = CompositeDisposable()
     private val reSync = AtomicBoolean(false)
+
+    var listener: ITransactionSyncerListener? = null
 
     override fun onEthereumKitSynced() {
         sync()
@@ -57,12 +60,31 @@ class InternalTransactionSyncer(
                     if (internalTransactions.isNotEmpty()) {
                         storage.saveInternalTransactions(internalTransactions)
 
-                        delegate.add(internalTransactions.map { NotSyncedTransaction(it.hash) })
-
                         internalTransactions.firstOrNull()?.blockNumber?.let {
                             lastSyncBlockNumber = it
                         }
+
+                        val notSyncedTransactions = mutableListOf<NotSyncedTransaction>()
+                        val syncedTransactions = mutableListOf<FullTransaction>()
+
+                        internalTransactions.forEach { internalTransaction ->
+                            val fullTransaction = storage.getFullTransaction(internalTransaction.hash)
+                            if (fullTransaction != null) {
+                                syncedTransactions.add(fullTransaction)
+                            } else {
+                                notSyncedTransactions.add(NotSyncedTransaction(internalTransaction.hash))
+                            }
+                        }
+
+                        if (notSyncedTransactions.isNotEmpty()) {
+                            delegate.add(notSyncedTransactions)
+                        }
+
+                        if (syncedTransactions.isNotEmpty()) {
+                            listener?.onTransactionsSynced(syncedTransactions)
+                        }
                     }
+
                     if (reSync.compareAndSet(true, false)) {
                         doSync(retry = true)
                     } else {

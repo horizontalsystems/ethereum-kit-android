@@ -58,6 +58,10 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
                 }
     }
 
+    override fun getFullTransaction(hash: ByteArray): FullTransaction? {
+        return transactionDao.getTransaction(hash)
+    }
+
     override fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return transactionDao.getTransactions(hashes)
     }

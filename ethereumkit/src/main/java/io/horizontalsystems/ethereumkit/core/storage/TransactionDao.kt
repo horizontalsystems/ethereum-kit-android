@@ -17,6 +17,10 @@ interface TransactionDao {
     fun getTransactionHashes(): List<ByteArray>
 
     @androidx.room.Transaction
+    @Query("SELECT * FROM `Transaction` WHERE hash=:hash")
+    fun getTransaction(hash: ByteArray): FullTransaction?
+
+    @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` WHERE hash IN (:hashes)")
     fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
 
