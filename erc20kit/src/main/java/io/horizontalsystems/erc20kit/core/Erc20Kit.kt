@@ -103,14 +103,6 @@ class Erc20Kit(
 
     //region IBalanceManagerListener
     override fun onSyncBalanceSuccess(balance: BigInteger) {
-//        if (state.balance == balance) {
-//            if (state.syncState is SyncState.Synced) {
-//                transactionManager.delayedSync(false)
-//            }
-//        } else {
-//            transactionManager.delayedSync(true)
-//        }
-
         state.balance = balance
         state.syncState = SyncState.Synced()
     }
