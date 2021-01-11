@@ -121,6 +121,7 @@ interface ITransactionSyncer {
     fun onLastBlockNumber(blockNumber: Long)
 
     fun set(delegate: ITransactionSyncerDelegate)
+    fun stop()
 }
 
 interface ITransactionSyncerDelegate {

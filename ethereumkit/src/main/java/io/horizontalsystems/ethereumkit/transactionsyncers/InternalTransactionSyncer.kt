@@ -25,6 +25,10 @@ class InternalTransactionSyncer(
         sync(retry = true)
     }
 
+    override fun stop() {
+        disposables.clear()
+    }
+
     private fun sync(retry: Boolean = false) {
         logger.info("---> sync() state: $state")
 
