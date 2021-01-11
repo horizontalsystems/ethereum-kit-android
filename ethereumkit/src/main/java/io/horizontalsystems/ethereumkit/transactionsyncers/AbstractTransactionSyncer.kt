@@ -44,4 +44,6 @@ abstract class AbstractTransactionSyncer(
 
     override fun onLastBlockNumber(blockNumber: Long) {}
 
+    override fun stop() {}
+
 }
