@@ -18,6 +18,7 @@ class NotSyncedTransactionPool(
     override val notSyncedTransactionsSignal: Flowable<Unit>
         get() = notSyncedTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
+    @Synchronized
     override fun add(notSyncedTransactions: List<NotSyncedTransaction>) {
         val syncedTransactionHashes = storage.getTransactionHashes()
 
@@ -34,10 +35,12 @@ class NotSyncedTransactionPool(
         }
     }
 
+    @Synchronized
     override fun remove(notSyncedTransaction: NotSyncedTransaction) {
         storage.remove(notSyncedTransaction)
     }
 
+    @Synchronized
     override fun update(notSyncedTransaction: NotSyncedTransaction) {
         storage.update(notSyncedTransaction)
     }
