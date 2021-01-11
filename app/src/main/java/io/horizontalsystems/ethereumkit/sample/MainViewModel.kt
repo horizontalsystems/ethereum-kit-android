@@ -214,13 +214,8 @@ class MainViewModel : ViewModel() {
     //
 
     fun refresh() {
-//        ethereumAdapter.refresh()
-//        erc20Adapter.refresh()
-
-//        val storage = io.horizontalsystems.ethereumkit.refactoring.Storage()
-//        val hashPool = NotSyncedTransactionPool(storage)
-//        val syncer = TransactionSyncer(hashPool, ethereumKit.blockchain)
-
+        ethereumAdapter.refresh()
+        erc20Adapter.refresh()
     }
 
     fun clear() {

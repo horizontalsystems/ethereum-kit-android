@@ -2,9 +2,7 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.ethereumkit.models.TransactionWithInternal
 import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
 import java.math.BigDecimal
