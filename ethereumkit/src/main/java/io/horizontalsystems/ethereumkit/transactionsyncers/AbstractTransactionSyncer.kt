@@ -40,7 +40,7 @@ abstract class AbstractTransactionSyncer(
 
     override fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {}
 
-    override fun onAccountState(accountState: AccountState) {}
+    override fun onUpdateAccountState(accountState: AccountState) {}
 
     override fun onLastBlockNumber(blockNumber: Long) {}
 

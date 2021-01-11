@@ -117,7 +117,7 @@ interface ITransactionSyncer {
 
     fun onEthereumKitSynced()
     fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
-    fun onAccountState(accountState: AccountState)
+    fun onUpdateAccountState(accountState: AccountState)
     fun onLastBlockNumber(blockNumber: Long)
 
     fun set(delegate: ITransactionSyncerDelegate)

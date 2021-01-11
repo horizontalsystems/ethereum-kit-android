@@ -24,7 +24,7 @@ class EthereumTransactionSyncer(
         sync()
     }
 
-    override fun onAccountState(accountState: AccountState) {
+    override fun onUpdateAccountState(accountState: AccountState) {
         sync(retry = true)
     }
 

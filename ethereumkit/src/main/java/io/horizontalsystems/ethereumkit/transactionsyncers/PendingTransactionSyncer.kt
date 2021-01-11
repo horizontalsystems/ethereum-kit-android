@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
@@ -10,7 +11,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
-class OutgoingPendingTransactionSyncer(
+class PendingTransactionSyncer(
         private val blockchain: IBlockchain,
         private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("outgoing_pending_transaction_syncer") {
@@ -24,8 +25,8 @@ class OutgoingPendingTransactionSyncer(
         sync()
     }
 
-    override fun onLastBlockNumber(blockNumber: Long) {
-        sync()
+    override fun onUpdateAccountState(accountState: AccountState) {
+       sync()
     }
 
     private fun sync() {

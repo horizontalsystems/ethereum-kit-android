@@ -117,7 +117,7 @@ class TransactionSyncManager(
 
     private fun onAccountState(accountState: AccountState) {
         if (this.accountState != null) {
-            performOnSyncers { syncer -> syncer.onAccountState(accountState) }
+            performOnSyncers { syncer -> syncer.onUpdateAccountState(accountState) }
         }
         this.accountState = accountState
     }
