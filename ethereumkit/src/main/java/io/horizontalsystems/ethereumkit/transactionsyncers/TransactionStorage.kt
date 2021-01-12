@@ -5,9 +5,9 @@ import io.horizontalsystems.ethereumkit.core.ITransactionSyncerStateStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.Single
+import java.util.concurrent.atomic.AtomicLong
 
 class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, ITransactionSyncerStateStorage {
-
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
     private val transactionSyncerStateDao = database.transactionSyncerStateDao()
@@ -66,25 +66,14 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         return transactionDao.getTransactions(hashes)
     }
 
-    override fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction> {
-        val fullTransactions = transactionDao.getTransactions()
-
-        return hash?.let {
-            val fullTxFrom = fullTransactions.firstOrNull { it.transaction.hash.contentEquals(hash) }
-
-            fullTxFrom?.let {
-                fullTransactions.filter {
-                    it.transaction.timestamp > fullTxFrom.transaction.timestamp ||
-                            (it.transaction.timestamp == fullTxFrom.transaction.timestamp
-                                    && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex
-                                    ?: 0) ?: 0) > 0)
-                }
-            }
-
-        } ?: fullTransactions
+    override fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
+        return transactionDao.getTransactions(fromSyncOrder ?: 0)
     }
 
+    private val lastSyncOrder = AtomicLong(transactionDao.getLastTransactionSyncOrder() ?: 0)
+
     override fun save(transaction: Transaction) {
+        transaction.syncOrder = lastSyncOrder.incrementAndGet()
         transactionDao.insert(transaction)
     }
 

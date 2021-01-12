@@ -2,10 +2,7 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.contract.TransferMethod
-import io.horizontalsystems.erc20kit.models.Erc20LogEvent
-import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.erc20kit.models.TransactionCache
-import io.horizontalsystems.erc20kit.models.TransactionType
+import io.horizontalsystems.erc20kit.models.*
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Address
@@ -41,8 +38,8 @@ class TransactionManager(
     }
 
     fun sync() {
-        val lastTransaction = storage.getLastTransaction()
-        val fullTransactions = ethereumKit.getFullTransactions(lastTransaction?.hash)
+        val lastSyncOrder = storage.getTransactionSyncOrder()?.value
+        val fullTransactions = ethereumKit.getFullTransactions(fromSyncOrder = lastSyncOrder)
 
         processTransactions(fullTransactions)
     }
@@ -67,34 +64,36 @@ class TransactionManager(
     }
 
     private fun processTransactions(fullTransactions: List<FullTransaction>) {
-        val cachedErc20Transaction = mutableListOf<TransactionCache>()
+        val cachedErc20Transactions = mutableListOf<TransactionCache>()
 
         fullTransactions.forEach {
-            cachedErc20Transaction.addAll(extractErc20Transactions(it))
+            cachedErc20Transactions.addAll(extractErc20Transactions(it))
         }
 
-        if (cachedErc20Transaction.isEmpty()) return
+        if (cachedErc20Transactions.isNotEmpty()) {
+            val pendingTransactions = storage.getPendingTransactions().toMutableList()
 
-        val pendingTransactions = storage.getPendingTransactions().toMutableList()
+            cachedErc20Transactions.forEach { transaction ->
+                val pendingTransaction = pendingTransactions.firstOrNull {
+                    it.hash.contentEquals(transaction.hash)
+                }
 
-        cachedErc20Transaction.forEach { transaction ->
-            val pendingTransaction = pendingTransactions.firstOrNull {
-                it.hash.contentEquals(transaction.hash)
+                if (pendingTransaction != null) {
+                    transaction.interTransactionIndex = pendingTransaction.interTransactionIndex
+                    storage.save(transaction)
+
+                    pendingTransactions.remove(pendingTransaction)
+                } else {
+                    storage.save(transaction)
+                }
             }
-
-            if (pendingTransaction != null) {
-                transaction.interTransactionIndex = pendingTransaction.interTransactionIndex
-                storage.save(transaction)
-
-                pendingTransactions.remove(pendingTransaction)
-            } else {
-                storage.save(transaction)
-            }
+            val erc20Transactions = makeTransactions(cachedErc20Transactions, fullTransactions)
+            transactionsSubject.onNext(erc20Transactions)
         }
 
-        val erc20Transactions: List<Transaction> = makeTransactions(cachedErc20Transaction, fullTransactions)
-
-        transactionsSubject.onNext(erc20Transactions)
+        fullTransactions.maxByOrNull { it.transaction.syncOrder }?.let {
+            storage.save(TransactionSyncOrder(it.transaction.syncOrder))
+        }
     }
 
     private fun makeTransactions(cachedErc20Transactions: List<TransactionCache>, fullTransactions: List<FullTransaction>): List<Transaction> {

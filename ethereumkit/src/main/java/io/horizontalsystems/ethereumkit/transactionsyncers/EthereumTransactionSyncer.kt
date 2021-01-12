@@ -76,27 +76,31 @@ class EthereumTransactionSyncer(
                 }
                 .subscribeOn(Schedulers.io())
                 .subscribe({ notSyncedTransactions ->
-                    logger.info("---> sync() onFetched: ${notSyncedTransactions.size}")
-
-                    if (notSyncedTransactions.isNotEmpty()) {
-                        delegate.add(notSyncedTransactions)
-
-                        notSyncedTransactions.firstOrNull()?.transaction?.blockNumber?.let {
-                            lastSyncBlockNumber = it
-                        }
-                    }
-
-                    if (reSync.compareAndSet(true, false)) {
-                        doSync(retry = true)
-                    } else {
-                        state = EthereumKit.SyncState.Synced()
-                    }
+                    handle(notSyncedTransactions)
                 }, {
                     logger.info("---> sync() onError: ${it.message}")
 
                     state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }
+    }
+
+    private fun handle(notSyncedTransactions: List<NotSyncedTransaction>) {
+        logger.info("---> sync() onFetched: ${notSyncedTransactions.size}")
+
+        if (notSyncedTransactions.isNotEmpty()) {
+            delegate.add(notSyncedTransactions)
+
+            notSyncedTransactions.firstOrNull()?.transaction?.blockNumber?.let {
+                lastSyncBlockNumber = it
+            }
+        }
+
+        if (reSync.compareAndSet(true, false)) {
+            doSync(retry = true)
+        } else {
+            state = EthereumKit.SyncState.Synced()
+        }
     }
 
 }

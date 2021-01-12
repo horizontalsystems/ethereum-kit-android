@@ -10,7 +10,7 @@ import io.reactivex.Single
 @Dao
 interface TransactionDao {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transaction: Transaction)
 
     @Query("SELECT hash FROM `Transaction`")
@@ -19,6 +19,9 @@ interface TransactionDao {
     @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` WHERE hash=:hash")
     fun getTransaction(hash: ByteArray): FullTransaction?
+
+    @Query("SELECT MAX(syncOrder) FROM `Transaction`")
+    fun getLastTransactionSyncOrder(): Long?
 
     @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` WHERE hash IN (:hashes)")
@@ -29,22 +32,26 @@ interface TransactionDao {
     fun getTransactions(): List<FullTransaction>
 
     @androidx.room.Transaction
+    @Query("SELECT * FROM `Transaction` WHERE syncOrder > :fromSyncOrder ORDER BY syncOrder ASC")
+    fun getTransactions(fromSyncOrder: Long): List<FullTransaction>
+
+    @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
     fun getTransactionsAsync(): Single<List<FullTransaction>>
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transactionReceipt: TransactionReceipt)
 
     @Query("SELECT * FROM TransactionReceipt WHERE transactionHash=:transactionHash")
     fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(logs: List<TransactionLog>)
 
     @Query("SELECT blockNumber FROM InternalTransaction ORDER BY blockNumber DESC LIMIT 1")
     fun getLastInternalTransactionBlockNumber(): Long?
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
 
     @androidx.room.Transaction

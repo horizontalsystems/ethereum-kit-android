@@ -1,10 +1,12 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -26,7 +28,7 @@ class PendingTransactionSyncer(
     }
 
     override fun onUpdateAccountState(accountState: AccountState) {
-       sync()
+        sync()
     }
 
     private fun sync() {
@@ -48,23 +50,40 @@ class PendingTransactionSyncer(
         logger.info("---> doSync() pendingTransaction: $pendingTransaction")
 
         return blockchain.getTransactionReceipt(pendingTransaction.hash)
-                .flatMap {
-                    logger.info("---> sync() onFetched receipt: ${it.orElse(null)?.transactionHash}")
+                .flatMap { optionalReceipt ->
+                    logger.info("---> sync() onFetched receipt: ${optionalReceipt.orElse(null)?.transactionHash}")
 
-                    if (it.isPresent) {
-                        val rpcReceipt = it.get()
-
-                        storage.save(TransactionReceipt(rpcReceipt))
-                        storage.save(rpcReceipt.logs)
-
-                        listener?.onTransactionsSynced(storage.getFullTransactions(listOf(rpcReceipt.transactionHash)))
-
-                        doSync()
-                    } else {
-                        state = EthereumKit.SyncState.Synced()
-                        Single.just(Unit)
-                    }
+                    syncTimestamp(pendingTransaction, optionalReceipt.orElse(null))
                 }
+    }
+
+    private fun syncTimestamp(transaction: Transaction, receipt: RpcTransactionReceipt?): Single<Unit> {
+        if (receipt == null) {
+            return Single.just(Unit)
+        }
+
+        return blockchain.getBlock(receipt.blockNumber)
+                .flatMap { optionalBlock ->
+                    logger.info("---> sync() onFetched block: $optionalBlock")
+
+                    handle(transaction, receipt, optionalBlock.orElse(null)?.timestamp)
+                }
+    }
+
+    private fun handle(transaction: Transaction, receipt: RpcTransactionReceipt, timestamp: Long?): Single<Unit> {
+        if (timestamp == null) {
+            return Single.just(Unit)
+        }
+
+        transaction.timestamp = timestamp
+
+        storage.save(transaction)
+        storage.save(TransactionReceipt(receipt))
+        storage.save(receipt.logs)
+
+        listener?.onTransactionsSynced(storage.getFullTransactions(listOf(receipt.transactionHash)))
+
+        return doSync()
     }
 
 }
