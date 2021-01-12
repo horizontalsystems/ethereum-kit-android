@@ -1,6 +1,7 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.TransactionCache
+import io.horizontalsystems.erc20kit.models.TransactionSyncOrder
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
 import java.math.BigInteger
@@ -24,7 +25,9 @@ interface ITransactionStorage {
     fun getTransactions(fromTransaction: TransactionKey?, limit: Int?): Single<List<TransactionCache>>
     fun getPendingTransactions(): List<TransactionCache>
     fun save(transaction: TransactionCache)
-    fun getLastTransaction(): TransactionCache?
+
+    fun getTransactionSyncOrder(): TransactionSyncOrder?
+    fun save(transactionSyncOrder: TransactionSyncOrder)
 }
 
 interface ITokenBalanceStorage {

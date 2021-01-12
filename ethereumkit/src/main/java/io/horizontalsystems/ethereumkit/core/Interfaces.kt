@@ -91,7 +91,7 @@ interface ITransactionStorage {
 
     fun getFullTransaction(hash: ByteArray): FullTransaction?
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction>
-    fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction>
+    fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction>
     fun getTransactionHashes(): List<ByteArray>
     fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>>
     fun save(transaction: Transaction)

@@ -11,10 +11,10 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
+import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
@@ -123,8 +123,8 @@ class EthereumKit(
         return transactionManager.getEtherTransactionsAsync(fromHash, limit)
     }
 
-    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
-        return transactionManager.getFullTransactions(fromHash)
+    fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
+        return transactionManager.getFullTransactions(fromSyncOrder)
     }
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {

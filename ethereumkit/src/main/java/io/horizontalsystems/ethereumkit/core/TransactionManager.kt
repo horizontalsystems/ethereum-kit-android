@@ -24,8 +24,7 @@ class TransactionManager(
         transactionSyncManager.transactionsAsync
                 .subscribeOn(Schedulers.io())
                 .subscribe { transactions ->
-                    etherTransactionSubject.onNext(transactions.filter { it.hasEtherTransfer(address) })
-                    allTransactionsSubject.onNext(transactions)
+                    handle(transactions)
                 }
                 .let { disposables.add(it) }
     }
@@ -45,15 +44,25 @@ class TransactionManager(
             etherTransactionSubject.onNext(listOf(fullTransaction))
         }
         allTransactionsSubject.onNext(listOf(fullTransaction))
-
     }
 
-    fun getFullTransactions(fromHash: ByteArray?): List<FullTransaction> {
-        return storage.getFullTransactionsAfter(fromHash)
+    fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
+        return storage.getFullTransactions(fromSyncOrder)
     }
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return storage.getFullTransactions(hashes)
+    }
+
+    private fun handle(transactions: List<FullTransaction>) {
+        if (transactions.isNotEmpty()) {
+            allTransactionsSubject.onNext(transactions)
+        }
+
+        val etherTransactions = transactions.filter { it.hasEtherTransfer(address) }
+        if (etherTransactions.isNotEmpty()) {
+            etherTransactionSubject.onNext(etherTransactions)
+        }
     }
 
 }
