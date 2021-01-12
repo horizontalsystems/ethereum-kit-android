@@ -69,7 +69,7 @@ class MainViewModel : ViewModel() {
     val toToken: Erc20Token? = null//tokens[0]
 
     fun init() {
-        val words = "".split(" ")
+        val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
         val seed = Mnemonic().toSeed(words)
         val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)

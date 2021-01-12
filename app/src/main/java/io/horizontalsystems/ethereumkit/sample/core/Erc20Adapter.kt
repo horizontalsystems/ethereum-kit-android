@@ -45,19 +45,19 @@ class Erc20Adapter(
         get() = ethereumKit.receiveAddress
 
     override val lastBlockHeightFlowable: Flowable<Unit>
-        get() = ethereumKit.lastBlockHeightFlowable.map { Unit }
+        get() = ethereumKit.lastBlockHeightFlowable.map { }
 
     override val syncStateFlowable: Flowable<Unit>
-        get() = erc20Kit.syncStateFlowable.map { Unit }
+        get() = erc20Kit.syncStateFlowable.map { }
 
     override val transactionsSyncStateFlowable: Flowable<Unit>
-        get() = erc20Kit.transactionsSyncStateFlowable.map { Unit }
+        get() = erc20Kit.transactionsSyncStateFlowable.map { }
 
     override val balanceFlowable: Flowable<Unit>
-        get() = erc20Kit.balanceFlowable.map { Unit }
+        get() = erc20Kit.balanceFlowable.map { }
 
     override val transactionsFlowable: Flowable<Unit>
-        get() = erc20Kit.transactionsFlowable.map { Unit }
+        get() = erc20Kit.transactionsFlowable.map { }
 
     override fun start() {
         erc20Kit.start()
