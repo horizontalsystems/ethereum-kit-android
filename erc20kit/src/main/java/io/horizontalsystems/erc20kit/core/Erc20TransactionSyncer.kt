@@ -23,6 +23,14 @@ class Erc20TransactionSyncer(
     private val disposables = CompositeDisposable()
     private val reSync = AtomicBoolean(false)
 
+    override fun start() {
+        sync()
+    }
+
+    override fun stop() {
+        disposables.clear()
+    }
+
     override fun onEthereumKitSynced() {
         sync()
     }
@@ -31,10 +39,6 @@ class Erc20TransactionSyncer(
         if (bloomFilter.mayContainContractAddress(contractAddress)) {
             sync(retry = true)
         }
-    }
-
-    override fun stop() {
-        disposables.clear()
     }
 
     private fun sync(retry: Boolean = false) {
