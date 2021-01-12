@@ -32,9 +32,9 @@ abstract class AbstractTransactionSyncer(
             delegate.update(TransactionSyncerState(id, value))
         }
 
-    override fun set(delegate: ITransactionSyncerDelegate) {
-        this.delegate = delegate
-    }
+    override fun start() {}
+
+    override fun stop() {}
 
     override fun onEthereumKitSynced() {}
 
@@ -44,6 +44,8 @@ abstract class AbstractTransactionSyncer(
 
     override fun onLastBlockNumber(blockNumber: Long) {}
 
-    override fun stop() {}
+    override fun set(delegate: ITransactionSyncerDelegate) {
+        this.delegate = delegate
+    }
 
 }

@@ -54,13 +54,16 @@ class TransactionSyncManager(
                 .subscribe { syncState() }
                 .let { syncerStateDisposables[syncer.id] = it }
 
-        syncState()
+        syncer.start()
     }
 
     fun removeSyncer(id: String) {
         syncerStateDisposables.remove(id)?.dispose()
 
-        syncers.removeIf { it.id == id }
+        syncers.firstOrNull { it.id == id }?.let { syncer ->
+            syncer.stop()
+            syncers.remove(syncer)
+        }
     }
 
     override fun onTransactionsSynced(transactions: List<FullTransaction>) {

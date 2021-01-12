@@ -116,13 +116,15 @@ interface ITransactionSyncer {
     val state: EthereumKit.SyncState
     val stateAsync: Flowable<EthereumKit.SyncState>
 
+    fun start()
+    fun stop()
+
     fun onEthereumKitSynced()
     fun onLastBlockBloomFilter(bloomFilter: BloomFilter)
     fun onUpdateAccountState(accountState: AccountState)
     fun onLastBlockNumber(blockNumber: Long)
 
     fun set(delegate: ITransactionSyncerDelegate)
-    fun stop()
 }
 
 interface ITransactionSyncerDelegate {
