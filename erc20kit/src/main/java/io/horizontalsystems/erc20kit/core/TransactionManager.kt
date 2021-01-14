@@ -44,6 +44,10 @@ class TransactionManager(
         processTransactions(fullTransactions)
     }
 
+    fun stop() {
+        disposables.clear()
+    }
+
     fun buildTransferTransactionData(to: Address, value: BigInteger): TransactionData {
         return TransactionData(to = contractAddress, value = BigInteger.ZERO, TransferMethod(to, value).encodedABI())
     }

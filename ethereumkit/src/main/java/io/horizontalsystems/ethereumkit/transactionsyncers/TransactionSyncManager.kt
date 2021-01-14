@@ -58,16 +58,28 @@ class TransactionSyncManager(
     }
 
     fun removeSyncer(id: String) {
-        syncerStateDisposables.remove(id)?.dispose()
-
         syncers.firstOrNull { it.id == id }?.let { syncer ->
-            syncer.stop()
+            stopSyncer(syncer)
             syncers.remove(syncer)
         }
     }
 
+    fun stop() {
+        syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+
+        syncers.forEach {
+            stopSyncer(it)
+        }
+        syncers.clear()
+    }
+
     override fun onTransactionsSynced(transactions: List<FullTransaction>) {
         transactionsSubject.onNext(transactions)
+    }
+
+    private fun stopSyncer(syncer: ITransactionSyncer) {
+        syncerStateDisposables.remove(syncer.id)?.dispose()
+        syncer.stop()
     }
 
     private fun subscribe(ethereumKit: EthereumKit) {

@@ -16,7 +16,6 @@ class InternalTransactionSyncer(
 ) : AbstractTransactionSyncer("internal_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val disposables = CompositeDisposable()
     private val reSync = AtomicBoolean(false)
 
     var listener: ITransactionSyncerListener? = null
@@ -27,10 +26,6 @@ class InternalTransactionSyncer(
 
     override fun onUpdateAccountState(accountState: AccountState) {
         sync(retry = true)
-    }
-
-    override fun stop() {
-        disposables.clear()
     }
 
     private fun sync(retry: Boolean = false) {

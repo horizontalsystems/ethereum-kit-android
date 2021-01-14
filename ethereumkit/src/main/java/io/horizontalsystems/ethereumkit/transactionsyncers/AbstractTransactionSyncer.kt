@@ -8,6 +8,7 @@ import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.subjects.PublishSubject
 
 abstract class AbstractTransactionSyncer(
@@ -15,6 +16,7 @@ abstract class AbstractTransactionSyncer(
 ) : ITransactionSyncer {
 
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
+    protected val disposables = CompositeDisposable()
 
     override var state: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         protected set(value) {
@@ -34,7 +36,9 @@ abstract class AbstractTransactionSyncer(
 
     override fun start() {}
 
-    override fun stop() {}
+    override fun stop() {
+        disposables.clear()
+    }
 
     override fun onEthereumKitSynced() {}
 
