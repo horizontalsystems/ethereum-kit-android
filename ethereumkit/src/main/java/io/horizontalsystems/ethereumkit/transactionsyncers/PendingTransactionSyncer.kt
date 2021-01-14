@@ -19,7 +19,6 @@ class PendingTransactionSyncer(
 ) : AbstractTransactionSyncer("outgoing_pending_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val disposables = CompositeDisposable()
 
     var listener: ITransactionSyncerListener? = null
 

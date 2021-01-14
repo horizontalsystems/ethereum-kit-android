@@ -116,7 +116,7 @@ class InfuraRpcWebSocket(
     }
 
     private fun disconnect() {
-        // automatically disconnects wrt app lifecycle
+       disposables.clear()
     }
 
     private fun observeSocket(socket: InfuraWebSocketService) {

@@ -105,6 +105,7 @@ class EthereumKit(
         started = false
         blockchain.stop()
         state.clear()
+        transactionSyncManager.stop()
     }
 
     fun refresh() {

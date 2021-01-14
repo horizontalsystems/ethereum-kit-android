@@ -74,6 +74,7 @@ class Erc20Kit(
     }
 
     fun stop() {
+        transactionManager.stop()
         ethereumKit.removeTransactionSyncer(getTransactionSyncerId(contractAddress))
 
         disposables.clear()

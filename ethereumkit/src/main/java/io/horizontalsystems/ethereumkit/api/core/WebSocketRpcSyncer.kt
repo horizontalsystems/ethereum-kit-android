@@ -80,8 +80,7 @@ class WebSocketRpcSyncer(
                 syncState = EthereumKit.SyncState.Syncing()
             }
             WebSocketState.Connected -> {
-                fetchLastBlockHeight()
-                subscribeToNewHeads()
+                startSync()
             }
             is WebSocketState.Disconnected -> {
                 rpcHandlers.forEach { rpcHandlers.remove(it.key) }
@@ -141,6 +140,14 @@ class WebSocketRpcSyncer(
                     onSubscribeError(error)
                 }
         )
+    }
+
+    private fun startSync() {
+        if ((syncState as? EthereumKit.SyncState.NotSynced)?.error is EthereumKit.SyncError.NotStarted)
+            return
+
+        fetchLastBlockHeight()
+        subscribeToNewHeads()
     }
 
     private fun fetchLastBlockHeight() {

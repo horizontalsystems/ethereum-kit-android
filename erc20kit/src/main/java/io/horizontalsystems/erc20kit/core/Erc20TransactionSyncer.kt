@@ -20,15 +20,10 @@ class Erc20TransactionSyncer(
 ) : AbstractTransactionSyncer(id) {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val disposables = CompositeDisposable()
     private val reSync = AtomicBoolean(false)
 
     override fun start() {
         sync()
-    }
-
-    override fun stop() {
-        disposables.clear()
     }
 
     override fun onEthereumKitSynced() {

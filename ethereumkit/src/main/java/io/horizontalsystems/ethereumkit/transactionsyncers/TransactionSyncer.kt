@@ -17,7 +17,6 @@ class TransactionSyncer(
         private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("full_transaction_syncer") {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val disposables = CompositeDisposable()
     private val txSyncBatchSize = 10
 
     var listener: ITransactionSyncerListener? = null
@@ -57,7 +56,6 @@ class TransactionSyncer(
 
                     doSync()
                 }, {
-                    it.printStackTrace()
                     state = EthereumKit.SyncState.NotSynced(it)
                 })
                 .let { disposables.add(it) }

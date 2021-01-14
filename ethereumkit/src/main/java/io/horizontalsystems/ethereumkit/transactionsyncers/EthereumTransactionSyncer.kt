@@ -17,7 +17,6 @@ class EthereumTransactionSyncer(
 ) : AbstractTransactionSyncer("ethereum_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val disposables = CompositeDisposable()
     private val reSync = AtomicBoolean(false)
 
     override fun onEthereumKitSynced() {
@@ -26,10 +25,6 @@ class EthereumTransactionSyncer(
 
     override fun onUpdateAccountState(accountState: AccountState) {
         sync(retry = true)
-    }
-
-    override fun stop() {
-        disposables.clear()
     }
 
     private fun sync(retry: Boolean = false) {
