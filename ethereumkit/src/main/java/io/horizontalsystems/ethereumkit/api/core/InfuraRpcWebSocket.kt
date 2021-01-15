@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.gson.Gson
 import com.tinder.scarlet.Event
 import com.tinder.scarlet.Scarlet
+import com.tinder.scarlet.ShutdownReason
 import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.android.AndroidLifecycle
 import com.tinder.scarlet.messageadapter.gson.GsonMessageAdapter
@@ -116,7 +117,7 @@ class InfuraRpcWebSocket(
     }
 
     private fun disconnect() {
-       disposables.clear()
+        disposables.clear()
     }
 
     private fun observeSocket(socket: InfuraWebSocketService) {
@@ -139,7 +140,9 @@ class InfuraRpcWebSocket(
                             is WebSocket.Event.OnConnectionClosed -> {
                                 logger.info("On WebSocket Connection Closed")
 
-                                state = WebSocketState.Disconnected(WebSocketState.DisconnectError.SocketDisconnected(webSocketEvent.shutdownReason.reason))
+                                if (webSocketEvent.shutdownReason.code != ShutdownReason.GRACEFUL.code) {
+                                    state = WebSocketState.Disconnected(WebSocketState.DisconnectError.SocketDisconnected(webSocketEvent.shutdownReason.reason))
+                                }
                             }
                             is WebSocket.Event.OnConnectionFailed -> {
                                 logger.info("On WebSocket Connection Failed")
