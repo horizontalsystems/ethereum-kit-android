@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.reactivex.Single
 
-typealias RpcHandler = (RpcResponse) -> Unit
+class RpcHandler(val onSuccess: (RpcResponse) -> Unit, val onError: (Throwable)-> Unit)
 typealias SubscriptionHandler = (RpcSubscriptionResponse) -> Unit
 
 data class RpcResponse(val id: Int, val result: JsonElement?, val error: Error?) {

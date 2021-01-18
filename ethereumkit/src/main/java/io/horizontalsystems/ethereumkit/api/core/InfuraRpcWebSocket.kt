@@ -46,7 +46,6 @@ class InfuraRpcWebSocket(
         }
 
     init {
-        val lifecycle = AndroidLifecycle.ofApplicationForeground(app)
         val backoffStrategy = ExponentialWithJitterBackoffStrategy(RETRY_BASE_DURATION, RETRY_MAX_DURATION)
 
         val loggingInterceptor = HttpLoggingInterceptor(
@@ -77,7 +76,6 @@ class InfuraRpcWebSocket(
                 .addMessageAdapterFactory(GsonMessageAdapter.Factory(gson))
                 .addStreamAdapterFactory(RxJava2StreamAdapterFactory())
                 .backoffStrategy(backoffStrategy)
-                .lifecycle(lifecycle)
                 .build()
     }
 
@@ -140,9 +138,7 @@ class InfuraRpcWebSocket(
                             is WebSocket.Event.OnConnectionClosed -> {
                                 logger.info("On WebSocket Connection Closed")
 
-                                if (webSocketEvent.shutdownReason.code != ShutdownReason.GRACEFUL.code) {
-                                    state = WebSocketState.Disconnected(WebSocketState.DisconnectError.SocketDisconnected(webSocketEvent.shutdownReason.reason))
-                                }
+                                state = WebSocketState.Disconnected(WebSocketState.DisconnectError.SocketDisconnected(webSocketEvent.shutdownReason.reason))
                             }
                             is WebSocket.Event.OnConnectionFailed -> {
                                 logger.info("On WebSocket Connection Failed")
@@ -164,6 +160,9 @@ class InfuraRpcWebSocket(
                         }
                         is Event.OnLifecycle -> {
                             logger.info("On LifeCycle: $event")
+                        }
+                        else -> {
+                            logger.info("On Event: $event")
                         }
                     }
                 }, { error ->
