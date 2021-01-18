@@ -71,10 +71,6 @@ class WebSocketRpcSyncer(
 
     //region IRpcWebSocketListener
     override fun didUpdate(state: WebSocketState) {
-        if ((syncState as? EthereumKit.SyncState.NotSynced)?.error is EthereumKit.SyncError.NotStarted) {
-            return
-        }
-
         when (state) {
             WebSocketState.Connecting -> {
                 syncState = EthereumKit.SyncState.Syncing()
@@ -83,8 +79,11 @@ class WebSocketRpcSyncer(
                 startSync()
             }
             is WebSocketState.Disconnected -> {
-                rpcHandlers.forEach { rpcHandlers.remove(it.key) }
-                subscriptionHandlers.forEach { subscriptionHandlers.remove(it.key) }
+                rpcHandlers.forEach { (_, rpcHandler) ->
+                    rpcHandler.onError(state.error)
+                }
+                rpcHandlers.clear()
+                subscriptionHandlers.clear()
 
                 isSubscribedToNewHeads = false
                 syncState = EthereumKit.SyncState.NotSynced(state.error)
@@ -93,7 +92,9 @@ class WebSocketRpcSyncer(
     }
 
     override fun didReceive(response: RpcResponse) {
-        rpcHandlers.remove(response.id)?.invoke(response)
+        rpcHandlers.remove(response.id)?.let { rpcHandler ->
+            rpcHandler.onSuccess(response)
+        }
     }
 
     override fun didReceive(response: RpcSubscriptionResponse) {
@@ -111,13 +112,18 @@ class WebSocketRpcSyncer(
 
     private fun <T> send(rpc: JsonRpc<T>, onSuccess: (T) -> Unit, onError: (Throwable) -> Unit) {
         try {
-            send(rpc) { response ->
-                try {
-                    onSuccess(rpc.parseResponse(response, gson))
-                } catch (error: Throwable) {
-                    onError(error)
-                }
-            }
+            val rpcHandler = RpcHandler(
+                    onSuccess = { response ->
+                        try {
+                            onSuccess(rpc.parseResponse(response, gson))
+                        } catch (error: Throwable) {
+                            onError(error)
+                        }
+                    },
+                    onError = onError
+            )
+
+            send(rpc, rpcHandler)
         } catch (error: Throwable) {
             onError(error)
         }
