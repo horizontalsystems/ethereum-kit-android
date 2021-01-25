@@ -427,6 +427,15 @@ class EthereumKit(
             return getInstance(application, privateKey, syncMode, networkType, syncSource, etherscanKey, walletId)
         }
 
+        fun address(words: List<String>, networkType: NetworkType): Address {
+            val seed = Mnemonic().toSeed(words)
+            val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
+            val privateKey = hdWallet.privateKey(0, 0, true).privKey
+            val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
+
+            return Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
+        }
+
         fun clear(context: Context, networkType: NetworkType, walletId: String) {
             EthereumDatabaseManager.clear(context, networkType, walletId)
         }
