@@ -102,6 +102,8 @@ class TransactionSyncer(
         )
         storage.getPendingTransaction(transaction.nonce)?.let { duplicateTransaction ->
             storage.addDroppedTransaction(DroppedTransaction(hash = duplicateTransaction.hash, replacedWith = transaction.hash))
+
+            listener?.onTransactionsSynced(storage.getFullTransactions(listOf(duplicateTransaction.hash)))
         }
         storage.save(transactionEntity)
 
