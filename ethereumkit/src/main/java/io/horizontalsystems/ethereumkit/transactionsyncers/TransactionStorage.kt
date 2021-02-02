@@ -77,8 +77,10 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         transactionDao.insert(transaction)
     }
 
-    override fun getFirstPendingTransaction(): Transaction? {
-        return transactionDao.getFirstPendingTransaction()
+    override fun getPendingTransactions(fromTransaction: Transaction?): List<Transaction> {
+        return transactionDao.getPendingTransactions().filter {
+            fromTransaction == null || it.nonce > fromTransaction.nonce || (it.nonce == fromTransaction.nonce && it.timestamp > fromTransaction.timestamp)
+        }
     }
 
     //endregion
