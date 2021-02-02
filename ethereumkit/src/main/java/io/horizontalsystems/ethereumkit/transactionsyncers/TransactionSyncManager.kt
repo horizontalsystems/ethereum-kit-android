@@ -145,6 +145,7 @@ class TransactionSyncManager(
         syncers.forEach { action(it) }
     }
 
+    @Synchronized
     private fun syncState() {
         val notSyncedSyncerState = syncers.firstOrNull { it.state is EthereumKit.SyncState.NotSynced }?.state as? EthereumKit.SyncState.NotSynced
         syncState = when {
