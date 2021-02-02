@@ -18,12 +18,18 @@ class FullTransaction(
                 parentColumn = "hash",
                 entityColumn = "hash"
         )
-        val internalTransactions: List<InternalTransaction> = listOf()
-
+        val internalTransactions: List<InternalTransaction> = listOf(),
+        @Relation(
+                entity = DroppedTransaction::class,
+                parentColumn = "hash",
+                entityColumn = "hash"
+        )
+        val droppedTransaction: DroppedTransaction? = null
 ) {
     fun isFailed(): Boolean {
         val receipt = receiptWithLogs?.receipt
         return when {
+            droppedTransaction != null -> true
             receipt == null -> false
             receipt.status == null -> transaction.gasLimit == receipt.cumulativeGasUsed
             else -> receipt.status == 0

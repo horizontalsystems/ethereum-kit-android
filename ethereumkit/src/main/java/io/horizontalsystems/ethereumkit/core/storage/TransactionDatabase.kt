@@ -1,7 +1,6 @@
 package io.horizontalsystems.ethereumkit.core.storage
 
 import android.content.Context
-import android.util.Log
 import androidx.room.*
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 import io.horizontalsystems.ethereumkit.models.*
@@ -14,9 +13,10 @@ import io.horizontalsystems.ethereumkit.models.Transaction
             TransactionReceipt::class,
             TransactionLog::class,
             InternalTransaction::class,
-            TransactionSyncerState::class
+            TransactionSyncerState::class,
+            DroppedTransaction::class
         ],
-        version = 5,
+        version = 6,
         exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, TransactionDatabase.TypeConverters::class)
