@@ -2,14 +2,10 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IBlockchain
-import io.horizontalsystems.ethereumkit.core.ITransactionStorage
-import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
@@ -44,16 +40,25 @@ class PendingTransactionSyncer(
                 .let { disposables.add(it) }
     }
 
-    private fun doSync(): Single<Unit> {
-        val pendingTransaction = storage.getFirstPendingTransaction() ?: return Single.just(Unit)
-        logger.info("---> doSync() pendingTransaction: $pendingTransaction")
+    private fun doSync(fromTransaction: Transaction? = null): Single<Unit> {
+        val pendingTransactions = storage.getPendingTransactions(fromTransaction)
+        logger.info("---> doSync() pendingTransactions: ${pendingTransactions.joinToString(separator = ",") { it.hash.toHexString() }}")
 
-        return blockchain.getTransactionReceipt(pendingTransaction.hash)
-                .flatMap { optionalReceipt ->
-                    logger.info("---> sync() onFetched receipt: ${optionalReceipt.orElse(null)?.transactionHash}")
+        if (pendingTransactions.isEmpty()) {
+            return Single.just(Unit)
+        }
 
-                    syncTimestamp(pendingTransaction, optionalReceipt.orElse(null))
-                }
+        val singles: List<Single<Unit>> = pendingTransactions.map { pendingTransaction ->
+            blockchain.getTransactionReceipt(pendingTransaction.hash)
+                    .flatMap { optionalReceipt ->
+                        logger.info("---> doSync() onFetched receipt: ${optionalReceipt.orElse(null)?.transactionHash}")
+                        syncTimestamp(pendingTransaction, optionalReceipt.orElse(null))
+                    }
+        }
+
+        return Single.zip(singles) { }.flatMap {
+            doSync(pendingTransactions.last())
+        }
     }
 
     private fun syncTimestamp(transaction: Transaction, receipt: RpcTransactionReceipt?): Single<Unit> {
@@ -62,16 +67,17 @@ class PendingTransactionSyncer(
         }
 
         return blockchain.getBlock(receipt.blockNumber)
-                .flatMap { optionalBlock ->
+                .doOnSuccess { optionalBlock ->
                     logger.info("---> sync() onFetched block: $optionalBlock")
 
                     handle(transaction, receipt, optionalBlock.orElse(null)?.timestamp)
                 }
+                .map { }
     }
 
-    private fun handle(transaction: Transaction, receipt: RpcTransactionReceipt, timestamp: Long?): Single<Unit> {
+    private fun handle(transaction: Transaction, receipt: RpcTransactionReceipt, timestamp: Long?) {
         if (timestamp == null) {
-            return Single.just(Unit)
+            return
         }
 
         transaction.timestamp = timestamp
@@ -81,8 +87,6 @@ class PendingTransactionSyncer(
         storage.save(receipt.logs)
 
         listener?.onTransactionsSynced(storage.getFullTransactions(listOf(receipt.transactionHash)))
-
-        return doSync()
     }
 
 }

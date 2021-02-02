@@ -60,10 +60,9 @@ interface TransactionDao {
             FROM `Transaction` as tx
             LEFT JOIN TransactionReceipt as receipt
             ON tx.hash == receipt.transactionHash 
-            WHERE receipt.blockHash IS NULL 
-            ORDER BY tx.nonce
-            LIMIT 1
+            WHERE receipt.transactionHash IS NULL
+            ORDER BY tx.nonce, tx.timestamp
             """)
-    fun getFirstPendingTransaction(): Transaction?
+    fun getPendingTransactions(): List<Transaction>
 
 }
