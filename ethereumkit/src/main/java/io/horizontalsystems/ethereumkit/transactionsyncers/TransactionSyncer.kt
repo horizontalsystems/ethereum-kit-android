@@ -3,11 +3,11 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.models.DroppedTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.logging.Logger
@@ -100,6 +100,9 @@ class TransactionSyncer(
                 input = transaction.input,
                 timestamp = timestamp
         )
+        storage.getPendingTransaction(transaction.nonce)?.let { duplicateTransaction ->
+            storage.addDroppedTransaction(DroppedTransaction(hash = duplicateTransaction.hash, replacedWith = transaction.hash))
+        }
         storage.save(transactionEntity)
 
         delegate.remove(notSyncedTransaction)

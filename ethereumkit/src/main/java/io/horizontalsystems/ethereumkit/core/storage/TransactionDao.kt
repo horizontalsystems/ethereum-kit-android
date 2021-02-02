@@ -59,10 +59,26 @@ interface TransactionDao {
         SELECT tx.* 
             FROM `Transaction` as tx
             LEFT JOIN TransactionReceipt as receipt
-            ON tx.hash == receipt.transactionHash 
-            WHERE receipt.transactionHash IS NULL
+            ON tx.hash == receipt.transactionHash
+            LEFT JOIN DroppedTransaction as droppedTx
+            ON tx.hash == droppedTx.hash
+            WHERE receipt.transactionHash IS NULL AND droppedTx.hash IS NULL
             ORDER BY tx.nonce, tx.timestamp
             """)
     fun getPendingTransactions(): List<Transaction>
+
+    @androidx.room.Transaction
+    @Query("""
+        SELECT tx.* 
+            FROM `Transaction` as tx
+            LEFT JOIN TransactionReceipt as receipt
+            ON tx.hash == receipt.transactionHash
+            WHERE receipt.transactionHash IS NULL AND tx.nonce = :nonce
+            LIMIT 1
+            """)
+    fun getPendingTransaction(nonce: Long): Transaction?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(droppedTransaction: DroppedTransaction)
 
 }

@@ -104,7 +104,9 @@ interface ITransactionStorage {
 
     fun save(logs: List<TransactionLog>)
 
+    fun getPendingTransaction(nonce: Long): Transaction?
     fun getPendingTransactions(fromTransaction: Transaction?): List<Transaction>
+    fun addDroppedTransaction(droppedTransaction: DroppedTransaction)
 }
 
 interface ITransactionSyncerListener {

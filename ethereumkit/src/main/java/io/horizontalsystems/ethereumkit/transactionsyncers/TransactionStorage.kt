@@ -83,6 +83,14 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         }
     }
 
+    override fun getPendingTransaction(nonce: Long): Transaction? {
+        return transactionDao.getPendingTransaction(nonce)
+    }
+
+    override fun addDroppedTransaction(droppedTransaction: DroppedTransaction) {
+        transactionDao.insert(droppedTransaction)
+    }
+
     //endregion
 
     //region InternalTransactions
