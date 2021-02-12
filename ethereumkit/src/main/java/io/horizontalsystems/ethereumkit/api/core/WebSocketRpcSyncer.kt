@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.api.core
 
+import android.util.Log
 import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.*
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.NewHeadsRpcSubscription
@@ -23,7 +24,7 @@ class WebSocketRpcSyncer(
 
     private var currentRpcId = AtomicInteger(0)
     private var rpcHandlers = ConcurrentHashMap<Int, RpcHandler>()
-    private var subscriptionHandlers = ConcurrentHashMap<Long, SubscriptionHandler>()
+    private var subscriptionHandlers = ConcurrentHashMap<String, SubscriptionHandler>()
 
     private var isSubscribedToNewHeads = false
 
@@ -208,6 +209,7 @@ class WebSocketRpcSyncer(
                     isSubscribedToNewHeads = true
                 },
                 onSubscribeError = { error ->
+                    error.printStackTrace()
                     isSubscribedToNewHeads = false
                     onFailSync(error)
                 },

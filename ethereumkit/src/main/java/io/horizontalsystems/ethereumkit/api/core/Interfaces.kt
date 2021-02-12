@@ -14,7 +14,7 @@ data class RpcResponse(val id: Int, val result: JsonElement?, val error: Error?)
     data class Error(val code: Int, val message: String)
 }
 data class RpcSubscriptionResponse(val method: String, val params: Params) {
-    data class Params(@SerializedName("subscription") val subscriptionId: Long, val result: JsonElement)
+    data class Params(@SerializedName("subscription") val subscriptionId: String, val result: JsonElement)
 }
 data class RpcGeneralResponse(val id: Int?, val result: JsonElement?, val error: RpcResponse.Error?, val method: String?, val params: RpcSubscriptionResponse.Params?)
 

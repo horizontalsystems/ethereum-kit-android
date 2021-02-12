@@ -26,7 +26,7 @@ import java.util.*
 import java.util.logging.Logger
 
 class EthereumKit(
-        val blockchain: IBlockchain, // make public for testing
+        private val blockchain: IBlockchain,
         private val transactionManager: TransactionManager,
         private val transactionSyncManager: TransactionSyncManager,
         private val transactionBuilder: TransactionBuilder,
@@ -280,86 +280,123 @@ class EthereumKit(
     }
 
     companion object {
-        fun getInstance(
+
+        private val gson = GsonBuilder()
+                .setLenient()
+                .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
+                .registerTypeAdapter(Long::class.java, LongTypeAdapter())
+                .registerTypeAdapter(object : TypeToken<Long?>() {}.type, LongTypeAdapter())
+                .registerTypeAdapter(Int::class.java, IntTypeAdapter())
+                .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
+                .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
+                .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
+                .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
+                .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
+                .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
+                .create()
+
+        fun getInstanceBsc(
                 application: Application,
-                privateKey: BigInteger,
-                syncMode: SyncMode,
-                networkType: NetworkType,
+                words: List<String>,
+                walletId: String,
                 syncSource: SyncSource,
-                etherscanKey: String,
-                walletId: String
+                bscScanKey: String
         ): EthereumKit {
-            val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
-            val address = Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
+            val networkType = NetworkType.BscMainNet
 
-            val network = networkType.getNetwork()
-            val transactionSigner = TransactionSigner(network, privateKey)
-            val transactionBuilder = TransactionBuilder(address)
-            val connectionManager = ConnectionManager(application)
+            val privateKey = getPrivateKeyFromMnemonic(words, networkType.getCoinType())
+            val address = getAddressFromPrivateKey(privateKey)
 
-            val infuraDomain = when (networkType) {
-                NetworkType.EthMainNet -> "mainnet.infura.io"
-                NetworkType.EthRopsten -> "ropsten.infura.io"
-                NetworkType.EthKovan -> "kovan.infura.io"
-                NetworkType.EthRinkeby -> "rinkeby.infura.io"
-            }
-            val gson = GsonBuilder()
-                    .setLenient()
-                    .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
-                    .registerTypeAdapter(Long::class.java, LongTypeAdapter())
-                    .registerTypeAdapter(object : TypeToken<Long?>() {}.type, LongTypeAdapter())
-                    .registerTypeAdapter(Int::class.java, IntTypeAdapter())
-                    .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
-                    .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
-                    .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
-                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
-                    .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
-                    .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
-                    .create()
+            val etherscanService = EtherscanService(bscScanKey, networkType)
 
             val syncer: IRpcSyncer = when (syncSource) {
-                is SyncSource.Infura -> {
-                    ApiRpcSyncer(address, InfuraRpcApiProvider(infuraDomain, syncSource.id, syncSource.secret, gson), connectionManager)
+                is SyncSource.Http -> {
+                    val url = "https://bsc-dataseed.binance.org"
+                    ApiRpcSyncer(address, InfuraRpcApiProvider(url, gson), ConnectionManager(application))
                 }
-                is SyncSource.InfuraWebSocket -> {
-                    val rpcWebSocket: IRpcWebSocket = InfuraRpcWebSocket(infuraDomain, syncSource.id, syncSource.secret, application, gson)
+                is SyncSource.Socket -> {
+                    val url = "wss://bsc-ws-node.nariox.org:443"
+                    val rpcWebSocket = InfuraRpcWebSocket(url, gson)
                     val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
 
                     webSocketRpcSyncer
                 }
-                is SyncSource.Incubed -> {
-                    ApiRpcSyncer(address, IncubedRpcApiProvider(networkType, gson), connectionManager)
+            }
+
+            return getInstance(application, address, privateKey, syncer, etherscanService, networkType, walletId)
+        }
+
+        fun getInstanceEthereum(
+                application: Application,
+                words: List<String>,
+                networkType: NetworkType,
+                walletId: String,
+                syncSource: SyncSource,
+                etherscanKey: String,
+                infuraProjectId: String,
+                infuraSecret: String?
+        ): EthereumKit {
+            val privateKey = getPrivateKeyFromMnemonic(words, networkType.getCoinType())
+            val address = getAddressFromPrivateKey(privateKey)
+
+            val infuraDomain = when (networkType) {
+                NetworkType.EthMainNet -> "mainnet.infura.io"
+                NetworkType.EthRopsten -> "ropsten.infura.io"
+                NetworkType.EthKovan -> "kovan.infura.io"
+                NetworkType.EthRinkeby -> "rinkeby.infura.io"
+                else -> throw Exception("Ethereum network expected!")
+            }
+
+            val etherscanService = EtherscanService(etherscanKey, networkType)
+
+            val syncer: IRpcSyncer = when (syncSource) {
+                is SyncSource.Http -> {
+                    val url = "https://$infuraDomain/v3/$infuraProjectId"
+                    ApiRpcSyncer(address, InfuraRpcApiProvider(url, gson, infuraSecret), ConnectionManager(application))
+                }
+                is SyncSource.Socket -> {
+                    val url = "wss://$infuraDomain/ws/v3/$infuraProjectId"
+                    val rpcWebSocket = InfuraRpcWebSocket(url, gson, infuraSecret)
+                    val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
+
+                    rpcWebSocket.listener = webSocketRpcSyncer
+
+                    webSocketRpcSyncer
                 }
             }
 
-            val blockchain: IBlockchain = when (syncMode) {
-                is SyncMode.ApiSyncMode -> {
-                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)
-                    val storage = ApiStorage(apiDatabase)
+            return getInstance(application, address, privateKey, syncer, etherscanService, networkType, walletId)
+        }
 
-                    RpcBlockchain.instance(address, storage, syncer, transactionSigner, transactionBuilder)
-                }
-                is SyncMode.SpvSyncMode -> {
-                    throw Exception("SPV Sync Mode is not supported!")
-//                    val spvDatabase = EthereumDatabaseManager.getEthereumSpvDatabase(context, walletId, networkType)
-//                    val nodeKey = CryptoUtils.ecKeyFromPrivate(syncMode.nodePrivateKey)
-//                    val storage = SpvStorage(spvDatabase)
-//
-//                    SpvBlockchain.getInstance(storage, transactionSigner, transactionBuilder, rpcApiProvider, network, address, nodeKey)
-                }
-                is SyncMode.GethSyncMode -> {
-                    throw Exception("Geth Sync Mode is not supported!")
-//                    val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(context, walletId, networkType)
-//                    val storage = ApiStorage(apiDatabase)
-//                    val nodeDirectory = context.filesDir.path + "/gethNode"
-//
-//                    blockchain = GethBlockchain.getInstance(nodeDirectory, network, storage, transactionSigner, transactionBuilder, address)
-                }
-            }
+        fun address(words: List<String>, networkType: NetworkType): Address {
+            val privateKey = getPrivateKeyFromMnemonic(words, networkType.getCoinType())
+            return getAddressFromPrivateKey(privateKey)
+        }
 
-            val etherscanService = EtherscanService(networkType, etherscanKey)
+        fun clear(context: Context, networkType: NetworkType, walletId: String) {
+            EthereumDatabaseManager.clear(context, networkType, walletId)
+        }
+
+        private fun getInstance(
+                application: Application,
+                address: Address,
+                privateKey: BigInteger,
+                syncer: IRpcSyncer,
+                etherscanService: EtherscanService,
+                networkType: NetworkType,
+                walletId: String
+        ): EthereumKit {
+
+            val transactionSigner = TransactionSigner(privateKey, networkType.getNetwork().id)
+            val transactionBuilder = TransactionBuilder(address)
+            val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)
+            val storage = ApiStorage(apiDatabase)
+
+            val blockchain = RpcBlockchain.instance(address, storage, syncer, transactionSigner, transactionBuilder)
+            val connectionManager = ConnectionManager(application)
+
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
             val transactionStorage = TransactionStorage(transactionDatabase)
             val notSyncedTransactionPool = NotSyncedTransactionPool(transactionStorage)
@@ -384,7 +421,7 @@ class EthereumKit(
 
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService.apiKey)
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)
@@ -392,86 +429,39 @@ class EthereumKit(
             return ethereumKit
         }
 
-        fun getInstance(
-                application: Application,
-                words: List<String>,
-                wordsSyncMode: WordsSyncMode,
-                networkType: NetworkType,
-                syncSource: SyncSource,
-                etherscanKey: String,
-                walletId: String
-        ) = getInstance(application, Mnemonic().toSeed(words), wordsSyncMode, networkType, syncSource, etherscanKey, walletId)
-
-        fun getInstance(
-                application: Application,
-                seed: ByteArray,
-                wordsSyncMode: WordsSyncMode,
-                networkType: NetworkType,
-                syncSource: SyncSource,
-                etherscanKey: String,
-                walletId: String
-        ): EthereumKit {
-            val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
-            val privateKey = hdWallet.privateKey(0, 0, true).privKey
-
-            val syncMode = when (wordsSyncMode) {
-                is WordsSyncMode.SpvSyncMode -> {
-                    val nodePrivateKey = hdWallet.privateKey(101, 101, true).privKey
-                    SyncMode.SpvSyncMode(nodePrivateKey)
-                }
-                is WordsSyncMode.ApiSyncMode -> {
-                    SyncMode.ApiSyncMode()
-                }
-            }
-
-            return getInstance(application, privateKey, syncMode, networkType, syncSource, etherscanKey, walletId)
-        }
-
-        fun address(words: List<String>, networkType: NetworkType): Address {
-            val seed = Mnemonic().toSeed(words)
-            val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
-            val privateKey = hdWallet.privateKey(0, 0, true).privKey
+        private fun getAddressFromPrivateKey(privateKey: BigInteger): Address {
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
-
             return Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
         }
 
-        fun clear(context: Context, networkType: NetworkType, walletId: String) {
-            EthereumDatabaseManager.clear(context, networkType, walletId)
+        private fun getPrivateKeyFromMnemonic(words: List<String>, coinType: Int): BigInteger {
+            val seed = Mnemonic().toSeed(words)
+            val hdWallet = HDWallet(seed, coinType)
+            return hdWallet.privateKey(0, 0, true).privKey
         }
-
     }
 
     sealed class SyncSource {
-        class InfuraWebSocket(val id: String, val secret: String?) : SyncSource()
-        class Infura(val id: String, val secret: String?) : SyncSource()
-        object Incubed : SyncSource()
+        object Socket : SyncSource()
+        object Http : SyncSource()
     }
-
-    sealed class WordsSyncMode {
-        class ApiSyncMode : WordsSyncMode()
-        class SpvSyncMode : WordsSyncMode()
-    }
-
-    sealed class SyncMode {
-        class ApiSyncMode : SyncMode()
-        class SpvSyncMode(val nodePrivateKey: BigInteger) : SyncMode()
-        class GethSyncMode : SyncMode()
-    }
-
-    data class InfuraCredentials(val projectId: String, val secretKey: String?)
 
     enum class NetworkType {
         EthMainNet,
         EthRopsten,
         EthKovan,
-        EthRinkeby;
+        EthRinkeby,
+        BscMainNet;
 
-        fun getNetwork(): INetwork {
-            if (this == EthMainNet) {
-                return EthMainNet()
-            }
-            return EthRopsten()
+        fun getNetwork() = when (this) {
+            EthMainNet -> EthMainNet()
+            BscMainNet -> BscMainNet()
+            else -> EthRopsten()
+        }
+
+        fun getCoinType() = when (this) {
+            EthMainNet, BscMainNet -> 60
+            else -> 1
         }
     }
 

@@ -156,7 +156,7 @@ class Erc20Kit(
             balanceManager.listener = erc20Kit
 
             val syncerId = getTransactionSyncerId(contractAddress)
-            val transactionsProvider = EtherscanTransactionsProvider(EtherscanService(ethereumKit.networkType, ethereumKit.etherscanKey))
+            val transactionsProvider = EtherscanTransactionsProvider(EtherscanService(ethereumKit.etherscanKey, ethereumKit.networkType))
             val erc20TransactionSyncer = Erc20TransactionSyncer(syncerId, address, contractAddress, transactionsProvider)
 
             ethereumKit.addTransactionSyncer(erc20TransactionSyncer)

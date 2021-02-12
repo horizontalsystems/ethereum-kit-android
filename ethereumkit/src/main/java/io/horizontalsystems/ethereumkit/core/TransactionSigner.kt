@@ -8,8 +8,8 @@ import io.horizontalsystems.ethereumkit.spv.rlp.RLP
 import java.math.BigInteger
 
 class TransactionSigner(
-        private val network: INetwork,
-        private val privateKey: BigInteger
+        private val privateKey: BigInteger,
+        private val networkId: Int
 ) {
 
     fun signature(rawTransaction: RawTransaction): Signature {
@@ -19,7 +19,7 @@ class TransactionSigner(
     }
 
     private fun signature(signatureData: ByteArray): Signature {
-        return Signature(v = (signatureData[64] + if (network.id == 0) 27 else (35 + 2 * network.id)).toByte(),
+        return Signature(v = (signatureData[64] + if (networkId == 0) 27 else (35 + 2 * networkId)).toByte(),
                 r = signatureData.copyOfRange(0, 32),
                 s = signatureData.copyOfRange(32, 64))
     }
@@ -32,7 +32,7 @@ class TransactionSigner(
                 RLP.encodeElement(rawTransaction.to.raw),
                 RLP.encodeBigInteger(rawTransaction.value),
                 RLP.encodeElement(rawTransaction.data),
-                RLP.encodeByte(network.id.toByte()),
+                RLP.encodeByte(networkId.toByte()),
                 RLP.encodeElement(ByteArray(0)),
                 RLP.encodeElement(ByteArray(0)))
 

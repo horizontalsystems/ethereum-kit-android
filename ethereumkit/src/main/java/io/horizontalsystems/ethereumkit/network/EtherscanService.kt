@@ -18,22 +18,23 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.logging.Logger
 
-class EtherscanService(private val networkType: NetworkType,
-                       private val apiKey: String) {
+class EtherscanService(
+        val apiKey: String,
+        networkType: NetworkType
+) {
 
     private val logger = Logger.getLogger("EtherscanService")
 
     private val service: EtherscanServiceAPI
 
-    private val baseUrl: String
-        get() {
-            return when (networkType) {
-                NetworkType.EthMainNet -> "https://api.etherscan.io"
-                NetworkType.EthRopsten -> "https://api-ropsten.etherscan.io"
-                NetworkType.EthKovan -> "https://api-kovan.etherscan.io"
-                NetworkType.EthRinkeby -> "https://api-rinkeby.etherscan.io"
-            }
-        }
+    private val url: String = when (networkType) {
+        NetworkType.EthMainNet -> "https://api.etherscan.io"
+        NetworkType.EthRopsten -> "https://api-ropsten.etherscan.io"
+        NetworkType.EthKovan -> "https://api-kovan.etherscan.io"
+        NetworkType.EthRinkeby -> "https://api-rinkeby.etherscan.io"
+        NetworkType.BscMainNet -> "https://api.BscScan.com"
+    }
+
 
     private val gson: Gson
 
@@ -52,7 +53,7 @@ class EtherscanService(private val networkType: NetworkType,
                 .create()
 
         val retrofit = Retrofit.Builder()
-                .baseUrl(baseUrl)
+                .baseUrl(url)
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(httpClient.build())

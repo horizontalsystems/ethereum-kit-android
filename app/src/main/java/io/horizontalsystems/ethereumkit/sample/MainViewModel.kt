@@ -11,8 +11,6 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
-import io.horizontalsystems.hdwalletkit.HDWallet
-import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
 import io.horizontalsystems.uniswapkit.models.Token
@@ -27,10 +25,14 @@ import java.util.logging.Logger
 class MainViewModel : ViewModel() {
     private val logger = Logger.getLogger("MainViewModel")
 
-    private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
+    private val infuraProjectId = "2a1306f1d12f4c109a4d4fb9be46b02e"
+    private val infuraSecret = "fc479a9290b64a84a15fa6544a130218"
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val networkType: NetworkType = NetworkType.EthRopsten
+    private val bscScanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE" //TODO set actual key
     private val walletId = "walletId"
+    private val networkType: NetworkType = NetworkType.BscMainNet
+    private val syncSource: EthereumKit.SyncSource = EthereumKit.SyncSource.Socket
+    private val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
     private val disposables = CompositeDisposable()
 
@@ -51,7 +53,7 @@ class MainViewModel : ViewModel() {
     val sendStatus = SingleLiveEvent<Throwable?>()
     val estimatedGas = SingleLiveEvent<String>()
 
-    private val gasPrice: Long = 50_000_000_000
+    private val gasPrice: Long = 20_000_000_000
 
     private lateinit var uniswapKit: UniswapKit
     private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
@@ -60,6 +62,7 @@ class MainViewModel : ViewModel() {
     val swapStatus = SingleLiveEvent<Throwable?>()
 
     val tokens = listOf(
+            Erc20Token("CAKE", "CAKE", Address("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), 18),
             Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
             Erc20Token("GMO coins", "GMOLW", Address("0xbb74a24d83470f64d5f0c01688fbb49a5a251b32"), 18),
             Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
@@ -69,18 +72,10 @@ class MainViewModel : ViewModel() {
     val toToken: Erc20Token? = null//tokens[0]
 
     fun init() {
-        val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
-
-        val seed = Mnemonic().toSeed(words)
-        val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
-        val privateKey = hdWallet.privateKey(0, 0, true).privKey
-        val syncSource = EthereumKit.SyncSource.InfuraWebSocket(infuraCredentials.projectId, infuraCredentials.secretKey)
-
-        ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, syncSource, etherscanKey, walletId)
+        ethereumKit = createKit()
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
-        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken
-        ?: tokens.first(), ethereumKit)
+        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: tokens.first(), ethereumKit)
 
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
@@ -158,6 +153,28 @@ class MainViewModel : ViewModel() {
 
         ethereumAdapter.start()
         erc20Adapter.start()
+
+/*
+        Handler().postDelayed({
+            Log.e("AAA", "************STOPPING*************************************")
+            ethereumAdapter.stop()
+            erc20Adapter.stop()
+
+//            ethereumKit = EthereumKit.getInstance(App.instance, privateKey, EthereumKit.SyncMode.ApiSyncMode(), networkType, syncSource, etherscanKey, walletId)
+//            ethereumAdapter = EthereumAdapter(ethereumKit)
+//
+//            erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken
+//            ?: tokens.first(), ethereumKit)
+
+        }, 5000)
+*/
+    }
+
+    private fun createKit(): EthereumKit {
+        return when (networkType) {
+            NetworkType.BscMainNet -> EthereumKit.getInstanceBsc(App.instance, words, walletId, syncSource, bscScanKey)
+            else -> EthereumKit.getInstanceEthereum(App.instance, words, networkType, walletId, syncSource, etherscanKey, infuraProjectId, infuraSecret)
+        }
     }
 
     private fun updateLastBlockHeight() {
