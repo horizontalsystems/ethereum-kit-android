@@ -2,4 +2,7 @@ package io.horizontalsystems.ethereumkit.api.jsonrpc
 
 class SubscribeJsonRpc(
         params: List<Any>
-) : LongJsonRpc("eth_subscribe", params)
+) : JsonRpc<String>("eth_subscribe", params) {
+    @Transient
+    override val typeOfResult = String::class.java
+}

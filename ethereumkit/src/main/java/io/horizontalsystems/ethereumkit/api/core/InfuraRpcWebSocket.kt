@@ -1,12 +1,9 @@
 package io.horizontalsystems.ethereumkit.api.core
 
-import android.app.Application
 import com.google.gson.Gson
 import com.tinder.scarlet.Event
 import com.tinder.scarlet.Scarlet
-import com.tinder.scarlet.ShutdownReason
 import com.tinder.scarlet.WebSocket
-import com.tinder.scarlet.lifecycle.android.AndroidLifecycle
 import com.tinder.scarlet.messageadapter.gson.GsonMessageAdapter
 import com.tinder.scarlet.retry.ExponentialWithJitterBackoffStrategy
 import com.tinder.scarlet.streamadapter.rxjava2.RxJava2StreamAdapterFactory
@@ -24,11 +21,9 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.util.logging.Logger
 
 class InfuraRpcWebSocket(
-        domain: String,
-        projectId: String,
-        projectSecret: String?,
-        app: Application,
-        private val gson: Gson
+        url: String,
+        private val gson: Gson,
+        projectSecret: String? = null
 ) : IRpcWebSocket {
     private val logger = Logger.getLogger("InfuraWebSocket")
     private var disposables = CompositeDisposable()
@@ -54,7 +49,7 @@ class InfuraRpcWebSocket(
                         logger.info(message)
                     }
                 })
-                .setLevel(HttpLoggingInterceptor.Level.BODY)
+                .setLevel(HttpLoggingInterceptor.Level.HEADERS)
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
@@ -72,7 +67,7 @@ class InfuraRpcWebSocket(
                 .build()
 
         scarlet = Scarlet.Builder()
-                .webSocketFactory(okHttpClient.newWebSocketFactory("wss://$domain/ws/v3/$projectId"))
+                .webSocketFactory(okHttpClient.newWebSocketFactory(url))
                 .addMessageAdapterFactory(GsonMessageAdapter.Factory(gson))
                 .addStreamAdapterFactory(RxJava2StreamAdapterFactory())
                 .backoffStrategy(backoffStrategy)

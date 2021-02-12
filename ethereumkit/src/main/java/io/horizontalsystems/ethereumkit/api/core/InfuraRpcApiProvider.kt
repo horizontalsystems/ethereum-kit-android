@@ -13,15 +13,15 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.Headers
 import retrofit2.http.POST
-import retrofit2.http.Path
+import retrofit2.http.Url
 import java.util.logging.Logger
 
 class InfuraRpcApiProvider(
-        domain: String,
-        private val projectId: String,
-        projectSecret: String?,
-        private val gson: Gson
+        private val url: String,
+        private val gson: Gson,
+        projectSecret: String? = null
 ) : IRpcApiProvider {
 
     private val logger = Logger.getLogger("InfuraService")
@@ -39,8 +39,6 @@ class InfuraRpcApiProvider(
             projectSecret?.let { projectSecret ->
                 requestBuilder.header("Authorization", Credentials.basic("", projectSecret))
             }
-            requestBuilder.header("Content-Type", "application/json")
-            requestBuilder.header("Accept", "application/json")
             chain.proceed(requestBuilder.build())
         }
 
@@ -49,7 +47,7 @@ class InfuraRpcApiProvider(
                 .addInterceptor(headersInterceptor)
 
         val retrofit = Retrofit.Builder()
-                .baseUrl("https://$domain/v3/")
+                .baseUrl("$url/")
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
@@ -62,16 +60,16 @@ class InfuraRpcApiProvider(
     override val source = "Infura"
 
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
-        return service.single(projectId, gson.toJson(rpc))
+        return service.single(url, gson.toJson(rpc))
                 .map { response ->
                     rpc.parseResponse(response, gson)
                 }
     }
 
     private interface InfuraService {
-        @POST("{projectId}")
-        fun single(@Path("projectId") projectId: String,
-                   @Body jsonRpc: String): Single<RpcResponse>
+        @POST
+        @Headers("Content-Type: application/json", "Accept: application/json")
+        fun single(@Url url: String, @Body jsonRpc: String): Single<RpcResponse>
     }
 
 }
