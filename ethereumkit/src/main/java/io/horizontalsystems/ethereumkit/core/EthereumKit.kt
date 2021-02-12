@@ -298,10 +298,10 @@ class EthereumKit(
             val connectionManager = ConnectionManager(application)
 
             val infuraDomain = when (networkType) {
-                NetworkType.MainNet -> "mainnet.infura.io"
-                NetworkType.Ropsten -> "ropsten.infura.io"
-                NetworkType.Kovan -> "kovan.infura.io"
-                NetworkType.Rinkeby -> "rinkeby.infura.io"
+                NetworkType.EthMainNet -> "mainnet.infura.io"
+                NetworkType.EthRopsten -> "ropsten.infura.io"
+                NetworkType.EthKovan -> "kovan.infura.io"
+                NetworkType.EthRinkeby -> "rinkeby.infura.io"
             }
             val gson = GsonBuilder()
                     .setLenient()
@@ -411,7 +411,7 @@ class EthereumKit(
                 etherscanKey: String,
                 walletId: String
         ): EthereumKit {
-            val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
+            val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey
 
             val syncMode = when (wordsSyncMode) {
@@ -429,7 +429,7 @@ class EthereumKit(
 
         fun address(words: List<String>, networkType: NetworkType): Address {
             val seed = Mnemonic().toSeed(words)
-            val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
+            val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
             val privateKey = hdWallet.privateKey(0, 0, true).privKey
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
 
@@ -462,16 +462,16 @@ class EthereumKit(
     data class InfuraCredentials(val projectId: String, val secretKey: String?)
 
     enum class NetworkType {
-        MainNet,
-        Ropsten,
-        Kovan,
-        Rinkeby;
+        EthMainNet,
+        EthRopsten,
+        EthKovan,
+        EthRinkeby;
 
         fun getNetwork(): INetwork {
-            if (this == MainNet) {
-                return MainNet()
+            if (this == EthMainNet) {
+                return EthMainNet()
             }
-            return Ropsten()
+            return EthRopsten()
         }
     }
 

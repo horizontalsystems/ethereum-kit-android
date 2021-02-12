@@ -28,10 +28,10 @@ class EtherscanService(private val networkType: NetworkType,
     private val baseUrl: String
         get() {
             return when (networkType) {
-                NetworkType.MainNet -> "https://api.etherscan.io"
-                NetworkType.Ropsten -> "https://api-ropsten.etherscan.io"
-                NetworkType.Kovan -> "https://api-kovan.etherscan.io"
-                NetworkType.Rinkeby -> "https://api-rinkeby.etherscan.io"
+                NetworkType.EthMainNet -> "https://api.etherscan.io"
+                NetworkType.EthRopsten -> "https://api-ropsten.etherscan.io"
+                NetworkType.EthKovan -> "https://api-kovan.etherscan.io"
+                NetworkType.EthRinkeby -> "https://api-rinkeby.etherscan.io"
             }
         }
 

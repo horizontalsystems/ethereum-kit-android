@@ -21,7 +21,7 @@ class IncubedRpcApiProvider(
 
     private val in3: IN3 by lazy {
         when (networkType) {
-            NetworkType.MainNet -> Chain.MAINNET
+            NetworkType.EthMainNet -> Chain.MAINNET
             else -> Chain.KOVAN
         }.let { chain ->
             val in3Instance = IN3.forChain(chain)

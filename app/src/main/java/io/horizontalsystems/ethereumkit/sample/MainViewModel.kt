@@ -29,7 +29,7 @@ class MainViewModel : ViewModel() {
 
     private val infuraCredentials = EthereumKit.InfuraCredentials(projectId = "2a1306f1d12f4c109a4d4fb9be46b02e", secretKey = "fc479a9290b64a84a15fa6544a130218")
     private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val networkType: NetworkType = NetworkType.Ropsten
+    private val networkType: NetworkType = NetworkType.EthRopsten
     private val walletId = "walletId"
 
     private val disposables = CompositeDisposable()
@@ -72,7 +72,7 @@ class MainViewModel : ViewModel() {
         val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
         val seed = Mnemonic().toSeed(words)
-        val hdWallet = HDWallet(seed, if (networkType == NetworkType.MainNet) 60 else 1)
+        val hdWallet = HDWallet(seed, if (networkType == NetworkType.EthMainNet) 60 else 1)
         val privateKey = hdWallet.privateKey(0, 0, true).privKey
         val syncSource = EthereumKit.SyncSource.InfuraWebSocket(infuraCredentials.projectId, infuraCredentials.secretKey)
 
