@@ -18,10 +18,10 @@ class TokenFactory(networkType: EthereumKit.NetworkType) {
     companion object {
         private fun wethAddress(networkType: EthereumKit.NetworkType): Address {
             val wethAddressHex = when (networkType) {
-                EthereumKit.NetworkType.MainNet -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-                EthereumKit.NetworkType.Ropsten -> "0xc778417e063141139fce010982780140aa0cd5ab"
-                EthereumKit.NetworkType.Kovan -> "0xd0A1E359811322d97991E03f863a0C30C2cF029C"
-                EthereumKit.NetworkType.Rinkeby -> "0xc778417e063141139fce010982780140aa0cd5ab"
+                EthereumKit.NetworkType.EthMainNet -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+                EthereumKit.NetworkType.EthRopsten -> "0xc778417e063141139fce010982780140aa0cd5ab"
+                EthereumKit.NetworkType.EthKovan -> "0xd0A1E359811322d97991E03f863a0C30C2cF029C"
+                EthereumKit.NetworkType.EthRinkeby -> "0xc778417e063141139fce010982780140aa0cd5ab"
             }
             return Address(wethAddressHex)
         }

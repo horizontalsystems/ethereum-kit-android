@@ -4,13 +4,14 @@ import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import java.math.BigInteger
 
-class Ropsten : INetwork {
+class EthMainNet : INetwork {
 
-    override val id: Int = 3
+    override val id: Int = 1
 
     override val genesisBlockHash: ByteArray =
-            "41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d".hexStringToByteArray()
+            "d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3".hexStringToByteArray()
 
+    //checkpoint should be updated
     override val checkpointBlock =
             BlockHeader(hashHex = "bce9c39107fd4b58a31ab28975e4b5689a8a5e41d06b2736795cd6f643ac2d73".hexStringToByteArray(),
                     totalDifficulty = BigInteger("18601822522462629"),
@@ -29,4 +30,5 @@ class Ropsten : INetwork {
                     extraData = "d883010817846765746888676f312e31302e34856c696e7578".hexStringToByteArray(),
                     mixHash = ("cae580f260efcee4ed8789380528e9770b5c260d289321ff8c6352eb031d830").hexStringToByteArray(),
                     nonce = "004d35d804eac7d8".hexStringToByteArray())
+
 }
