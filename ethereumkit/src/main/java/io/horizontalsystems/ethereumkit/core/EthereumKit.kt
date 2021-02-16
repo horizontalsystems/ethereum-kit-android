@@ -22,6 +22,7 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+import java.net.URL
 import java.util.*
 import java.util.logging.Logger
 
@@ -311,12 +312,12 @@ class EthereumKit(
 
             val syncer: IRpcSyncer = when (syncSource) {
                 is SyncSource.Http -> {
-                    val url = "https://bsc-dataseed.binance.org"
-                    ApiRpcSyncer(address, InfuraRpcApiProvider(url, gson), ConnectionManager(application))
+                    val url = URL("https://bsc-dataseed.binance.org")
+                    ApiRpcSyncer(address, NodeApiProvider(url, gson), ConnectionManager(application))
                 }
                 is SyncSource.Socket -> {
-                    val url = "wss://bsc-ws-node.nariox.org:443"
-                    val rpcWebSocket = InfuraRpcWebSocket(url, gson)
+                    val url = URL("wss://bsc-ws-node.nariox.org:443")
+                    val rpcWebSocket = NodeWebSocket(url, gson)
                     val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
@@ -353,12 +354,12 @@ class EthereumKit(
 
             val syncer: IRpcSyncer = when (syncSource) {
                 is SyncSource.Http -> {
-                    val url = "https://$infuraDomain/v3/$infuraProjectId"
-                    ApiRpcSyncer(address, InfuraRpcApiProvider(url, gson, infuraSecret), ConnectionManager(application))
+                    val url = URL("https://$infuraDomain/v3/$infuraProjectId")
+                    ApiRpcSyncer(address, NodeApiProvider(url, gson, infuraSecret), ConnectionManager(application))
                 }
                 is SyncSource.Socket -> {
-                    val url = "wss://$infuraDomain/ws/v3/$infuraProjectId"
-                    val rpcWebSocket = InfuraRpcWebSocket(url, gson, infuraSecret)
+                    val url = URL("https://$infuraDomain/ws/v3/$infuraProjectId")
+                    val rpcWebSocket = NodeWebSocket(url, gson, infuraSecret)
                     val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
