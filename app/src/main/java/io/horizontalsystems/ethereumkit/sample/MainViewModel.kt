@@ -31,7 +31,7 @@ class MainViewModel : ViewModel() {
     private val bscScanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE" //TODO set actual key
     private val walletId = "walletId"
     private val networkType: NetworkType = NetworkType.BscMainNet
-    private val syncSource: EthereumKit.SyncSource = EthereumKit.SyncSource.Socket
+    private val webSocket = false
     private val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
     private val disposables = CompositeDisposable()
@@ -171,10 +171,30 @@ class MainViewModel : ViewModel() {
     }
 
     private fun createKit(): EthereumKit {
-        return when (networkType) {
-            NetworkType.BscMainNet -> EthereumKit.getInstanceBsc(App.instance, words, walletId, syncSource, bscScanKey)
-            else -> EthereumKit.getInstanceEthereum(App.instance, words, networkType, walletId, syncSource, etherscanKey, infuraProjectId, infuraSecret)
+        val syncSource: EthereumKit.SyncSource?
+        val txApiProviderKey: String
+
+        when (networkType) {
+            NetworkType.BscMainNet -> {
+                txApiProviderKey = bscScanKey
+                syncSource = if (webSocket)
+                    EthereumKit.defaultBscWebSocketSyncSource()
+                else
+                    EthereumKit.defaultBscHttpSyncSource()
+            }
+            else -> {
+                txApiProviderKey = etherscanKey
+                syncSource = if (webSocket)
+                    EthereumKit.infuraWebSocketSyncSource(networkType, infuraProjectId, infuraSecret)
+                else
+                    EthereumKit.infuraHttpSyncSource(networkType, infuraProjectId, infuraSecret)
+            }
         }
+        checkNotNull(syncSource) {
+            throw Exception("Could not get syncSource!")
+        }
+
+        return EthereumKit.getInstance(App.instance, words, networkType, syncSource, txApiProviderKey, walletId)
     }
 
     private fun updateLastBlockHeight() {
