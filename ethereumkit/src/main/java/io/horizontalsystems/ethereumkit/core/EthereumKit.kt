@@ -48,7 +48,7 @@ class EthereumKit(
     private val accountStateSubject = PublishSubject.create<AccountState>()
 
     val defaultGasLimit: Long = 21_000
-    private val maxGasLimit: Long = 1_000_000
+    private val maxGasLimit: Long = 2_000_000
     private val defaultMinAmount: BigInteger = BigInteger.ONE
 
     private var started = false
