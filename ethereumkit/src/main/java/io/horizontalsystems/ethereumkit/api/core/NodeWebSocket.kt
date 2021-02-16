@@ -18,21 +18,22 @@ import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import java.net.URL
 import java.util.logging.Logger
 
-class InfuraRpcWebSocket(
-        url: String,
+class NodeWebSocket(
+        url: URL,
         private val gson: Gson,
-        projectSecret: String? = null
+        auth: String? = null
 ) : IRpcWebSocket {
-    private val logger = Logger.getLogger("InfuraWebSocket")
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
     private var disposables = CompositeDisposable()
 
     private val RETRY_BASE_DURATION: Long = 3000
     private val RETRY_MAX_DURATION: Long = 5000
 
     private val scarlet: Scarlet
-    private var socket: InfuraWebSocketService? = null
+    private var socket: WebSocketService? = null
 
     private var state: WebSocketState = WebSocketState.Disconnected(WebSocketState.DisconnectError.NotStarted)
         set(value) {
@@ -53,8 +54,8 @@ class InfuraRpcWebSocket(
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
-            projectSecret?.let {
-                requestBuilder.header("Authorization", Credentials.basic("", projectSecret))
+            auth?.let {
+                requestBuilder.header("Authorization", Credentials.basic("", auth))
             }
             requestBuilder.header("Content-Type", "application/json")
             requestBuilder.header("Accept", "application/json")
@@ -67,7 +68,7 @@ class InfuraRpcWebSocket(
                 .build()
 
         scarlet = Scarlet.Builder()
-                .webSocketFactory(okHttpClient.newWebSocketFactory(url))
+                .webSocketFactory(okHttpClient.newWebSocketFactory(url.toString()))
                 .addMessageAdapterFactory(GsonMessageAdapter.Factory(gson))
                 .addStreamAdapterFactory(RxJava2StreamAdapterFactory())
                 .backoffStrategy(backoffStrategy)
@@ -75,10 +76,9 @@ class InfuraRpcWebSocket(
     }
 
     //region IRpcWebSocket
-
     override var listener: IRpcWebSocketListener? = null
 
-    override val source = "Infura"
+    override val source: String = url.host
 
     override fun start() {
         state = WebSocketState.Connecting
@@ -102,7 +102,7 @@ class InfuraRpcWebSocket(
 
     private fun connect() {
         if (socket == null) {
-            scarlet.create<InfuraWebSocketService>().apply {
+            scarlet.create<WebSocketService>().apply {
                 socket = this
                 observeSocket(this)
             }
@@ -113,7 +113,7 @@ class InfuraRpcWebSocket(
         disposables.clear()
     }
 
-    private fun observeSocket(socket: InfuraWebSocketService) {
+    private fun observeSocket(socket: WebSocketService) {
         socket.observeEvents()
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
@@ -194,7 +194,7 @@ class InfuraRpcWebSocket(
                 .let { disposables.add(it) }
     }
 
-    interface InfuraWebSocketService {
+    private interface WebSocketService {
         @Send
         fun send(rpc: JsonRpc<*>)
 

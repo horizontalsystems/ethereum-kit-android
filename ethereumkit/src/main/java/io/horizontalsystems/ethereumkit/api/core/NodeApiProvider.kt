@@ -16,15 +16,17 @@ import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Url
+import java.net.URI
+import java.net.URL
 import java.util.logging.Logger
 
-class InfuraRpcApiProvider(
-        private val url: String,
+class NodeApiProvider(
+        private val url: URL,
         private val gson: Gson,
-        projectSecret: String? = null
+        auth: String? = null
 ) : IRpcApiProvider {
 
-    private val logger = Logger.getLogger("InfuraService")
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val service: InfuraService
 
     init {
@@ -36,8 +38,8 @@ class InfuraRpcApiProvider(
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
-            projectSecret?.let { projectSecret ->
-                requestBuilder.header("Authorization", Credentials.basic("", projectSecret))
+            auth?.let {
+                requestBuilder.header("Authorization", Credentials.basic("", auth))
             }
             chain.proceed(requestBuilder.build())
         }
@@ -57,10 +59,10 @@ class InfuraRpcApiProvider(
         service = retrofit.create(InfuraService::class.java)
     }
 
-    override val source = "Infura"
+    override val source: String = url.host
 
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
-        return service.single(url, gson.toJson(rpc))
+        return service.single(url.toURI(), gson.toJson(rpc))
                 .map { response ->
                     rpc.parseResponse(response, gson)
                 }
@@ -69,7 +71,7 @@ class InfuraRpcApiProvider(
     private interface InfuraService {
         @POST
         @Headers("Content-Type: application/json", "Accept: application/json")
-        fun single(@Url url: String, @Body jsonRpc: String): Single<RpcResponse>
+        fun single(@Url uri: URI, @Body jsonRpc: String): Single<RpcResponse>
     }
 
 }
