@@ -54,7 +54,7 @@ class EtherscanTransactionsProvider(
                             val from = Address(internalTx.getValue("from"))
                             val to = Address(internalTx.getValue("to").hexStringToByteArray())
                             val value = internalTx.getValue("value").toBigInteger()
-                            val traceId = -1//internalTx.getValue("traceId").toInt()
+                            val traceId = internalTx.getValue("traceId")
 
                             InternalTransaction(hash, blockNumber, from, to, value, traceId)
                         } catch (throwable: Throwable) {

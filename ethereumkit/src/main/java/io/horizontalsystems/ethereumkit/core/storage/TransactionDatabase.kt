@@ -16,7 +16,7 @@ import io.horizontalsystems.ethereumkit.models.Transaction
             TransactionSyncerState::class,
             DroppedTransaction::class
         ],
-        version = 6,
+        version = 7,
         exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, TransactionDatabase.TypeConverters::class)
