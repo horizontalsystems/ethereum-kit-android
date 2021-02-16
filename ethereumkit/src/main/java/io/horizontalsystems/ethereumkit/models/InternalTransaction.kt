@@ -13,7 +13,7 @@ data class InternalTransaction(
         val from: Address,
         val to: Address,
         val value: BigInteger,
-        val traceId: Int,
+        val traceId: String,
         @PrimaryKey(autoGenerate = true) val id: Long = 0
 ) {
 
