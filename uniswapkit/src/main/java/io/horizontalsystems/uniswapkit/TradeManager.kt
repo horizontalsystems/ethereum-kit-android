@@ -2,9 +2,9 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
@@ -16,20 +16,22 @@ import java.util.*
 import java.util.logging.Logger
 
 class TradeManager(
-        private val ethereumKit: EthereumKit
+        private val evmKit: EthereumKit
 ) {
-    private val address: Address = ethereumKit.receiveAddress
+    private val address: Address = evmKit.receiveAddress
     private val logger = Logger.getLogger(this.javaClass.simpleName)
+
+    val routerAddress: Address = getRouterAddress(evmKit.networkType)
 
     fun pair(tokenA: Token, tokenB: Token): Single<Pair> {
 
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
 
-        val pairAddress = Pair.address(token0, token1)
+        val pairAddress = Pair.address(token0, token1, evmKit.networkType)
 
         logger.info("pairAddress: ${pairAddress.hex}")
 
-        return ethereumKit.call(pairAddress, GetReservesMethod().encodedABI())
+        return evmKit.call(pairAddress, GetReservesMethod().encodedABI())
                 .map { data ->
                     logger.info("getReserves data: ${data.toHexString()}")
 
@@ -59,7 +61,7 @@ class TradeManager(
     fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
         val swapData = buildSwapData(tradeData)
 
-        return ethereumKit.estimateGas(
+        return evmKit.estimateGas(
                 to = routerAddress,
                 value = if (swapData.amount == BigInteger.ZERO) null else swapData.amount,
                 gasPrice = gasPrice,
@@ -139,7 +141,15 @@ class TradeManager(
     }
 
     companion object {
-        val routerAddress = Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+
+        private fun getRouterAddress(networkType: NetworkType) =
+                when (networkType) {
+                    NetworkType.EthMainNet,
+                    NetworkType.EthRopsten,
+                    NetworkType.EthKovan,
+                    NetworkType.EthRinkeby -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+                    NetworkType.BscMainNet -> Address("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F")
+                }
 
         fun tradeExactIn(pairs: List<Pair>, tokenAmountIn: TokenAmount, tokenOut: Token, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountIn: TokenAmount? = null): List<Trade> {
             //todo validations

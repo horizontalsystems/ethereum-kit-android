@@ -31,7 +31,7 @@ class MainViewModel : ViewModel() {
     private val bscScanKey = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
     private val walletId = "walletId"
     private val networkType: NetworkType = NetworkType.BscMainNet
-    private val webSocket = false
+    private val webSocket = true
     private val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
 
     private val disposables = CompositeDisposable()
@@ -62,14 +62,16 @@ class MainViewModel : ViewModel() {
     val swapStatus = SingleLiveEvent<Throwable?>()
 
     val tokens = listOf(
-            Erc20Token("CAKE", "CAKE", Address("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), 18),
+            Erc20Token("PancakeSwap", "CAKE", Address("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), 18), //BEP20
+            Erc20Token("Beefy.Finance", "BIFI", Address("0xCa3F508B8e4Dd382eE878A314789373D80A5190A"), 18), //BEP20
+
             Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
             Erc20Token("GMO coins", "GMOLW", Address("0xbb74a24d83470f64d5f0c01688fbb49a5a251b32"), 18),
             Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
             Erc20Token("DAI-MAINNET", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18)
     )
     val fromToken: Erc20Token? = tokens[0]
-    val toToken: Erc20Token? = null//tokens[0]
+    val toToken: Erc20Token? = tokens[1]
 
     fun init() {
         ethereumKit = createKit()

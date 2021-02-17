@@ -16,7 +16,7 @@ class UniswapKit(
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     val routerAddress: Address
-        get() = TradeManager.routerAddress
+        get() = tradeManager.routerAddress
 
     fun etherToken(): Token {
         return tokenFactory.etherToken()
