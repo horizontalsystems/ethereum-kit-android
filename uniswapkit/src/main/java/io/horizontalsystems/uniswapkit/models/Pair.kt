@@ -1,5 +1,6 @@
 package io.horizontalsystems.uniswapkit.models
 
+import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
@@ -81,11 +82,28 @@ class Pair(
     }
 
     companion object {
-        fun address(token0: Token, token1: Token): Address {
+        fun address(token0: Token, token1: Token, networkType: NetworkType): Address {
+            val factoryAddress: String
+            val initCodeHash: String
+
+            when (networkType) {
+                NetworkType.EthMainNet,
+                NetworkType.EthRopsten,
+                NetworkType.EthKovan,
+                NetworkType.EthRinkeby -> {
+                    factoryAddress = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
+                    initCodeHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                }
+                NetworkType.BscMainNet -> {
+                    factoryAddress = "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
+                    initCodeHash = "0xd0d4c4cd0848c93cb4fd1f498d7013ee6bfb25783ea21593d5834f5d250ece66"
+                }
+            }
+
             val data = "0xff".hexStringToByteArray() +
-                    "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f".hexStringToByteArray() +
+                    factoryAddress.hexStringToByteArray() +
                     CryptoUtils.sha3(token0.address.raw + token1.address.raw) +
-                    "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f".hexStringToByteArray()
+                    initCodeHash.hexStringToByteArray()
 
             return Address(CryptoUtils.sha3(data).copyOfRange(12, 32))
         }
