@@ -58,6 +58,8 @@ class EthereumKit(
         state.accountState = blockchain.accountState
     }
 
+    val etherscanService = EtherscanService(etherscanKey, networkType)
+
     val lastBlockHeight: Long?
         get() = state.lastBlockHeight
 
