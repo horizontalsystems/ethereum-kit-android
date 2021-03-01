@@ -19,7 +19,7 @@ import retrofit2.http.Query
 import java.util.logging.Logger
 
 class EtherscanService(
-        val apiKey: String,
+        private val apiKey: String,
         networkType: NetworkType
 ) {
 

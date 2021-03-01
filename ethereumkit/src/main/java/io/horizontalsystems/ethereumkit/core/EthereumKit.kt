@@ -36,7 +36,7 @@ class EthereumKit(
         private val address: Address,
         val networkType: NetworkType,
         val walletId: String,
-        val etherscanKey: String,
+        val etherscanService: EtherscanService,
         private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
@@ -57,8 +57,6 @@ class EthereumKit(
         state.lastBlockHeight = blockchain.lastBlockHeight
         state.accountState = blockchain.accountState
     }
-
-    val etherscanService = EtherscanService(etherscanKey, networkType)
 
     val lastBlockHeight: Long?
         get() = state.lastBlockHeight
@@ -372,7 +370,7 @@ class EthereumKit(
 
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService.apiKey)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService)
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)
