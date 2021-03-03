@@ -1,9 +1,9 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
+import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.erc20kit.contract.TransferMethod
 import io.horizontalsystems.erc20kit.models.*
-import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
@@ -19,7 +19,7 @@ import java.math.BigInteger
 class TransactionManager(
         private val contractAddress: Address,
         private val ethereumKit: EthereumKit,
-        private val contractMethodFactories: ContractMethodFactories,
+        private val contractMethodFactories: Eip20ContractMethodFactories,
         private val storage: ITransactionStorage
 ) {
     private val disposables = CompositeDisposable()

@@ -11,7 +11,11 @@ class SwapETHForExactTokensMethod(
         val deadline: BigInteger
 ) : ContractMethod() {
 
-    override val methodSignature = "swapETHForExactTokens(uint256,address[],address,uint256)"
+    override val methodSignature = Companion.methodSignature
     override fun getArguments() = listOf(amountOut, path, to, deadline)
+
+    companion object {
+        const val methodSignature = "swapETHForExactTokens(uint256,address[],address,uint256)"
+    }
 
 }

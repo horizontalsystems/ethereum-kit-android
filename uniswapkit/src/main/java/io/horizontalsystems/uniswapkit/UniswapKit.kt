@@ -1,8 +1,10 @@
 package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.uniswapkit.contract.SwapContractMethodFactories
 import io.horizontalsystems.uniswapkit.models.*
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -90,6 +92,10 @@ class UniswapKit(
             val tokenFactory = TokenFactory(ethereumKit.networkType)
             val pairSelector = PairSelector(tokenFactory)
             return UniswapKit(tradeManager, pairSelector, tokenFactory)
+        }
+
+        fun getDecorator(): IDecorator {
+            return SwapTransactionDecorator(SwapContractMethodFactories)
         }
     }
 

@@ -1,12 +1,11 @@
 package io.horizontalsystems.erc20kit.core
 
 import android.content.Context
-import io.horizontalsystems.erc20kit.contract.ApproveMethodFactory
-import io.horizontalsystems.erc20kit.contract.TransferMethodFactory
+import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.erc20kit.models.Transaction
-import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.BloomFilter
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
@@ -147,7 +146,7 @@ class Erc20Kit(
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
             val dataProvider: IDataProvider = DataProvider(ethereumKit)
-            val transactionManager = TransactionManager(contractAddress, ethereumKit, ContractMethodFactories, transactionStorage)
+            val transactionManager = TransactionManager(contractAddress, ethereumKit, Eip20ContractMethodFactories, transactionStorage)
             val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
             val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address)
 
@@ -161,18 +160,19 @@ class Erc20Kit(
 
             ethereumKit.addTransactionSyncer(erc20TransactionSyncer)
 
-            ContractMethodFactories.registerMethodFactory(TransferMethodFactory)
-            ContractMethodFactories.registerMethodFactory(ApproveMethodFactory)
-
             return erc20Kit
         }
 
-        private fun getTransactionSyncerId(contractAddress: Address): String {
-            return "Erc20TransactionSyncer-${contractAddress.hex}"
+        fun getDecorator(): IDecorator {
+            return Eip20TransactionDecorator(Eip20ContractMethodFactories)
         }
 
         fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
             Erc20DatabaseManager.clear(context, networkType, walletId)
+        }
+
+        private fun getTransactionSyncerId(contractAddress: Address): String {
+            return "Erc20TransactionSyncer-${contractAddress.hex}"
         }
     }
 
