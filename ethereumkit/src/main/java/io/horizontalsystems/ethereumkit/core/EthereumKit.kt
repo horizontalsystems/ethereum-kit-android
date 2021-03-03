@@ -37,6 +37,7 @@ class EthereumKit(
         val networkType: NetworkType,
         val walletId: String,
         val etherscanService: EtherscanService,
+        private val decorationManager: DecorationManager,
         private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
@@ -169,6 +170,10 @@ class EthereumKit(
         }
     }
 
+    fun decorate(transactionData: TransactionData): TransactionDecoration? {
+        return decorationManager.decorate(transactionData)
+    }
+
     fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
         return send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit, nonce)
     }
@@ -241,6 +246,10 @@ class EthereumKit(
 
     fun removeTransactionSyncer(id: String) {
         transactionSyncManager.removeSyncer(id)
+    }
+
+    fun addDecorator(decorator: IDecorator) {
+        decorationManager.addDecorator(decorator)
     }
 
     sealed class SyncState {
@@ -369,8 +378,9 @@ class EthereumKit(
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
 
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
+            val decorationManager = DecorationManager(address)
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService, decorationManager)
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)

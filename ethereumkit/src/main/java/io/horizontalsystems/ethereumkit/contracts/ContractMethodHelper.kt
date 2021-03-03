@@ -2,8 +2,11 @@ package io.horizontalsystems.ethereumkit.contracts
 
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
+import io.horizontalsystems.ethereumkit.spv.core.toInt
 import java.math.BigInteger
 import kotlin.math.max
+import kotlin.reflect.KClass
 
 object ContractMethodHelper {
     fun getMethodId(methodSignature: String): ByteArray {
@@ -30,6 +33,45 @@ object ContractMethodHelper {
             }
         }
         return data + arraysData
+    }
+
+    fun decodeABI(inputArguments: ByteArray, argumentTypes: List<KClass<out Any>>): List<Any> {
+        var position = 0
+        val parsedArguments = mutableListOf<Any>()
+        argumentTypes.forEach { type ->
+            when (type) {
+                BigInteger::class -> {
+                    parsedArguments.add(inputArguments.copyOfRange(position, position + 32).toBigInteger())
+                    position += 32
+                }
+                Address::class -> {
+                    parsedArguments.add(parseAddress(inputArguments.copyOfRange(position, position + 32)))
+                    position += 32
+                }
+                List::class -> {
+                    val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
+                    val array = parseAddressArray(arrayPosition, inputArguments)
+                    parsedArguments.add(array)
+                    position += 32
+                }
+            }
+        }
+
+        return parsedArguments
+    }
+
+    private fun parseAddress(address: ByteArray): Address {
+        return Address(address.copyOfRange(address.size - 20, address.size))
+    }
+
+    private fun parseAddressArray(positionStart: Int, inputArguments: ByteArray): List<Address> {
+        val pathPositionEnd = positionStart + 32
+        val pathSize = inputArguments.copyOfRange(positionStart, pathPositionEnd).toInt()
+        val addressArray = mutableListOf<Address>()
+        for (address in inputArguments.copyOfRange(pathPositionEnd, pathPositionEnd + pathSize * 32).toList().chunked(32)) {
+            addressArray.add(parseAddress(address.toByteArray()))
+        }
+        return addressArray
     }
 
     private fun pad(data: ByteArray): ByteArray {

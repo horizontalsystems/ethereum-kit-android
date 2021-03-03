@@ -140,3 +140,47 @@ interface ITransactionSyncerDelegate {
     fun getTransactionSyncerState(id: String): TransactionSyncerState?
     fun update(transactionSyncerState: TransactionSyncerState)
 }
+
+sealed class TransactionDecoration {
+    class Transfer(
+            val from: Address,
+            val to: Address?,
+            val value: BigInteger
+    ) : TransactionDecoration()
+
+    class Eip20Transfer(
+            val to: Address,
+            val value: BigInteger,
+            val contractAddress: Address
+    ) : TransactionDecoration()
+
+    class Eip20Approve(
+            val spender: Address,
+            val value: BigInteger,
+            val contractAddress: Address
+    ) : TransactionDecoration()
+
+    class Swap(
+            val trade: Trade,
+            val tokenIn: Token,
+            val tokenOut: Token,
+            val to: Address,
+            val deadline: BigInteger
+    ) : TransactionDecoration() {
+
+        sealed class Trade {
+            class ExactIn(val amountIn: BigInteger, val amountOutMin: BigInteger): Trade()
+            class ExactOut(val amountOut: BigInteger, val amountInMax: BigInteger): Trade()
+        }
+
+        sealed class Token {
+            object EvmCoin: Token()
+            class Eip20Coin(val address: Address): Token()
+        }
+    }
+
+}
+
+interface IDecorator {
+    fun decorate(transactionData: TransactionData): TransactionDecoration?
+}
