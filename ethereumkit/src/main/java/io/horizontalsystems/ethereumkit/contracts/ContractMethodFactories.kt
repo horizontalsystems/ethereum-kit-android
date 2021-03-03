@@ -2,12 +2,14 @@ package io.horizontalsystems.ethereumkit.contracts
 
 import io.horizontalsystems.ethereumkit.spv.core.toInt
 
-object ContractMethodFactories {
+open class ContractMethodFactories {
 
     private val methodFactories = mutableMapOf<Int, ContractMethodFactory>()
 
-    fun registerMethodFactory(factory: ContractMethodFactory) {
-        methodFactories[factory.methodId.toInt()] = factory
+    fun registerMethodFactories(factories: List<ContractMethodFactory>) {
+        factories.forEach { factory ->
+            methodFactories[factory.methodId.toInt()] = factory
+        }
     }
 
     fun createMethodFromInput(input: ByteArray): ContractMethod? {
