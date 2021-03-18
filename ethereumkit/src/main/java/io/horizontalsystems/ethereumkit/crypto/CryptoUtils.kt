@@ -13,7 +13,6 @@ import org.bouncycastle.crypto.modes.SICBlockCipher
 import org.bouncycastle.crypto.params.*
 import org.bouncycastle.crypto.signers.ECDSASigner
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.jce.spec.ECParameterSpec
 import org.bouncycastle.math.ec.ECAlgorithms
 import org.bouncycastle.math.ec.ECCurve
@@ -21,8 +20,6 @@ import org.bouncycastle.math.ec.ECPoint
 import org.bouncycastle.util.BigIntegers
 import java.math.BigInteger
 import java.security.MessageDigest
-import java.security.Provider
-import java.security.Security
 import java.util.*
 
 object CryptoUtils {
@@ -31,8 +28,7 @@ object CryptoUtils {
     val HALF_CURVE_ORDER: BigInteger
     private val CURVE_SPEC: ECParameterSpec
 
-    private val CRYPTO_PROVIDER: Provider
-    private val HASH_256_ALGORITHM_NAME: String
+    private val HASH_256_ALGORITHM_NAME: String = "ETH-KECCAK-256"
 
     const val SECRET_SIZE = 32
     private const val KEY_SIZE = 128
@@ -43,12 +39,6 @@ object CryptoUtils {
         CURVE = ECDomainParameters(params.curve, params.g, params.n, params.h)
         CURVE_SPEC = ECParameterSpec(params.curve, params.g, params.n, params.h)
         HALF_CURVE_ORDER = params.n.shiftRight(1)
-
-        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
-        Security.addProvider(InternalBouncyCastleProvider.getInstance())
-
-        CRYPTO_PROVIDER = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME)
-        HASH_256_ALGORITHM_NAME = "ETH-KECCAK-256"
     }
 
     fun ecdhAgree(myKey: ECKey, remotePublicKeyPoint: ECPoint): ByteArray {
@@ -118,7 +108,7 @@ object CryptoUtils {
     }
 
     fun sha3(data: ByteArray): ByteArray {
-        val digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME, CRYPTO_PROVIDER)
+        val digest = MessageDigest.getInstance(HASH_256_ALGORITHM_NAME)
         digest.update(data)
         return digest.digest()
     }
