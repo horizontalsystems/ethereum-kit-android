@@ -12,6 +12,7 @@ import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
@@ -21,8 +22,10 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
 import java.net.URL
+import java.security.Security
 import java.util.*
 import java.util.logging.Logger
 
@@ -304,6 +307,11 @@ class EthereumKit(
                 .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
                 .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
                 .create()
+
+        fun init() {
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
+            Security.addProvider(InternalBouncyCastleProvider.getInstance())
+        }
 
         fun getInstance(
                 application: Application,
