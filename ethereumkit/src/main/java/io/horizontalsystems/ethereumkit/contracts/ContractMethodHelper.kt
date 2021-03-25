@@ -42,19 +42,17 @@ object ContractMethodHelper {
             when (type) {
                 BigInteger::class -> {
                     parsedArguments.add(inputArguments.copyOfRange(position, position + 32).toBigInteger())
-                    position += 32
                 }
                 Address::class -> {
                     parsedArguments.add(parseAddress(inputArguments.copyOfRange(position, position + 32)))
-                    position += 32
                 }
                 List::class -> {
                     val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
                     val array = parseAddressArray(arrayPosition, inputArguments)
                     parsedArguments.add(array)
-                    position += 32
                 }
             }
+            position += 32
         }
 
         return parsedArguments
@@ -65,10 +63,10 @@ object ContractMethodHelper {
     }
 
     private fun parseAddressArray(positionStart: Int, inputArguments: ByteArray): List<Address> {
-        val pathPositionEnd = positionStart + 32
-        val pathSize = inputArguments.copyOfRange(positionStart, pathPositionEnd).toInt()
+        val sizePositionEnd = positionStart + 32
+        val arraySize = inputArguments.copyOfRange(positionStart, sizePositionEnd).toInt()
         val addressArray = mutableListOf<Address>()
-        for (address in inputArguments.copyOfRange(pathPositionEnd, pathPositionEnd + pathSize * 32).toList().chunked(32)) {
+        for (address in inputArguments.copyOfRange(sizePositionEnd, sizePositionEnd + arraySize * 32).toList().chunked(32)) {
             addressArray.add(parseAddress(address.toByteArray()))
         }
         return addressArray
