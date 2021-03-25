@@ -209,7 +209,7 @@ class EthereumKit(
         val statusInfo = LinkedHashMap<String, Any>()
 
         statusInfo["Last Block Height"] = state.lastBlockHeight ?: "N/A"
-        statusInfo["Sync State"] = blockchain.syncState
+        statusInfo["Sync State"] = blockchain.syncState.toString()
         statusInfo["Blockchain source"] = blockchain.source
         statusInfo["Transactions source"] = "Infura, Etherscan" //TODO
 
@@ -262,6 +262,7 @@ class EthereumKit(
 
         override fun toString(): String = when (this) {
             is Syncing -> "Syncing ${progress?.let { "${it * 100}" } ?: ""}"
+            is NotSynced -> "NotSynced ${error.javaClass.simpleName} - message: ${error.message}"
             else -> this.javaClass.simpleName
         }
 
