@@ -144,7 +144,7 @@ interface ITransactionSyncerDelegate {
 sealed class TransactionDecoration {
     class Transfer(
             val from: Address,
-            val to: Address?,
+            val to: Address,
             val value: BigInteger
     ) : TransactionDecoration()
 
