@@ -12,6 +12,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Logger
 
 class TransactionSyncManager(
@@ -24,7 +25,7 @@ class TransactionSyncManager(
 
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
     private val transactionsSubject = PublishSubject.create<List<FullTransaction>>()
-    private val syncers: MutableList<ITransactionSyncer> = mutableListOf()
+    private val syncers = CopyOnWriteArrayList<ITransactionSyncer>()
 
     private lateinit var ethereumKit: EthereumKit
     private var accountState: AccountState? = null
@@ -51,6 +52,7 @@ class TransactionSyncManager(
 
         syncer.stateAsync
                 .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
                 .subscribe { syncState() }
                 .let { syncerStateDisposables[syncer.id] = it }
 
