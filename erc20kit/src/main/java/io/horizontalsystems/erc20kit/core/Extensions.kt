@@ -2,6 +2,7 @@ package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.models.Erc20LogEvent
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArrayOrNull
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
@@ -14,10 +15,10 @@ fun TransactionLog.getErc20Event(address: Address): Erc20LogEvent? {
 
         when {
             signature.contentEquals(Erc20LogEvent.Transfer.signature) && firstParam != null && secondParam != null && (firstParam == address || secondParam == address) -> {
-                Erc20LogEvent.Transfer(firstParam, secondParam, BigInteger(data))
+                Erc20LogEvent.Transfer(firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
             }
             signature.contentEquals(Erc20LogEvent.Approve.signature) && firstParam == address && secondParam != null -> {
-                Erc20LogEvent.Approve(firstParam, secondParam, BigInteger(data))
+                Erc20LogEvent.Approve(firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
             }
             else -> null
         }
