@@ -56,4 +56,5 @@ dependencies {
     implementation project(':ethereumkit')
     implementation project(':erc20kit')
     implementation project(':uniswapkit')
+    implementation project(':oneinchkit')
 }
