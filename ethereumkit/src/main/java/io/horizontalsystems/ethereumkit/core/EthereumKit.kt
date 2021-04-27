@@ -396,9 +396,17 @@ class EthereumKit(
             return ethereumKit
         }
 
+        fun address(words: List<String>, passphrase: String = "", networkType: NetworkType): Address {
+            return address(Mnemonic().toSeed(words, passphrase), networkType)
+        }
+
         fun address(seed: ByteArray, networkType: NetworkType): Address {
             val privateKey = privateKey(seed, networkType)
             return ethereumAddress(privateKey)
+        }
+
+        fun privateKey(words: List<String>, passphrase: String = "", networkType: NetworkType): BigInteger {
+            return privateKey(Mnemonic().toSeed(words, passphrase), networkType)
         }
 
         fun privateKey(seed: ByteArray, networkType: NetworkType): BigInteger {
