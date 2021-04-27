@@ -322,21 +322,8 @@ class EthereumKit(
                 etherscanApiKey: String,
                 walletId: String
         ): EthereumKit {
-            val seed = Mnemonic().toSeed(words)
-            val hdWallet = HDWallet(seed, networkType.getCoinType())
-            return getInstance(application, hdWallet, networkType, syncSource, etherscanApiKey, walletId)
-        }
-
-        fun getInstance(
-                application: Application,
-                hdWallet: HDWallet,
-                networkType: NetworkType,
-                syncSource: SyncSource,
-                etherscanApiKey: String,
-                walletId: String
-        ): EthereumKit {
-            val privateKey = hdWallet.privateKey(0, 0, true).privKey
-            val address = getAddressFromPrivateKey(privateKey)
+            val privateKey = privateKey(words, networkType)
+            val address = ethereumAddress(privateKey)
 
             val connectionManager = ConnectionManager(application)
 
@@ -398,10 +385,13 @@ class EthereumKit(
         }
 
         fun address(words: List<String>, networkType: NetworkType): Address {
-            val seed = Mnemonic().toSeed(words)
-            val hdWallet = HDWallet(seed, networkType.getCoinType())
-            val privateKey = hdWallet.privateKey(0, 0, true).privKey
-            return getAddressFromPrivateKey(privateKey)
+            val privateKey = privateKey(words, networkType)
+            return ethereumAddress(privateKey)
+        }
+
+        fun privateKey(words: List<String>, networkType: NetworkType): BigInteger {
+            val hdWallet = hdWallet(words, networkType)
+            return hdWallet.privateKey(0, 0, true).privKey
         }
 
         fun clear(context: Context, networkType: NetworkType, walletId: String) {
@@ -436,9 +426,14 @@ class EthereumKit(
                     else -> null
                 }
 
-        private fun getAddressFromPrivateKey(privateKey: BigInteger): Address {
+        private fun ethereumAddress(privateKey: BigInteger): Address {
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
             return Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
+        }
+
+        private fun hdWallet(words: List<String>, networkType: NetworkType): HDWallet {
+            val seed = Mnemonic().toSeed(words)
+            return HDWallet(seed, networkType.getCoinType())
         }
 
     }
