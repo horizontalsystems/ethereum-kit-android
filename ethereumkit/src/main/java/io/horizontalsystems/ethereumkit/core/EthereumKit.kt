@@ -17,6 +17,7 @@ import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.hdwalletkit.HDWallet
+import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -311,6 +312,18 @@ class EthereumKit(
         fun init() {
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
             Security.addProvider(InternalBouncyCastleProvider.getInstance())
+        }
+
+        fun getInstance(
+                application: Application,
+                words: List<String>,
+                passphrase: String = "",
+                networkType: NetworkType,
+                syncSource: SyncSource,
+                etherscanApiKey: String,
+                walletId: String
+        ): EthereumKit {
+            return getInstance(application, Mnemonic().toSeed(words, passphrase), networkType, syncSource, etherscanApiKey, walletId)
         }
 
         fun getInstance(
