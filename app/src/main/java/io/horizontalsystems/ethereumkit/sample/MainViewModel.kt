@@ -11,6 +11,7 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
 import io.horizontalsystems.uniswapkit.models.Token
@@ -181,7 +182,8 @@ class MainViewModel : ViewModel() {
             throw Exception("Could not get syncSource!")
         }
 
-        return EthereumKit.getInstance(App.instance, words, networkType, syncSource, txApiProviderKey, walletId)
+        val seed = Mnemonic().toSeed(words)
+        return EthereumKit.getInstance(App.instance, seed, networkType, syncSource, txApiProviderKey, walletId)
     }
 
     private fun updateLastBlockHeight() {
