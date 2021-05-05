@@ -31,4 +31,6 @@ class BscMainNet : INetwork {
                     mixHash = ("cae580f260efcee4ed8789380528e9770b5c260d289321ff8c6352eb031d830").hexStringToByteArray(),
                     nonce = "004d35d804eac7d8".hexStringToByteArray())
 
+    override val blockTime: Long = 5
+
 }

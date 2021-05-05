@@ -1,31 +1,29 @@
 package io.horizontalsystems.ethereumkit.api.core
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionCountJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IRpcApiProvider
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.schedule
 
 class ApiRpcSyncer(
-        private val address: Address,
         private val rpcApiProvider: IRpcApiProvider,
         private val connectionManager: ConnectionManager
 ) : IRpcSyncer {
     private val disposables = CompositeDisposable()
     private var isStarted = false
+    private var currentRpcId = AtomicInteger(0)
+    private var timer: Timer? = null
 
     init {
         connectionManager.listener = object : ConnectionManager.Listener {
             override fun onConnectionChange() {
-                sync()
+                handleConnectionChange()
             }
         }
     }
@@ -33,66 +31,69 @@ class ApiRpcSyncer(
     //region IRpcSyncer
     override var listener: IRpcSyncerListener? = null
     override val source = "API ${rpcApiProvider.source}"
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var state: SyncerState = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
         private set(value) {
             if (value != field) {
                 field = value
-                listener?.didUpdateSyncState(value)
+                listener?.didUpdateSyncerState(value)
             }
         }
 
     override fun start() {
         isStarted = true
 
-        sync()
+        handleConnectionChange()
     }
 
     override fun stop() {
         isStarted = false
 
-        syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+        state = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
         disposables.clear()
     }
 
-    override fun refresh() {
-        sync()
-    }
-
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
+        rpc.id = currentRpcId.addAndGet(1)
         return rpcApiProvider.single(rpc)
     }
     //endregion
 
-    private fun sync() {
-        if (!isStarted) {
-            return
-        }
-        if (!connectionManager.isConnected) {
-            syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NoNetworkConnection())
-            return
-        }
-        if (syncState is EthereumKit.SyncState.Syncing) {
-            return
-        }
+    private fun handleConnectionChange() {
+        if (!isStarted) return
 
-        syncState = EthereumKit.SyncState.Syncing()
+        if (connectionManager.isConnected) {
+            state = SyncerState.Ready
+            startTimer()
+        } else {
+            state = SyncerState.NotReady(EthereumKit.SyncError.NoNetworkConnection())
+            stopTimer()
+        }
+    }
 
-        Single.zip(
-                rpcApiProvider.single(BlockNumberJsonRpc()),
-                rpcApiProvider.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
-                rpcApiProvider.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest)),
-                { t1, t2, t3 -> Triple(t1, t2, t3) })
+    private fun startTimer() {
+        timer = Timer().apply {
+            schedule(0, rpcApiProvider.blockTime * 1000) {
+                onFireTimer()
+            }
+        }
+    }
+
+    private fun stopTimer() {
+        timer?.cancel()
+        timer = null
+    }
+
+    private fun onFireTimer() {
+        rpcApiProvider.single(BlockNumberJsonRpc())
                 .subscribeOn(Schedulers.io())
-                .subscribe({ (lastBlockNumber, balance, nonce) ->
+                .observeOn(Schedulers.io())
+                .subscribe({ lastBlockNumber ->
                     listener?.didUpdateLastBlockHeight(lastBlockNumber)
-                    listener?.didUpdateAccountState(AccountState(balance, nonce))
-
-                    syncState = EthereumKit.SyncState.Synced()
                 }, {
-                    it?.printStackTrace()
-                    syncState = EthereumKit.SyncState.NotSynced(it)
+                    state = SyncerState.NotReady(it)
                 }).let {
                     disposables.add(it)
                 }
     }
+
 }

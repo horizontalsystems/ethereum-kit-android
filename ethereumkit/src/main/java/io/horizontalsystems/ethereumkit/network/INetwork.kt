@@ -6,4 +6,5 @@ interface INetwork {
     val id: Int
     val genesisBlockHash: ByteArray
     val checkpointBlock: BlockHeader
+    val blockTime: Long
 }
