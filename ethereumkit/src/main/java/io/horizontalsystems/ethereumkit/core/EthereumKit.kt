@@ -46,7 +46,6 @@ class EthereumKit(
 
     private val logger = Logger.getLogger("EthereumKit")
 
-    private val lastBlockBloomFilterSubject = PublishSubject.create<BloomFilter>()
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
     private val accountStateSubject = PublishSubject.create<AccountState>()
@@ -79,9 +78,6 @@ class EthereumKit(
 
     val lastBlockHeightFlowable: Flowable<Long>
         get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    val lastBlockBloomFilterFlowable: Flowable<BloomFilter>
-        get() = lastBlockBloomFilterSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val syncStateFlowable: Flowable<SyncState>
         get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -239,10 +235,6 @@ class EthereumKit(
         accountStateSubject.onNext(accountState)
     }
 
-    override fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter) {
-        lastBlockBloomFilterSubject.onNext(bloomFilter)
-    }
-
     fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {
         transactionSyncManager.add(transactionSyncer)
     }
@@ -342,15 +334,15 @@ class EthereumKit(
             val syncer: IRpcSyncer = when (syncSource) {
                 is SyncSource.WebSocket -> {
                     val rpcWebSocket = NodeWebSocket(syncSource.url, gson, syncSource.auth)
-                    val webSocketRpcSyncer = WebSocketRpcSyncer(address, rpcWebSocket, gson)
+                    val webSocketRpcSyncer = WebSocketRpcSyncer(rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
 
                     webSocketRpcSyncer
                 }
                 is SyncSource.Http -> {
-                    val apiProvider = NodeApiProvider(syncSource.url, gson, syncSource.auth)
-                    ApiRpcSyncer(address, apiProvider, connectionManager)
+                    val apiProvider = NodeApiProvider(syncSource.url, syncSource.blockTime, gson, syncSource.auth)
+                    ApiRpcSyncer(apiProvider, connectionManager)
                 }
             }
 
@@ -427,7 +419,7 @@ class EthereumKit(
         fun infuraHttpSyncSource(networkType: NetworkType, projectId: String, projectSecret: String?): SyncSource? =
                 infuraDomain(networkType)?.let { infuraDomain ->
                     val url = URL("https://$infuraDomain/v3/$projectId")
-                    SyncSource.Http(url, projectSecret)
+                    SyncSource.Http(url, networkType.getBlockTime(), projectSecret)
                 }
 
         fun defaultBscWebSocketSyncSource(): SyncSource =
@@ -435,7 +427,7 @@ class EthereumKit(
 
 
         fun defaultBscHttpSyncSource(): SyncSource =
-                SyncSource.Http(URL("https://bsc-dataseed.binance.org"), null)
+                SyncSource.Http(URL("https://bsc-dataseed.binance.org"), NetworkType.BscMainNet.getBlockTime(), null)
 
         private fun infuraDomain(networkType: NetworkType): String? =
                 when (networkType) {
@@ -455,7 +447,7 @@ class EthereumKit(
 
     sealed class SyncSource {
         class WebSocket(val url: URL, val auth: String?) : SyncSource()
-        class Http(val url: URL, val auth: String?) : SyncSource()
+        class Http(val url: URL, val blockTime: Long, val auth: String?) : SyncSource()
     }
 
     enum class NetworkType {
@@ -464,6 +456,8 @@ class EthereumKit(
         EthKovan,
         EthRinkeby,
         BscMainNet;
+
+        fun getBlockTime() = getNetwork().blockTime
 
         fun getNetwork() = when (this) {
             EthMainNet -> EthMainNet()

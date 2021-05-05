@@ -7,7 +7,6 @@ import in3.IN3
 import in3.Proof
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
-import io.horizontalsystems.ethereumkit.core.IRpcApiProvider
 import io.reactivex.Single
 import java.util.concurrent.Executors
 import java.util.logging.Logger
@@ -52,4 +51,7 @@ class IncubedRpcApiProvider(
             }
         }
     }
+
+    override val blockTime: Long
+        get() = networkType.getBlockTime()
 }

@@ -3,19 +3,19 @@ package io.horizontalsystems.ethereumkit.api.core
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.reactivex.Single
 
-class RpcHandler(val onSuccess: (RpcResponse) -> Unit, val onError: (Throwable)-> Unit)
+class RpcHandler(val onSuccess: (RpcResponse) -> Unit, val onError: (Throwable) -> Unit)
 typealias SubscriptionHandler = (RpcSubscriptionResponse) -> Unit
 
 data class RpcResponse(val id: Int, val result: JsonElement?, val error: Error?) {
     data class Error(val code: Int, val message: String)
 }
+
 data class RpcSubscriptionResponse(val method: String, val params: Params) {
     data class Params(@SerializedName("subscription") val subscriptionId: String, val result: JsonElement)
 }
+
 data class RpcGeneralResponse(val id: Int?, val result: JsonElement?, val error: RpcResponse.Error?, val method: String?, val params: RpcSubscriptionResponse.Params?)
 
 interface IRpcWebSocket {
@@ -28,7 +28,7 @@ interface IRpcWebSocket {
 }
 
 interface IRpcWebSocketListener {
-    fun didUpdate(state: WebSocketState)
+    fun didUpdate(socketState: WebSocketState)
     fun didReceive(response: RpcResponse)
     fun didReceive(response: RpcSubscriptionResponse)
 }
@@ -44,21 +44,31 @@ sealed class WebSocketState {
     }
 }
 
+interface IRpcApiProvider {
+    val source: String
+    val blockTime: Long
+
+    fun <T> single(rpc: JsonRpc<T>): Single<T>
+}
+
 interface IRpcSyncer {
     var listener: IRpcSyncerListener?
 
     val source: String
-    val syncState: SyncState
+    val state: SyncerState
 
     fun start()
     fun stop()
-    fun refresh()
     fun <T> single(rpc: JsonRpc<T>): Single<T>
 }
 
 interface IRpcSyncerListener {
-    fun didUpdateSyncState(syncState: SyncState)
-    fun didUpdateLastBlockLogsBloom(lastBlockLogsBloom: String)
+    fun didUpdateSyncerState(state: SyncerState)
     fun didUpdateLastBlockHeight(lastBlockHeight: Long)
-    fun didUpdateAccountState(state: AccountState)
+}
+
+sealed class SyncerState {
+    object Preparing : SyncerState()
+    object Ready : SyncerState()
+    class NotReady(val error: Throwable) : SyncerState()
 }

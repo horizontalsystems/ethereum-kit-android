@@ -2,7 +2,6 @@ package io.horizontalsystems.ethereumkit.api.core
 
 import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.horizontalsystems.ethereumkit.core.IRpcApiProvider
 import io.reactivex.Single
 import okhttp3.Credentials
 import okhttp3.Interceptor
@@ -22,6 +21,7 @@ import java.util.logging.Logger
 
 class NodeApiProvider(
         private val url: URL,
+        override val blockTime: Long,
         private val gson: Gson,
         auth: String? = null
 ) : IRpcApiProvider {

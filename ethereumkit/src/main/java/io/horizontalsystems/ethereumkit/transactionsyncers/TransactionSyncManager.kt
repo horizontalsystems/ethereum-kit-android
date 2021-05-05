@@ -46,17 +46,17 @@ class TransactionSyncManager(
     }
 
     fun add(syncer: ITransactionSyncer) {
-        syncer.set(delegate = notSyncedTransactionManager)
-
-        syncers.add(syncer)
-
-        syncer.stateAsync
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe { syncState() }
-                .let { syncerStateDisposables[syncer.id] = it }
-
-        syncer.start()
+//        syncer.set(delegate = notSyncedTransactionManager)
+//
+//        syncers.add(syncer)
+//
+//        syncer.stateAsync
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(Schedulers.io())
+//                .subscribe { syncState() }
+//                .let { syncerStateDisposables[syncer.id] = it }
+//
+//        syncer.start()
     }
 
     fun removeSyncer(id: String) {
@@ -92,14 +92,6 @@ class TransactionSyncManager(
                 .subscribe {
                     logger.info(" ---> accountStateFlowable: $it, syncers: ${syncers.size}")
                     onAccountState(it)
-                }
-                .let { disposables.add(it) }
-
-        ethereumKit.lastBlockBloomFilterFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info(" ---> lastBlockBloomFilterFlowable: $it, syncers: ${syncers.size}")
-                    onLastBlockBloomFilter(it)
                 }
                 .let { disposables.add(it) }
 

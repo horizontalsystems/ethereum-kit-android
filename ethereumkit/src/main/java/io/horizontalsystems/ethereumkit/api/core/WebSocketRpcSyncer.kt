@@ -1,21 +1,17 @@
 package io.horizontalsystems.ethereumkit.api.core
 
 import com.google.gson.Gson
-import io.horizontalsystems.ethereumkit.api.jsonrpc.*
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.SubscribeJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.NewHeadsRpcSubscription
 import io.horizontalsystems.ethereumkit.api.jsonrpcsubscription.RpcSubscription
-import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.reactivex.Single
-import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 
 class WebSocketRpcSyncer(
-        private val address: Address,
         private val rpcSocket: IRpcWebSocket,
         private val gson: Gson
 ) : IRpcSyncer, IRpcWebSocketListener {
@@ -25,34 +21,30 @@ class WebSocketRpcSyncer(
     private var rpcHandlers = ConcurrentHashMap<Int, RpcHandler>()
     private var subscriptionHandlers = ConcurrentHashMap<String, SubscriptionHandler>()
 
-    private var isSubscribedToNewHeads = false
-
     //region IRpcSyncer
     override var listener: IRpcSyncerListener? = null
 
     override val source = "WebSocket ${rpcSocket.source}"
 
-    override var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    override var state: SyncerState = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
         private set(value) {
             if (value != field) {
                 field = value
-                listener?.didUpdateSyncState(value)
+                listener?.didUpdateSyncerState(value)
             }
         }
 
     override fun start() {
-        syncState = EthereumKit.SyncState.Syncing()
+        state = SyncerState.Preparing
 
         rpcSocket.start()
     }
 
     override fun stop() {
-        syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+        state = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
 
         rpcSocket.stop()
     }
-
-    override fun refresh() {} // N/A
 
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
         return Single.create { emitter ->
@@ -70,23 +62,23 @@ class WebSocketRpcSyncer(
     //endregion
 
     //region IRpcWebSocketListener
-    override fun didUpdate(state: WebSocketState) {
-        when (state) {
+    override fun didUpdate(socketState: WebSocketState) {
+        when (socketState) {
             WebSocketState.Connecting -> {
-                syncState = EthereumKit.SyncState.Syncing()
+                state = SyncerState.Preparing
             }
             WebSocketState.Connected -> {
-                startSync()
+                state = SyncerState.Ready
+                subscribeToNewHeads()
             }
             is WebSocketState.Disconnected -> {
                 rpcHandlers.forEach { (_, rpcHandler) ->
-                    rpcHandler.onError(state.error)
+                    rpcHandler.onError(socketState.error)
                 }
                 rpcHandlers.clear()
                 subscriptionHandlers.clear()
 
-                isSubscribedToNewHeads = false
-                syncState = EthereumKit.SyncState.NotSynced(state.error)
+                state = SyncerState.NotReady(socketState.error)
             }
         }
     }
@@ -148,73 +140,15 @@ class WebSocketRpcSyncer(
         )
     }
 
-    private fun startSync() {
-        if ((syncState as? EthereumKit.SyncState.NotSynced)?.error is EthereumKit.SyncError.NotStarted)
-            return
-
-        fetchLastBlockHeight()
-        subscribeToNewHeads()
-    }
-
-    private fun fetchLastBlockHeight() {
-        send(
-                rpc = BlockNumberJsonRpc(),
-                onSuccess = { lastBlockHeight ->
-                    listener?.didUpdateLastBlockHeight(lastBlockHeight)
-                    fetchAccountState()
-                },
-                onError = { error ->
-                    onFailSync(error)
-                }
-        )
-    }
-
-    private fun fetchAccountState() {
-        fetchBalance { balance ->
-            fetchNonce { nonce ->
-                listener?.didUpdateAccountState(AccountState(balance, nonce))
-                syncState = EthereumKit.SyncState.Synced()
-            }
-        }
-    }
-
-    private fun fetchBalance(onSuccess: (BigInteger) -> Unit) {
-        send(
-                rpc = GetBalanceJsonRpc(address, DefaultBlockParameter.Latest),
-                onSuccess = onSuccess,
-                onError = { error ->
-                    onFailSync(error)
-                }
-        )
-    }
-
-    private fun fetchNonce(onSuccess: (Long) -> Unit) {
-        send(
-                rpc = GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest),
-                onSuccess = onSuccess,
-                onError = { error ->
-                    onFailSync(error)
-                }
-        )
-    }
-
     private fun subscribeToNewHeads() {
-        if (isSubscribedToNewHeads)
-            return
-
         subscribe(
                 subscription = NewHeadsRpcSubscription(),
                 onSubscribeSuccess = {
-                    isSubscribedToNewHeads = true
                 },
-                onSubscribeError = { error ->
-                    isSubscribedToNewHeads = false
-                    onFailSync(error)
+                onSubscribeError = {
                 },
                 successHandler = { header ->
-                    listener?.didUpdateLastBlockLogsBloom(header.logsBloom)
                     listener?.didUpdateLastBlockHeight(lastBlockHeight = header.number)
-                    fetchAccountState()
                 },
                 errorHandler = { error ->
                     logger.warning("NewHeads Handle Failed: ${error.javaClass.simpleName}")
@@ -222,7 +156,4 @@ class WebSocketRpcSyncer(
         )
     }
 
-    private fun onFailSync(error: Throwable) {
-        syncState = EthereumKit.SyncState.NotSynced(error)
-    }
 }

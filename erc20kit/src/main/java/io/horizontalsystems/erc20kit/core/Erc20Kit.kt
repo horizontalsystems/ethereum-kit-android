@@ -38,13 +38,6 @@ class Erc20Kit(
                 }.let {
                     disposables.add(it)
                 }
-
-        ethereumKit.lastBlockBloomFilterFlowable
-                .subscribe {
-                    onUpdateLastBlockBloomFilter(it)
-                }.let {
-                    disposables.add(it)
-                }
     }
 
     val syncState: SyncState

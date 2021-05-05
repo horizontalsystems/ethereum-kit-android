@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
+import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt

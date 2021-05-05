@@ -7,9 +7,14 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 import java.util.*
 
@@ -21,7 +26,58 @@ class RpcBlockchain(
         private val transactionBuilder: TransactionBuilder
 ) : IBlockchain, IRpcSyncerListener {
 
+    private val disposables = CompositeDisposable()
+
+    private fun onUpdateLastBlockHeight(lastBlockHeight: Long) {
+        storage.saveLastBlockHeight(lastBlockHeight)
+        listener?.onUpdateLastBlockHeight(lastBlockHeight)
+    }
+
+    private fun onUpdateAccountState(state: AccountState) {
+        storage.saveAccountState(state)
+        listener?.onUpdateAccountState(state)
+    }
+
+    private fun syncLastBlockHeight() {
+        syncer.single(BlockNumberJsonRpc())
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe({ lastBlockNumber ->
+                    onUpdateLastBlockHeight(lastBlockNumber)
+                }, {
+                    syncState = SyncState.NotSynced(it)
+                }).let {
+                    disposables.add(it)
+                }
+    }
+
+    fun syncAccountState() {
+        Single.zip(
+                syncer.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
+                syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest)),
+                { t1, t2 -> Pair(t1, t2) })
+                .subscribeOn(Schedulers.io())
+                .subscribe({ (balance, nonce) ->
+                    onUpdateAccountState(AccountState(balance, nonce))
+                    syncState = SyncState.Synced()
+                }, {
+                    it?.printStackTrace()
+                    syncState = SyncState.NotSynced(it)
+                }).let {
+                    disposables.add(it)
+                }
+    }
+
+
     //region IBlockchain
+    override var syncState: SyncState = SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+        private set(value) {
+            if (value != field) {
+                field = value
+                listener?.onUpdateSyncState(value)
+            }
+        }
+
     override var listener: IBlockchainListener? = null
 
     override val source: String
@@ -33,15 +89,23 @@ class RpcBlockchain(
     override val accountState: AccountState?
         get() = storage.getAccountState()
 
-    override val syncState: SyncState
-        get() = syncer.syncState
-
     override fun start() {
+        syncState = SyncState.Syncing()
         syncer.start()
     }
 
     override fun refresh() {
-        syncer.refresh()
+        when (syncer.state) {
+            SyncerState.Preparing -> {
+            }
+            SyncerState.Ready -> {
+                syncAccountState()
+                syncLastBlockHeight()
+            }
+            is SyncerState.NotReady -> {
+                syncer.start()
+            }
+        }
     }
 
     override fun stop() {
@@ -130,27 +194,27 @@ class RpcBlockchain(
     //endregion
 
     //region IRpcSyncerListener
-    override fun didUpdateSyncState(syncState: SyncState) {
-        listener?.onUpdateSyncState(syncState)
+    override fun didUpdateLastBlockHeight(lastBlockHeight: Long) {
+        onUpdateLastBlockHeight(lastBlockHeight)
     }
 
-    override fun didUpdateLastBlockLogsBloom(lastBlockLogsBloom: String) {
-        val bloomFilter = BloomFilter(lastBlockLogsBloom)
-
-        if (bloomFilter.mayContainUserAddress(address)) {
-            listener?.onUpdateLogsBloomFilter(bloomFilter)
+    override fun didUpdateSyncerState(state: SyncerState) {
+        when (state) {
+            SyncerState.Preparing -> {
+                syncState = SyncState.Syncing()
+            }
+            SyncerState.Ready -> {
+                syncState = SyncState.Syncing()
+                syncAccountState()
+                syncLastBlockHeight()
+            }
+            is SyncerState.NotReady -> {
+                syncState = SyncState.NotSynced(state.error)
+                disposables.clear()
+            }
         }
     }
 
-    override fun didUpdateLastBlockHeight(lastBlockHeight: Long) {
-        storage.saveLastBlockHeight(lastBlockHeight)
-        listener?.onUpdateLastBlockHeight(lastBlockHeight)
-    }
-
-    override fun didUpdateAccountState(state: AccountState) {
-        storage.saveAccountState(state)
-        listener?.onUpdateAccountState(state)
-    }
     //endregion
 
     companion object {

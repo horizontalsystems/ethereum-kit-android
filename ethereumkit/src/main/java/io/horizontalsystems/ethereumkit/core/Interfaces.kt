@@ -59,14 +59,7 @@ interface IBlockchain {
 interface IBlockchainListener {
     fun onUpdateLastBlockHeight(lastBlockHeight: Long)
     fun onUpdateSyncState(syncState: EthereumKit.SyncState)
-    fun onUpdateLogsBloomFilter(bloomFilter: BloomFilter)
     fun onUpdateAccountState(accountState: AccountState)
-}
-
-interface IRpcApiProvider {
-    val source: String
-
-    fun <T> single(rpc: JsonRpc<T>): Single<T>
 }
 
 interface INotSyncedTransactionPool {

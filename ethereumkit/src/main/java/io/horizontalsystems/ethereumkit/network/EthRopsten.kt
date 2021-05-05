@@ -29,4 +29,7 @@ class EthRopsten : INetwork {
                     extraData = "d883010817846765746888676f312e31302e34856c696e7578".hexStringToByteArray(),
                     mixHash = ("cae580f260efcee4ed8789380528e9770b5c260d289321ff8c6352eb031d830").hexStringToByteArray(),
                     nonce = "004d35d804eac7d8".hexStringToByteArray())
+
+    override val blockTime: Long = 10
+
 }
