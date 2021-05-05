@@ -1,7 +1,6 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
-import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
@@ -18,11 +17,7 @@ class PendingTransactionSyncer(
 
     var listener: ITransactionSyncerListener? = null
 
-    override fun onEthereumKitSynced() {
-        sync()
-    }
-
-    override fun onUpdateAccountState(accountState: AccountState) {
+    override fun onLastBlockNumber(blockNumber: Long) {
         sync()
     }
 

@@ -46,17 +46,19 @@ class TransactionSyncManager(
     }
 
     fun add(syncer: ITransactionSyncer) {
-//        syncer.set(delegate = notSyncedTransactionManager)
-//
-//        syncers.add(syncer)
-//
-//        syncer.stateAsync
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(Schedulers.io())
-//                .subscribe { syncState() }
-//                .let { syncerStateDisposables[syncer.id] = it }
-//
-//        syncer.start()
+        if (syncers.any { it.id == syncer.id }) return
+
+        syncer.set(delegate = notSyncedTransactionManager)
+
+        syncers.add(syncer)
+
+        syncer.stateAsync
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe { syncState() }
+                .let { syncerStateDisposables[syncer.id] = it }
+
+        syncer.start()
     }
 
     fun removeSyncer(id: String) {
@@ -141,11 +143,18 @@ class TransactionSyncManager(
 
     @Synchronized
     private fun syncState() {
-        val notSyncedSyncerState = syncers.firstOrNull { it.state is EthereumKit.SyncState.NotSynced }?.state as? EthereumKit.SyncState.NotSynced
-        syncState = when {
-            notSyncedSyncerState != null -> EthereumKit.SyncState.NotSynced(notSyncedSyncerState.error)
-            syncers.any { it.state is EthereumKit.SyncState.Syncing } -> EthereumKit.SyncState.Syncing()
-            else -> EthereumKit.SyncState.Synced()
+        when (syncState) {
+            is EthereumKit.SyncState.Synced -> {
+                val notSyncedSyncerState = syncers.find { it.state is EthereumKit.SyncState.NotSynced }?.state
+                if (notSyncedSyncerState != null) {
+                    syncState = notSyncedSyncerState
+                }
+            }
+            is EthereumKit.SyncState.Syncing, is EthereumKit.SyncState.NotSynced -> {
+                syncState = syncers.find { it.state is EthereumKit.SyncState.NotSynced }?.state
+                        ?: syncers.find { it.state is EthereumKit.SyncState.Syncing }?.state
+                                ?: EthereumKit.SyncState.Synced()
+            }
         }
     }
 

@@ -51,7 +51,7 @@ class RpcBlockchain(
                 }
     }
 
-    fun syncAccountState() {
+    override fun syncAccountState() {
         Single.zip(
                 syncer.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
                 syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest)),

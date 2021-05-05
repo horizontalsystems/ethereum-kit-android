@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
@@ -39,6 +38,7 @@ interface IBlockchain {
     fun start()
     fun refresh()
     fun stop()
+    fun syncAccountState()
 
     val syncState: EthereumKit.SyncState
     val lastBlockHeight: Long?
@@ -162,13 +162,13 @@ sealed class TransactionDecoration {
     ) : TransactionDecoration() {
 
         sealed class Trade {
-            class ExactIn(val amountIn: BigInteger, val amountOutMin: BigInteger): Trade()
-            class ExactOut(val amountOut: BigInteger, val amountInMax: BigInteger): Trade()
+            class ExactIn(val amountIn: BigInteger, val amountOutMin: BigInteger) : Trade()
+            class ExactOut(val amountOut: BigInteger, val amountInMax: BigInteger) : Trade()
         }
 
         sealed class Token {
-            object EvmCoin: Token()
-            class Eip20Coin(val address: Address): Token()
+            object EvmCoin : Token()
+            class Eip20Coin(val address: Address) : Token()
         }
     }
 

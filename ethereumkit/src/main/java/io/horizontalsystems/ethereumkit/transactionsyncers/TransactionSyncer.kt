@@ -27,6 +27,7 @@ class TransactionSyncer(
 
     private fun sync() {
         logger.info("---> sync()  $state")
+
         if (state is EthereumKit.SyncState.Syncing) return
 
         doSync()

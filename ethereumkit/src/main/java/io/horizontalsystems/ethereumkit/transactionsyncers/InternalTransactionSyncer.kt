@@ -1,13 +1,13 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
-import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
 
 class InternalTransactionSyncer(
@@ -16,42 +16,26 @@ class InternalTransactionSyncer(
 ) : AbstractTransactionSyncer("internal_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-    private val reSync = AtomicBoolean(false)
 
     var listener: ITransactionSyncerListener? = null
 
-    override fun onEthereumKitSynced() {
+    override fun onLastBlockNumber(blockNumber: Long) {
         sync()
     }
 
-    override fun onUpdateAccountState(accountState: AccountState) {
-        sync(retry = true)
-    }
-
-    private fun sync(retry: Boolean = false) {
+    private fun sync() {
         logger.info("---> sync() state: $state")
 
-        if (state is EthereumKit.SyncState.Syncing) {
-            if (retry) {
-                reSync.set(true)
-            }
-            return
-        }
+        if (state is EthereumKit.SyncState.Syncing) return
 
         state = EthereumKit.SyncState.Syncing()
-        doSync(retry)
-    }
 
-    private fun doSync(retry: Boolean) {
-        var getTransactionsSingle = etherscanTransactionsProvider.getInternalTransactions(lastSyncBlockNumber + 1)
-        if (retry) {
-            getTransactionsSingle = getTransactionsSingle.retryWith(RetryOptions { it.isEmpty() })
-        }
-
-        getTransactionsSingle
+        etherscanTransactionsProvider.getInternalTransactions(lastSyncBlockNumber + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ internalTransactions ->
                     handle(internalTransactions)
+
+                    state = EthereumKit.SyncState.Synced()
                 }, {
                     logger.info("---> sync() onError: ${it.message}")
 
@@ -89,12 +73,6 @@ class InternalTransactionSyncer(
             if (syncedTransactions.isNotEmpty()) {
                 listener?.onTransactionsSynced(syncedTransactions)
             }
-        }
-
-        if (reSync.compareAndSet(true, false)) {
-            doSync(retry = true)
-        } else {
-            state = EthereumKit.SyncState.Synced()
         }
     }
 

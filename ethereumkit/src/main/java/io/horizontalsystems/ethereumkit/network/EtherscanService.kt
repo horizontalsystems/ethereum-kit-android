@@ -74,8 +74,8 @@ class EtherscanService(
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
-    fun getTokenTransactions(contractAddress: Address, address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.getTokenTransactions("account", "tokentx", contractAddress.hex, address.hex, startBlock, 99_999_999, "desc", apiKey)
+    fun getTokenTransactions(address: Address, startBlock: Long): Single<EtherscanResponse> {
+        return service.getTokenTransactions("account", "tokentx", address.hex, startBlock, 99_999_999, "desc", apiKey)
                 .map { parseResponse(it) }
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
@@ -123,7 +123,6 @@ class EtherscanService(
         fun getTokenTransactions(
                 @Query("module") module: String,
                 @Query("action") action: String,
-                @Query("contractaddress") contractAddress: String,
                 @Query("address") address: String,
                 @Query("startblock") startblock: Long,
                 @Query("endblock") endblock: Long,
