@@ -21,6 +21,8 @@ import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
@@ -45,6 +47,7 @@ class EthereumKit(
 ) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
+    private val disposables = CompositeDisposable()
 
     private val lastBlockHeightSubject = PublishSubject.create<Long>()
     private val syncStateSubject = PublishSubject.create<SyncState>()
@@ -59,6 +62,14 @@ class EthereumKit(
     init {
         state.lastBlockHeight = blockchain.lastBlockHeight
         state.accountState = blockchain.accountState
+
+        transactionManager.etherTransactionsAsync
+                .subscribeOn(Schedulers.io())
+                .subscribe {
+                    blockchain.syncAccountState()
+                }.let {
+                    disposables.add(it)
+                }
     }
 
     val lastBlockHeight: Long?

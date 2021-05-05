@@ -7,11 +7,12 @@ import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
 class EtherscanTransactionsProvider(
-        private val etherscanService: EtherscanService
+        private val etherscanService: EtherscanService,
+        private val address: Address
 ) {
 
-    fun getTokenTransactions(address: Address, contractAddress: Address, startBlock: Long): Single<List<EtherscanTokenTransaction>> {
-        return etherscanService.getTokenTransactions(contractAddress, address, startBlock)
+    fun getTokenTransactions(startBlock: Long): Single<List<EtherscanTokenTransaction>> {
+        return etherscanService.getTokenTransactions(address, startBlock)
                 .map { response ->
                     response.result.mapNotNull { tx ->
                         try {

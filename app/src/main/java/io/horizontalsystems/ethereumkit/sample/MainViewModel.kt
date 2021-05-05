@@ -76,6 +76,7 @@ class MainViewModel : ViewModel() {
 
     fun init() {
         ethereumKit = createKit()
+        ethereumKit.addTransactionSyncer(Erc20Kit.getTransactionSyncer(ethereumKit))
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
         erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: tokens.first(), ethereumKit)

@@ -67,6 +67,10 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
+    override fun syncAccountState() {
+        TODO("not implemented")
+    }
+
     override var syncState = SyncState.NotSynced(SyncError.NotStarted())
 
     override val lastBlockHeight: Long?
