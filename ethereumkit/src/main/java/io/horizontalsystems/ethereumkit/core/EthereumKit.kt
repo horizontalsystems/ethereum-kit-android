@@ -12,6 +12,8 @@ import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.EIP712Encoder
+import io.horizontalsystems.ethereumkit.crypto.EthSigner
 import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
@@ -43,6 +45,7 @@ class EthereumKit(
         val walletId: String,
         val etherscanService: EtherscanService,
         private val decorationManager: DecorationManager,
+        private val ethSigner: EthSigner,
         private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
@@ -192,6 +195,14 @@ class EthereumKit(
         val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput)
         val signature = transactionSigner.signature(rawTransaction)
         return transactionBuilder.encode(rawTransaction, signature)
+    }
+
+    fun signByteArray(message: ByteArray): ByteArray {
+        return ethSigner.signByteArray(message)
+    }
+
+    fun signTypedData(rawJsonMessage: String): ByteArray {
+        return ethSigner.signTypedData(rawJsonMessage)
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
@@ -390,8 +401,9 @@ class EthereumKit(
 
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
             val decorationManager = DecorationManager(address)
+            val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService, decorationManager)
+            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService, decorationManager, ethSigner)
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)

@@ -75,6 +75,10 @@ dependencies {
     implementation 'androidx.room:room-rxjava2:2.2.5'
     kapt 'androidx.room:room-compiler:2.2.5'
 
+    //Eip712
+    def kethereum_version = "0.83.6"
+    implementation "com.github.komputing.kethereum:erc712:$kethereum_version"
+
     // Test helpers
     testImplementation 'junit:junit:4.13'
     testImplementation 'org.mockito:mockito-core:3.3.3'
