@@ -11,10 +11,7 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
-import io.horizontalsystems.ethereumkit.crypto.EIP712Encoder
-import io.horizontalsystems.ethereumkit.crypto.EthSigner
-import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
+import io.horizontalsystems.ethereumkit.crypto.*
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
@@ -203,6 +200,10 @@ class EthereumKit(
 
     fun signTypedData(rawJsonMessage: String): ByteArray {
         return ethSigner.signTypedData(rawJsonMessage)
+    }
+
+    fun parseTypedData(rawJsonMessage: String): TypedData? {
+        return ethSigner.parseTypedData(rawJsonMessage)
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {

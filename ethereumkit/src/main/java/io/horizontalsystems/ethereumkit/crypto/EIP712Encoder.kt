@@ -17,20 +17,31 @@ class EIP712Encoder {
         return typedDataHash(domainWithMessage.message, domainWithMessage.domain)
     }
 
+    fun parseTypedData(rawJsonMessage: String): TypedData? {
+        return try {
+            eip712JsonAdapter.parseTypedData(rawJsonMessage)
+        } catch (error: Throwable) {
+            null
+        }
+    }
+
     private class EIP712GsonAdapter : EIP712JsonAdapter {
         private val gson = Gson()
 
         override fun parse(inputStream: InputStream): EIP712JsonAdapter.Result {
             val typedData = gson.fromJson(BufferedReader(InputStreamReader(inputStream)), TypedData::class.java)
-            return parse(typedData)
+            return convert(typedData)
         }
 
         override fun parse(typedDataJson: String): EIP712JsonAdapter.Result {
-            val typedData = gson.fromJson(typedDataJson, TypedData::class.java)
-            return parse(typedData)
+            return convert(parseTypedData(typedDataJson))
         }
 
-        private fun parse(typedData: TypedData): EIP712JsonAdapter.Result {
+        fun parseTypedData(rawJsonMessage: String): TypedData {
+            return gson.fromJson(rawJsonMessage, TypedData::class.java)
+        }
+
+        private fun convert(typedData: TypedData): EIP712JsonAdapter.Result {
             return EIP712JsonAdapter.Result(
                     primaryType = typedData.primaryType,
                     domain = typedData.domain,
@@ -38,18 +49,17 @@ class EIP712Encoder {
                     types = typedData.types.mapValues { (_, types) -> types.map { EIP712JsonAdapter.Parameter(it.name, it.type) } }
             )
         }
-
-        data class TypedData(
-                val types: Map<String, List<TypeParam>>,
-                val primaryType: String,
-                val domain: Map<String, Any>,
-                val message: Map<String, Any>
-        )
-
-        data class TypeParam(
-                val name: String,
-                val type: String
-        )
     }
-
 }
+
+data class TypedData(
+        val types: Map<String, List<TypeParam>>,
+        val primaryType: String,
+        val domain: Map<String, Any>,
+        val message: Map<String, Any>
+)
+
+data class TypeParam(
+        val name: String,
+        val type: String
+)
