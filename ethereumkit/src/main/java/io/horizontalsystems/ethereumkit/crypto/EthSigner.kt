@@ -19,6 +19,10 @@ class EthSigner(
         return sign(encodedMessage)
     }
 
+    fun parseTypedData(rawJsonMessage: String): TypedData? {
+        return eip712Encoder.parseTypedData(rawJsonMessage)
+    }
+
     private fun sign(message: ByteArray): ByteArray = cryptoUtils.ellipticSign(message, privateKey)
 
 }
