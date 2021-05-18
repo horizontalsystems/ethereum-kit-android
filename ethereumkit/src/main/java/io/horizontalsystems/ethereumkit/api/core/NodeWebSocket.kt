@@ -50,7 +50,7 @@ class NodeWebSocket(
                         logger.info(message)
                     }
                 })
-                .setLevel(HttpLoggingInterceptor.Level.HEADERS)
+                .setLevel(HttpLoggingInterceptor.Level.BASIC)
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
