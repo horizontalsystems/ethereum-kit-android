@@ -34,7 +34,7 @@ class NodeApiProvider(
             override fun log(message: String) {
                 logger.info(message)
             }
-        }).setLevel(HttpLoggingInterceptor.Level.BODY)
+        }).setLevel(HttpLoggingInterceptor.Level.BASIC)
 
         val headersInterceptor = Interceptor { chain ->
             val requestBuilder = chain.request().newBuilder()
