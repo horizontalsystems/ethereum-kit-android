@@ -475,13 +475,18 @@ class EthereumKit(
         class Http(val url: URL, val blockTime: Long, val auth: String?) : SyncSource()
     }
 
-    enum class NetworkType(val chainId: Int, val blockTime: Long, val coinType: Int) {
-        EthMainNet(1, 15, 60),
-        EthRopsten(56, 5, 1),
-        EthKovan(42, 4, 1),
-        EthRinkeby(4, 15, 1),
-        BscMainNet(56, 5, 60),
-        EthGoerli(5, 15, 1);
+    enum class NetworkType(
+        val chainId: Int,
+        val blockTime: Long,
+        val coinType: Int,
+        val isMainNet: Boolean
+    ) {
+        EthMainNet(1, 15, 60, true),
+        EthRopsten(56, 5, 1, false),
+        EthKovan(42, 4, 1, false),
+        EthRinkeby(4, 15, 1, false),
+        BscMainNet(56, 5, 60, true),
+        EthGoerli(5, 15, 1, false);
     }
 
 }
