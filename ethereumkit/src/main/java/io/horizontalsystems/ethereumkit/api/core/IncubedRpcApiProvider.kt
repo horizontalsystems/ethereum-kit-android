@@ -53,5 +53,5 @@ class IncubedRpcApiProvider(
     }
 
     override val blockTime: Long
-        get() = networkType.getBlockTime()
+        get() = networkType.blockTime
 }
