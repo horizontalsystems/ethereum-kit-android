@@ -33,6 +33,7 @@ class EtherscanService(
         NetworkType.EthKovan -> "https://api-kovan.etherscan.io"
         NetworkType.EthRinkeby -> "https://api-rinkeby.etherscan.io"
         NetworkType.BscMainNet -> "https://api.bscscan.com"
+        NetworkType.EthGoerli -> "https://api-goerli.etherscan.io"
     }
 
 

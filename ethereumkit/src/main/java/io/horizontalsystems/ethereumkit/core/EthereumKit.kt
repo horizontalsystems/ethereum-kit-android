@@ -369,7 +369,7 @@ class EthereumKit(
                 }
             }
 
-            val transactionSigner = TransactionSigner(privateKey, networkType.getNetwork().id)
+            val transactionSigner = TransactionSigner(privateKey, networkType.chainId)
             val transactionBuilder = TransactionBuilder(address)
             val etherscanService = EtherscanService(etherscanApiKey, networkType)
 
@@ -426,7 +426,7 @@ class EthereumKit(
         }
 
         fun privateKey(seed: ByteArray, networkType: NetworkType): BigInteger {
-            val hdWallet = HDWallet(seed, networkType.getCoinType())
+            val hdWallet = HDWallet(seed, networkType.coinType)
             return hdWallet.privateKey(0, 0, true).privKey
         }
 
@@ -443,7 +443,7 @@ class EthereumKit(
         fun infuraHttpSyncSource(networkType: NetworkType, projectId: String, projectSecret: String?): SyncSource? =
                 infuraDomain(networkType)?.let { infuraDomain ->
                     val url = URL("https://$infuraDomain/v3/$projectId")
-                    SyncSource.Http(url, networkType.getBlockTime(), projectSecret)
+                    SyncSource.Http(url, networkType.blockTime, projectSecret)
                 }
 
         fun defaultBscWebSocketSyncSource(): SyncSource =
@@ -451,7 +451,7 @@ class EthereumKit(
 
 
         fun defaultBscHttpSyncSource(): SyncSource =
-                SyncSource.Http(URL("https://bsc-dataseed.binance.org"), NetworkType.BscMainNet.getBlockTime(), null)
+                SyncSource.Http(URL("https://bsc-dataseed.binance.org"), NetworkType.BscMainNet.blockTime, null)
 
         private fun infuraDomain(networkType: NetworkType): String? =
                 when (networkType) {
@@ -459,7 +459,8 @@ class EthereumKit(
                     NetworkType.EthRopsten -> "ropsten.infura.io"
                     NetworkType.EthKovan -> "kovan.infura.io"
                     NetworkType.EthRinkeby -> "rinkeby.infura.io"
-                    else -> null
+                    NetworkType.EthGoerli -> "goerli.infura.io"
+                    NetworkType.BscMainNet -> null
                 }
 
         private fun ethereumAddress(privateKey: BigInteger): Address {
@@ -474,25 +475,13 @@ class EthereumKit(
         class Http(val url: URL, val blockTime: Long, val auth: String?) : SyncSource()
     }
 
-    enum class NetworkType {
-        EthMainNet,
-        EthRopsten,
-        EthKovan,
-        EthRinkeby,
-        BscMainNet;
-
-        fun getBlockTime() = getNetwork().blockTime
-
-        fun getNetwork() = when (this) {
-            EthMainNet -> EthMainNet()
-            BscMainNet -> BscMainNet()
-            else -> EthRopsten()
-        }
-
-        fun getCoinType() = when (this) {
-            EthMainNet, BscMainNet -> 60
-            else -> 1
-        }
+    enum class NetworkType(val chainId: Int, val blockTime: Long, val coinType: Int) {
+        EthMainNet(1, 15, 60),
+        EthRopsten(56, 5, 1),
+        EthKovan(42, 4, 1),
+        EthRinkeby(4, 15, 1),
+        BscMainNet(56, 5, 60),
+        EthGoerli(5, 15, 1);
     }
 
 }
