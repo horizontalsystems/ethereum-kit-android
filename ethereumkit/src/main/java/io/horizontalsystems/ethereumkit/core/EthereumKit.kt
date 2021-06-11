@@ -36,6 +36,7 @@ class EthereumKit(
         private val blockchain: IBlockchain,
         private val transactionManager: TransactionManager,
         private val transactionSyncManager: TransactionSyncManager,
+        private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
         private val transactionBuilder: TransactionBuilder,
         private val transactionSigner: TransactionSigner,
         private val connectionManager: ConnectionManager,
@@ -196,6 +197,10 @@ class EthereumKit(
 
     fun decorate(transaction: FullTransaction) : FullTransaction? {
         return decorationManager.decorateFullTransaction(transaction)
+    }
+
+    fun syncInternalTransactions(transaction: Transaction) {
+        internalTransactionSyncer.add(transaction.hash)
     }
 
     fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
@@ -398,7 +403,8 @@ class EthereumKit(
 
             val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
             val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider)
-            val internalTransactionsProvider = InternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
+            val userInternalTransactionsProvider = UserInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
+            val transactionInternalTransactionSyncer = TransactionInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
             val outgoingPendingTransactionSyncer = PendingTransactionSyncer(blockchain, transactionStorage)
 
             val transactionSyncer = TransactionSyncer(blockchain, transactionStorage)
@@ -407,9 +413,12 @@ class EthereumKit(
 
             val transactionSyncManager = TransactionSyncManager(notSyncedTransactionManager)
             transactionSyncer.listener = transactionSyncManager
+            userInternalTransactionsProvider.listener = transactionSyncManager
+            transactionInternalTransactionSyncer.listener = transactionSyncManager
             outgoingPendingTransactionSyncer.listener = transactionSyncManager
 
-            transactionSyncManager.add(internalTransactionsProvider)
+            transactionSyncManager.add(userInternalTransactionsProvider)
+            transactionSyncManager.add(transactionInternalTransactionSyncer)
             transactionSyncManager.add(ethereumTransactionsProvider)
             transactionSyncManager.add(transactionSyncer)
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
@@ -418,7 +427,21 @@ class EthereumKit(
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager)
             val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
-            val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService, decorationManager, ethSigner)
+            val ethereumKit = EthereumKit(
+                    blockchain,
+                    transactionManager,
+                    transactionSyncManager,
+                    transactionInternalTransactionSyncer,
+                    transactionBuilder,
+                    transactionSigner,
+                    connectionManager,
+                    address,
+                    networkType,
+                    walletId,
+                    etherscanService,
+                    decorationManager,
+                    ethSigner
+            )
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)

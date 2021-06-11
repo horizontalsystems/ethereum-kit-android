@@ -1,7 +1,6 @@
 package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.SwapContractMethodFactories
@@ -13,7 +12,8 @@ import java.util.logging.Logger
 class UniswapKit(
         private val tradeManager: TradeManager,
         private val pairSelector: PairSelector,
-        private val tokenFactory: TokenFactory
+        private val tokenFactory: TokenFactory,
+        private val internalTransactionSyncer: UniswapInternalTransactionSyncer
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
@@ -91,9 +91,10 @@ class UniswapKit(
             val tradeManager = TradeManager(ethereumKit)
             val tokenFactory = TokenFactory(ethereumKit.networkType)
             val pairSelector = PairSelector(tokenFactory)
+            val internalTransactionSyncer = UniswapInternalTransactionSyncer(ethereumKit)
 
             ethereumKit.addDecorator(SwapTransactionDecorator(ethereumKit.receiveAddress, SwapContractMethodFactories))
-            return UniswapKit(tradeManager, pairSelector, tokenFactory)
+            return UniswapKit(tradeManager, pairSelector, tokenFactory, internalTransactionSyncer)
         }
     }
 
