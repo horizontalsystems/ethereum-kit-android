@@ -30,6 +30,10 @@ object ContractMethodHelper {
                     data += pad(BigInteger.valueOf(arguments.size * 32L + arraysData.size).toByteArray())
                     arraysData += encode(addresses)
                 }
+                is ByteArray -> {
+                    data += pad(BigInteger.valueOf(arguments.size * 32L + arraysData.size).toByteArray())
+                    arraysData += pad(BigInteger.valueOf(data.size.toLong()).toByteArray()) + data
+                }
             }
         }
         return data + arraysData
@@ -51,6 +55,11 @@ object ContractMethodHelper {
                     val array = parseAddressArray(arrayPosition, inputArguments)
                     parsedArguments.add(array)
                 }
+                ByteArray::class -> {
+                    val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
+                    val byteArray: ByteArray = parseByteArray(arrayPosition, inputArguments)
+                    parsedArguments.add(byteArray)
+                }
             }
             position += 32
         }
@@ -60,6 +69,12 @@ object ContractMethodHelper {
 
     private fun parseAddress(address: ByteArray): Address {
         return Address(address.copyOfRange(address.size - 20, address.size))
+    }
+
+    private fun parseByteArray(startPosition: Int, inputArguments: ByteArray) : ByteArray {
+        val dataStartPosition = startPosition + 32
+        val size = inputArguments.copyOfRange(startPosition, dataStartPosition).toInt()
+        return inputArguments.copyOfRange(dataStartPosition, dataStartPosition + size)
     }
 
     private fun parseAddressArray(positionStart: Int, inputArguments: ByteArray): List<Address> {

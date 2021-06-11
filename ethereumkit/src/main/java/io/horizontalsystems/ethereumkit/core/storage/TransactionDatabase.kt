@@ -14,15 +14,17 @@ import io.horizontalsystems.ethereumkit.models.Transaction
             TransactionLog::class,
             InternalTransaction::class,
             TransactionSyncerState::class,
-            DroppedTransaction::class
+            DroppedTransaction::class,
+            TransactionTag::class
         ],
-        version = 7,
+        version = 8,
         exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, TransactionDatabase.TypeConverters::class)
 abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+    abstract fun transactionTagDao(): TransactionTagDao
     abstract fun notSyncedTransactionDao(): NotSyncedTransactionDao
     abstract fun transactionSyncerStateDao(): TransactionSyncerStateDao
 

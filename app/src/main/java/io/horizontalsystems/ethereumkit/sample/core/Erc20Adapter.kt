@@ -2,8 +2,6 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.Erc20Kit
-import io.horizontalsystems.erc20kit.core.TransactionKey
-import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.toHexString
@@ -84,8 +82,8 @@ class Erc20Adapter(
         return ethereumKit.send(transactionData, gasPrice, gasLimit)
     }
 
-    override fun transactions(from: Pair<ByteArray, Int>?, limit: Int?): Single<List<TransactionRecord>> {
-        return erc20Kit.getTransactionsAsync(from?.let { TransactionKey(from.first, from.second) }, limit)
+    override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
+        return erc20Kit.getTransactionsAsync(fromHash, limit)
                 .map { transactions ->
                     transactions.map { transactionRecord(it) }
                 }
@@ -99,11 +97,11 @@ class Erc20Adapter(
         return erc20Kit.buildApproveTransactionData(spenderAddress, amount)
     }
 
-    private fun transactionRecord(transaction: Transaction): TransactionRecord {
-        val mineAddress = ethereumKit.receiveAddress
+    private fun transactionRecord(fullTransaction: FullTransaction): TransactionRecord {
+        val transaction = fullTransaction.transaction
 
-        val from = TransactionAddress(transaction.from.hex, transaction.from == mineAddress)
-        val to = TransactionAddress(transaction.to.hex, transaction.to == mineAddress)
+        val from = TransactionAddress(transaction.from.hex, transaction.from == receiveAddress)
+        val to = TransactionAddress(transaction.to?.hex, transaction.to == receiveAddress)
 
         var amount: BigDecimal
 
@@ -115,16 +113,18 @@ class Erc20Adapter(
         }
 
         return TransactionRecord(
-                transactionHash = transaction.transactionHash.toHexString(),
-                transactionIndex = transaction.transactionIndex ?: 0,
-                interTransactionIndex = transaction.interTransactionIndex,
+                transactionHash = transaction.hash.toHexString(),
+                transactionIndex = fullTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0,
+                interTransactionIndex = 0,
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                blockHeight = transaction.fullTransaction.receiptWithLogs?.receipt?.blockNumber,
-                isError = transaction.isError,
-                type = transaction.type.value
+                blockHeight = fullTransaction.receiptWithLogs?.receipt?.blockNumber,
+                isError = fullTransaction.isFailed(),
+                type = "",
+                mainDecoration = fullTransaction.mainDecoration,
+                eventsDecorations= fullTransaction.eventDecorations
         )
     }
 

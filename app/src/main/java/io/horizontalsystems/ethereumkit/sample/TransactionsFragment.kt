@@ -11,8 +11,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
+import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.events.TransferEventDecoration
+import io.horizontalsystems.ethereumkit.decorations.EventDecoration
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import io.horizontalsystems.uniswapkit.decorations.SwapEventDecoration
 import kotlinx.android.synthetic.main.fragment_transactions.*
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,6 +53,23 @@ class TransactionsFragment : Fragment() {
             height?.let {
                 transactionsAdapter.lastBlockHeight = height
             }
+        })
+
+        viewModel.showTxTypeLiveData.observe(viewLifecycleOwner, { showTxType ->
+            context?.let{ ctx ->
+                when(showTxType){
+                    ShowTxType.Eth -> {
+                        ethFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
+                        tokenFilter.setBackgroundColor(Color.WHITE)
+                    }
+                    ShowTxType.Erc20 -> {
+                        tokenFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
+                        ethFilter.setBackgroundColor(Color.WHITE)
+                    }
+                    else -> {}
+                }
+            }
+
         })
 
         ethFilter.setOnClickListener {
@@ -85,22 +110,115 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         val format = SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
 
         var value = """
-            - #$index
-            - Tx Hash: ${tx.transactionHash}
-            - Block Number: ${tx.blockHeight ?: "N/A"}
-            - Tx Index: ${tx.transactionIndex}
-            - Inter Tx Index: ${tx.interTransactionIndex}
-            - Time: ${format.format(Date(tx.timestamp * 1000))}
-            - From: ${tx.from.address}
-            - To: ${tx.to.address}
-            - Amount: ${tx.amount.stripTrailingZeros().toPlainString()}
-            - isError: ${tx.isError}
-            - type: ${tx.type}
+        - #$index
+        - Tx Hash: ${tx.transactionHash}
+        - Block Number: ${tx.blockHeight ?: "n/a"}
+        - Tx Index: ${tx.transactionIndex}
+        - Inter Tx Index: ${tx.interTransactionIndex}
+        - Time: ${format.format(Date(tx.timestamp * 1000))}
+        - From: ${tx.from.address}
+        - To: ${tx.to.address}
+        - Amount: ${readableAmount(tx.amount)} ETH
+        - isError: ${tx.isError}
+        - Decoration: ${tx.mainDecoration?.let { stringify(it, tx) } ?: "n/a"}
+        - EventDecorations: ${stringify(tx.eventsDecorations, tx)}
         """
 
         if (lastBlockHeight > 0)
             value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it + 1 } ?: 0}"
 
         summary.text = value.trimIndent()
+    }
+
+    private fun stringify(eventsDecorations: List<EventDecoration>, transactionRecord: TransactionRecord): String {
+        return eventsDecorations.map { event ->
+            when (event) {
+                is TransferEventDecoration -> {
+                    val coin = Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == event.contractAddress.eip55 }?.name
+                            ?: "n/a"
+                    val fromAddress = event.from.eip55.take(6)
+                    val toAddress = event.to.eip55.take(6)
+                    return "${readableNumber(event.value)} $coin ($fromAddress -> $toAddress)"
+                }
+                is ApproveEventDecoration -> {
+                    val coin = Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == event.contractAddress.eip55 }?.name
+                            ?: "n/a"
+                    val owner = event.owner.eip55.take(6)
+                    val spender = event.spender.eip55.take(6)
+                    return "${readableNumber(event.value)} $coin ($owner - approved -> $spender)"
+                }
+                is SwapEventDecoration -> {
+                    val sender = event.sender.eip55.take(6)
+                    val to = event.to.eip55.take(6)
+                    return "($sender <-> $to)"
+                }
+                else -> return "unknown event"
+            }
+        }.joinToString("\n")
+
+    }
+
+    private fun stringify(decoration: TransactionDecoration, transaction: TransactionRecord): String {
+        val coinName = Configuration.erc20Tokens.firstOrNull { it.contractAddress.hex == transaction.to.address }?.name
+                ?: "n/a"
+        val fromAddress = transaction.from.address?.take(6)
+
+        when (decoration) {
+            is TransactionDecoration.Swap -> {
+                return "${amountIn(decoration.trade)} ${stringify(decoration.tokenIn)} <-> ${amountOut(decoration.trade)} ${stringify(decoration.tokenOut)}"
+            }
+            is TransactionDecoration.Eip20Transfer -> {
+                return "${readableNumber(decoration.value)} $coinName $fromAddress -> ${decoration.to.eip55.take(6)}"
+            }
+            is TransactionDecoration.Eip20Approve -> {
+                return "${readableNumber(decoration.value)} $coinName approved"
+            }
+            is TransactionDecoration.Recognized -> {
+                return "${decoration.method} ${decoration.arguments.size} arguments"
+            }
+            else -> return "contract call"
+        }
+    }
+
+    private fun stringify(token: TransactionDecoration.Swap.Token): String {
+        return when (token) {
+            is TransactionDecoration.Swap.Token.EvmCoin -> "ETH"
+            is TransactionDecoration.Swap.Token.Eip20Coin -> Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == token.address.eip55 }?.code
+                    ?: "n/a"
+        }
+    }
+
+    private fun amountIn(trade: TransactionDecoration.Swap.Trade): String {
+        val amount: BigInteger = when (trade) {
+            is TransactionDecoration.Swap.Trade.ExactIn -> trade.amountIn
+            is TransactionDecoration.Swap.Trade.ExactOut -> trade.amountIn ?: trade.amountInMax
+        }
+
+        return readableNumber(amount)
+    }
+
+    private fun amountOut(trade: TransactionDecoration.Swap.Trade): String {
+        val amount: BigInteger = when (trade) {
+            is TransactionDecoration.Swap.Trade.ExactIn -> trade.amountOut ?: trade.amountOutMin
+            is TransactionDecoration.Swap.Trade.ExactOut -> trade.amountOut
+        }
+
+        return readableNumber(amount)
+    }
+
+    private fun readableNumber(amount: BigInteger): String {
+        val decimal = amount.toBigDecimal()
+                .movePointLeft(18)
+        return readableAmount(decimal)
+    }
+
+    private fun readableAmount(value: BigDecimal): String {
+        if (value.compareTo(BigDecimal.ZERO) == 0){
+            return "0"
+        }
+        return value
+                .setScale(8, RoundingMode.HALF_EVEN)
+                .stripTrailingZeros()
+                .toPlainString()
     }
 }

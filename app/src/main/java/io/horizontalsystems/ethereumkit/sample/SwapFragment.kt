@@ -131,7 +131,7 @@ class SwapFragment : Fragment() {
 
     private fun pathDescription(path: List<Token>): String {
         val parts = path.map { token ->
-            if (token.isEther) "ETH" else (viewModel.tokens.firstOrNull { it.contractAddress == token.address }?.code
+            if (token.isEther) "ETH" else (Configuration.erc20Tokens.firstOrNull { it.contractAddress == token.address }?.code
                     ?: token.address.hex)
         }
         return parts.joinToString(" > ")

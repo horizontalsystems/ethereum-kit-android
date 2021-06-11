@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
 object SwapExactTokensForETHSupportingFeeOnTransferTokensMethodFactory : ContractMethodFactory {
-    override val methodId = ContractMethodHelper.getMethodId(SwapExactTokensForETHSupportingFeeOnTransferTokensMethod.methodSignature)
+    override val methodId = ContractMethodHelper.getMethodId(SwapExactTokensForETHMethod.methodSignature)
 
     override fun createMethod(inputArguments: ByteArray): ContractMethod {
         val parsedArguments = ContractMethodHelper.decodeABI(inputArguments, listOf(BigInteger::class, BigInteger::class, List::class, Address::class, BigInteger::class))
@@ -16,7 +16,7 @@ object SwapExactTokensForETHSupportingFeeOnTransferTokensMethodFactory : Contrac
         val path = parsedArguments[2] as List<Address>
         val to = parsedArguments[3] as Address
         val deadline = parsedArguments[4] as BigInteger
-        return SwapExactTokensForETHSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
+        return SwapExactTokensForETHMethod(amountIn, amountOutMin, path, to, deadline)
     }
 
 }

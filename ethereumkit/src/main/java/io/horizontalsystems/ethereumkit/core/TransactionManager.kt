@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.core
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -13,8 +14,9 @@ import io.reactivex.subjects.PublishSubject
 
 class TransactionManager(
         private val address: Address,
-        private val transactionSyncManager: TransactionSyncManager,
-        private val storage: ITransactionStorage
+        transactionSyncManager: TransactionSyncManager,
+        private val storage: ITransactionStorage,
+        private val decorationManager: DecorationManager
 ) {
     private val disposables = CompositeDisposable()
     private val etherTransactionSubject = PublishSubject.create<List<FullTransaction>>()
@@ -34,6 +36,27 @@ class TransactionManager(
 
     fun getEtherTransactionsAsync(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
         return storage.getEtherTransactionsAsync(address, fromHash, limit)
+                .map { transactions ->
+                    transactions.map { transaction ->
+                        decorationManager.decorateFullTransaction(transaction)
+                    }
+                }
+    }
+
+    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
+        return storage.getTransactionsBeforeAsync(tags, fromHash, limit)
+                .map { transactions ->
+                    transactions.map { transaction ->
+                        decorationManager.decorateFullTransaction(transaction)
+                    }
+                }
+    }
+
+    fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
+        return storage.getPendingTransactions(tags)
+                .map { transaction ->
+                    decorationManager.decorateFullTransaction(transaction)
+                }
     }
 
     fun handle(transaction: Transaction) {
@@ -54,15 +77,39 @@ class TransactionManager(
         return storage.getFullTransactions(hashes)
     }
 
-    private fun handle(transactions: List<FullTransaction>) {
-        if (transactions.isNotEmpty()) {
-            allTransactionsSubject.onNext(transactions)
+    private fun handle(syncedTransactions: List<FullTransaction>) {
+        val decoratedTransactions = syncedTransactions.map { decorationManager.decorateFullTransaction(it) }
+
+        decoratedTransactions.forEach { transaction ->
+            updateTags(transaction)
         }
 
-        val etherTransactions = transactions.filter { it.hasEtherTransfer(address) }
+        if (decoratedTransactions.isNotEmpty()) {
+            allTransactionsSubject.onNext(decoratedTransactions)
+        }
+
+        val etherTransactions = decoratedTransactions.filter { it.hasEtherTransfer(address) }
         if (etherTransactions.isNotEmpty()) {
             etherTransactionSubject.onNext(etherTransactions)
         }
+    }
+
+    private fun updateTags(transaction: FullTransaction) {
+        val tags = mutableListOf<TransactionTag>()
+
+        transaction.mainDecoration?.name?.let {
+            tags.add(TransactionTag(it, transaction.transaction.hash))
+        }
+
+        transaction.transaction.to?.let {
+            tags.add(TransactionTag(it.hex, transaction.transaction.hash))
+        }
+
+        transaction.eventDecorations.forEach { eventDecoration ->
+            tags.addAll(eventDecoration.tags.map { TransactionTag(it, transaction.transaction.hash) })
+        }
+
+        storage.set(tags)
     }
 
 }

@@ -1,26 +1,32 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.Erc20LogEvent
+import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.events.TransferEventDecoration
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArrayOrNull
 import io.horizontalsystems.ethereumkit.core.toRawHexString
+import io.horizontalsystems.ethereumkit.decorations.EventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 
-fun TransactionLog.getErc20Event(address: Address): Erc20LogEvent? {
+fun TransactionLog.getErc20Event(): EventDecoration? {
     return try {
-        val signature = topics.getOrNull(0)?.hexStringToByteArrayOrNull()
-        val firstParam = topics.getOrNull(1)?.let { Address(it.takeLast(Address.VALID_ADDRESS_LENGTH)) }
-        val secondParam = topics.getOrNull(2)?.let { Address(it.takeLast(Address.VALID_ADDRESS_LENGTH)) }
+        if (topics.size != 3) {
+            return null
+        }
+
+        val signature = topics[0].hexStringToByteArrayOrNull()
+
+        val firstParam = Address(topics[1])
+        val secondParam = Address(topics[2])
 
         when {
-            signature.contentEquals(Erc20LogEvent.Transfer.signature) && firstParam != null && secondParam != null && (firstParam == address || secondParam == address) -> {
-                Erc20LogEvent.Transfer(firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
-            }
-            signature.contentEquals(Erc20LogEvent.Approve.signature) && firstParam == address && secondParam != null -> {
-                Erc20LogEvent.Approve(firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
-            }
-            else -> null
+            signature.contentEquals(TransferEventDecoration.signature) ->
+                TransferEventDecoration(address, firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
+            signature.contentEquals(ApproveEventDecoration.signature) ->
+                ApproveEventDecoration(address, firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
+            else ->
+                null
         }
     } catch (error: Throwable) {
         error.printStackTrace()
