@@ -80,6 +80,7 @@ interface ITransactionSyncerStateStorage {
 
 interface ITransactionStorage {
     fun getNotSyncedTransactions(limit: Int): List<NotSyncedTransaction>
+    fun getNotSyncedInternalTransactions(): NotSyncedInternalTransaction?
     fun addNotSyncedTransactions(transactions: List<NotSyncedTransaction>)
     fun update(notSyncedTransaction: NotSyncedTransaction)
     fun remove(transaction: NotSyncedTransaction)
@@ -95,6 +96,8 @@ interface ITransactionStorage {
 
     fun getLastInternalTransactionBlockHeight(): Long?
     fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
+    fun add(notSyncedInternalTransaction: NotSyncedInternalTransaction)
+    fun remove(notSyncedInternalTransaction: NotSyncedInternalTransaction)
 
     fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
     fun save(transactionReceipt: TransactionReceipt)

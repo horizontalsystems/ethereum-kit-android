@@ -12,6 +12,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
     private val tagsDao = database.transactionTagDao()
+    private val notSyncedInternalTransactionDao = database.notSyncedInternalTransactionDao()
     private val transactionSyncerStateDao = database.transactionSyncerStateDao()
 
     //region NotSyncedTransaction
@@ -31,6 +32,20 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         notSyncedTransactionDao.deleteByHash(transaction.hash)
     }
     //endregion
+
+    //region NotSyncedTransaction
+    override fun getNotSyncedInternalTransactions(): NotSyncedInternalTransaction? {
+        return notSyncedInternalTransactionDao.getAll().firstOrNull()
+    }
+
+    override fun add(notSyncedInternalTransaction: NotSyncedInternalTransaction) {
+        notSyncedInternalTransactionDao.insert(notSyncedInternalTransaction)
+    }
+
+    override fun remove(notSyncedInternalTransaction: NotSyncedInternalTransaction) {
+        notSyncedInternalTransactionDao.delete(notSyncedInternalTransaction)
+    }
+//endregion
 
     //region Transaction
     override fun getTransactionHashes(): List<ByteArray> {

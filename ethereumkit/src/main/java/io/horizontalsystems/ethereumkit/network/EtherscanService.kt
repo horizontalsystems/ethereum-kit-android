@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.models.EtherscanResponse
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.retryWhenError
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
 import okhttp3.OkHttpClient
@@ -81,6 +82,18 @@ class EtherscanService(
                 .retryWhenError(RequestError.RateLimitExceed::class)
     }
 
+    fun getInternalTransactionsAsync(transactionHash: ByteArray): Single<EtherscanResponse> {
+        return service.getInternalTransactions(
+                "account",
+                "txlistinternal",
+                transactionHash.toHexString(),
+                "desc",
+                apiKey
+        )
+                .map { parseResponse(it) }
+                .retryWhenError(RequestError.RateLimitExceed::class)
+    }
+
     private fun parseResponse(response: JsonElement): EtherscanResponse {
         try {
             val responseObj = response.asJsonObject
@@ -127,6 +140,14 @@ class EtherscanService(
                 @Query("address") address: String,
                 @Query("startblock") startblock: Long,
                 @Query("endblock") endblock: Long,
+                @Query("sort") sort: String,
+                @Query("apiKey") apiKey: String): Single<JsonElement>
+
+        @GET("/api")
+        fun getInternalTransactions(
+                @Query("module") module: String,
+                @Query("action") action: String,
+                @Query("address") address: String,
                 @Query("sort") sort: String,
                 @Query("apiKey") apiKey: String): Single<JsonElement>
     }

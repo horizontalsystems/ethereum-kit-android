@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.core
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.NotSyncedInternalTransaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
@@ -55,6 +56,26 @@ class EtherscanTransactionsProvider(
                             val to = Address(internalTx.getValue("to").hexStringToByteArray())
                             val value = internalTx.getValue("value").toBigInteger()
                             val traceId = internalTx.getValue("traceId")
+
+                            InternalTransaction(hash, blockNumber, from, to, value, traceId)
+                        } catch (throwable: Throwable) {
+                            null
+                        }
+                    }
+                }
+    }
+
+    fun getInternalTransactions(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>> {
+        return etherscanService.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
+                .map { response ->
+                    response.result.mapNotNull { internalTx ->
+                        try {
+                            val hash = notSyncedInternalTransaction.hash
+                            val blockNumber = internalTx.getValue("blockNumber").toLong()
+                            val from = Address(internalTx.getValue("from"))
+                            val to = Address(internalTx.getValue("to").hexStringToByteArray())
+                            val value = internalTx.getValue("value").toBigInteger()
+                            val traceId = ""
 
                             InternalTransaction(hash, blockNumber, from, to, value, traceId)
                         } catch (throwable: Throwable) {

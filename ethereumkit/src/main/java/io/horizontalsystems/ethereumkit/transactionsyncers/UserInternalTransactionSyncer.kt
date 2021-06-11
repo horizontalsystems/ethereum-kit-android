@@ -10,10 +10,10 @@ import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
-class InternalTransactionSyncer(
+class UserInternalTransactionSyncer(
         private val etherscanTransactionsProvider: EtherscanTransactionsProvider,
         private val storage: ITransactionStorage
-) : AbstractTransactionSyncer("internal_transaction_syncer") {
+) : AbstractTransactionSyncer("user_internal_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
