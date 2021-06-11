@@ -11,7 +11,9 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
+import io.horizontalsystems.ethereumkit.contracts.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.crypto.*
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
@@ -136,6 +138,14 @@ class EthereumKit(
         return transactionManager.getEtherTransactionsAsync(fromHash, limit)
     }
 
+    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null) : Single<List<FullTransaction>> {
+        return transactionManager.getTransactionsAsync(tags, fromHash, limit)
+    }
+
+    fun getPendingTransactions(tags: List<List<String>>) : List<FullTransaction> {
+        return transactionManager.getPendingTransactions(tags)
+    }
+
     fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
         return transactionManager.getFullTransactions(fromSyncOrder)
     }
@@ -181,7 +191,11 @@ class EthereumKit(
     }
 
     fun decorate(transactionData: TransactionData): TransactionDecoration? {
-        return decorationManager.decorate(transactionData)
+        return decorationManager.decorateTransaction(transactionData)
+    }
+
+    fun decorate(transaction: FullTransaction) : FullTransaction? {
+        return decorationManager.decorateFullTransaction(transaction)
     }
 
     fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
@@ -400,14 +414,16 @@ class EthereumKit(
             transactionSyncManager.add(transactionSyncer)
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
 
-            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage)
             val decorationManager = DecorationManager(address)
+            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager)
             val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
             val ethereumKit = EthereumKit(blockchain, transactionManager, transactionSyncManager, transactionBuilder, transactionSigner, connectionManager, address, networkType, walletId, etherscanService, decorationManager, ethSigner)
 
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)
+
+            decorationManager.addDecorator(ContractCallDecorator())
 
             return ethereumKit
         }

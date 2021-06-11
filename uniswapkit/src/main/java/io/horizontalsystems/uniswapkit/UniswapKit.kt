@@ -91,11 +91,9 @@ class UniswapKit(
             val tradeManager = TradeManager(ethereumKit)
             val tokenFactory = TokenFactory(ethereumKit.networkType)
             val pairSelector = PairSelector(tokenFactory)
-            return UniswapKit(tradeManager, pairSelector, tokenFactory)
-        }
 
-        fun getDecorator(): IDecorator {
-            return SwapTransactionDecorator(SwapContractMethodFactories)
+            ethereumKit.addDecorator(SwapTransactionDecorator(ethereumKit.receiveAddress, SwapContractMethodFactories))
+            return UniswapKit(tradeManager, pairSelector, tokenFactory)
         }
     }
 

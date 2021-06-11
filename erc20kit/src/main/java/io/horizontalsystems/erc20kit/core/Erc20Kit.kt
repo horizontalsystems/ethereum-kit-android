@@ -2,13 +2,12 @@ package io.horizontalsystems.erc20kit.core
 
 import android.content.Context
 import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
-import io.horizontalsystems.erc20kit.models.Transaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -66,7 +65,7 @@ class Erc20Kit(
     val balanceFlowable: Flowable<BigInteger>
         get() = state.balanceSubject.toFlowable(BackpressureStrategy.LATEST)
 
-    val transactionsFlowable: Flowable<List<Transaction>>
+    val transactionsFlowable: Flowable<List<FullTransaction>>
         get() = transactionManager.transactionsAsync
 
     fun start() {
@@ -94,11 +93,11 @@ class Erc20Kit(
         return transactionManager.buildTransferTransactionData(to, value)
     }
 
-    fun getTransactionsAsync(fromTransaction: TransactionKey?, limit: Int?): Single<List<Transaction>> {
-        return transactionManager.getTransactionsAsync(fromTransaction, limit)
+    fun getTransactionsAsync(fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
+        return transactionManager.getTransactionsAsync(fromHash, limit)
     }
 
-    fun getPendingTransactions(): List<Transaction> {
+    fun getPendingTransactions(): List<FullTransaction> {
         return transactionManager.getPendingTransactions()
     }
 
@@ -140,7 +139,7 @@ class Erc20Kit(
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
             val dataProvider: IDataProvider = DataProvider(ethereumKit)
-            val transactionManager = TransactionManager(contractAddress, ethereumKit, Eip20ContractMethodFactories, transactionStorage)
+            val transactionManager = TransactionManager(contractAddress, ethereumKit, transactionStorage)
             val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
             val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address)
 
@@ -148,11 +147,9 @@ class Erc20Kit(
 
             balanceManager.listener = erc20Kit
 
-            return erc20Kit
-        }
+            ethereumKit.addDecorator(Eip20TransactionDecorator(ethereumKit.receiveAddress, contractAddress, Eip20ContractMethodFactories))
 
-        fun getDecorator(): IDecorator {
-            return Eip20TransactionDecorator(Eip20ContractMethodFactories)
+            return erc20Kit
         }
 
         fun getTransactionSyncer(ethereumKit: EthereumKit): ITransactionSyncer {

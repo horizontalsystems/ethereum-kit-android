@@ -5,8 +5,11 @@ import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.utils.EIP55
 
-data class Address(val raw: ByteArray) {
+data class Address(var raw: ByteArray) {
     init {
+        if (raw.size == 32) {
+            raw = raw.copyOfRange(12, raw.size)
+        }
         AddressValidator.validate(hex)
     }
 

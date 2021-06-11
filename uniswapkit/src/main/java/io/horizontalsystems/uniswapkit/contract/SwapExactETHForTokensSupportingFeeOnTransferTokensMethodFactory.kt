@@ -8,7 +8,7 @@ import java.math.BigInteger
 
 object SwapExactETHForTokensSupportingFeeOnTransferTokensMethodFactory : ContractMethodFactory {
 
-    override val methodId = ContractMethodHelper.getMethodId(SwapExactETHForTokensSupportingFeeOnTransferTokensMethod.methodSignature)
+    override val methodId = ContractMethodHelper.getMethodId(SwapExactETHForTokensMethod.methodSignature)
 
     override fun createMethod(inputArguments: ByteArray): ContractMethod {
         val parsedArguments = ContractMethodHelper.decodeABI(inputArguments, listOf(BigInteger::class, List::class, Address::class, BigInteger::class))
@@ -16,7 +16,7 @@ object SwapExactETHForTokensSupportingFeeOnTransferTokensMethodFactory : Contrac
         val path = parsedArguments[1] as List<Address>
         val to = parsedArguments[2] as Address
         val deadline = parsedArguments[3] as BigInteger
-        return SwapExactETHForTokensSupportingFeeOnTransferTokensMethod(amountOutMin, path, to, deadline)
+        return SwapExactETHForTokensMethod(amountOutMin, path, to, deadline)
     }
 
 }

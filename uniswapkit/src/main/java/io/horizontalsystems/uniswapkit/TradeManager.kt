@@ -83,13 +83,7 @@ class TradeManager(
 
         val method = when (trade.type) {
             TradeType.ExactOut -> buildMethodForExactOut(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
-            TradeType.ExactIn -> {
-                if (tradeData.options.feeOnTransfer) {
-                    buildMethodForExactInSupportingFeeOnTransferTokens(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
-                } else {
-                    buildMethodForExactIn(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
-                }
-            }
+            TradeType.ExactIn -> buildMethodForExactIn(tokenIn, tokenOut, path, to, deadline, tradeData, trade)
         }
 
         val amount = if (tokenIn.isEther) {
@@ -112,18 +106,6 @@ class TradeManager(
             tokenIn is Ether && tokenOut is Erc20 -> SwapETHForExactTokensMethod(amountOut, path, to, deadline)
             tokenIn is Erc20 && tokenOut is Ether -> SwapTokensForExactETHMethod(amountOut, amountInMax, path, to, deadline)
             tokenIn is Erc20 && tokenOut is Erc20 -> SwapTokensForExactTokensMethod(amountOut, amountInMax, path, to, deadline)
-            else -> throw Exception("Invalid tokenIn/Out for swap!")
-        }
-    }
-
-    private fun buildMethodForExactInSupportingFeeOnTransferTokens(tokenIn: Token, tokenOut: Token, path: List<Address>, to: Address, deadline: BigInteger, tradeData: TradeData, trade: Trade): ContractMethod {
-        val amountIn = trade.tokenAmountIn.rawAmount
-        val amountOutMin = tradeData.tokenAmountOutMin.rawAmount
-
-        return when {
-            tokenIn is Ether && tokenOut is Erc20 -> SwapExactETHForTokensSupportingFeeOnTransferTokensMethod(amountOutMin, path, to, deadline)
-            tokenIn is Erc20 && tokenOut is Ether -> SwapExactTokensForETHSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
-            tokenIn is Erc20 && tokenOut is Erc20 -> SwapExactTokensForTokensSupportingFeeOnTransferTokensMethod(amountIn, amountOutMin, path, to, deadline)
             else -> throw Exception("Invalid tokenIn/Out for swap!")
         }
     }

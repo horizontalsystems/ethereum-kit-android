@@ -25,15 +25,7 @@ import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
     private val logger = Logger.getLogger("MainViewModel")
-
-    private val infuraProjectId = "2a1306f1d12f4c109a4d4fb9be46b02e"
-    private val infuraSecret = "fc479a9290b64a84a15fa6544a130218"
-    private val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    private val bscScanKey = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
-    private val walletId = "walletId"
-    private val networkType: NetworkType = NetworkType.BscMainNet
-    private val webSocket = true
-    private val words = "mom year father track attend frown loyal goddess crisp abandon juice roof".split(" ")
+    private val conf = Configuration
 
     private val disposables = CompositeDisposable()
 
@@ -53,8 +45,14 @@ class MainViewModel : ViewModel() {
     val erc20TokenBalance = MutableLiveData<BigDecimal>()
     val sendStatus = SingleLiveEvent<Throwable?>()
     val estimatedGas = SingleLiveEvent<String>()
+    val showTxTypeLiveData = MutableLiveData<ShowTxType>()
+
+    private var showTxType = ShowTxType.Eth
 
     private val gasPrice: Long = 20_000_000_000
+
+    private var ethTxs = listOf<TransactionRecord>()
+    private var erc20Txs = listOf<TransactionRecord>()
 
     private lateinit var uniswapKit: UniswapKit
     private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
@@ -62,24 +60,16 @@ class MainViewModel : ViewModel() {
     var tradeData = MutableLiveData<TradeData?>()
     val swapStatus = SingleLiveEvent<Throwable?>()
 
-    val tokens = listOf(
-            Erc20Token("PancakeSwap", "CAKE", Address("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), 18), //BEP20
-            Erc20Token("Beefy.Finance", "BIFI", Address("0xCa3F508B8e4Dd382eE878A314789373D80A5190A"), 18), //BEP20
+    val fromToken: Erc20Token? = conf.erc20Tokens[0]
+    val toToken: Erc20Token? = conf.erc20Tokens[1]
 
-            Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
-            Erc20Token("GMO coins", "GMOLW", Address("0xbb74a24d83470f64d5f0c01688fbb49a5a251b32"), 18),
-            Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
-            Erc20Token("DAI-MAINNET", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18)
-    )
-    val fromToken: Erc20Token? = tokens[0]
-    val toToken: Erc20Token? = tokens[1]
 
     fun init() {
         ethereumKit = createKit()
         ethereumKit.addTransactionSyncer(Erc20Kit.getTransactionSyncer(ethereumKit))
         ethereumAdapter = EthereumAdapter(ethereumKit)
 
-        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: tokens.first(), ethereumKit)
+        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: conf.erc20Tokens.first(), ethereumKit)
 
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
@@ -91,19 +81,21 @@ class MainViewModel : ViewModel() {
         updateErc20TransactionsSyncState()
         updateLastBlockHeight()
 
+        filterTransactions(true)
+
         //
         // Ethereum
         //
 
         ethereumAdapter.lastBlockHeightFlowable.subscribe {
             updateLastBlockHeight()
-            updateTransactions()
+            updateEthTransactions()
         }.let {
             disposables.add(it)
         }
 
         ethereumAdapter.transactionsFlowable.subscribe {
-            updateTransactions()
+            updateEthTransactions()
         }.let {
             disposables.add(it)
         }
@@ -163,28 +155,29 @@ class MainViewModel : ViewModel() {
         val syncSource: EthereumKit.SyncSource?
         val txApiProviderKey: String
 
-        when (networkType) {
+        when (conf.networkType) {
             NetworkType.BscMainNet -> {
-                txApiProviderKey = bscScanKey
-                syncSource = if (webSocket)
+                txApiProviderKey = conf.bscScanKey
+                syncSource = if (conf.webSocket)
                     EthereumKit.defaultBscWebSocketSyncSource()
                 else
                     EthereumKit.defaultBscHttpSyncSource()
             }
             else -> {
-                txApiProviderKey = etherscanKey
-                syncSource = if (webSocket)
-                    EthereumKit.infuraWebSocketSyncSource(networkType, infuraProjectId, infuraSecret)
+                txApiProviderKey = conf.etherscanKey
+                syncSource = if (conf.webSocket)
+                    EthereumKit.infuraWebSocketSyncSource(conf.networkType, conf.infuraProjectId, conf.infuraSecret)
                 else
-                    EthereumKit.infuraHttpSyncSource(networkType, infuraProjectId, infuraSecret)
+                    EthereumKit.infuraHttpSyncSource(conf.networkType, conf.infuraProjectId, conf.infuraSecret)
             }
         }
         checkNotNull(syncSource) {
             throw Exception("Could not get syncSource!")
         }
 
+        val words = conf.defaultsWords.split(" ")
         val seed = Mnemonic().toSeed(words)
-        return EthereumKit.getInstance(App.instance, seed, networkType, syncSource, txApiProviderKey, walletId)
+        return EthereumKit.getInstance(App.instance, seed, conf.networkType, syncSource, txApiProviderKey, conf.walletId)
     }
 
     private fun updateLastBlockHeight() {
@@ -215,11 +208,13 @@ class MainViewModel : ViewModel() {
         erc20TokenBalance.postValue(erc20Adapter.balance)
     }
 
-    private fun updateTransactions() {
+    private fun updateEthTransactions() {
         ethereumAdapter.transactions()
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
-                    transactions.value = list
+                    ethTxs = list
+                    updateTransactionList()
                 }.let {
                     disposables.add(it)
                 }
@@ -227,12 +222,22 @@ class MainViewModel : ViewModel() {
 
     private fun updateErc20Transactions() {
         erc20Adapter.transactions()
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
-                    transactions.value = list
+                    erc20Txs = list
+                    updateTransactionList()
                 }.let {
                     disposables.add(it)
                 }
+    }
+
+    private fun updateTransactionList() {
+        val list = when(showTxType){
+            ShowTxType.Eth -> ethTxs
+            ShowTxType.Erc20 -> erc20Txs
+        }
+        transactions.value = list
     }
 
 
@@ -246,8 +251,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun clear() {
-        EthereumKit.clear(App.instance, networkType, walletId)
-        Erc20Kit.clear(App.instance, networkType, walletId)
+        EthereumKit.clear(App.instance, conf.networkType, conf.walletId)
+        Erc20Kit.clear(App.instance, conf.networkType, conf.walletId)
         init()
     }
 
@@ -265,7 +270,8 @@ class MainViewModel : ViewModel() {
         else
             ethereumAdapter.estimatedGasLimit(Address(toAddress), value, gasPrice)
 
-        estimateSingle.subscribeOn(Schedulers.io())
+        estimateSingle
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
                     //success
@@ -322,14 +328,14 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        val transactionsSingle = if (ethTx) ethereumAdapter.transactions() else erc20Adapter.transactions()
-
-        transactionsSingle.observeOn(AndroidSchedulers.mainThread())
-                .subscribe { txList: List<TransactionRecord> ->
-                    transactions.value = txList
-                }.let {
-                    disposables.add(it)
-                }
+        if (ethTx){
+            updateEthTransactions()
+            showTxType = ShowTxType.Eth
+        } else {
+            updateErc20Transactions()
+            showTxType = ShowTxType.Erc20
+        }
+        showTxTypeLiveData.postValue(showTxType)
     }
 
     //
@@ -443,6 +449,10 @@ class MainViewModel : ViewModel() {
         }
     }
 
+}
+
+enum class ShowTxType{
+    Eth, Erc20
 }
 
 data class Erc20Token(

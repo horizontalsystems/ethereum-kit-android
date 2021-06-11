@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
+import androidx.sqlite.db.SimpleSQLiteQuery
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncerStateStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
@@ -10,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong
 class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, ITransactionSyncerStateStorage {
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
     private val transactionDao = database.transactionDao()
+    private val tagsDao = database.transactionTagDao()
     private val transactionSyncerStateDao = database.transactionSyncerStateDao()
 
     //region NotSyncedTransaction
@@ -56,6 +58,93 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
                     }
                     etherTransactions
                 }
+    }
+
+    override fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
+
+        var whereClause = "WHERE " + tags
+                .mapIndexed { index, andTags ->
+                    val tagsString = andTags.joinToString(", ") { "'$it'" }
+                    "transaction_tags_$index.name IN ($tagsString)"
+                }
+                .joinToString(" AND ")
+
+        hash?.let { transactionDao.getTransaction(hash) }?.let { fromTransaction ->
+            val transactionIndex = fromTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0
+            whereClause += """
+                           AND tx.timestamp < ${fromTransaction.transaction.timestamp} OR 
+                                (
+                                    tx.timestamp = ${fromTransaction.transaction.timestamp} AND 
+                                    receipt.transactionIndex < $transactionIndex
+                                )
+                           )
+                           """
+        }
+
+        val limitClause = limit?.let { "LIMIT $limit" } ?: ""
+
+        val orderClause = """
+                          ORDER BY tx.timestamp DESC,
+                          receipt.transactionIndex DESC
+                          """
+
+        val transactionTagJoinStatements = tags
+                .mapIndexed { index, _ ->
+                    "INNER JOIN TransactionTag AS transaction_tags_$index ON tx.hash = transaction_tags_$index.hash"
+                }
+                .joinToString("\n")
+
+        val sqlQuery = """
+                      SELECT tx.*
+                      FROM `Transaction` as tx
+                      $transactionTagJoinStatements
+                      LEFT JOIN TransactionReceipt as receipt ON tx.hash = receipt.transactionHash
+                      $whereClause
+                      GROUP BY tx.hash
+                      $orderClause
+                      $limitClause
+                      """
+
+        return transactionDao.getTransactionsBeforeAsync(SimpleSQLiteQuery(sqlQuery))
+    }
+
+    override fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
+
+        var whereClause = "WHERE " + tags
+                .mapIndexed { index, andTags ->
+                    val tagsString = andTags.joinToString(", ") { "'$it'" }
+                    "transaction_tags_$index.name IN ($tagsString)"
+                }
+                .joinToString(" AND ")
+
+
+        whereClause += """
+                           AND receipt.status == NULL
+                           """
+
+        val transactionTagJoinStatements = tags
+                .mapIndexed { index, _ ->
+                    "INNER JOIN TransactionTag AS transaction_tags_$index ON tx.hash = transaction_tags_$index.hash"
+                }
+                .joinToString("\n")
+
+
+        val sqlQuery = """
+                      SELECT tx.*
+                      FROM `Transaction` as tx
+                      $transactionTagJoinStatements
+                      LEFT JOIN TransactionReceipt as receipt ON tx.hash = receipt.transactionHash
+                      $whereClause
+                      GROUP BY tx.hash
+                      """
+
+        return transactionDao.getPending(SimpleSQLiteQuery(sqlQuery))
+    }
+
+    override fun set(tags: List<TransactionTag>) {
+        tags.forEach {
+            tagsDao.insert(it)
+        }
     }
 
     override fun getFullTransaction(hash: ByteArray): FullTransaction? {
