@@ -19,7 +19,7 @@ class OneInchService(
         networkType: NetworkType
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val url = "https://api.1inch.exchange/v3.0/${networkType.getNetwork().id}/"
+    private val url = "https://api.1inch.exchange/v3.0/${networkType.chainId}/"
     private val service: OneInchServiceApi
 
     init {
