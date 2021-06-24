@@ -1,14 +1,17 @@
-package io.horizontalsystems.erc20kit.events
+package io.horizontalsystems.erc20kit.decorations
 
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
 class ApproveEventDecoration(
-        val contractAddress: Address, val owner: Address, val spender: Address, val value: BigInteger
-) : EventDecoration(contractAddress) {
-    override val tags: List<String> = listOf(contractAddress.hex, "eip20Approve")
+        contractAddress: Address, val owner: Address, val spender: Address, val value: BigInteger
+) : ContractEventDecoration(contractAddress) {
+
+    override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
+        return listOf(contractAddress.hex, "eip20Approve")
+    }
 
     companion object {
         val signature = ContractEvent(

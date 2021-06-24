@@ -1,15 +1,15 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
-import io.horizontalsystems.erc20kit.events.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArrayOrNull
 import io.horizontalsystems.ethereumkit.core.toRawHexString
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 
-fun TransactionLog.getErc20Event(): EventDecoration? {
+fun TransactionLog.getErc20Event(): ContractEventDecoration? {
     return try {
         if (topics.size != 3) {
             return null

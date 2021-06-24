@@ -4,6 +4,7 @@ import android.content.Context
 import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
@@ -147,8 +148,6 @@ class Erc20Kit(
 
             balanceManager.listener = erc20Kit
 
-            ethereumKit.addDecorator(Eip20TransactionDecorator(ethereumKit.receiveAddress, contractAddress, Eip20ContractMethodFactories))
-
             return erc20Kit
         }
 
@@ -159,6 +158,10 @@ class Erc20Kit(
 
         fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
             Erc20DatabaseManager.clear(context, networkType, walletId)
+        }
+
+        fun decorator(evmKit: EthereumKit): IDecorator {
+            return Eip20TransactionDecorator(evmKit.receiveAddress, Eip20ContractMethodFactories)
         }
 
         private fun getTransactionSyncerId(contractAddress: Address): String {

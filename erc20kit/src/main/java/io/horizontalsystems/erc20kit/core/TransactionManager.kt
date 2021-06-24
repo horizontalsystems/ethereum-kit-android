@@ -1,11 +1,12 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.contract.TransferMethod
-import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
-import io.horizontalsystems.erc20kit.events.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveMethodDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferMethodDecoration
 import io.horizontalsystems.erc20kit.models.*
 import io.horizontalsystems.ethereumkit.core.*
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -25,7 +26,7 @@ class TransactionManager(
     private val disposables = CompositeDisposable()
     private val transactionsSubject = PublishSubject.create<List<FullTransaction>>()
     private val address = ethereumKit.receiveAddress
-    private val tags: List<List<String>> = listOf(listOf(contractAddress.hex), listOf("eip20Transfer", "eip20Approve"))
+    private val tags: List<List<String>> = listOf(listOf(contractAddress.hex))
 
     val transactionsAsync: Flowable<List<FullTransaction>> = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
@@ -67,10 +68,10 @@ class TransactionManager(
 
             fullTransaction.mainDecoration?.let { decoration ->
                 return@filter when (decoration) {
-                    is TransactionDecoration.Eip20Transfer -> {
+                    is TransferMethodDecoration -> {
                         decoration.to == address || transaction.from == address
                     }
-                    is TransactionDecoration.Eip20Approve -> {
+                    is ApproveMethodDecoration -> {
                         transaction.from == address
                     }
                     else -> false
@@ -78,7 +79,7 @@ class TransactionManager(
             }
 
             fullTransaction.eventDecorations.forEach { decoration ->
-                return@filter when(decoration){
+                return@filter when (decoration) {
                     is TransferEventDecoration -> {
                         decoration.from == address || decoration.to == address
                     }

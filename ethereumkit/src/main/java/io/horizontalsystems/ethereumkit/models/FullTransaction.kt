@@ -2,8 +2,8 @@ package io.horizontalsystems.ethereumkit.models
 
 import androidx.room.Embedded
 import androidx.room.Relation
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import java.math.BigInteger
 
 class FullTransaction(
@@ -29,9 +29,9 @@ class FullTransaction(
         val droppedTransaction: DroppedTransaction? = null,
 ) {
     @Transient
-    var mainDecoration: TransactionDecoration? = null
+    var mainDecoration: ContractMethodDecoration? = null
     @Transient
-    var eventDecorations: MutableList<EventDecoration> = mutableListOf()
+    var eventDecorations: MutableList<ContractEventDecoration> = mutableListOf()
 
     fun isFailed(): Boolean {
         val receipt = receiptWithLogs?.receipt

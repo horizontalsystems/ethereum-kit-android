@@ -1,9 +1,6 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
-import io.horizontalsystems.ethereumkit.core.ITransactionStorage
-import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
+import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedInternalTransaction
 import io.reactivex.schedulers.Schedulers
@@ -37,7 +34,7 @@ class TransactionInternalTransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        provider.getInternalTransactions(notSyncedInternalTransaction)
+        provider.getInternalTransactionsAsync(notSyncedInternalTransaction)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ internalTransactions ->
                     handle(notSyncedInternalTransaction, internalTransactions)

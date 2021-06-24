@@ -11,12 +11,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
-import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
-import io.horizontalsystems.erc20kit.events.TransferEventDecoration
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveMethodDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferMethodDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
+import io.horizontalsystems.ethereumkit.decorations.RecognizedMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.uniswapkit.decorations.SwapEventDecoration
+import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
 import kotlinx.android.synthetic.main.fragment_transactions.*
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -56,8 +60,8 @@ class TransactionsFragment : Fragment() {
         })
 
         viewModel.showTxTypeLiveData.observe(viewLifecycleOwner, { showTxType ->
-            context?.let{ ctx ->
-                when(showTxType){
+            context?.let { ctx ->
+                when (showTxType) {
                     ShowTxType.Eth -> {
                         ethFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
                         tokenFilter.setBackgroundColor(Color.WHITE)
@@ -66,7 +70,8 @@ class TransactionsFragment : Fragment() {
                         tokenFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
                         ethFilter.setBackgroundColor(Color.WHITE)
                     }
-                    else -> {}
+                    else -> {
+                    }
                 }
             }
 
@@ -130,7 +135,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         summary.text = value.trimIndent()
     }
 
-    private fun stringify(eventsDecorations: List<EventDecoration>, transactionRecord: TransactionRecord): String {
+    private fun stringify(eventsDecorations: List<ContractEventDecoration>, transactionRecord: TransactionRecord): String {
         return eventsDecorations.map { event ->
             when (event) {
                 is TransferEventDecoration -> {
@@ -163,44 +168,44 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
                 ?: "n/a"
         val fromAddress = transaction.from.address?.take(6)
 
-        when (decoration) {
-            is TransactionDecoration.Swap -> {
-                return "${amountIn(decoration.trade)} ${stringify(decoration.tokenIn)} <-> ${amountOut(decoration.trade)} ${stringify(decoration.tokenOut)}"
+        return when (decoration) {
+            is SwapMethodDecoration -> {
+                "${amountIn(decoration.trade)} ${stringify(decoration.tokenIn)} <-> ${amountOut(decoration.trade)} ${stringify(decoration.tokenOut)}"
             }
-            is TransactionDecoration.Eip20Transfer -> {
-                return "${readableNumber(decoration.value)} $coinName $fromAddress -> ${decoration.to.eip55.take(6)}"
+            is TransferMethodDecoration -> {
+                "${readableNumber(decoration.value)} $coinName $fromAddress -> ${decoration.to.eip55.take(6)}"
             }
-            is TransactionDecoration.Eip20Approve -> {
-                return "${readableNumber(decoration.value)} $coinName approved"
+            is ApproveMethodDecoration -> {
+                "${readableNumber(decoration.value)} $coinName approved"
             }
-            is TransactionDecoration.Recognized -> {
-                return "${decoration.method} ${decoration.arguments.size} arguments"
+            is RecognizedMethodDecoration -> {
+                "${decoration.method} ${decoration.arguments.size} arguments"
             }
-            else -> return "contract call"
+            else -> "contract call"
         }
     }
 
-    private fun stringify(token: TransactionDecoration.Swap.Token): String {
+    private fun stringify(token: SwapMethodDecoration.Token): String {
         return when (token) {
-            is TransactionDecoration.Swap.Token.EvmCoin -> "ETH"
-            is TransactionDecoration.Swap.Token.Eip20Coin -> Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == token.address.eip55 }?.code
+            is SwapMethodDecoration.Token.EvmCoin -> "ETH"
+            is SwapMethodDecoration.Token.Eip20Coin -> Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == token.address.eip55 }?.code
                     ?: "n/a"
         }
     }
 
-    private fun amountIn(trade: TransactionDecoration.Swap.Trade): String {
+    private fun amountIn(trade: SwapMethodDecoration.Trade): String {
         val amount: BigInteger = when (trade) {
-            is TransactionDecoration.Swap.Trade.ExactIn -> trade.amountIn
-            is TransactionDecoration.Swap.Trade.ExactOut -> trade.amountIn ?: trade.amountInMax
+            is SwapMethodDecoration.Trade.ExactIn -> trade.amountIn
+            is SwapMethodDecoration.Trade.ExactOut -> trade.amountIn ?: trade.amountInMax
         }
 
         return readableNumber(amount)
     }
 
-    private fun amountOut(trade: TransactionDecoration.Swap.Trade): String {
+    private fun amountOut(trade: SwapMethodDecoration.Trade): String {
         val amount: BigInteger = when (trade) {
-            is TransactionDecoration.Swap.Trade.ExactIn -> trade.amountOut ?: trade.amountOutMin
-            is TransactionDecoration.Swap.Trade.ExactOut -> trade.amountOut
+            is SwapMethodDecoration.Trade.ExactIn -> trade.amountOut ?: trade.amountOutMin
+            is SwapMethodDecoration.Trade.ExactOut -> trade.amountOut
         }
 
         return readableNumber(amount)
@@ -213,7 +218,7 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
     }
 
     private fun readableAmount(value: BigDecimal): String {
-        if (value.compareTo(BigDecimal.ZERO) == 0){
+        if (value.compareTo(BigDecimal.ZERO) == 0) {
             return "0"
         }
         return value
