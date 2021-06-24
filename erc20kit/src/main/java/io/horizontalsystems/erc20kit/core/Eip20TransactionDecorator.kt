@@ -3,11 +3,13 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.erc20kit.contract.TransferMethod
-import io.horizontalsystems.erc20kit.events.ApproveEventDecoration
-import io.horizontalsystems.erc20kit.events.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveEventDecoration
+import io.horizontalsystems.erc20kit.decorations.ApproveMethodDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
+import io.horizontalsystems.erc20kit.decorations.TransferMethodDecoration
 import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -16,25 +18,20 @@ import io.horizontalsystems.ethereumkit.models.TransactionLog
 
 class Eip20TransactionDecorator(
         private val userAddress: Address,
-        private val tokenAddress: Address,
         private val contractMethodFactories: Eip20ContractMethodFactories
 ) : IDecorator {
 
-    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): TransactionDecoration? =
+    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? =
             when (val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input)) {
-                is TransferMethod -> TransactionDecoration.Eip20Transfer(contractMethod.to, contractMethod.value)
-                is ApproveMethod -> TransactionDecoration.Eip20Approve(contractMethod.spender, contractMethod.value)
+                is TransferMethod -> TransferMethodDecoration(contractMethod.to, contractMethod.value)
+                is ApproveMethod -> ApproveMethodDecoration(contractMethod.spender, contractMethod.value)
                 else -> null
             }
 
-    override fun decorate(logs: List<TransactionLog>): List<EventDecoration> {
+    override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
         return logs.mapNotNull { log ->
 
-            val event = if (log.address == tokenAddress) {
-                log.getErc20Event()
-            } else {
-                return@mapNotNull null
-            }
+            val event = log.getErc20Event() ?: return@mapNotNull null
 
             when (event) {
                 is TransferEventDecoration -> {

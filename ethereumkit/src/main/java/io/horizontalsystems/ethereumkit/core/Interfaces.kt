@@ -4,8 +4,8 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -143,6 +143,6 @@ interface ITransactionSyncerDelegate {
 }
 
 interface IDecorator {
-    fun decorate(logs: List<TransactionLog>): List<EventDecoration>
-    fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): TransactionDecoration?
+    fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration>
+    fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration?
 }

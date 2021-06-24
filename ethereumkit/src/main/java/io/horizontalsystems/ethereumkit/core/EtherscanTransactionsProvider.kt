@@ -65,7 +65,7 @@ class EtherscanTransactionsProvider(
                 }
     }
 
-    fun getInternalTransactions(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>> {
+    fun getInternalTransactionsAsync(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>> {
         return etherscanService.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
                 .map { response ->
                     response.result.mapNotNull { internalTx ->

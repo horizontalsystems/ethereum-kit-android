@@ -147,7 +147,7 @@ class EtherscanService(
         fun getInternalTransactions(
                 @Query("module") module: String,
                 @Query("action") action: String,
-                @Query("address") address: String,
+                @Query("txhash") address: String,
                 @Query("sort") sort: String,
                 @Query("apiKey") apiKey: String): Single<JsonElement>
     }

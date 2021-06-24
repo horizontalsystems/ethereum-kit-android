@@ -1,6 +1,6 @@
-package io.horizontalsystems.ethereumkit.core
+package io.horizontalsystems.ethereumkit.decorations
 
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -14,7 +14,7 @@ class DecorationManager(
         decorators.add(decorator)
     }
 
-    fun decorateTransaction(transactionData: TransactionData): TransactionDecoration? {
+    fun decorateTransaction(transactionData: TransactionData): ContractMethodDecoration? {
         if (transactionData.input.isEmpty())
             return null
 
@@ -38,7 +38,7 @@ class DecorationManager(
             decorator.decorate(transactionData, fullTransaction)?.let {
                 fullTransaction.mainDecoration = it
             }
-            fullTransaction.receiptWithLogs?.let{
+            fullTransaction.receiptWithLogs?.let {
                 fullTransaction.eventDecorations.addAll(decorator.decorate(it.logs))
             }
         }
@@ -47,7 +47,7 @@ class DecorationManager(
             val methodId = fullTransaction.transaction.input.take(4).toByteArray()
             val inputArguments = fullTransaction.transaction.input.takeLast(4).toByteArray()
 
-            fullTransaction.mainDecoration = TransactionDecoration.Unknown(methodId, inputArguments)
+            fullTransaction.mainDecoration = UnknownMethodDecoration(methodId, inputArguments)
         }
 
         return fullTransaction

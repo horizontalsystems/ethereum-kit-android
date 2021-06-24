@@ -1,8 +1,7 @@
-package io.horizontalsystems.ethereumkit.contracts
+package io.horizontalsystems.ethereumkit.decorations
 
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.decorations.EventDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -10,7 +9,7 @@ import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
-class ContractCallDecorator : IDecorator {
+class ContractCallDecorator(val address: Address) : IDecorator {
 
     private var methods = mutableMapOf<ByteArray, RecognizedContractMethod>()
 
@@ -20,7 +19,14 @@ class ContractCallDecorator : IDecorator {
                 listOf(Address::class, BigInteger::class, Address::class, Address::class, BigInteger::class, BigInteger::class, Address::class, BigInteger::class, ByteArray::class))
     }
 
-    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): TransactionDecoration? {
+    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? {
+
+        val transaction = fullTransaction?.transaction ?: return null
+
+        if (transaction.from != address) {
+            return null
+        }
+
         val methodId = transactionData.input.take(4).toByteArray()
         val inputArguments = transactionData.input.takeLast(4).toByteArray()
 
@@ -28,10 +34,10 @@ class ContractCallDecorator : IDecorator {
 
         val arguments = ContractMethodHelper.decodeABI(inputArguments, method.arguments)
 
-        return TransactionDecoration.Recognized(method.name, arguments)
+        return RecognizedMethodDecoration(method.name, arguments)
     }
 
-    override fun decorate(logs: List<TransactionLog>): List<EventDecoration> {
+    override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
         return emptyList()
     }
 

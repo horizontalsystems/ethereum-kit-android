@@ -11,9 +11,10 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.contracts.ContractCallDecorator
+import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.crypto.*
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
+import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
@@ -191,12 +192,8 @@ class EthereumKit(
         }
     }
 
-    fun decorate(transactionData: TransactionData): TransactionDecoration? {
+    fun decorate(transactionData: TransactionData): ContractMethodDecoration? {
         return decorationManager.decorateTransaction(transactionData)
-    }
-
-    fun decorate(transaction: FullTransaction) : FullTransaction? {
-        return decorationManager.decorateFullTransaction(transaction)
     }
 
     fun syncInternalTransactions(transaction: Transaction) {
@@ -424,7 +421,8 @@ class EthereumKit(
             transactionSyncManager.add(outgoingPendingTransactionSyncer)
 
             val decorationManager = DecorationManager(address)
-            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager)
+            val tagGenerator = TagGenerator(address)
+            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager, tagGenerator)
             val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
             val ethereumKit = EthereumKit(
@@ -446,7 +444,7 @@ class EthereumKit(
             blockchain.listener = ethereumKit
             transactionSyncManager.set(ethereumKit)
 
-            decorationManager.addDecorator(ContractCallDecorator())
+            decorationManager.addDecorator(ContractCallDecorator(address))
 
             return ethereumKit
         }
