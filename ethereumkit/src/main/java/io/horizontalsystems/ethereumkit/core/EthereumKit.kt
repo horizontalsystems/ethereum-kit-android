@@ -519,7 +519,7 @@ class EthereumKit(
         val isMainNet: Boolean
     ) {
         EthMainNet(1, 15, 60, true),
-        EthRopsten(56, 5, 1, false),
+        EthRopsten(3, 5, 1, false),
         EthKovan(42, 4, 1, false),
         EthRinkeby(4, 15, 1, false),
         BscMainNet(56, 5, 60, true),
