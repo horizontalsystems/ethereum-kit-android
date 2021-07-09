@@ -96,8 +96,8 @@ class Pair(
                     initCodeHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
                 }
                 NetworkType.BscMainNet -> {
-                    factoryAddress = "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
-                    initCodeHash = "0xd0d4c4cd0848c93cb4fd1f498d7013ee6bfb25783ea21593d5834f5d250ece66"
+                    factoryAddress = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+                    initCodeHash = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
                 }
             }
 
