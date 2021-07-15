@@ -14,8 +14,8 @@ class ContractCallDecorator(val address: Address) : IDecorator {
     private var methods = mutableMapOf<ByteArray, RecognizedContractMethod>()
 
     init {
-        addMethod("deposit", "deposit(uint256)", listOf(BigInteger::class))
-        addMethod("tradeWithHintAndFee", "tradeWithHintAndFee(address,uint256,address,address,uint256,uint256,address,uint256,bytes)",
+        addMethod("Deposit", "deposit(uint256)", listOf(BigInteger::class))
+        addMethod("TradeWithHintAndFee", "tradeWithHintAndFee(address,uint256,address,address,uint256,uint256,address,uint256,bytes)",
                 listOf(Address::class, BigInteger::class, Address::class, Address::class, BigInteger::class, BigInteger::class, Address::class, BigInteger::class, ByteArray::class))
     }
 
