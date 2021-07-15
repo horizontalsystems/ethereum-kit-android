@@ -3,15 +3,19 @@ package io.horizontalsystems.oneinchkit
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
+import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
+import io.horizontalsystems.oneinchkit.decorations.OneInchTransactionDecorator
 import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
 
 class OneInchKit(
         private val evmKit: EthereumKit,
-        private val service: OneInchService
+        private val service: OneInchService,
+        private val internalTransactionSyncer: OneInchInternalTransactionSyncer
 ) {
 
     val smartContractAddress: Address = when (evmKit.networkType) {
@@ -62,7 +66,12 @@ class OneInchKit(
 
         fun getInstance(evmKit: EthereumKit): OneInchKit {
             val service = OneInchService(evmKit.networkType)
-            return OneInchKit(evmKit, service)
+            val internalTransactionSyncer = OneInchInternalTransactionSyncer(evmKit)
+            return OneInchKit(evmKit, service, internalTransactionSyncer)
+        }
+
+        fun decorator(evmKit: EthereumKit): IDecorator {
+            return OneInchTransactionDecorator(evmKit.receiveAddress, OneInchContractMethodFactories)
         }
 
     }

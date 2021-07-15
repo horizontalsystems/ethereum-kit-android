@@ -12,6 +12,7 @@ import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.Mnemonic
+import io.horizontalsystems.oneinchkit.OneInchKit
 import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
 import io.horizontalsystems.uniswapkit.models.Token
@@ -75,6 +76,7 @@ class MainViewModel : ViewModel() {
 
         ethereumKit.addDecorator(Erc20Kit.decorator(ethereumKit))
         ethereumKit.addDecorator(UniswapKit.decorator(ethereumKit))
+        ethereumKit.addDecorator(OneInchKit.decorator(ethereumKit))
 
         updateBalance()
         updateErc20Balance()
@@ -236,7 +238,7 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateTransactionList() {
-        val list = when(showTxType){
+        val list = when (showTxType) {
             ShowTxType.Eth -> ethTxs
             ShowTxType.Erc20 -> erc20Txs
         }
@@ -331,7 +333,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        if (ethTx){
+        if (ethTx) {
             updateEthTransactions()
             showTxType = ShowTxType.Eth
         } else {
@@ -454,7 +456,7 @@ class MainViewModel : ViewModel() {
 
 }
 
-enum class ShowTxType{
+enum class ShowTxType {
     Eth, Erc20
 }
 
