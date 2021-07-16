@@ -43,9 +43,9 @@ private fun String.getByteArray(): ByteArray {
     if (hexWithoutPrefix.length % 2 == 1) {
         hexWithoutPrefix = "0$hexWithoutPrefix"
     }
-    return ByteArray(hexWithoutPrefix.length / 2) {
-        hexWithoutPrefix.substring(it * 2, it * 2 + 2).toInt(16).toByte()
-    }
+    return hexWithoutPrefix.chunked(2)
+            .map { it.toInt(16).toByte() }
+            .toByteArray()
 }
 
 fun String.stripHexPrefix(): String {
