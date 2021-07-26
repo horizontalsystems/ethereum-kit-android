@@ -19,24 +19,9 @@ interface TransactionDao {
     @Query("SELECT * FROM `Transaction` WHERE hash=:hash")
     fun getTransaction(hash: ByteArray): FullTransaction?
 
-    @Query("SELECT MAX(syncOrder) FROM `Transaction`")
-    fun getLastTransactionSyncOrder(): Long?
-
     @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` WHERE hash IN (:hashes)")
     fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
-
-    @androidx.room.Transaction
-    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
-    fun getTransactions(): List<FullTransaction>
-
-    @androidx.room.Transaction
-    @Query("SELECT * FROM `Transaction` WHERE syncOrder > :fromSyncOrder ORDER BY syncOrder ASC")
-    fun getTransactions(fromSyncOrder: Long): List<FullTransaction>
-
-    @androidx.room.Transaction
-    @Query("SELECT * FROM `Transaction` ORDER BY timestamp DESC")
-    fun getTransactionsAsync(): Single<List<FullTransaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transactionReceipt: TransactionReceipt)
@@ -46,9 +31,6 @@ interface TransactionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(logs: List<TransactionLog>)
-
-    @Query("SELECT blockNumber FROM InternalTransaction ORDER BY blockNumber DESC LIMIT 1")
-    fun getLastInternalTransactionBlockNumber(): Long?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
@@ -84,6 +66,6 @@ interface TransactionDao {
     fun getPending(query: SupportSQLiteQuery): List<FullTransaction>
 
     @RawQuery
-    fun getTransactionsBeforeAsync(query: SupportSQLiteQuery):Single<List<FullTransaction>>
+    fun getTransactionsBeforeAsync(query: SupportSQLiteQuery): Single<List<FullTransaction>>
 
 }

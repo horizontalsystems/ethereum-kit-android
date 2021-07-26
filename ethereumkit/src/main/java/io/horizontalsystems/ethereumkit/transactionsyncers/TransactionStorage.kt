@@ -6,7 +6,6 @@ import io.horizontalsystems.ethereumkit.core.ITransactionSyncerStateStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.Single
-import java.util.concurrent.atomic.AtomicLong
 
 class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, ITransactionSyncerStateStorage {
     private val notSyncedTransactionDao = database.notSyncedTransactionDao()
@@ -52,31 +51,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         return transactionDao.getTransactionHashes()
     }
 
-    override fun getEtherTransactionsAsync(address: Address, fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
-        return transactionDao.getTransactionsAsync()
-                .map { fullTransactions ->
-                    var etherTransactions = fullTransactions.filter { it.hasEtherTransfer(address) }
-
-                    fromHash?.let {
-                        val fullTxFrom = etherTransactions.firstOrNull { it.transaction.hash.contentEquals(fromHash) }
-                        fullTxFrom?.let {
-                            etherTransactions = etherTransactions.filter {
-                                it.transaction.timestamp < fullTxFrom.transaction.timestamp ||
-                                        (it.transaction.timestamp == fullTxFrom.transaction.timestamp
-                                                && (it.receiptWithLogs?.receipt?.transactionIndex?.compareTo(fullTxFrom.receiptWithLogs?.receipt?.transactionIndex
-                                                ?: 0) ?: 0) < 0)
-                            }
-                        }
-                    }
-                    limit?.let {
-                        etherTransactions = etherTransactions.take(limit)
-                    }
-                    etherTransactions
-                }
-    }
-
     override fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
-
         var whereClause = "WHERE " + tags
                 .mapIndexed { index, andTags ->
                     val tagsString = andTags.joinToString(", ") { "'$it'" }
@@ -135,7 +110,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
 
 
         whereClause += """
-                           AND receipt.status == NULL
+                           AND receipt.status IS NULL
                            """
 
         val transactionTagJoinStatements = tags
@@ -171,14 +146,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         return transactionDao.getTransactions(hashes)
     }
 
-    override fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
-        return transactionDao.getTransactions(fromSyncOrder ?: 0)
-    }
-
-    private val lastSyncOrder = AtomicLong(transactionDao.getLastTransactionSyncOrder() ?: 0)
-
     override fun save(transaction: Transaction) {
-        transaction.syncOrder = lastSyncOrder.incrementAndGet()
         transactionDao.insert(transaction)
     }
 
@@ -199,9 +167,6 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
     //endregion
 
     //region InternalTransactions
-    override fun getLastInternalTransactionBlockHeight(): Long? {
-        return transactionDao.getLastInternalTransactionBlockNumber()
-    }
 
     override fun saveInternalTransactions(internalTransactions: List<InternalTransaction>) {
         transactionDao.insertInternalTransactions(internalTransactions)

@@ -61,13 +61,6 @@ class TransactionSyncManager(
         syncer.start()
     }
 
-    fun removeSyncer(id: String) {
-        syncers.firstOrNull { it.id == id }?.let { syncer ->
-            stopSyncer(syncer)
-            syncers.remove(syncer)
-        }
-    }
-
     fun stop() {
         syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
 

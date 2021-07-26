@@ -1,6 +1,5 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.TransactionSyncOrder
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
 import java.math.BigInteger
@@ -16,11 +15,6 @@ interface IBalanceManager {
 
     val balance: BigInteger?
     fun sync()
-}
-
-interface ITransactionStorage {
-    fun getTransactionSyncOrder(): TransactionSyncOrder?
-    fun save(transactionSyncOrder: TransactionSyncOrder)
 }
 
 interface ITokenBalanceStorage {

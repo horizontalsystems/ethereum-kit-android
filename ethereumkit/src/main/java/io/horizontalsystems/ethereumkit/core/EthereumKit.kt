@@ -11,8 +11,8 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.crypto.*
+import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.*
@@ -67,7 +67,7 @@ class EthereumKit(
         state.lastBlockHeight = blockchain.lastBlockHeight
         state.accountState = blockchain.accountState
 
-        transactionManager.etherTransactionsAsync
+        transactionManager.allTransactionsAsync
                 .subscribeOn(Schedulers.io())
                 .subscribe {
                     blockchain.syncAccountState()
@@ -103,9 +103,6 @@ class EthereumKit(
     val accountStateFlowable: Flowable<AccountState>
         get() = accountStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val etherTransactionsFlowable: Flowable<List<FullTransaction>>
-        get() = transactionManager.etherTransactionsAsync
-
     val allTransactionsFlowable: Flowable<List<FullTransaction>>
         get() = transactionManager.allTransactionsAsync
 
@@ -136,20 +133,16 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun etherTransactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
-        return transactionManager.getEtherTransactionsAsync(fromHash, limit)
+    fun getTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
+        return transactionManager.getTransactionsFlowable(tags)
     }
 
-    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null) : Single<List<FullTransaction>> {
+    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
         return transactionManager.getTransactionsAsync(tags, fromHash, limit)
     }
 
-    fun getPendingTransactions(tags: List<List<String>>) : List<FullTransaction> {
+    fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
         return transactionManager.getPendingTransactions(tags)
-    }
-
-    fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
-        return transactionManager.getFullTransactions(fromSyncOrder)
     }
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
@@ -276,10 +269,6 @@ class EthereumKit(
 
     fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {
         transactionSyncManager.add(transactionSyncer)
-    }
-
-    fun removeTransactionSyncer(id: String) {
-        transactionSyncManager.removeSyncer(id)
     }
 
     fun addDecorator(decorator: IDecorator) {
@@ -513,10 +502,10 @@ class EthereumKit(
     }
 
     enum class NetworkType(
-        val chainId: Int,
-        val blockTime: Long,
-        val coinType: Int,
-        val isMainNet: Boolean
+            val chainId: Int,
+            val blockTime: Long,
+            val coinType: Int,
+            val isMainNet: Boolean
     ) {
         EthMainNet(1, 15, 60, true),
         EthRopsten(3, 5, 1, false),

@@ -18,7 +18,6 @@ import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 
 class Erc20Kit(
-        private val contractAddress: Address,
         private val ethereumKit: EthereumKit,
         private val transactionManager: TransactionManager,
         private val balanceManager: IBalanceManager,
@@ -70,12 +69,11 @@ class Erc20Kit(
         get() = transactionManager.transactionsAsync
 
     fun start() {
-        transactionManager.sync()
+        balanceManager.sync()
     }
 
     fun stop() {
         transactionManager.stop()
-        ethereumKit.removeTransactionSyncer(getTransactionSyncerId(contractAddress))
 
         disposables.clear()
     }
@@ -136,15 +134,14 @@ class Erc20Kit(
 
             val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId, contractAddress)
             val roomStorage = Erc20Storage(erc20KitDatabase)
-            val transactionStorage: ITransactionStorage = roomStorage
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
             val dataProvider: IDataProvider = DataProvider(ethereumKit)
-            val transactionManager = TransactionManager(contractAddress, ethereumKit, transactionStorage)
+            val transactionManager = TransactionManager(contractAddress, ethereumKit)
             val balanceManager: IBalanceManager = BalanceManager(contractAddress, address, balanceStorage, dataProvider)
             val allowanceManager = AllowanceManager(ethereumKit, contractAddress, address)
 
-            val erc20Kit = Erc20Kit(contractAddress, ethereumKit, transactionManager, balanceManager, allowanceManager)
+            val erc20Kit = Erc20Kit(ethereumKit, transactionManager, balanceManager, allowanceManager)
 
             balanceManager.listener = erc20Kit
 
