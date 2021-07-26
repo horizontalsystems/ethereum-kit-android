@@ -1,17 +1,18 @@
 package io.horizontalsystems.erc20kit.core.room
 
 import android.content.Context
-import androidx.room.*
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import io.horizontalsystems.erc20kit.models.TokenBalance
-import io.horizontalsystems.erc20kit.models.TransactionSyncOrder
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 
-@Database(entities = [TokenBalance::class, TransactionSyncOrder::class], version = 5, exportSchema = true)
+@Database(entities = [TokenBalance::class], version = 5, exportSchema = true)
 @TypeConverters(RoomTypeConverters::class)
 abstract class Erc20KitDatabase : RoomDatabase() {
 
     abstract val tokenBalanceDao: TokenBalanceDao
-    abstract val transactionSyncOrderDao: TransactionSyncOrderDao
 
     companion object {
 

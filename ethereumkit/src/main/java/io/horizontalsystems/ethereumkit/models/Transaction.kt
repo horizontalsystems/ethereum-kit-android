@@ -16,6 +16,5 @@ class Transaction(
         val gasLimit: Long,
         val input: ByteArray,
 
-        var timestamp: Long,
-        var syncOrder: Long = -1
+        var timestamp: Long
 )

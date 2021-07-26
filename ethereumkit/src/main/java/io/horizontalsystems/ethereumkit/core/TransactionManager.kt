@@ -20,8 +20,8 @@ class TransactionManager(
         private val tagGenerator: TagGenerator
 ) {
     private val disposables = CompositeDisposable()
-    private val etherTransactionSubject = PublishSubject.create<List<FullTransaction>>()
     private val allTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
+    private val transactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
 
     init {
         transactionSyncManager.transactionsAsync
@@ -32,11 +32,21 @@ class TransactionManager(
                 .let { disposables.add(it) }
     }
 
-    val etherTransactionsAsync: Flowable<List<FullTransaction>> = etherTransactionSubject.toFlowable(BackpressureStrategy.BUFFER)
     val allTransactionsAsync: Flowable<List<FullTransaction>> = allTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    fun getEtherTransactionsAsync(fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
-        return getTransactionsAsync(listOf(listOf("ETH")), fromHash, limit)
+    fun getTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
+        return transactionsWithTagsSubject.toFlowable(BackpressureStrategy.BUFFER)
+                .map { transactions ->
+                    transactions.mapNotNull { transactionWithTags ->
+                        for (andTags in tags) {
+                            if (transactionWithTags.tags.all { !andTags.contains(it) }) {
+                                return@mapNotNull null
+                            }
+                        }
+                        return@mapNotNull transactionWithTags.transaction
+                    }
+                }
+                .filter { it.isNotEmpty() }
     }
 
     fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
@@ -62,34 +72,30 @@ class TransactionManager(
         handle(listOf(fullTransaction))
     }
 
-    fun getFullTransactions(fromSyncOrder: Long?): List<FullTransaction> {
-        return storage.getFullTransactions(fromSyncOrder)
-    }
-
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
         return storage.getFullTransactions(hashes)
     }
 
     private fun handle(syncedTransactions: List<FullTransaction>) {
         val decoratedTransactions = syncedTransactions.map { decorationManager.decorateFullTransaction(it) }
-        val etherTransactions = mutableListOf<FullTransaction>()
+        val transactionWithTags = mutableListOf<TransactionWithTags>()
 
         decoratedTransactions.forEach { transaction ->
             val tags = tagGenerator.generate(transaction)
             storage.set(tags)
 
-            if (tags.any { it.name == "ETH" }) {
-                etherTransactions.add(transaction)
-            }
+            transactionWithTags.add(TransactionWithTags(transaction, tags.map { it.name }))
         }
 
         if (decoratedTransactions.isNotEmpty()) {
             allTransactionsSubject.onNext(decoratedTransactions)
-        }
-
-        if (etherTransactions.isNotEmpty()) {
-            etherTransactionSubject.onNext(etherTransactions)
+            transactionsWithTagsSubject.onNext(transactionWithTags)
         }
     }
+
+    data class TransactionWithTags(
+            val transaction: FullTransaction,
+            val tags: List<String>
+    )
 
 }

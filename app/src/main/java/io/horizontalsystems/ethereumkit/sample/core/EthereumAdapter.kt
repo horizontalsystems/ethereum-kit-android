@@ -46,7 +46,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
         get() = ethereumKit.accountStateFlowable.map { }
 
     override val transactionsFlowable: Flowable<Unit>
-        get() = ethereumKit.etherTransactionsFlowable.map { }
+        get() = ethereumKit.allTransactionsFlowable.map { }
 
 
     override fun start() {
@@ -70,7 +70,7 @@ class EthereumAdapter(private val ethereumKit: EthereumKit) : IAdapter {
     }
 
     override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
-        return ethereumKit.etherTransactions(fromHash, limit).map { transactions ->
+        return ethereumKit.getTransactionsAsync(listOf(listOf("ETH")), fromHash, limit).map { transactions ->
             transactions.map { transactionRecord(it) }
         }
     }
