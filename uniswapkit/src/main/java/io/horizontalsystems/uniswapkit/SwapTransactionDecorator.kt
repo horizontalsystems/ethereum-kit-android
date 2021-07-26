@@ -21,7 +21,7 @@ class SwapTransactionDecorator(
 
     override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? {
 
-        if (fullTransaction?.transaction?.from != address) {
+        if (fullTransaction != null && fullTransaction.transaction.from != address) {
             // We only parse transactions created by the user (owner of this wallet).
             // If a swap was initiated by someone else and "recipient" is set to user's it should be shown as just an incoming transaction
             return null
@@ -29,7 +29,7 @@ class SwapTransactionDecorator(
 
         return when (val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input)) {
             is SwapETHForExactTokensMethod -> {
-                val amountIn: BigInteger = fullTransaction?.let { fullTx ->
+                val amountIn: BigInteger? = fullTransaction?.let { fullTx ->
                     val change = totalETHIncoming(contractMethod.to, fullTransaction.internalTransactions)
                     fullTx.transaction.value - change
                 }
