@@ -51,17 +51,27 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         return transactionDao.getTransactionHashes()
     }
 
-    override fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
-        var whereClause = "WHERE " + tags
+    override fun getTransactionsBeforeAsync(
+        tags: List<List<String>>,
+        hash: ByteArray?,
+        limit: Int?
+    ): Single<List<FullTransaction>> {
+        val whereConditions = mutableListOf<String>()
+
+        if (tags.isNotEmpty()) {
+            val tagConditions = tags
                 .mapIndexed { index, andTags ->
                     val tagsString = andTags.joinToString(", ") { "'$it'" }
                     "transaction_tags_$index.name IN ($tagsString)"
                 }
                 .joinToString(" AND ")
 
+            whereConditions.add(tagConditions)
+        }
+
         hash?.let { transactionDao.getTransaction(hash) }?.let { fromTransaction ->
             val transactionIndex = fromTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0
-            whereClause += """
+            val fromCondition = """
                            AND (
                                 tx.timestamp < ${fromTransaction.transaction.timestamp} OR 
                                 (
@@ -70,7 +80,15 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
                                 )
                            )
                            """
+
+            whereConditions.add(fromCondition)
         }
+
+        val transactionTagJoinStatements = tags
+            .mapIndexed { index, _ ->
+                "INNER JOIN TransactionTag AS transaction_tags_$index ON tx.hash = transaction_tags_$index.hash"
+            }
+            .joinToString("\n")
 
         val limitClause = limit?.let { "LIMIT $limit" } ?: ""
 
@@ -79,11 +97,8 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
                           receipt.transactionIndex DESC
                           """
 
-        val transactionTagJoinStatements = tags
-                .mapIndexed { index, _ ->
-                    "INNER JOIN TransactionTag AS transaction_tags_$index ON tx.hash = transaction_tags_$index.hash"
-                }
-                .joinToString("\n")
+        val whereClause =
+            if (whereConditions.isNotEmpty()) "WHERE ${whereConditions.joinToString(" AND ")}" else ""
 
         val sqlQuery = """
                       SELECT tx.*
@@ -100,25 +115,34 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
     }
 
     override fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
+        val whereConditions = mutableListOf<String>()
+        var transactionTagJoinStatements = ""
 
-        var whereClause = "WHERE " + tags
+        if (tags.isNotEmpty()) {
+            val tagCondition = tags
                 .mapIndexed { index, andTags ->
                     val tagsString = andTags.joinToString(", ") { "'$it'" }
                     "transaction_tags_$index.name IN ($tagsString)"
                 }
                 .joinToString(" AND ")
 
+            whereConditions.add(tagCondition)
 
-        whereClause += """
-                           AND receipt.status IS NULL
-                           """
-
-        val transactionTagJoinStatements = tags
+            transactionTagJoinStatements += tags
                 .mapIndexed { index, _ ->
                     "INNER JOIN TransactionTag AS transaction_tags_$index ON tx.hash = transaction_tags_$index.hash"
                 }
                 .joinToString("\n")
+        }
 
+        whereConditions.add(
+            """
+            AND receipt.status IS NULL
+            """
+        )
+
+        val whereClause =
+            if (whereConditions.isNotEmpty()) "WHERE ${whereConditions.joinToString(" AND ")}" else ""
 
         val sqlQuery = """
                       SELECT tx.*
