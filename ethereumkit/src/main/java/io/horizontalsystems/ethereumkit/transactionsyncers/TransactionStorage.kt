@@ -72,7 +72,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         hash?.let { transactionDao.getTransaction(hash) }?.let { fromTransaction ->
             val transactionIndex = fromTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0
             val fromCondition = """
-                           AND (
+                           (
                                 tx.timestamp < ${fromTransaction.transaction.timestamp} OR 
                                 (
                                     tx.timestamp = ${fromTransaction.transaction.timestamp} AND 
@@ -137,7 +137,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
 
         whereConditions.add(
             """
-            AND receipt.status IS NULL
+            receipt.status IS NULL
             """
         )
 
