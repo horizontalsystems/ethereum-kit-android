@@ -143,3 +143,7 @@ interface IDecorator {
     fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration>
     fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration?
 }
+
+interface ITransactionWatcher {
+    fun needInternalTransactions(fullTransaction: FullTransaction): Boolean
+}

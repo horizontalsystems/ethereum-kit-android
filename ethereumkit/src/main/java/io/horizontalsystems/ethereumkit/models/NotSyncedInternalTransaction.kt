@@ -11,4 +11,4 @@ import androidx.room.PrimaryKey
 */
 
 @Entity
-class NotSyncedInternalTransaction(@PrimaryKey val hash: ByteArray)
+class NotSyncedInternalTransaction(@PrimaryKey val hash: ByteArray, var retryCount: Int)
