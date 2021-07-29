@@ -67,16 +67,14 @@ class MainViewModel : ViewModel() {
 
     fun init() {
         ethereumKit = createKit()
-        ethereumKit.addTransactionSyncer(Erc20Kit.getTransactionSyncer(ethereumKit))
         ethereumAdapter = EthereumAdapter(ethereumKit)
-
         erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: conf.erc20Tokens.first(), ethereumKit)
-
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
-        ethereumKit.addDecorator(Erc20Kit.decorator(ethereumKit))
-        ethereumKit.addDecorator(UniswapKit.decorator(ethereumKit))
-        ethereumKit.addDecorator(OneInchKit.decorator(ethereumKit))
+        Erc20Kit.addTransactionSyncer(ethereumKit)
+        Erc20Kit.addDecorator(ethereumKit)
+        UniswapKit.addDecorator(ethereumKit)
+        OneInchKit.addDecorator(ethereumKit)
 
         updateBalance()
         updateErc20Balance()

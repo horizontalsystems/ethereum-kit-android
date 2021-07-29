@@ -70,8 +70,9 @@ class OneInchKit(
             return OneInchKit(evmKit, service, internalTransactionSyncer)
         }
 
-        fun decorator(evmKit: EthereumKit): IDecorator {
-            return OneInchTransactionDecorator(evmKit.receiveAddress, OneInchContractMethodFactories)
+        fun addDecorator(evmKit: EthereumKit) {
+            val decorator = OneInchTransactionDecorator(evmKit.receiveAddress, OneInchContractMethodFactories)
+            evmKit.addDecorator(decorator)
         }
 
     }
