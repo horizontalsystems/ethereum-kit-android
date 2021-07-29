@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.decorations
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class TransferEventDecoration(
@@ -10,16 +11,16 @@ class TransferEventDecoration(
 ) : ContractEventDecoration(contractAddress) {
 
     override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
-        val tags = mutableListOf(contractAddress.hex, "eip20Transfer")
+        val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)
 
         if (from == userAddress) {
-            tags.add("${contractAddress.hex}_outgoing")
-            tags.add("outgoing")
+            tags.add(TransactionTag.eip20Outgoing(contractAddress.hex))
+            tags.add(TransactionTag.OUTGOING)
         }
 
         if (to == userAddress) {
-            tags.add("${contractAddress.hex}_incoming")
-            tags.add("incoming")
+            tags.add(TransactionTag.eip20Incoming(contractAddress.hex))
+            tags.add(TransactionTag.INCOMING)
         }
 
         return tags

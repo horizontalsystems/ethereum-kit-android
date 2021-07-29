@@ -6,4 +6,20 @@ import androidx.room.Entity
 class TransactionTag(
         val name: String,
         val hash: ByteArray
-)
+) {
+
+    companion object {
+        const val EVM_COIN = "ETH"
+        const val INCOMING = "incoming"
+        const val OUTGOING = "outgoing"
+        const val SWAP = "swap"
+        const val EVM_COIN_INCOMING = "${EVM_COIN}_${INCOMING}"
+        const val EVM_COIN_OUTGOING = "${EVM_COIN}_${OUTGOING}"
+        const val EIP20_TRANSFER = "eip20Transfer"
+        const val EIP20_APPROVE = "eip20Approve"
+
+        fun eip20Incoming(contractAddress: String): String = "${contractAddress}_$INCOMING"
+        fun eip20Outgoing(contractAddress: String): String = "${contractAddress}_$OUTGOING"
+    }
+
+}

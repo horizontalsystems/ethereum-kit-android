@@ -3,6 +3,7 @@ package io.horizontalsystems.uniswapkit.decorations
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class SwapEventDecoration(
@@ -17,7 +18,7 @@ class SwapEventDecoration(
 
     override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
         return if (fromAddress == userAddress) {
-            listOf("swap")
+            listOf(TransactionTag.SWAP)
         } else {
             emptyList()
         }

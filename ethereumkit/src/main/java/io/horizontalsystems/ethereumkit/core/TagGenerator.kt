@@ -16,11 +16,11 @@ class TagGenerator(private val address: Address) {
         val tags = mutableListOf<String>()
 
         if (transaction.from == address && transaction.value > 0.toBigInteger()) {
-            tags.addAll(listOf("ETH_outgoing", "ETH", "outgoing"))
+            tags.addAll(listOf(TransactionTag.EVM_COIN_OUTGOING, TransactionTag.EVM_COIN, TransactionTag.OUTGOING))
         }
 
         if (toAddress == address || fullTransaction.internalTransactions.any { it.to == address }) {
-            tags.addAll(listOf("ETH_incoming", "ETH", "incoming"))
+            tags.addAll(listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.EVM_COIN, TransactionTag.INCOMING))
         }
 
         fullTransaction.mainDecoration?.let { mainDecoration ->

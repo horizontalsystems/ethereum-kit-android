@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.decorations
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class ApproveEventDecoration(
@@ -10,7 +11,7 @@ class ApproveEventDecoration(
 ) : ContractEventDecoration(contractAddress) {
 
     override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
-        return listOf(contractAddress.hex, "eip20Approve")
+        return listOf(contractAddress.hex, TransactionTag.EIP20_APPROVE)
     }
 
     companion object {
