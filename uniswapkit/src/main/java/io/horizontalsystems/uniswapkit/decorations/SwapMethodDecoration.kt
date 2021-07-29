@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit.decorations
 
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class SwapMethodDecoration(
@@ -19,17 +20,17 @@ class SwapMethodDecoration(
     }
 
     override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
-        val tags = mutableListOf(toAddress.hex, "swap")
+        val tags = mutableListOf(toAddress.hex, TransactionTag.SWAP)
 
         when (tokenIn) {
-            Token.EvmCoin -> tags.addAll(listOf("ETH_outgoing", "ETH", "outgoing"))
-            is Token.Eip20Coin -> tags.addAll(listOf("${tokenIn.address.hex}_outgoing", tokenIn.address.hex, "outgoing"))
+            Token.EvmCoin -> tags.addAll(listOf(TransactionTag.EVM_COIN_OUTGOING, TransactionTag.EVM_COIN, TransactionTag.OUTGOING))
+            is Token.Eip20Coin -> tags.addAll(listOf(TransactionTag.eip20Outgoing(tokenIn.address.hex), tokenIn.address.hex, TransactionTag.OUTGOING))
         }
 
         if (to == userAddress) {
             when (tokenOut) {
-                Token.EvmCoin -> tags.addAll(listOf("ETH_incoming", "ETH", "incoming"))
-                is Token.Eip20Coin -> tags.addAll(listOf("${tokenOut.address.hex}_incoming", tokenOut.address.hex, "incoming"))
+                Token.EvmCoin -> tags.addAll(listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.EVM_COIN, TransactionTag.INCOMING))
+                is Token.Eip20Coin -> tags.addAll(listOf(TransactionTag.eip20Incoming(tokenOut.address.hex), tokenOut.address.hex, TransactionTag.INCOMING))
             }
         }
 
