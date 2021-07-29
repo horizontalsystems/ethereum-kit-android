@@ -69,8 +69,9 @@ class EthereumKit(
 
         transactionManager.allTransactionsAsync
                 .subscribeOn(Schedulers.io())
-                .subscribe {
+                .subscribe { transactions ->
                     blockchain.syncAccountState()
+                    internalTransactionSyncer.sync(transactions)
                 }.let {
                     disposables.add(it)
                 }
@@ -189,10 +190,6 @@ class EthereumKit(
         return decorationManager.decorateTransaction(transactionData)
     }
 
-    fun syncInternalTransactions(transaction: Transaction) {
-        internalTransactionSyncer.add(transaction.hash)
-    }
-
     fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
         return send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit, nonce)
     }
@@ -273,6 +270,10 @@ class EthereumKit(
 
     fun addDecorator(decorator: IDecorator) {
         decorationManager.addDecorator(decorator)
+    }
+
+    fun addTransactionWatcher(transactionWatcher: ITransactionWatcher) {
+        internalTransactionSyncer.add(transactionWatcher)
     }
 
     sealed class SyncState {

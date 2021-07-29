@@ -1,9 +1,6 @@
 package io.horizontalsystems.uniswapkit
 
-import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
-import io.horizontalsystems.erc20kit.core.Eip20TransactionDecorator
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.SwapContractMethodFactories
@@ -15,8 +12,7 @@ import java.util.logging.Logger
 class UniswapKit(
         private val tradeManager: TradeManager,
         private val pairSelector: PairSelector,
-        private val tokenFactory: TokenFactory,
-        private val internalTransactionSyncer: UniswapInternalTransactionSyncer
+        private val tokenFactory: TokenFactory
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
@@ -94,14 +90,17 @@ class UniswapKit(
             val tradeManager = TradeManager(ethereumKit)
             val tokenFactory = TokenFactory(ethereumKit.networkType)
             val pairSelector = PairSelector(tokenFactory)
-            val internalTransactionSyncer = UniswapInternalTransactionSyncer(ethereumKit)
 
-            return UniswapKit(tradeManager, pairSelector, tokenFactory, internalTransactionSyncer)
+            return UniswapKit(tradeManager, pairSelector, tokenFactory)
         }
 
         fun addDecorator(ethereumKit: EthereumKit) {
             val decorator = SwapTransactionDecorator(ethereumKit.receiveAddress, SwapContractMethodFactories)
             ethereumKit.addDecorator(decorator)
+        }
+
+        fun addTransactionWatcher(evmKit: EthereumKit) {
+            evmKit.addTransactionWatcher(UniswapTransactionWatcher(evmKit.receiveAddress))
         }
     }
 
