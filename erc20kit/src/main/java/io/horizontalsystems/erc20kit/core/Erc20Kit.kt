@@ -148,21 +148,18 @@ class Erc20Kit(
             return erc20Kit
         }
 
-        fun getTransactionSyncer(ethereumKit: EthereumKit): ITransactionSyncer {
+        fun addTransactionSyncer(ethereumKit: EthereumKit) {
             val transactionsProvider = EtherscanTransactionsProvider(ethereumKit.etherscanService, ethereumKit.receiveAddress)
-            return Erc20TransactionSyncer(transactionsProvider)
+            ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(transactionsProvider))
+        }
+
+        fun addDecorator(ethereumKit: EthereumKit) {
+            val decorator = Eip20TransactionDecorator(ethereumKit.receiveAddress, Eip20ContractMethodFactories)
+            ethereumKit.addDecorator(decorator)
         }
 
         fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
             Erc20DatabaseManager.clear(context, networkType, walletId)
-        }
-
-        fun decorator(evmKit: EthereumKit): IDecorator {
-            return Eip20TransactionDecorator(evmKit.receiveAddress, Eip20ContractMethodFactories)
-        }
-
-        private fun getTransactionSyncerId(contractAddress: Address): String {
-            return "Erc20TransactionSyncer-${contractAddress.hex}"
         }
     }
 

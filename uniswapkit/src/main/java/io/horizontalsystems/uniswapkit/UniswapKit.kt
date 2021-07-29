@@ -99,8 +99,9 @@ class UniswapKit(
             return UniswapKit(tradeManager, pairSelector, tokenFactory, internalTransactionSyncer)
         }
 
-        fun decorator(evmKit: EthereumKit): IDecorator {
-            return SwapTransactionDecorator(evmKit.receiveAddress, SwapContractMethodFactories)
+        fun addDecorator(ethereumKit: EthereumKit) {
+            val decorator = SwapTransactionDecorator(ethereumKit.receiveAddress, SwapContractMethodFactories)
+            ethereumKit.addDecorator(decorator)
         }
     }
 
