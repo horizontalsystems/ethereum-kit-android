@@ -19,6 +19,8 @@ import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.decorations.RecognizedMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
+import io.horizontalsystems.oneinchkit.decorations.OneInchSwapMethodDecoration
+import io.horizontalsystems.oneinchkit.decorations.OneInchUnoswapMethodDecoration
 import io.horizontalsystems.uniswapkit.decorations.SwapEventDecoration
 import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
 import kotlinx.android.synthetic.main.fragment_transactions.*
@@ -180,6 +182,12 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             }
             is RecognizedMethodDecoration -> {
                 "${decoration.method} ${decoration.arguments.size} arguments"
+            }
+            is OneInchSwapMethodDecoration -> {
+                "1inch swap ${decoration.fromAmount} ${decoration.fromToken} -> ${decoration.toAmount ?: decoration.toAmountMin} ${decoration.toToken}"
+            }
+            is OneInchUnoswapMethodDecoration -> {
+                "1inch unoswap ${decoration.fromAmount} ${decoration.fromToken} -> ${decoration.toAmount ?: decoration.toAmountMin} ${decoration.toToken}"
             }
             else -> "contract call"
         }

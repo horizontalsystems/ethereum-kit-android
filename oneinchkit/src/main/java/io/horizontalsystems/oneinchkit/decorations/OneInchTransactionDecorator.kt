@@ -9,6 +9,7 @@ import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
 import io.horizontalsystems.oneinchkit.contracts.SwapMethod
 import io.horizontalsystems.oneinchkit.contracts.UnoswapMethod
+import io.horizontalsystems.oneinchkit.decorations.OneInchMethodDecoration.Token
 import java.math.BigInteger
 
 class OneInchTransactionDecorator(
@@ -33,12 +34,12 @@ class OneInchTransactionDecorator(
 
         return when (contractMethod) {
             is UnoswapMethod -> {
-                var toToken: OneInchMethodDecoration.Token? = null
+                var toToken: Token? = null
                 var toAmount: BigInteger? = null
                 fullTransaction?.let {
                     totalETHIncoming(address, fullTransaction.internalTransactions)?.let { amount ->
                         toAmount = amount
-                        toToken = OneInchMethodDecoration.Token.EvmCoin
+                        toToken = Token.EvmCoin
                     }
                 }
 
@@ -51,7 +52,7 @@ class OneInchTransactionDecorator(
                     (incomingEip20Log?.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
                         totalTokenIncoming(address, transferEventDecoration.contractAddress, logs)?.let { amount ->
                             toAmount = amount
-                            toToken = OneInchMethodDecoration.Token.Eip20(transferEventDecoration.contractAddress)
+                            toToken = Token.Eip20(transferEventDecoration.contractAddress)
                         }
                     }
                 }
@@ -60,15 +61,17 @@ class OneInchTransactionDecorator(
                         fromToken = addressToToken(contractMethod.srcToken),
                         toToken = toToken,
                         fromAmount = contractMethod.amount,
-                        toAmount = toAmount ?: contractMethod.minReturn,
+                        toAmountMin = contractMethod.minReturn,
+                        toAmount = toAmount,
                         params = contractMethod.params
                 )
             }
             is SwapMethod -> {
                 var toAmount: BigInteger? = null
                 val swapDescription = contractMethod.swapDescription
+                val toToken = addressToToken(swapDescription.dstToken)
 
-                fullTransaction?.let {
+                if (fullTransaction != null && toToken == Token.EvmCoin) {
                     totalETHIncoming(swapDescription.dstReceiver, fullTransaction.internalTransactions)?.let { amount ->
                         toAmount = amount
                     }
@@ -83,9 +86,10 @@ class OneInchTransactionDecorator(
                 }
                 OneInchSwapMethodDecoration(
                         fromToken = addressToToken(swapDescription.srcToken),
-                        toToken = addressToToken(swapDescription.dstToken),
+                        toToken = toToken,
                         fromAmount = swapDescription.amount,
-                        toAmount = toAmount ?: swapDescription.minReturnAmount,
+                        toAmountMin = swapDescription.minReturnAmount,
+                        toAmount = toAmount,
                         flags = swapDescription.flags,
                         permit = swapDescription.permit,
                         data = contractMethod.data,
@@ -125,11 +129,9 @@ class OneInchTransactionDecorator(
         return if (amountOut > BigInteger.ZERO) amountOut else null
     }
 
-    private fun addressToToken(address: Address): OneInchMethodDecoration.Token {
-        return if (evmTokenAddresses.contains(address.eip55))
-            OneInchMethodDecoration.Token.EvmCoin
-        else
-            OneInchMethodDecoration.Token.Eip20(address)
-    }
+    private fun addressToToken(address: Address) = if (evmTokenAddresses.contains(address.eip55))
+        Token.EvmCoin
+    else
+        Token.Eip20(address)
 
 }

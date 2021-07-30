@@ -9,7 +9,8 @@ class OneInchUnoswapMethodDecoration(
         val fromToken: Token,
         val toToken: Token?,
         val fromAmount: BigInteger,
-        val toAmount: BigInteger,
+        val toAmountMin: BigInteger,
+        val toAmount: BigInteger?,
         val params: Bytes32Array
 ) : OneInchMethodDecoration() {
 
