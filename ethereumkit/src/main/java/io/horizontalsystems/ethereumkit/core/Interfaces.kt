@@ -100,6 +100,7 @@ interface ITransactionStorage {
     fun save(transactionReceipt: TransactionReceipt)
 
     fun save(logs: List<TransactionLog>)
+    fun remove(logs: List<TransactionLog>)
     fun set(tags: List<TransactionTag>)
 
     fun getPendingTransaction(nonce: Long): Transaction?

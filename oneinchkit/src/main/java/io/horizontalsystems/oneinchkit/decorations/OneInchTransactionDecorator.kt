@@ -107,8 +107,9 @@ class OneInchTransactionDecorator(
         for (log in logs) {
             if (log.address == tokenAddress) {
                 (log.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
-                    if (transferEventDecoration.to == userAddress) {
+                    if (transferEventDecoration.to == userAddress && transferEventDecoration.value > BigInteger.ZERO) {
                         amountOut += transferEventDecoration.value
+                        log.relevant = true
                     }
                 }
             }

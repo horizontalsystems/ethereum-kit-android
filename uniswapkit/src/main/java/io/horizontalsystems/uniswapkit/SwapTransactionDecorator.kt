@@ -3,15 +3,13 @@ package io.horizontalsystems.uniswapkit
 import io.horizontalsystems.erc20kit.core.getErc20Event
 import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
 import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.core.hexStringToByteArrayOrNull
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration.*
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.uniswapkit.contract.*
-import io.horizontalsystems.uniswapkit.decorations.SwapEventDecoration
 import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
-import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration.*
+import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration.Token
+import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration.Trade
 import java.math.BigInteger
 
 class SwapTransactionDecorator(
@@ -94,33 +92,7 @@ class SwapTransactionDecorator(
     }
 
     override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
-        return logs.mapNotNull { log ->
-            val signature = log.topics[0].hexStringToByteArrayOrNull()
-
-            if (signature.contentEquals(SwapEventDecoration.signature) && log.topics.size == 3 && log.data.size == 128) {
-                val firstParam = Address(log.topics[1])
-                val secondParam = Address(log.topics[2])
-
-                if (firstParam == address || secondParam == address) {
-                    val amount0In = BigInteger(log.data.copyOfRange(0, 32))
-                    val amount1In = BigInteger(log.data.copyOfRange(32, 64))
-                    val amount0Out = BigInteger(log.data.copyOfRange(64, 96))
-                    val amount1Out = BigInteger(log.data.copyOfRange(96, 128))
-
-                    return@mapNotNull SwapEventDecoration(
-                            contractAddress = log.address,
-                            sender = firstParam,
-                            amount0In = amount0In,
-                            amount1In = amount1In,
-                            amount0Out = amount0Out,
-                            amount1Out = amount1Out,
-                            to = secondParam
-                    )
-                }
-            }
-
-            return@mapNotNull null
-        }
+        return emptyList()
     }
 
     private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, logs: List<TransactionLog>, collectIncomingAmounts: Boolean): BigInteger {
@@ -132,9 +104,11 @@ class SwapTransactionDecorator(
                 (log.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
                     if (transferEventDecoration.from == userAddress) {
                         amountIn += transferEventDecoration.value
+                        log.relevant = true
                     }
                     if (transferEventDecoration.to == userAddress) {
                         amountOut += transferEventDecoration.value
+                        log.relevant = true
                     }
                 }
             }

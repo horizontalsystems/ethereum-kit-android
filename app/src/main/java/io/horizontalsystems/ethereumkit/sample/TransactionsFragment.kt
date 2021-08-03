@@ -21,7 +21,6 @@ import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.oneinchkit.decorations.OneInchSwapMethodDecoration
 import io.horizontalsystems.oneinchkit.decorations.OneInchUnoswapMethodDecoration
-import io.horizontalsystems.uniswapkit.decorations.SwapEventDecoration
 import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
 import kotlinx.android.synthetic.main.fragment_transactions.*
 import java.math.BigDecimal
@@ -153,11 +152,6 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
                     val owner = event.owner.eip55.take(6)
                     val spender = event.spender.eip55.take(6)
                     return "${readableNumber(event.value)} $coin ($owner - approved -> $spender)"
-                }
-                is SwapEventDecoration -> {
-                    val sender = event.sender.eip55.take(6)
-                    val to = event.to.eip55.take(6)
-                    return "($sender <-> $to)"
                 }
                 else -> return "unknown event"
             }

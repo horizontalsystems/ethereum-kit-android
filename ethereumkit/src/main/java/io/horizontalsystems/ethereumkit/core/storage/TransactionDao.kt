@@ -32,6 +32,16 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(logs: List<TransactionLog>)
 
+    @Delete
+    fun deleteLog(log: TransactionLog)
+
+    @androidx.room.Transaction
+    fun deleteLogs(logs: List<TransactionLog>) {
+        logs.forEach {
+            deleteLog(it)
+        }
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
 

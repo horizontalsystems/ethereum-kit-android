@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.models
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Ignore
 import java.util.*
 
 @Entity(foreignKeys = [ForeignKey(
@@ -22,6 +23,9 @@ data class TransactionLog(
         val topics: List<String>,
         var timestamp: Long? = null
 ) {
+
+    @Ignore
+    var relevant: Boolean = false
 
     override fun equals(other: Any?): Boolean {
         if (other !is TransactionLog)
