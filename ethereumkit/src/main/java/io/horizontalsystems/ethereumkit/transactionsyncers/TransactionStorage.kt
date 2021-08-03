@@ -211,6 +211,11 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
     override fun save(logs: List<TransactionLog>) {
         transactionDao.insert(logs)
     }
+
+    override fun remove(logs: List<TransactionLog>) {
+        transactionDao.deleteLogs(logs)
+    }
+
     //endregion
 
     //region TransactionSyncerState

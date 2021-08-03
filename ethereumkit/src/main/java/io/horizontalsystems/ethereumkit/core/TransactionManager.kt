@@ -77,7 +77,20 @@ class TransactionManager(
     }
 
     private fun handle(syncedTransactions: List<FullTransaction>) {
-        val decoratedTransactions = syncedTransactions.map { decorationManager.decorateFullTransaction(it) }
+        val decoratedTransactions = syncedTransactions.map { fullTransaction ->
+            val decoratedTransaction = decorationManager.decorateFullTransaction(fullTransaction)
+            decoratedTransaction.receiptWithLogs?.logs?.let { logs ->
+                val neededLogs = logs.filter { it.relevant }
+                if (logs.size > neededLogs.size) {
+                    //delete all transactions, then save only relevant ones
+                    storage.remove(logs)
+                    storage.save(neededLogs)
+                }
+            }
+
+            decoratedTransaction
+        }
+
         val transactionWithTags = mutableListOf<TransactionWithTags>()
 
         decoratedTransactions.forEach { transaction ->

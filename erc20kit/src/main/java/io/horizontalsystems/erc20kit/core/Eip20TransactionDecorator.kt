@@ -36,11 +36,13 @@ class Eip20TransactionDecorator(
             when (event) {
                 is TransferEventDecoration -> {
                     if (event.from == userAddress || event.to == userAddress) {
+                        log.relevant = true
                         return@mapNotNull event
                     }
                 }
                 is ApproveEventDecoration -> {
                     if (event.owner == userAddress || event.spender == userAddress) {
+                        log.relevant = true
                         return@mapNotNull event
                     }
                 }
