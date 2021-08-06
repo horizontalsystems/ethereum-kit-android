@@ -184,6 +184,10 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         return transactionDao.getPendingTransaction(nonce)
     }
 
+    override fun getInBlockTransaction(nonce: Long): Transaction? {
+        return transactionDao.getInBlockTransaction(nonce)
+    }
+
     override fun addDroppedTransaction(droppedTransaction: DroppedTransaction) {
         transactionDao.insert(droppedTransaction)
     }

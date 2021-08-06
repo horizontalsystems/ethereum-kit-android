@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.models.DroppedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
@@ -37,13 +38,14 @@ class PendingTransactionSyncer(
 
     private fun doSync(fromTransaction: Transaction? = null): Single<Unit> {
         val pendingTransactions = storage.getPendingTransactions(fromTransaction)
+        val notReplacedPendingTransactions = replaceDuplicateTransactions(pendingTransactions)
         logger.info("---> doSync() pendingTransactions: ${pendingTransactions.joinToString(separator = ",") { it.hash.toHexString() }}")
 
-        if (pendingTransactions.isEmpty()) {
+        if (notReplacedPendingTransactions.isEmpty()) {
             return Single.just(Unit)
         }
 
-        val singles: List<Single<Unit>> = pendingTransactions.map { pendingTransaction ->
+        val singles: List<Single<Unit>> = notReplacedPendingTransactions.map { pendingTransaction ->
             blockchain.getTransactionReceipt(pendingTransaction.hash)
                     .flatMap { optionalReceipt ->
                         logger.info("---> doSync() onFetched receipt: ${optionalReceipt.orElse(null)?.transactionHash}")
@@ -54,6 +56,27 @@ class PendingTransactionSyncer(
         return Single.zip(singles) { }.flatMap {
             doSync(pendingTransactions.last())
         }
+    }
+
+    private fun replaceDuplicateTransactions(pendingTransactions: List<Transaction>): List<Transaction> {
+        val notReplaced = mutableListOf<Transaction>()
+        val droppedTransactions = mutableListOf<ByteArray>()
+
+        pendingTransactions.forEach { transaction ->
+            val duplicatedTransaction = storage.getInBlockTransaction(transaction.nonce)
+            if (duplicatedTransaction != null) {
+                storage.addDroppedTransaction(DroppedTransaction(transaction.hash, duplicatedTransaction.hash))
+                droppedTransactions.add(transaction.hash)
+            } else {
+                notReplaced.add(transaction)
+            }
+        }
+
+        if (droppedTransactions.isNotEmpty()) {
+            listener?.onTransactionsSynced(storage.getFullTransactions(droppedTransactions))
+        }
+
+        return notReplaced
     }
 
     private fun syncTimestamp(transaction: Transaction, receipt: RpcTransactionReceipt?): Single<Unit> {
