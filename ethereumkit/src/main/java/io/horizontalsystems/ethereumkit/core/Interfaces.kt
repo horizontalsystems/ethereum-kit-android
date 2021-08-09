@@ -105,7 +105,6 @@ interface ITransactionStorage {
 
     fun getPendingTransaction(nonce: Long): Transaction?
     fun getPendingTransactions(fromTransaction: Transaction?): List<Transaction>
-    fun getInBlockTransaction(nonce: Long): Transaction?
     fun addDroppedTransaction(droppedTransaction: DroppedTransaction)
 }
 
