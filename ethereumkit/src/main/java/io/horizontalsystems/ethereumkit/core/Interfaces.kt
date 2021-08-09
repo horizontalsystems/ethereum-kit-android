@@ -103,7 +103,7 @@ interface ITransactionStorage {
     fun remove(logs: List<TransactionLog>)
     fun set(tags: List<TransactionTag>)
 
-    fun getPendingTransaction(nonce: Long): Transaction?
+    fun getPendingTransactionList(nonce: Long): List<Transaction>
     fun getPendingTransactions(fromTransaction: Transaction?): List<Transaction>
     fun addDroppedTransaction(droppedTransaction: DroppedTransaction)
 }

@@ -180,8 +180,8 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage, I
         }
     }
 
-    override fun getPendingTransaction(nonce: Long): Transaction? {
-        return transactionDao.getPendingTransaction(nonce)
+    override fun getPendingTransactionList(nonce: Long): List<Transaction> {
+        return transactionDao.getPendingTransactionList(nonce)
     }
 
     override fun addDroppedTransaction(droppedTransaction: DroppedTransaction) {

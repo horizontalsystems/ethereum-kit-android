@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.models.DroppedTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 import io.reactivex.Single
@@ -82,6 +83,12 @@ class PendingTransactionSyncer(
         storage.save(receipt.logs)
 
         listener?.onTransactionsSynced(storage.getFullTransactions(listOf(receipt.transactionHash)))
+
+        storage.getPendingTransactionList(transaction.nonce).forEach { duplicateTransaction ->
+            storage.addDroppedTransaction(DroppedTransaction(hash = duplicateTransaction.hash, replacedWith = transaction.hash))
+
+            listener?.onTransactionsSynced(storage.getFullTransactions(listOf(duplicateTransaction.hash)))
+        }
     }
 
 }
