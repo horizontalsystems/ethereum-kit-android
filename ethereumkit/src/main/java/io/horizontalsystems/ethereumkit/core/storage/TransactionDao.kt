@@ -69,16 +69,6 @@ interface TransactionDao {
             """)
     fun getPendingTransaction(nonce: Long): Transaction?
 
-    @Query("""
-        SELECT tx.* 
-            FROM `Transaction` as tx
-            LEFT JOIN TransactionReceipt as receipt
-            ON tx.hash == receipt.transactionHash
-            WHERE receipt.transactionHash IS NOT NULL AND tx.nonce = :nonce
-            LIMIT 1
-            """)
-    fun getInBlockTransaction(nonce: Long): Transaction?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(droppedTransaction: DroppedTransaction)
 
