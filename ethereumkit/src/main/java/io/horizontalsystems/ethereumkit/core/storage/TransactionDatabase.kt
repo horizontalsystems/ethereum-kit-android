@@ -18,7 +18,7 @@ import io.horizontalsystems.ethereumkit.models.Transaction
             TransactionTag::class,
             NotSyncedInternalTransaction::class
         ],
-        version = 8,
+        version = 9,
         exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, TransactionDatabase.TypeConverters::class)
