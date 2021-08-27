@@ -11,7 +11,7 @@ class ApproveEventDecoration(
 ) : ContractEventDecoration(contractAddress) {
 
     override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
-        return listOf(contractAddress.hex, TransactionTag.EIP20_APPROVE)
+        return listOf()
     }
 
     companion object {
