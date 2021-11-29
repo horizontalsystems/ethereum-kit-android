@@ -19,15 +19,13 @@ class OneInchService(
         networkType: NetworkType
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val url = "https://api.1inch.exchange/v3.0/${networkType.chainId}/"
+    private val url = "https://api.1inch.exchange/v4.0/${networkType.chainId}/"
     private val service: OneInchServiceApi
 
     init {
-        val loggingInterceptor = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
-            override fun log(message: String) {
-                logger.info(message)
-            }
-        }).setLevel(HttpLoggingInterceptor.Level.BODY)
+        val loggingInterceptor = HttpLoggingInterceptor {
+            message -> logger.info(message)
+        }.setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)

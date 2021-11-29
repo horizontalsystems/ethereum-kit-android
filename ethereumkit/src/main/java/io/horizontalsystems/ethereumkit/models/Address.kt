@@ -38,8 +38,4 @@ data class Address(var raw: ByteArray) {
         return hex
     }
 
-    companion object {
-        const val VALID_ADDRESS_LENGTH = 40
-    }
-
 }

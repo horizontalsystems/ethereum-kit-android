@@ -17,8 +17,8 @@ class OneInchKit(
 ) {
 
     val smartContractAddress: Address = when (evmKit.networkType) {
-        NetworkType.EthMainNet -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
-        NetworkType.BscMainNet -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
+        NetworkType.EthMainNet -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
+        NetworkType.BscMainNet -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
         else -> throw IllegalArgumentException("Invalid NetworkType: $evmKit.networkType")
     }
 
