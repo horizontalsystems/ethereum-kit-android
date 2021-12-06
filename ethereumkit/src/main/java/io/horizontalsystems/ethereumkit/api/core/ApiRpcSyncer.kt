@@ -50,6 +50,7 @@ class ApiRpcSyncer(
 
         state = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
         disposables.clear()
+        stopTimer()
     }
 
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
