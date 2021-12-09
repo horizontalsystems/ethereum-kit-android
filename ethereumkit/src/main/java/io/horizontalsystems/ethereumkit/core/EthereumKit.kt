@@ -370,7 +370,7 @@ class EthereumKit(
                     webSocketRpcSyncer
                 }
                 is SyncSource.Http -> {
-                    val apiProvider = NodeApiProvider(syncSource.url, syncSource.blockTime, gson, syncSource.auth)
+                    val apiProvider = NodeApiProvider(syncSource.urls, syncSource.blockTime, gson, syncSource.auth)
                     ApiRpcSyncer(apiProvider, connectionManager)
                 }
             }
@@ -470,7 +470,7 @@ class EthereumKit(
         fun infuraHttpSyncSource(networkType: NetworkType, projectId: String, projectSecret: String?): SyncSource? =
                 infuraDomain(networkType)?.let { infuraDomain ->
                     val url = URL("https://$infuraDomain/v3/$projectId")
-                    SyncSource.Http(url, networkType.blockTime, projectSecret)
+                    SyncSource.Http(listOf(url), networkType.blockTime, projectSecret)
                 }
 
         fun defaultBscWebSocketSyncSource(): SyncSource =
@@ -478,7 +478,21 @@ class EthereumKit(
 
 
         fun defaultBscHttpSyncSource(): SyncSource =
-                SyncSource.Http(URL("https://bsc-dataseed.binance.org"), NetworkType.BscMainNet.blockTime, null)
+                SyncSource.Http(listOf(
+                        URL("https://bsc-dataseed.binance.org"),
+                        URL("https://bsc-dataseed1.defibit.io"),
+                        URL("https://bsc-dataseed1.ninicoin.io"),
+                        URL("https://bsc-dataseed2.defibit.io"),
+                        URL("https://bsc-dataseed3.defibit.io"),
+                        URL("https://bsc-dataseed4.defibit.io"),
+                        URL("https://bsc-dataseed2.ninicoin.io"),
+                        URL("https://bsc-dataseed3.ninicoin.io"),
+                        URL("https://bsc-dataseed4.ninicoin.io"),
+                        URL("https://bsc-dataseed1.binance.org"),
+                        URL("https://bsc-dataseed2.binance.org"),
+                        URL("https://bsc-dataseed3.binance.org"),
+                        URL("https://bsc-dataseed4.binance.org")),
+                        NetworkType.BscMainNet.blockTime, null)
 
         private fun infuraDomain(networkType: NetworkType): String? =
                 when (networkType) {
@@ -499,7 +513,7 @@ class EthereumKit(
 
     sealed class SyncSource {
         class WebSocket(val url: URL, val auth: String?) : SyncSource()
-        class Http(val url: URL, val blockTime: Long, val auth: String?) : SyncSource()
+        class Http(val urls: List<URL>, val blockTime: Long, val auth: String?) : SyncSource()
     }
 
     enum class NetworkType(
