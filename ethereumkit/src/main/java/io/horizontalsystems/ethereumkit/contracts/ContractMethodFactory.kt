@@ -6,3 +6,10 @@ interface ContractMethodFactory {
     fun createMethod(inputArguments: ByteArray): ContractMethod
 
 }
+
+interface ContractMethodsFactory : ContractMethodFactory {
+    override val methodId: ByteArray
+        get() = byteArrayOf()
+
+    val methodIds: List<ByteArray>
+}
