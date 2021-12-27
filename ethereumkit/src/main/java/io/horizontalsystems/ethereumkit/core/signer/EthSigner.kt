@@ -1,11 +1,14 @@
-package io.horizontalsystems.ethereumkit.crypto
+package io.horizontalsystems.ethereumkit.core.signer
 
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.EIP712Encoder
+import io.horizontalsystems.ethereumkit.crypto.TypedData
 import java.math.BigInteger
 
 class EthSigner(
-        private val privateKey: BigInteger,
-        private val cryptoUtils: CryptoUtils,
-        private val eip712Encoder: EIP712Encoder
+    private val privateKey: BigInteger,
+    private val cryptoUtils: CryptoUtils,
+    private val eip712Encoder: EIP712Encoder
 ) {
 
     fun signByteArray(message: ByteArray): ByteArray {

@@ -1,16 +1,14 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
-import io.horizontalsystems.ethereumkit.core.TransactionSigner
-import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.net.handlers.SendTransactionTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.tasks.SendTransactionTask
 
 class TransactionSender(
         private val transactionBuilder: TransactionBuilder,
-        private val transactionSigner: TransactionSigner
 ) : SendTransactionTaskHandler.Listener {
 
     interface Listener {
@@ -20,9 +18,7 @@ class TransactionSender(
 
     var listener: Listener? = null
 
-    fun send(sendId: Int, taskPerformer: ITaskPerformer, rawTransaction: RawTransaction) {
-        val signature = transactionSigner.signature(rawTransaction)
-
+    fun send(sendId: Int, taskPerformer: ITaskPerformer, rawTransaction: RawTransaction, signature: Signature) {
         taskPerformer.add(SendTransactionTask(sendId, rawTransaction, signature))
     }
 

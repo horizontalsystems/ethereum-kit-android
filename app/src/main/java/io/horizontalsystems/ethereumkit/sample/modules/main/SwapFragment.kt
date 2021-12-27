@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.sample
+package io.horizontalsystems.ethereumkit.sample.modules.main
 
 import android.os.Bundle
 import android.text.Editable
@@ -10,6 +10,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import io.horizontalsystems.ethereumkit.sample.Configuration
+import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeType
 import kotlinx.android.synthetic.main.fragment_swap.*

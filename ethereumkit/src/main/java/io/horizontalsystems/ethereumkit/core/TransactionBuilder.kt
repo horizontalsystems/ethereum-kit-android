@@ -7,13 +7,8 @@ import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
 import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.rlp.RLP
-import java.math.BigInteger
 
 class TransactionBuilder(private val address: Address) {
-
-    fun rawTransaction(gasPrice: Long, gasLimit: Long, to: Address, value: BigInteger, nonce: Long, transactionInput: ByteArray = ByteArray(0)): RawTransaction {
-        return RawTransaction(gasPrice, gasLimit, to, value, nonce, transactionInput)
-    }
 
     fun transaction(rawTransaction: RawTransaction, signature: Signature): Transaction {
         val transactionHash = CryptoUtils.sha3(encode(rawTransaction, signature))

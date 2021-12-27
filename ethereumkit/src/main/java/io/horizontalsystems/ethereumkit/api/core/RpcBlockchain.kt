@@ -12,6 +12,7 @@ import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -22,7 +23,6 @@ class RpcBlockchain(
         private val address: Address,
         private val storage: IApiStorage,
         private val syncer: IRpcSyncer,
-        private val transactionSigner: TransactionSigner,
         private val transactionBuilder: TransactionBuilder
 ) : IBlockchain, IRpcSyncerListener {
 
@@ -112,8 +112,7 @@ class RpcBlockchain(
         syncer.stop()
     }
 
-    override fun send(rawTransaction: RawTransaction): Single<Transaction> {
-        val signature = transactionSigner.signature(rawTransaction)
+    override fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction> {
         val transaction = transactionBuilder.transaction(rawTransaction, signature)
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
@@ -221,10 +220,9 @@ class RpcBlockchain(
         fun instance(address: Address,
                      storage: IApiStorage,
                      syncer: IRpcSyncer,
-                     transactionSigner: TransactionSigner,
                      transactionBuilder: TransactionBuilder): RpcBlockchain {
 
-            val rpcBlockchain = RpcBlockchain(address, storage, syncer, transactionSigner, transactionBuilder)
+            val rpcBlockchain = RpcBlockchain(address, storage, syncer, transactionBuilder)
             syncer.listener = rpcBlockchain
 
             return rpcBlockchain

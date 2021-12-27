@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -11,6 +12,7 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import java.math.BigInteger
 
 class TransactionManager(
         private val address: Address,
@@ -104,6 +106,10 @@ class TransactionManager(
             allTransactionsSubject.onNext(decoratedTransactions)
             transactionsWithTagsSubject.onNext(transactionWithTags)
         }
+    }
+
+    fun etherTransferTransactionData(address: Address, value: BigInteger): TransactionData {
+        return TransactionData(address, value, byteArrayOf())
     }
 
     data class TransactionWithTags(
