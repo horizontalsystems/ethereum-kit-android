@@ -18,6 +18,7 @@ import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.net.BlockHelper
 import io.horizontalsystems.ethereumkit.spv.net.BlockValidator
 import io.horizontalsystems.ethereumkit.spv.net.PeerGroup
@@ -79,10 +80,10 @@ class SpvBlockchain(
     override val accountState: AccountState?
         get() = storage.getAccountState()?.let { AccountState(it.balance, it.nonce) }
 
-    override fun send(rawTransaction: RawTransaction): Single<Transaction> {
+    override fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction> {
         return try {
             val sendId = RandomHelper.randomInt()
-            transactionSender.send(sendId, peer, rawTransaction)
+            transactionSender.send(sendId, peer, rawTransaction, signature)
             val subject = PublishSubject.create<Transaction>()
             sendingTransactions[sendId] = subject
             Single.fromFuture(subject.toFuture())
@@ -173,7 +174,7 @@ class SpvBlockchain(
     }
 
     companion object {
-        fun getInstance(storage: ISpvStorage, transactionSigner: TransactionSigner, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: Address, nodeKey: ECKey): SpvBlockchain {
+        fun getInstance(storage: ISpvStorage, transactionBuilder: TransactionBuilder, rpcApiProvider: IRpcApiProvider, network: INetwork, address: Address, nodeKey: ECKey): SpvBlockchain {
             val peerProvider = PeerProvider(nodeKey, storage, network)
             val blockValidator = BlockValidator()
             val blockHelper = BlockHelper(storage, network)
@@ -181,7 +182,7 @@ class SpvBlockchain(
 
             val blockSyncer = BlockSyncer(storage, blockHelper, blockValidator)
             val accountStateSyncer = AccountStateSyncer(storage, address)
-            val transactionSender = TransactionSender(transactionBuilder, transactionSigner)
+            val transactionSender = TransactionSender(transactionBuilder)
 
             val spvBlockchain = SpvBlockchain(peer, blockSyncer, accountStateSyncer, transactionSender, storage, network, rpcApiProvider)
 

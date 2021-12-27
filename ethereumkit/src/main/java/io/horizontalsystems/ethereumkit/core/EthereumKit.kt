@@ -17,6 +17,8 @@ import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
+import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -34,20 +36,17 @@ import java.util.*
 import java.util.logging.Logger
 
 class EthereumKit(
-        private val blockchain: IBlockchain,
-        private val transactionManager: TransactionManager,
-        private val transactionSyncManager: TransactionSyncManager,
-        private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
-        private val transactionBuilder: TransactionBuilder,
-        private val transactionSigner: TransactionSigner,
-        private val connectionManager: ConnectionManager,
-        private val address: Address,
-        val networkType: NetworkType,
-        val walletId: String,
-        val etherscanService: EtherscanService,
-        private val decorationManager: DecorationManager,
-        private val ethSigner: EthSigner,
-        private val state: EthereumKitState = EthereumKitState()
+    private val blockchain: IBlockchain,
+    private val transactionManager: TransactionManager,
+    private val transactionSyncManager: TransactionSyncManager,
+    private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
+    private val connectionManager: ConnectionManager,
+    private val address: Address,
+    val networkType: NetworkType,
+    val walletId: String,
+    val etherscanService: EtherscanService,
+    private val decorationManager: DecorationManager,
+    private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
@@ -170,46 +169,54 @@ class EthereumKit(
         return estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
     }
 
-    fun send(to: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
+    fun rawTransaction(
+        transactionData: TransactionData,
+        gasPrice: Long,
+        gasLimit: Long,
+        nonce: Long? = null
+    ): Single<RawTransaction> {
+        return rawTransaction(
+            address = transactionData.to,
+            value = transactionData.value,
+            transactionInput = transactionData.input,
+            gasPrice = gasPrice,
+            gasLimit = gasLimit,
+            nonce = nonce
+        )
+    }
+
+    fun rawTransaction(
+        address: Address,
+        value: BigInteger,
+        transactionInput: ByteArray = byteArrayOf(),
+        gasPrice: Long,
+        gasLimit: Long,
+        nonce: Long? = null
+    ): Single<RawTransaction> {
         val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce()
 
         return nonceSingle.flatMap { nonce ->
-            val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, to, value, nonce, transactionInput)
-            logger.info("send rawTransaction: $rawTransaction")
+            Single.just(RawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput))
+        }
+    }
 
-            blockchain.send(rawTransaction)
+    fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
+        logger.info("send rawTransaction: $rawTransaction")
+
+        return blockchain.send(rawTransaction, signature)
                     .doOnSuccess { transaction ->
                         transactionManager.handle(transaction)
                     }.map {
                         FullTransaction(it)
                     }
-        }
     }
 
     fun decorate(transactionData: TransactionData): ContractMethodDecoration? {
         return decorationManager.decorateTransaction(transactionData)
     }
 
-    fun send(transactionData: TransactionData, gasPrice: Long, gasLimit: Long, nonce: Long? = null): Single<FullTransaction> {
-        return send(transactionData.to, transactionData.value, transactionData.input, gasPrice, gasLimit, nonce)
-    }
-
-    fun signedTransaction(address: Address, value: BigInteger, transactionInput: ByteArray, gasPrice: Long, gasLimit: Long, nonce: Long): ByteArray {
-        val rawTransaction = transactionBuilder.rawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput)
-        val signature = transactionSigner.signature(rawTransaction)
-        return transactionBuilder.encode(rawTransaction, signature)
-    }
-
-    fun signByteArray(message: ByteArray): ByteArray {
-        return ethSigner.signByteArray(message)
-    }
-
-    fun signTypedData(rawJsonMessage: String): ByteArray {
-        return ethSigner.signTypedData(rawJsonMessage)
-    }
-
-    fun parseTypedData(rawJsonMessage: String): TypedData? {
-        return ethSigner.parseTypedData(rawJsonMessage)
+    fun transferTransactionData(address: Address, value: BigInteger) : TransactionData {
+        return transactionManager.etherTransferTransactionData(address = address, value= value)
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
@@ -344,19 +351,20 @@ class EthereumKit(
                 etherscanApiKey: String,
                 walletId: String
         ): EthereumKit {
-            return getInstance(application, Mnemonic().toSeed(words, passphrase), networkType, syncSource, etherscanApiKey, walletId)
+            val seed = Mnemonic().toSeed(words, passphrase)
+            val privateKey = privateKey(seed, networkType)
+            val address = ethereumAddress(privateKey)
+            return getInstance(application, address, networkType, syncSource, etherscanApiKey, walletId)
         }
 
         fun getInstance(
                 application: Application,
-                seed: ByteArray,
+                address: Address,
                 networkType: NetworkType,
                 syncSource: SyncSource,
                 etherscanApiKey: String,
                 walletId: String
         ): EthereumKit {
-            val privateKey = privateKey(seed, networkType)
-            val address = ethereumAddress(privateKey)
 
             val connectionManager = ConnectionManager(application)
 
@@ -375,14 +383,13 @@ class EthereumKit(
                 }
             }
 
-            val transactionSigner = TransactionSigner(privateKey, networkType.chainId)
             val transactionBuilder = TransactionBuilder(address)
             val etherscanService = EtherscanService(etherscanApiKey, networkType)
 
             val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)
             val storage = ApiStorage(apiDatabase)
 
-            val blockchain = RpcBlockchain.instance(address, storage, syncer, transactionSigner, transactionBuilder)
+            val blockchain = RpcBlockchain.instance(address, storage, syncer, transactionBuilder)
 
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
             val transactionStorage = TransactionStorage(transactionDatabase)
@@ -413,22 +420,18 @@ class EthereumKit(
             val decorationManager = DecorationManager(address)
             val tagGenerator = TagGenerator(address)
             val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager, tagGenerator)
-            val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
             val ethereumKit = EthereumKit(
                     blockchain,
                     transactionManager,
                     transactionSyncManager,
                     transactionInternalTransactionSyncer,
-                    transactionBuilder,
-                    transactionSigner,
                     connectionManager,
                     address,
                     networkType,
                     walletId,
                     etherscanService,
-                    decorationManager,
-                    ethSigner
+                    decorationManager
             )
 
             blockchain.listener = ethereumKit
@@ -437,19 +440,6 @@ class EthereumKit(
             decorationManager.addDecorator(ContractCallDecorator(address))
 
             return ethereumKit
-        }
-
-        fun address(words: List<String>, passphrase: String = "", networkType: NetworkType): Address {
-            return address(Mnemonic().toSeed(words, passphrase), networkType)
-        }
-
-        fun address(seed: ByteArray, networkType: NetworkType): Address {
-            val privateKey = privateKey(seed, networkType)
-            return ethereumAddress(privateKey)
-        }
-
-        fun privateKey(words: List<String>, passphrase: String = "", networkType: NetworkType): BigInteger {
-            return privateKey(Mnemonic().toSeed(words, passphrase), networkType)
         }
 
         fun privateKey(seed: ByteArray, networkType: NetworkType): BigInteger {

@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.sample
+package io.horizontalsystems.ethereumkit.sample.modules.main
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -6,8 +6,12 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
+import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.sample.App
+import io.horizontalsystems.ethereumkit.sample.Configuration
+import io.horizontalsystems.ethereumkit.sample.SingleLiveEvent
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
@@ -26,12 +30,12 @@ import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
     private val logger = Logger.getLogger("MainViewModel")
-    private val conf = Configuration
 
     private val disposables = CompositeDisposable()
 
     private lateinit var ethereumKit: EthereumKit
     private lateinit var ethereumAdapter: EthereumAdapter
+    private lateinit var signer: Signer
 
     private lateinit var erc20Adapter: Erc20Adapter
 
@@ -61,14 +65,17 @@ class MainViewModel : ViewModel() {
     var tradeData = MutableLiveData<TradeData?>()
     val swapStatus = SingleLiveEvent<Throwable?>()
 
-    val fromToken: Erc20Token? = conf.erc20Tokens[0]
-    val toToken: Erc20Token? = conf.erc20Tokens[1]
+    val fromToken: Erc20Token? = Configuration.erc20Tokens[0]
+    val toToken: Erc20Token? = Configuration.erc20Tokens[1]
 
 
     fun init() {
+        val words = Configuration.defaultsWords.split(" ")
+        val seed = Mnemonic().toSeed(words)
+        signer = Signer.getInstance(seed, Configuration.networkType)
         ethereumKit = createKit()
-        ethereumAdapter = EthereumAdapter(ethereumKit)
-        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: conf.erc20Tokens.first(), ethereumKit)
+        ethereumAdapter = EthereumAdapter(ethereumKit, signer)
+        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken ?: Configuration.erc20Tokens.first(), ethereumKit, signer)
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
         Erc20Kit.addTransactionSyncer(ethereumKit)
@@ -162,29 +169,40 @@ class MainViewModel : ViewModel() {
         val syncSource: EthereumKit.SyncSource?
         val txApiProviderKey: String
 
-        when (conf.networkType) {
+        when (Configuration.networkType) {
             NetworkType.BscMainNet -> {
-                txApiProviderKey = conf.bscScanKey
-                syncSource = if (conf.webSocket)
+                txApiProviderKey = Configuration.bscScanKey
+                syncSource = if (Configuration.webSocket)
                     EthereumKit.defaultBscWebSocketSyncSource()
                 else
                     EthereumKit.defaultBscHttpSyncSource()
             }
             else -> {
-                txApiProviderKey = conf.etherscanKey
-                syncSource = if (conf.webSocket)
-                    EthereumKit.infuraWebSocketSyncSource(conf.networkType, conf.infuraProjectId, conf.infuraSecret)
+                txApiProviderKey = Configuration.etherscanKey
+                syncSource = if (Configuration.webSocket)
+                    EthereumKit.infuraWebSocketSyncSource(
+                        Configuration.networkType,
+                        Configuration.infuraProjectId,
+                        Configuration.infuraSecret
+                    )
                 else
-                    EthereumKit.infuraHttpSyncSource(conf.networkType, conf.infuraProjectId, conf.infuraSecret)
+                    EthereumKit.infuraHttpSyncSource(
+                        Configuration.networkType,
+                        Configuration.infuraProjectId,
+                        Configuration.infuraSecret
+                    )
             }
         }
         checkNotNull(syncSource) {
             throw Exception("Could not get syncSource!")
         }
 
-        val words = conf.defaultsWords.split(" ")
-        val seed = Mnemonic().toSeed(words)
-        return EthereumKit.getInstance(App.instance, seed, conf.networkType, syncSource, txApiProviderKey, conf.walletId)
+        val words = Configuration.defaultsWords.split(" ")
+        return EthereumKit.getInstance(
+            App.instance, words, "",
+            Configuration.networkType, syncSource, txApiProviderKey,
+            Configuration.walletId
+        )
     }
 
     private fun updateLastBlockHeight() {
@@ -258,8 +276,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun clear() {
-        EthereumKit.clear(App.instance, conf.networkType, conf.walletId)
-        Erc20Kit.clear(App.instance, conf.networkType, conf.walletId)
+        EthereumKit.clear(App.instance, Configuration.networkType, Configuration.walletId)
+        Erc20Kit.clear(App.instance, Configuration.networkType, Configuration.walletId)
         init()
     }
 
@@ -388,19 +406,23 @@ class MainViewModel : ViewModel() {
         val transactionData = erc20Adapter.approveTransactionData(spenderAddress, amount)
 
         ethereumKit.estimateGas(transactionData, gasPrice)
-                .flatMap { gasLimit ->
-                    logger.info("gas limit: $gasLimit")
-                    ethereumKit.send(transactionData, gasPrice, gasLimit)
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ txHash ->
-                    logger.info("approve: $txHash")
-                }, {
-                    logger.warning("approve ERROR = ${it.message}")
-                }).let {
-                    disposables.add(it)
-                }
+            .flatMap { gasLimit ->
+                logger.info("gas limit: $gasLimit")
+                ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
+            }
+            .flatMap { rawTransaction ->
+                val signature = signer.signature(rawTransaction)
+                ethereumKit.send(rawTransaction, signature)
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ fullTransaction ->
+                logger.info("approve: ${fullTransaction.transaction.hash}")
+            }, {
+                logger.warning("approve ERROR = ${it.message}")
+            }).let {
+                disposables.add(it)
+            }
     }
 
     private fun uniswapToken(token: Erc20Token?): Token {
@@ -437,22 +459,26 @@ class MainViewModel : ViewModel() {
     fun swap() {
         tradeData.value?.let { tradeData ->
             uniswapKit.estimateSwap(tradeData, gasPrice)
-                    .flatMap { gasLimit ->
-                        logger.info("gas limit: $gasLimit")
+                .flatMap { gasLimit ->
+                    logger.info("gas limit: $gasLimit")
 
-                        val transactionData = uniswapKit.transactionData(tradeData)
-                        ethereumKit.send(transactionData, gasPrice, gasLimit)
-                    }
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe({ fullTransaction ->
-                        swapStatus.value = null
-                        logger.info("swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
-                    }, {
-                        swapStatus.value = it
-                        logger.info("swap ERROR, error=${it.message}")
-                        it.printStackTrace()
-                    }).let { disposables.add(it) }
+                    val transactionData = uniswapKit.transactionData(tradeData)
+                    ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
+                }
+                .flatMap { rawTransaction ->
+                    val signature = signer.signature(rawTransaction)
+                    ethereumKit.send(rawTransaction, signature)
+                }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ fullTransaction ->
+                    swapStatus.value = null
+                    logger.info("swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
+                }, {
+                    swapStatus.value = it
+                    logger.info("swap ERROR, error=${it.message}")
+                    it.printStackTrace()
+                }).let { disposables.add(it) }
         }
     }
 

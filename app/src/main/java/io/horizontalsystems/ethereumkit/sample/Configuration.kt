@@ -2,12 +2,13 @@ package io.horizontalsystems.ethereumkit.sample
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 
 object Configuration {
     const val webSocket: Boolean = true
     val networkType: EthereumKit.NetworkType = EthereumKit.NetworkType.EthRopsten
     const val walletId = "walletId"
-    const val defaultsWords = "apart approve black comfort steel spin real renew tone primary key cherry"
+    const val defaultsWords = "mom year father track attend frown loyal goddess crisp abandon juice roof"
 
     const val infuraProjectId = "2a1306f1d12f4c109a4d4fb9be46b02e"
     const val infuraSecret = "fc479a9290b64a84a15fa6544a130218"

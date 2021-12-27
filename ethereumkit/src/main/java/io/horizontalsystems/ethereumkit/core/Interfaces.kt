@@ -10,6 +10,7 @@ import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigInteger
@@ -46,7 +47,7 @@ interface IBlockchain {
     val lastBlockHeight: Long?
     val accountState: AccountState?
 
-    fun send(rawTransaction: RawTransaction): Single<Transaction>
+    fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction>
     fun getNonce(): Single<Long>
     fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
     fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>>

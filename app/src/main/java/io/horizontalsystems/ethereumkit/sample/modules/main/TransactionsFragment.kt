@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.sample
+package io.horizontalsystems.ethereumkit.sample.modules.main
 
 import androidx.lifecycle.Observer
 import android.graphics.Color
@@ -18,6 +18,8 @@ import io.horizontalsystems.erc20kit.decorations.TransferMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.decorations.RecognizedMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.sample.Configuration
+import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.oneinchkit.decorations.OneInchSwapMethodDecoration
 import io.horizontalsystems.oneinchkit.decorations.OneInchUnoswapMethodDecoration
