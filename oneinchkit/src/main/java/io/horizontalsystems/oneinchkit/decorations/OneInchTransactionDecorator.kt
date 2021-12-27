@@ -7,6 +7,7 @@ import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
+import io.horizontalsystems.oneinchkit.contracts.OneInchV4Method
 import io.horizontalsystems.oneinchkit.contracts.SwapMethod
 import io.horizontalsystems.oneinchkit.contracts.UnoswapMethod
 import io.horizontalsystems.oneinchkit.decorations.OneInchMethodDecoration.Token
@@ -95,6 +96,9 @@ class OneInchTransactionDecorator(
                         data = contractMethod.data,
                         recipient = swapDescription.dstReceiver
                 )
+            }
+            is OneInchV4Method -> {
+                OneInchV4MethodDecoration()
             }
             else -> null
         }

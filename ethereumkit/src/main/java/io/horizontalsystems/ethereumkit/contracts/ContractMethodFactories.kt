@@ -8,7 +8,13 @@ open class ContractMethodFactories {
 
     fun registerMethodFactories(factories: List<ContractMethodFactory>) {
         factories.forEach { factory ->
-            methodFactories[factory.methodId.toInt()] = factory
+            if (factory is ContractMethodsFactory) {
+                factory.methodIds.forEach { methodId ->
+                    methodFactories[methodId.toInt()] = factory
+                }
+            } else {
+                methodFactories[factory.methodId.toInt()] = factory
+            }
         }
     }
 
