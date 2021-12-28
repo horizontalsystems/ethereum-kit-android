@@ -54,7 +54,7 @@ class DevP2PConnection(private val frameConnection: FrameConnection) : FrameConn
             capability.packetTypesMap.entries.forEach { entry ->
                 packetTypesMap[offset + entry.key] = entry.value
             }
-            offset = capability.packetTypesMap.keys.max() ?: offset
+            offset = capability.packetTypesMap.keys.maxOrNull() ?: offset
         }
     }
 
