@@ -17,6 +17,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name="io.horizontalsystems.ethereumkit.sample.modules.main.MainActivity"
+            android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
