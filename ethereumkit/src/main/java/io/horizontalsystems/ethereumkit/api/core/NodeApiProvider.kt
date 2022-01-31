@@ -68,7 +68,7 @@ class NodeApiProvider(
                         val response  = rpc.parseResponse(rpcResponse, gson)
 
                         emitter.onSuccess(response)
-                        break
+                        return@create
                     } catch (throwable: Throwable) {
                         error = throwable
                         if (throwable is JsonRpc.ResponseError.RpcError) {
