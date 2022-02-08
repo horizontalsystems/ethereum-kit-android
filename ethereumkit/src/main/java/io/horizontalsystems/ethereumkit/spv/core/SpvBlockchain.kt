@@ -1,6 +1,7 @@
 package io.horizontalsystems.ethereumkit.spv.core
 
 import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
@@ -122,6 +123,10 @@ class SpvBlockchain(
     }
 
     override fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+        TODO("not implemented")
+    }
+
+    override fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
         TODO("not implemented")
     }
 

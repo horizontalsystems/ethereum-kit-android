@@ -54,8 +54,8 @@ class RpcBlockchain(
     override fun syncAccountState() {
         Single.zip(
                 syncer.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
-                syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest)),
-                { t1, t2 -> Pair(t1, t2) })
+                syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest))
+        ) { t1, t2 -> Pair(t1, t2) }
                 .subscribeOn(Schedulers.io())
                 .subscribe({ (balance, nonce) ->
                     onUpdateAccountState(AccountState(balance, nonce))
@@ -190,6 +190,11 @@ class RpcBlockchain(
     override fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
         return syncer.single(CallJsonRpc(contractAddress, data, defaultBlockParameter))
     }
+
+    override fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+        return syncer.single(rpc)
+    }
+
     //endregion
 
     //region IRpcSyncerListener
