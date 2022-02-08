@@ -5,13 +5,15 @@ import android.content.Context
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.core.*
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
-import io.horizontalsystems.ethereumkit.crypto.*
+import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
+import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
 import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
@@ -215,8 +217,8 @@ class EthereumKit(
         return decorationManager.decorateTransaction(transactionData)
     }
 
-    fun transferTransactionData(address: Address, value: BigInteger) : TransactionData {
-        return transactionManager.etherTransferTransactionData(address = address, value= value)
+    fun transferTransactionData(address: Address, value: BigInteger): TransactionData {
+        return transactionManager.etherTransferTransactionData(address = address, value = value)
     }
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
@@ -281,6 +283,10 @@ class EthereumKit(
 
     fun addTransactionWatcher(transactionWatcher: ITransactionWatcher) {
         internalTransactionSyncer.add(transactionWatcher)
+    }
+
+    internal fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+        return blockchain.rpcSingle(rpc)
     }
 
     sealed class SyncState {
