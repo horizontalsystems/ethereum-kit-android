@@ -12,7 +12,9 @@ class Transaction(
         val from: Address,
         val to: Address?,
         val value: BigInteger,
-        val gasPrice: Long,
+        var gasPrice: Long,
+        val maxFeePerGas: Long?,
+        val maxPriorityFeePerGas: Long?,
         val gasLimit: Long,
         val input: ByteArray,
 

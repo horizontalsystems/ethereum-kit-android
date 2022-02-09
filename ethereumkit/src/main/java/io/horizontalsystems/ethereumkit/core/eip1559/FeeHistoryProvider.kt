@@ -3,6 +3,7 @@ package io.horizontalsystems.ethereumkit.core.eip1559
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.reactivex.Flowable
+import io.reactivex.Single
 
 class FeeHistoryProvider(
         private val evmKit: EthereumKit
@@ -14,12 +15,16 @@ class FeeHistoryProvider(
     ): Flowable<FeeHistory> {
         return evmKit.lastBlockHeightFlowable
                 .flatMapSingle {
-                    val feeHistoryRequest = FeeHistoryJsonRpc(
-                            blocksCount,
-                            defaultBlockParameter,
-                            rewardPercentile
-                    )
-                    evmKit.rpcSingle(feeHistoryRequest)
+                    feeHistorySingle(blocksCount, defaultBlockParameter, rewardPercentile)
                 }
+    }
+
+    fun feeHistorySingle(blocksCount: Long, defaultBlockParameter: DefaultBlockParameter, rewardPercentile: List<Int>): Single<FeeHistory> {
+        val feeHistoryRequest = FeeHistoryJsonRpc(
+                blocksCount,
+                defaultBlockParameter,
+                rewardPercentile
+        )
+        return evmKit.rpcSingle(feeHistoryRequest)
     }
 }

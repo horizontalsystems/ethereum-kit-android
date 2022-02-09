@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
@@ -56,17 +57,6 @@ class TradeManager(
         return buildSwapData(tradeData).let {
             TransactionData(routerAddress, it.amount, it.input)
         }
-    }
-
-    fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
-        val swapData = buildSwapData(tradeData)
-
-        return evmKit.estimateGas(
-                to = routerAddress,
-                value = if (swapData.amount == BigInteger.ZERO) null else swapData.amount,
-                gasPrice = gasPrice,
-                data = swapData.input
-        )
     }
 
     private class SwapData(val amount: BigInteger, val input: ByteArray)

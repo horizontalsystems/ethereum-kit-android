@@ -7,12 +7,7 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionLog
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
+import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -124,7 +119,7 @@ class RpcBlockchain(
         return syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Pending))
     }
 
-    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {
         return syncer.single(EstimateGasJsonRpc(address, to, amount, gasLimit, gasPrice, data))
     }
 

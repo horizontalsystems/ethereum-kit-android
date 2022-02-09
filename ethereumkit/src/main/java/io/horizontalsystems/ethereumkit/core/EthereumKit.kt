@@ -19,8 +19,8 @@ import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -151,7 +151,7 @@ class EthereumKit(
         return transactionManager.getFullTransactions(hashes)
     }
 
-    fun estimateGas(to: Address?, value: BigInteger, gasPrice: Long?): Single<Long> {
+    fun estimateGas(to: Address?, value: BigInteger, gasPrice: GasPrice): Single<Long> {
         // without address - provide default gas limit
         if (to == null) {
             return Single.just(defaultGasLimit)
@@ -163,17 +163,17 @@ class EthereumKit(
         return blockchain.estimateGas(to, resolvedAmount, maxGasLimit, gasPrice, null)
     }
 
-    fun estimateGas(to: Address?, value: BigInteger?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    fun estimateGas(to: Address?, value: BigInteger?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {
         return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
     }
 
-    fun estimateGas(transactionData: TransactionData, gasPrice: Long?): Single<Long> {
+    fun estimateGas(transactionData: TransactionData, gasPrice: GasPrice): Single<Long> {
         return estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
     }
 
     fun rawTransaction(
         transactionData: TransactionData,
-        gasPrice: Long,
+        gasPrice: GasPrice,
         gasLimit: Long,
         nonce: Long? = null
     ): Single<RawTransaction> {
@@ -191,7 +191,7 @@ class EthereumKit(
         address: Address,
         value: BigInteger,
         transactionInput: ByteArray = byteArrayOf(),
-        gasPrice: Long,
+        gasPrice: GasPrice,
         gasLimit: Long,
         nonce: Long? = null
     ): Single<RawTransaction> {
@@ -389,7 +389,7 @@ class EthereumKit(
                 }
             }
 
-            val transactionBuilder = TransactionBuilder(address)
+            val transactionBuilder = TransactionBuilder(address, networkType.chainId)
             val etherscanService = EtherscanService(etherscanApiKey, networkType)
 
             val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)

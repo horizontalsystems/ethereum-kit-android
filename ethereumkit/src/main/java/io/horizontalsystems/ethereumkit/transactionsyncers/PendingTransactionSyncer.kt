@@ -77,6 +77,7 @@ class PendingTransactionSyncer(
         }
 
         transaction.timestamp = timestamp
+        transaction.gasPrice = receipt.effectiveGasPrice
 
         storage.save(transaction)
         storage.save(TransactionReceipt(receipt))

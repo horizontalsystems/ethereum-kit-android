@@ -7,6 +7,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 import io.reactivex.Flowable
@@ -15,9 +16,9 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 open class Erc20BaseAdapter(
-    context: Context,
-    token: Erc20Token,
-    private val ethereumKit: EthereumKit
+        context: Context,
+        token: Erc20Token,
+        private val ethereumKit: EthereumKit
 ) : IAdapter {
 
     private val contractAddress: Address = token.contractAddress
@@ -70,9 +71,9 @@ open class Erc20BaseAdapter(
     }
 
     override fun estimatedGasLimit(
-        toAddress: Address,
-        value: BigDecimal,
-        gasPrice: Long?
+            toAddress: Address,
+            value: BigDecimal,
+            gasPrice: GasPrice
     ): Single<Long> {
         val valueBigInteger = value.movePointRight(decimals).toBigInteger()
         val transactionData = erc20Kit.buildTransferTransactionData(toAddress, valueBigInteger)
@@ -80,19 +81,19 @@ open class Erc20BaseAdapter(
     }
 
     override fun send(
-        address: Address,
-        amount: BigDecimal,
-        gasPrice: Long,
-        gasLimit: Long
+            address: Address,
+            amount: BigDecimal,
+            gasPrice: GasPrice,
+            gasLimit: Long
     ): Single<FullTransaction> {
         throw Exception("Subclass must override")
     }
 
     override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
         return erc20Kit.getTransactionsAsync(fromHash, limit)
-            .map { transactions ->
-                transactions.map { transactionRecord(it) }
-            }
+                .map { transactions ->
+                    transactions.map { transactionRecord(it) }
+                }
     }
 
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
@@ -115,18 +116,18 @@ open class Erc20BaseAdapter(
         }
 
         return TransactionRecord(
-            transactionHash = transaction.hash.toHexString(),
-            transactionIndex = fullTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0,
-            interTransactionIndex = 0,
-            amount = amount,
-            timestamp = transaction.timestamp,
-            from = from,
-            to = to,
-            blockHeight = fullTransaction.receiptWithLogs?.receipt?.blockNumber,
-            isError = fullTransaction.isFailed(),
-            type = "",
-            mainDecoration = fullTransaction.mainDecoration,
-            eventsDecorations = fullTransaction.eventDecorations
+                transactionHash = transaction.hash.toHexString(),
+                transactionIndex = fullTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0,
+                interTransactionIndex = 0,
+                amount = amount,
+                timestamp = transaction.timestamp,
+                from = from,
+                to = to,
+                blockHeight = fullTransaction.receiptWithLogs?.receipt?.blockNumber,
+                isError = fullTransaction.isFailed(),
+                type = "",
+                mainDecoration = fullTransaction.mainDecoration,
+                eventsDecorations = fullTransaction.eventDecorations
         )
     }
 
