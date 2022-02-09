@@ -77,10 +77,6 @@ class UniswapKit(
         return TradeData(trade, options)
     }
 
-    fun estimateSwap(tradeData: TradeData, gasPrice: Long): Single<Long> {
-        return tradeManager.estimateSwap(tradeData, gasPrice)
-    }
-
     fun transactionData(tradeData: TradeData): TransactionData {
         return tradeManager.transactionData(tradeData)
     }

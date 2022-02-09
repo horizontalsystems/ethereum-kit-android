@@ -1,4 +1,4 @@
-package io.horizontalsystems.ethereumkit.spv.models
+package io.horizontalsystems.ethereumkit.models
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 

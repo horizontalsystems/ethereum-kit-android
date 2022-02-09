@@ -10,8 +10,8 @@ import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.Signature
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigInteger
@@ -50,7 +50,7 @@ interface IBlockchain {
 
     fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction>
     fun getNonce(): Single<Long>
-    fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long>
+    fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long>
     fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>>
     fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>>
     fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>>

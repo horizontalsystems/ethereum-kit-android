@@ -7,8 +7,9 @@ import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.crypto.EIP712Encoder
 import io.horizontalsystems.ethereumkit.crypto.TypedData
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import java.math.BigInteger
@@ -20,14 +21,14 @@ class Signer(
 ) {
 
     fun signature(rawTransaction: RawTransaction): Signature {
-        return transactionSigner.signature(rawTransaction)
+        return transactionSigner.signatureLegacy(rawTransaction)
     }
 
     fun signedTransaction(
         address: Address,
         value: BigInteger,
         transactionInput: ByteArray,
-        gasPrice: Long,
+        gasPrice: GasPrice,
         gasLimit: Long,
         nonce: Long
     ): ByteArray {
@@ -39,7 +40,7 @@ class Signer(
             nonce,
             transactionInput
         )
-        val signature = transactionSigner.signature(rawTransaction)
+        val signature = transactionSigner.signatureLegacy(rawTransaction)
         return transactionBuilder.encode(rawTransaction, signature)
     }
 
@@ -61,7 +62,7 @@ class Signer(
             val address = ethereumAddress(privateKey)
 
             val transactionSigner = TransactionSigner(privateKey, networkType.chainId)
-            val transactionBuilder = TransactionBuilder(address)
+            val transactionBuilder = TransactionBuilder(address, networkType.chainId)
             val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
             return Signer(transactionBuilder, transactionSigner, ethSigner)

@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 
 object Configuration {
-    const val webSocket: Boolean = true
+    const val webSocket: Boolean = false
     val networkType: EthereumKit.NetworkType = EthereumKit.NetworkType.EthRopsten
     const val walletId = "walletId"
     const val defaultsWords = "mom year father track attend frown loyal goddess crisp abandon juice roof"

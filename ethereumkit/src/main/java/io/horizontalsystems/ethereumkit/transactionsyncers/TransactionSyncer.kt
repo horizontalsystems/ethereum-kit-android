@@ -97,6 +97,8 @@ class TransactionSyncer(
                 to = transaction.to,
                 value = transaction.value,
                 gasPrice = transaction.gasPrice,
+                maxFeePerGas = null,
+                maxPriorityFeePerGas = null,
                 gasLimit = transaction.gasLimit,
                 input = transaction.input,
                 timestamp = timestamp

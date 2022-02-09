@@ -5,7 +5,7 @@ package io.horizontalsystems.ethereumkit.geth
 //import io.horizontalsystems.ethereumkit.models.EthereumTransaction
 //import io.horizontalsystems.ethereumkit.network.INetwork
 //import io.horizontalsystems.ethereumkit.network.Ropsten
-//import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
+//import io.horizontalsystems.ethereumkit.models.RawTransaction
 //import io.reactivex.Single
 //import io.reactivex.disposables.CompositeDisposable
 //import io.reactivex.schedulers.Schedulers

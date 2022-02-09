@@ -10,16 +10,11 @@ import io.horizontalsystems.ethereumkit.core.*
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncError
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.crypto.ECKey
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionLog
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.INetwork
 import io.horizontalsystems.ethereumkit.spv.helpers.RandomHelper
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.spv.models.RawTransaction
-import io.horizontalsystems.ethereumkit.spv.models.Signature
 import io.horizontalsystems.ethereumkit.spv.net.BlockHelper
 import io.horizontalsystems.ethereumkit.spv.net.BlockValidator
 import io.horizontalsystems.ethereumkit.spv.net.PeerGroup
@@ -98,7 +93,7 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: Long?, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {
         TODO("not implemented")
     }
 

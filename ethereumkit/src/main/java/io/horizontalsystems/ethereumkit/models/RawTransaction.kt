@@ -1,11 +1,12 @@
-package io.horizontalsystems.ethereumkit.spv.models
+package io.horizontalsystems.ethereumkit.models
 
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import java.math.BigInteger
 
 class RawTransaction(
-        val gasPrice: Long,
+        val gasPrice: GasPrice,
         val gasLimit: Long,
         val to: Address,
         val value: BigInteger,
