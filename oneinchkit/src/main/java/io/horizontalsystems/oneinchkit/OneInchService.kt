@@ -3,6 +3,7 @@ package io.horizontalsystems.oneinchkit
 import com.google.gson.GsonBuilder
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.network.*
 import io.reactivex.Single
 import okhttp3.OkHttpClient
@@ -19,12 +20,18 @@ class OneInchService(
         networkType: NetworkType
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val url = "https://unstoppable.api.enterprise.1inch.exchange/v4.0/${networkType.chainId}/"
+    private val apiVersion: String = when (networkType) {
+        NetworkType.EthRopsten, NetworkType.EthKovan,
+        NetworkType.EthRinkeby, NetworkType.EthGoerli,
+        NetworkType.EthMainNet -> "v4.1"
+        NetworkType.BscMainNet -> "v4.0"
+    }
+    private val url = "https://unstoppable.api.enterprise.1inch.exchange/${apiVersion}/${networkType.chainId}/"
     private val service: OneInchServiceApi
 
     init {
-        val loggingInterceptor = HttpLoggingInterceptor {
-            message -> logger.info(message)
+        val loggingInterceptor = HttpLoggingInterceptor { message ->
+            logger.info(message)
         }.setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
@@ -58,14 +65,18 @@ class OneInchService(
             toToken: Address,
             amount: BigInteger,
             protocols: List<String>? = null,
-            gasPrice: Long? = null,
+            gasPrice: GasPrice? = null,
             complexityLevel: Int? = null,
             connectorTokens: List<String>? = null,
             gasLimit: Long? = null,
             mainRouteParts: Int? = null,
             parts: Int? = null
     ): Single<Quote> {
-        return service.getQuote(fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
+        return if (gasPrice is GasPrice.Eip1559) {
+            service.getQuote(fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
+        } else {
+            service.getQuote(fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice?.max, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
+        }
     }
 
     fun getSwapAsync(
@@ -76,7 +87,7 @@ class OneInchService(
             slippagePercentage: Float,
             protocols: List<String>? = null,
             recipient: Address? = null,
-            gasPrice: Long? = null,
+            gasPrice: GasPrice? = null,
             burnChi: Boolean? = null,
             complexityLevel: Int? = null,
             connectorTokens: List<String>? = null,
@@ -85,7 +96,11 @@ class OneInchService(
             parts: Int? = null,
             mainRouteParts: Int? = null
     ): Single<Swap> {
-        return service.getSwap(fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
+        return if (gasPrice is GasPrice.Eip1559) {
+            service.getSwap(fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
+        } else {
+            service.getSwap(fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice?.max, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
+        }
     }
 
     private interface OneInchServiceApi {
@@ -114,6 +129,40 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Quote>
 
+        @GET("quote")
+        fun getQuote(
+                @Query("fromTokenAddress") fromTokenAddress: String,
+                @Query("toTokenAddress") toTokenAddress: String,
+                @Query("amount") amount: BigInteger,
+                @Query("protocols") protocols: String? = null,
+                @Query("maxFeePerGas") maxFeePerGas: Long? = null,
+                @Query("maxPriorityFeePerGas") maxPriorityFeePerGas: Long? = null,
+                @Query("complexityLevel") complexityLevel: Int? = null,
+                @Query("connectorTokens") connectorTokens: String? = null,
+                @Query("gasLimit") gasLimit: Long? = null,
+                @Query("parts") parts: Int? = null,
+                @Query("mainRouteParts") mainRouteParts: Int? = null
+        ): Single<Quote>
+
+        @GET("swap")
+        fun getSwap(
+                @Query("fromTokenAddress") fromTokenAddress: String,
+                @Query("toTokenAddress") toTokenAddress: String,
+                @Query("amount") amount: BigInteger,
+                @Query("fromAddress") fromAddress: String,
+                @Query("slippage") slippagePercentage: Float,
+                @Query("protocols") protocols: String? = null,
+                @Query("destReceiver") recipient: String? = null,
+                @Query("maxFeePerGas") maxFeePerGas: Long? = null,
+                @Query("maxPriorityFeePerGas") maxPriorityFeePerGas: Long? = null,
+                @Query("burnChi") burnChi: Boolean? = null,
+                @Query("complexityLevel ") complexityLevel: Int? = null,
+                @Query("connectorTokens") connectorTokens: String? = null,
+                @Query("allowPartialFill") allowPartialFill: Boolean? = null,
+                @Query("gasLimit") gasLimit: Long? = null,
+                @Query("parts") parts: Int? = null,
+                @Query("mainRouteParts") mainRouteParts: Int? = null
+        ): Single<Swap>
 
         @GET("swap")
         fun getSwap(
@@ -133,7 +182,6 @@ class OneInchService(
                 @Query("parts") parts: Int? = null,
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Swap>
-
 
     }
 

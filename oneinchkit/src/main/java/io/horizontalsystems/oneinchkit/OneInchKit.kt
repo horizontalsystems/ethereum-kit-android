@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
 import io.horizontalsystems.oneinchkit.decorations.OneInchTransactionDecorator
 import io.reactivex.Single
@@ -31,7 +32,7 @@ class OneInchKit(
             toToken: Address,
             amount: BigInteger,
             protocols: List<String>? = null,
-            gasPrice: Long? = null,
+            gasPrice: GasPrice? = null,
             complexityLevel: Int? = null,
             connectorTokens: List<String>? = null,
             gasLimit: Long? = null,
@@ -48,7 +49,7 @@ class OneInchKit(
             slippagePercentage: Float,
             protocols: List<String>? = null,
             recipient: Address? = null,
-            gasPrice: Long? = null,
+            gasPrice: GasPrice? = null,
             burnChi: Boolean = false,
             complexityLevel: Int? = null,
             connectorTokens: List<String>? = null,
@@ -107,7 +108,9 @@ data class SwapTransaction(
         val to: Address,
         val data: ByteArray,
         val value: BigInteger,
-        val gasPrice: Long,
+        val gasPrice: Long?,
+        val maxFeePerGas: Long?,
+        val maxPriorityFeePerGas: Long?,
         @SerializedName("gas") val gasLimit: Long
 ) {
     override fun toString(): String {
