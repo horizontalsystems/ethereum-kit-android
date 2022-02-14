@@ -8,7 +8,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
-import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistoryProvider
+import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
@@ -170,9 +170,9 @@ class MainViewModel : ViewModel() {
         ethereumAdapter.start()
         erc20Adapter.start()
 
-        val feeHistoryProvider = FeeHistoryProvider(ethereumKit)
+        val eip1559GasPriceProvider = Eip1559GasPriceProvider(ethereumKit)
 
-        feeHistoryProvider
+        eip1559GasPriceProvider
                 .feeHistory(4, rewardPercentile = listOf(50))
                 .subscribe({
                     Log.e("AAA", "FeeHistory: $it")

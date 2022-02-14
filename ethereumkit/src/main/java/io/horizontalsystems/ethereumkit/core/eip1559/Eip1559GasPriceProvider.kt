@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.reactivex.Flowable
 import io.reactivex.Single
 
-class FeeHistoryProvider(
+class Eip1559GasPriceProvider(
         private val evmKit: EthereumKit
 ) {
     fun feeHistory(
