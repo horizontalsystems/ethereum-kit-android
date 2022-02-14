@@ -32,7 +32,7 @@ class OneInchService(
     init {
         val loggingInterceptor = HttpLoggingInterceptor { message ->
             logger.info(message)
-        }.setLevel(HttpLoggingInterceptor.Level.BODY)
+        }.setLevel(HttpLoggingInterceptor.Level.BASIC)
 
         val httpClient = OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
