@@ -5,13 +5,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
 import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
+import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.sample.App
 import io.horizontalsystems.ethereumkit.sample.Configuration
@@ -77,7 +77,7 @@ class MainViewModel : ViewModel() {
     fun init() {
         val words = Configuration.defaultsWords.split(" ")
         val seed = Mnemonic().toSeed(words)
-        signer = Signer.getInstance(seed, Configuration.networkType)
+        signer = Signer.getInstance(seed, Configuration.chain)
         ethereumKit = createKit()
         ethereumAdapter = EthereumAdapter(ethereumKit, signer)
         erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken
@@ -218,8 +218,8 @@ class MainViewModel : ViewModel() {
         val syncSource: EthereumKit.SyncSource?
         val txApiProviderKey: String
 
-        when (Configuration.networkType) {
-            NetworkType.BscMainNet -> {
+        when (Configuration.chain) {
+            Chain.binanceSmartChain -> {
                 txApiProviderKey = Configuration.bscScanKey
                 syncSource = if (Configuration.webSocket)
                     EthereumKit.defaultBscWebSocketSyncSource()
@@ -230,13 +230,13 @@ class MainViewModel : ViewModel() {
                 txApiProviderKey = Configuration.etherscanKey
                 syncSource = if (Configuration.webSocket)
                     EthereumKit.infuraWebSocketSyncSource(
-                            Configuration.networkType,
+                            Configuration.chain,
                             Configuration.infuraProjectId,
                             Configuration.infuraSecret
                     )
                 else
                     EthereumKit.infuraHttpSyncSource(
-                            Configuration.networkType,
+                            Configuration.chain,
                             Configuration.infuraProjectId,
                             Configuration.infuraSecret
                     )
@@ -249,7 +249,7 @@ class MainViewModel : ViewModel() {
         val words = Configuration.defaultsWords.split(" ")
         return EthereumKit.getInstance(
                 App.instance, words, "",
-                Configuration.networkType, syncSource, txApiProviderKey,
+                Configuration.chain, syncSource, txApiProviderKey,
                 Configuration.walletId
         )
     }
@@ -325,8 +325,8 @@ class MainViewModel : ViewModel() {
     }
 
     fun clear() {
-        EthereumKit.clear(App.instance, Configuration.networkType, Configuration.walletId)
-        Erc20Kit.clear(App.instance, Configuration.networkType, Configuration.walletId)
+        EthereumKit.clear(App.instance, Configuration.chain, Configuration.walletId)
+        Erc20Kit.clear(App.instance, Configuration.chain, Configuration.walletId)
         init()
     }
 

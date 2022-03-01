@@ -1,6 +1,5 @@
 package io.horizontalsystems.uniswapkit.models
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.models.Address
@@ -82,25 +81,7 @@ class Pair(
     }
 
     companion object {
-        fun address(token0: Token, token1: Token, networkType: NetworkType): Address {
-            val factoryAddress: String
-            val initCodeHash: String
-
-            when (networkType) {
-                NetworkType.EthMainNet,
-                NetworkType.EthRopsten,
-                NetworkType.EthKovan,
-                NetworkType.EthGoerli,
-                NetworkType.EthRinkeby -> {
-                    factoryAddress = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
-                    initCodeHash = "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-                }
-                NetworkType.BscMainNet -> {
-                    factoryAddress = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-                    initCodeHash = "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
-                }
-            }
-
+        fun address(token0: Token, token1: Token, factoryAddress: String, initCodeHash: String): Address {
             val data = "0xff".hexStringToByteArray() +
                     factoryAddress.hexStringToByteArray() +
                     CryptoUtils.sha3(token0.address.raw + token1.address.raw) +

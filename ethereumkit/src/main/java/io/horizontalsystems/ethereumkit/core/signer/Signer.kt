@@ -1,15 +1,11 @@
 package io.horizontalsystems.ethereumkit.core.signer
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.core.TransactionSigner
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.crypto.EIP712Encoder
 import io.horizontalsystems.ethereumkit.crypto.TypedData
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.GasPrice
-import io.horizontalsystems.ethereumkit.models.RawTransaction
-import io.horizontalsystems.ethereumkit.models.Signature
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import java.math.BigInteger
@@ -57,12 +53,12 @@ class Signer(
     }
 
     companion object {
-        fun getInstance(seed: ByteArray, networkType: EthereumKit.NetworkType): Signer {
-            val privateKey = privateKey(seed, networkType)
+        fun getInstance(seed: ByteArray, chain: Chain): Signer {
+            val privateKey = privateKey(seed, chain)
             val address = ethereumAddress(privateKey)
 
-            val transactionSigner = TransactionSigner(privateKey, networkType.chainId)
-            val transactionBuilder = TransactionBuilder(address, networkType.chainId)
+            val transactionSigner = TransactionSigner(privateKey, chain.id)
+            val transactionBuilder = TransactionBuilder(address, chain.id)
             val ethSigner = EthSigner(privateKey, CryptoUtils, EIP712Encoder())
 
             return Signer(transactionBuilder, transactionSigner, ethSigner)
@@ -71,26 +67,26 @@ class Signer(
         fun address(
             words: List<String>,
             passphrase: String = "",
-            networkType: EthereumKit.NetworkType
+            chain: Chain
         ): Address {
-            return address(Mnemonic().toSeed(words, passphrase), networkType)
+            return address(Mnemonic().toSeed(words, passphrase), chain)
         }
 
-        fun address(seed: ByteArray, networkType: EthereumKit.NetworkType): Address {
-            val privateKey = privateKey(seed, networkType)
+        fun address(seed: ByteArray, chain: Chain): Address {
+            val privateKey = privateKey(seed, chain)
             return ethereumAddress(privateKey)
         }
 
         fun privateKey(
             words: List<String>,
             passphrase: String = "",
-            networkType: EthereumKit.NetworkType
+            chain: Chain
         ): BigInteger {
-            return privateKey(Mnemonic().toSeed(words, passphrase), networkType)
+            return privateKey(Mnemonic().toSeed(words, passphrase), chain)
         }
 
-        fun privateKey(seed: ByteArray, networkType: EthereumKit.NetworkType): BigInteger {
-            val hdWallet = HDWallet(seed, networkType.coinType)
+        fun privateKey(seed: ByteArray, chain: Chain): BigInteger {
+            val hdWallet = HDWallet(seed, chain.coinType)
             return hdWallet.privateKey(0, 0, true).privKey
         }
 

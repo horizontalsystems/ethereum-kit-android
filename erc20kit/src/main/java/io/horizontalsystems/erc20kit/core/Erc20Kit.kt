@@ -4,12 +4,7 @@ import android.content.Context
 import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
-import io.horizontalsystems.ethereumkit.models.FullTransaction
-import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -132,7 +127,7 @@ class Erc20Kit(
 
             val address = ethereumKit.receiveAddress
 
-            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.networkType, ethereumKit.walletId, contractAddress)
+            val erc20KitDatabase = Erc20DatabaseManager.getErc20Database(context, ethereumKit.chain, ethereumKit.walletId, contractAddress)
             val roomStorage = Erc20Storage(erc20KitDatabase)
             val balanceStorage: ITokenBalanceStorage = roomStorage
 
@@ -149,7 +144,7 @@ class Erc20Kit(
         }
 
         fun addTransactionSyncer(ethereumKit: EthereumKit) {
-            val transactionsProvider = EtherscanTransactionsProvider(ethereumKit.etherscanService, ethereumKit.receiveAddress)
+            val transactionsProvider = EtherscanTransactionsProvider(ethereumKit.etherscanTransactionProvider, ethereumKit.receiveAddress)
             ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(transactionsProvider))
         }
 
@@ -158,8 +153,8 @@ class Erc20Kit(
             ethereumKit.addDecorator(decorator)
         }
 
-        fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
-            Erc20DatabaseManager.clear(context, networkType, walletId)
+        fun clear(context: Context, chain: Chain, walletId: String) {
+            Erc20DatabaseManager.clear(context, chain, walletId)
         }
     }
 

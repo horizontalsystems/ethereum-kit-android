@@ -3,16 +3,16 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.models.EtherscanTokenTransaction
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.network.EtherscanService
+import io.horizontalsystems.ethereumkit.network.EtherscanTransactionProvider
 import io.reactivex.Single
 
 class EtherscanTransactionsProvider(
-        private val etherscanService: EtherscanService,
+        private val etherscanTransactionProvider: EtherscanTransactionProvider,
         private val address: Address
 ) {
 
     fun getTokenTransactions(startBlock: Long): Single<List<EtherscanTokenTransaction>> {
-        return etherscanService.getTokenTransactions(address, startBlock)
+        return etherscanTransactionProvider.getTokenTransactions(address, startBlock)
                 .map { response ->
                     response.result.mapNotNull { tx ->
                         try {
