@@ -3,43 +3,44 @@ package io.horizontalsystems.ethereumkit.core
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.storage.ApiDatabase
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.storage.SpvDatabase
 
 internal object EthereumDatabaseManager {
 
-    fun getEthereumApiDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): ApiDatabase {
-        return ApiDatabase.getInstance(context, getDbNameApi(walletId, networkType))
+    fun getEthereumApiDatabase(context: Context, walletId: String, chain: Chain): ApiDatabase {
+        return ApiDatabase.getInstance(context, getDbNameApi(walletId, chain))
     }
 
-    fun getEthereumSpvDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): SpvDatabase {
-        return SpvDatabase.getInstance(context, getDbNameSpv(walletId, networkType))
+    fun getEthereumSpvDatabase(context: Context, walletId: String, chain: Chain): SpvDatabase {
+        return SpvDatabase.getInstance(context, getDbNameSpv(walletId, chain))
     }
 
-    fun getTransactionDatabase(context: Context, walletId: String, networkType: EthereumKit.NetworkType): TransactionDatabase {
-        return TransactionDatabase.getInstance(context, getDbNameTransactions(walletId, networkType))
+    fun getTransactionDatabase(context: Context, walletId: String, chain: Chain): TransactionDatabase {
+        return TransactionDatabase.getInstance(context, getDbNameTransactions(walletId, chain))
     }
 
-    fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
+    fun clear(context: Context, chain: Chain, walletId: String) {
         synchronized(this) {
-            context.deleteDatabase(getDbNameApi(walletId, networkType))
-            context.deleteDatabase(getDbNameSpv(walletId, networkType))
-            context.deleteDatabase(getDbNameTransactions(walletId, networkType))
+            context.deleteDatabase(getDbNameApi(walletId, chain))
+            context.deleteDatabase(getDbNameSpv(walletId, chain))
+            context.deleteDatabase(getDbNameTransactions(walletId, chain))
         }
     }
 
-    private fun getDbNameApi(walletId: String, networkType: EthereumKit.NetworkType): String {
-        return getDbName(networkType, walletId, "api")
+    private fun getDbNameApi(walletId: String, chain: Chain): String {
+        return getDbName(chain, walletId, "api")
     }
 
-    private fun getDbNameSpv(walletId: String, networkType: EthereumKit.NetworkType): String {
-        return getDbName(networkType, walletId, "spv")
+    private fun getDbNameSpv(walletId: String, chain: Chain): String {
+        return getDbName(chain, walletId, "spv")
     }
 
-    private fun getDbNameTransactions(walletId: String, networkType: EthereumKit.NetworkType): String {
-        return getDbName(networkType, walletId, "txs")
+    private fun getDbNameTransactions(walletId: String, chain: Chain): String {
+        return getDbName(chain, walletId, "txs")
     }
 
-    private fun getDbName(networkType: EthereumKit.NetworkType, walletId: String, suffix: String): String {
-        return "Ethereum-${networkType.name}-$walletId-$suffix"
+    private fun getDbName(chain: Chain, walletId: String, suffix: String): String {
+        return "Ethereum-${chain.id}-$walletId-$suffix"
     }
 }

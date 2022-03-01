@@ -19,8 +19,6 @@ import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
-import io.horizontalsystems.ethereumkit.models.RawTransaction
-import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.transactionsyncers.*
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
@@ -44,9 +42,9 @@ class EthereumKit(
     private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
     private val connectionManager: ConnectionManager,
     private val address: Address,
-    val networkType: NetworkType,
+    val chain: Chain,
     val walletId: String,
-    val etherscanService: EtherscanService,
+    val etherscanTransactionProvider: EtherscanTransactionProvider,
     private val decorationManager: DecorationManager,
     private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
@@ -352,21 +350,21 @@ class EthereumKit(
                 application: Application,
                 words: List<String>,
                 passphrase: String = "",
-                networkType: NetworkType,
+                chain: Chain,
                 syncSource: SyncSource,
                 etherscanApiKey: String,
                 walletId: String
         ): EthereumKit {
             val seed = Mnemonic().toSeed(words, passphrase)
-            val privateKey = privateKey(seed, networkType)
+            val privateKey = privateKey(seed, chain)
             val address = ethereumAddress(privateKey)
-            return getInstance(application, address, networkType, syncSource, etherscanApiKey, walletId)
+            return getInstance(application, address, chain, syncSource, etherscanApiKey, walletId)
         }
 
         fun getInstance(
                 application: Application,
                 address: Address,
-                networkType: NetworkType,
+                chain: Chain,
                 syncSource: SyncSource,
                 etherscanApiKey: String,
                 walletId: String
@@ -389,19 +387,19 @@ class EthereumKit(
                 }
             }
 
-            val transactionBuilder = TransactionBuilder(address, networkType.chainId)
-            val etherscanService = EtherscanService(etherscanApiKey, networkType)
+            val transactionBuilder = TransactionBuilder(address, chain.id)
+            val transactionProvider = EtherscanTransactionProvider("transactionSource", etherscanApiKey)
 
-            val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, networkType)
+            val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, chain)
             val storage = ApiStorage(apiDatabase)
 
             val blockchain = RpcBlockchain.instance(address, storage, syncer, transactionBuilder)
 
-            val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, networkType)
+            val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, chain)
             val transactionStorage = TransactionStorage(transactionDatabase)
             val notSyncedTransactionPool = NotSyncedTransactionPool(transactionStorage)
 
-            val etherscanTransactionsProvider = EtherscanTransactionsProvider(etherscanService, address)
+            val etherscanTransactionsProvider = EtherscanTransactionsProvider(transactionProvider, address)
             val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider)
             val userInternalTransactionsProvider = UserInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
             val transactionInternalTransactionSyncer = TransactionInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
@@ -434,9 +432,9 @@ class EthereumKit(
                     transactionInternalTransactionSyncer,
                     connectionManager,
                     address,
-                    networkType,
+                    chain,
                     walletId,
-                    etherscanService,
+                    transactionProvider,
                     decorationManager
             )
 
@@ -448,25 +446,25 @@ class EthereumKit(
             return ethereumKit
         }
 
-        fun privateKey(seed: ByteArray, networkType: NetworkType): BigInteger {
-            val hdWallet = HDWallet(seed, networkType.coinType)
+        fun privateKey(seed: ByteArray, chain: Chain): BigInteger {
+            val hdWallet = HDWallet(seed, chain.coinType)
             return hdWallet.privateKey(0, 0, true).privKey
         }
 
-        fun clear(context: Context, networkType: NetworkType, walletId: String) {
-            EthereumDatabaseManager.clear(context, networkType, walletId)
+        fun clear(context: Context, chain: Chain, walletId: String) {
+            EthereumDatabaseManager.clear(context, chain, walletId)
         }
 
-        fun infuraWebSocketSyncSource(networkType: NetworkType, projectId: String, projectSecret: String?): SyncSource? =
-                infuraDomain(networkType)?.let { infuraDomain ->
+        fun infuraWebSocketSyncSource(chain: Chain, projectId: String, projectSecret: String?): SyncSource? =
+                infuraDomain(chain)?.let { infuraDomain ->
                     val url = URL("https://$infuraDomain/ws/v3/$projectId")
                     SyncSource.WebSocket(url, projectSecret)
                 }
 
-        fun infuraHttpSyncSource(networkType: NetworkType, projectId: String, projectSecret: String?): SyncSource? =
-                infuraDomain(networkType)?.let { infuraDomain ->
+        fun infuraHttpSyncSource(chain: Chain, projectId: String, projectSecret: String?): SyncSource? =
+                infuraDomain(chain)?.let { infuraDomain ->
                     val url = URL("https://$infuraDomain/v3/$projectId")
-                    SyncSource.Http(listOf(url), networkType.blockTime, projectSecret)
+                    SyncSource.Http(listOf(url), chain.blockTime, projectSecret)
                 }
 
         fun defaultBscWebSocketSyncSource(): SyncSource =
@@ -474,7 +472,8 @@ class EthereumKit(
 
 
         fun defaultBscHttpSyncSource(): SyncSource =
-                SyncSource.Http(listOf(
+            SyncSource.Http(
+                listOf(
                         URL("https://bsc-dataseed.binance.org"),
                         URL("https://bsc-dataseed1.defibit.io"),
                         URL("https://bsc-dataseed1.ninicoin.io"),
@@ -487,18 +486,20 @@ class EthereumKit(
                         URL("https://bsc-dataseed1.binance.org"),
                         URL("https://bsc-dataseed2.binance.org"),
                         URL("https://bsc-dataseed3.binance.org"),
-                        URL("https://bsc-dataseed4.binance.org")),
-                        NetworkType.BscMainNet.blockTime, null)
+                        URL("https://bsc-dataseed4.binance.org")
+                ),
+                Chain.binanceSmartChain.blockTime, null
+            )
 
-        private fun infuraDomain(networkType: NetworkType): String? =
-                when (networkType) {
-                    NetworkType.EthMainNet -> "mainnet.infura.io"
-                    NetworkType.EthRopsten -> "ropsten.infura.io"
-                    NetworkType.EthKovan -> "kovan.infura.io"
-                    NetworkType.EthRinkeby -> "rinkeby.infura.io"
-                    NetworkType.EthGoerli -> "goerli.infura.io"
-                    NetworkType.BscMainNet -> null
-                }
+        private fun infuraDomain(chain: Chain): String? =
+            when (chain) {
+                Chain.ethereum -> "mainnet.infura.io"
+                Chain.ethereumRopsten -> "ropsten.infura.io"
+                Chain.ethereumKovan -> "kovan.infura.io"
+                Chain.ethereumRinkeby -> "rinkeby.infura.io"
+                Chain.ethereumGoerli -> "goerli.infura.io"
+                else -> null
+            }
 
         private fun ethereumAddress(privateKey: BigInteger): Address {
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
@@ -510,20 +511,6 @@ class EthereumKit(
     sealed class SyncSource {
         class WebSocket(val url: URL, val auth: String?) : SyncSource()
         class Http(val urls: List<URL>, val blockTime: Long, val auth: String?) : SyncSource()
-    }
-
-    enum class NetworkType(
-            val chainId: Int,
-            val blockTime: Long,
-            val coinType: Int,
-            val isMainNet: Boolean
-    ) {
-        EthMainNet(1, 15, 60, true),
-        EthRopsten(3, 5, 1, false),
-        EthKovan(42, 4, 1, false),
-        EthRinkeby(4, 15, 1, false),
-        BscMainNet(56, 5, 60, true),
-        EthGoerli(5, 15, 1, false);
     }
 
 }

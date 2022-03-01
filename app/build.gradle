@@ -21,10 +21,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
     packagingOptions {
-        exclude 'META-INF/rxjava.properties'
+        resources {
+            excludes += ['META-INF/rxjava.properties']
+        }
     }
+
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11

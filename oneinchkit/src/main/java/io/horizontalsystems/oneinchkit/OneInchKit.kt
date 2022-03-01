@@ -2,7 +2,6 @@ package io.horizontalsystems.oneinchkit
 
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.GasPrice
@@ -17,10 +16,10 @@ class OneInchKit(
         private val service: OneInchService
 ) {
 
-    val smartContractAddress: Address = when (evmKit.networkType) {
-        NetworkType.EthMainNet -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
-        NetworkType.BscMainNet -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
-        else -> throw IllegalArgumentException("Invalid NetworkType: $evmKit.networkType")
+    val getRouterAddress: Address = when (evmKit.chain.id) {
+        1, 56, 137 -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
+        3, 4, 5, 42 -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
+        else -> throw IllegalArgumentException("Invalid Chain: ${evmKit.chain.id}")
     }
 
     fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger): Single<ApproveCallData> {
@@ -64,7 +63,7 @@ class OneInchKit(
     companion object {
 
         fun getInstance(evmKit: EthereumKit): OneInchKit {
-            val service = OneInchService(evmKit.networkType)
+            val service = OneInchService(evmKit.chain)
             return OneInchKit(evmKit, service)
         }
 

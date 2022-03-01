@@ -2,18 +2,18 @@ package io.horizontalsystems.erc20kit.core
 
 import android.content.Context
 import io.horizontalsystems.erc20kit.core.room.Erc20KitDatabase
-import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
 
 internal object Erc20DatabaseManager {
 
-    fun getErc20Database(context: Context, networkType: EthereumKit.NetworkType, walletId: String, contractAddress: Address): Erc20KitDatabase {
-        return Erc20KitDatabase.getInstance(context, "${getDbNameBase(networkType, walletId)}-${contractAddress.hex}")
+    fun getErc20Database(context: Context, chain: Chain, walletId: String, contractAddress: Address): Erc20KitDatabase {
+        return Erc20KitDatabase.getInstance(context, "${getDbNameBase(chain, walletId)}-${contractAddress.hex}")
     }
 
-    fun clear(context: Context, networkType: EthereumKit.NetworkType, walletId: String) {
+    fun clear(context: Context, chain: Chain, walletId: String) {
         synchronized(this) {
-            val dbNameBase = getDbNameBase(networkType, walletId)
+            val dbNameBase = getDbNameBase(chain, walletId)
 
             context.databaseList().forEach {
                 if (it.contains(dbNameBase)) {
@@ -23,8 +23,8 @@ internal object Erc20DatabaseManager {
         }
     }
 
-    private fun getDbNameBase(networkType: EthereumKit.NetworkType, walletId: String): String {
-        return "Erc20-${networkType.name}-$walletId"
+    private fun getDbNameBase(chain: Chain, walletId: String): String {
+        return "Erc20-${chain.id}-$walletId"
     }
 
 }

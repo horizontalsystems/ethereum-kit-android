@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.models.EtherscanResponse
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
@@ -19,24 +18,14 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.logging.Logger
 
-class EtherscanService(
-        private val apiKey: String,
-        networkType: NetworkType
+class EtherscanTransactionProvider(
+        private val baseUrl: String,
+        private val apiKey: String
 ) {
 
     private val logger = Logger.getLogger("EtherscanService")
 
     private val service: EtherscanServiceAPI
-
-    private val url: String = when (networkType) {
-        NetworkType.EthMainNet -> "https://api.etherscan.io"
-        NetworkType.EthRopsten -> "https://api-ropsten.etherscan.io"
-        NetworkType.EthKovan -> "https://api-kovan.etherscan.io"
-        NetworkType.EthRinkeby -> "https://api-rinkeby.etherscan.io"
-        NetworkType.BscMainNet -> "https://api.bscscan.com"
-        NetworkType.EthGoerli -> "https://api-goerli.etherscan.io"
-    }
-
 
     private val gson: Gson
 
@@ -55,7 +44,7 @@ class EtherscanService(
                 .create()
 
         val retrofit = Retrofit.Builder()
-                .baseUrl(url)
+                .baseUrl(baseUrl)
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(httpClient.build())

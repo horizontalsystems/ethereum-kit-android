@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.models
 
 import java.math.BigInteger
 
-class EtherscanTransaction(
+class ProviderTransaction(
         val hash: ByteArray,
         val nonce: Long,
         val input: ByteArray,

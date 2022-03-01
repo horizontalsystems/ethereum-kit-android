@@ -84,7 +84,7 @@ class UniswapKit(
     companion object {
         fun getInstance(ethereumKit: EthereumKit): UniswapKit {
             val tradeManager = TradeManager(ethereumKit)
-            val tokenFactory = TokenFactory(ethereumKit.networkType)
+            val tokenFactory = TokenFactory(ethereumKit.chain)
             val pairSelector = PairSelector(tokenFactory)
 
             return UniswapKit(tradeManager, pairSelector, tokenFactory)

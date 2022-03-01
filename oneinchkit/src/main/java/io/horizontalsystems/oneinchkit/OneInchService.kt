@@ -1,8 +1,8 @@
 package io.horizontalsystems.oneinchkit
 
 import com.google.gson.GsonBuilder
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.network.*
 import io.reactivex.Single
@@ -12,21 +12,16 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 import java.math.BigInteger
 import java.util.logging.Logger
 
 class OneInchService(
-        networkType: NetworkType
+    private val chain: Chain
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val apiVersion: String = when (networkType) {
-        NetworkType.EthRopsten, NetworkType.EthKovan,
-        NetworkType.EthRinkeby, NetworkType.EthGoerli,
-        NetworkType.EthMainNet -> "v4.1"
-        NetworkType.BscMainNet -> "v4.0"
-    }
-    private val url = "https://unstoppable.api.enterprise.1inch.exchange/${apiVersion}/${networkType.chainId}/"
+    private val url = "https://unstoppable.api.enterprise.1inch.exchange/"
     private val service: OneInchServiceApi
 
     init {
@@ -57,7 +52,7 @@ class OneInchService(
     }
 
     fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger): Single<ApproveCallData> {
-        return service.getApproveCallData(tokenAddress.hex, amount)
+        return service.getApproveCallData(chain.id, tokenAddress.hex, amount)
     }
 
     fun getQuoteAsync(
@@ -73,9 +68,9 @@ class OneInchService(
             parts: Int? = null
     ): Single<Quote> {
         return if (gasPrice is GasPrice.Eip1559) {
-            service.getQuote(fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
+            service.getQuote("v4.1", chain.id, fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
         } else {
-            service.getQuote(fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice?.max, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
+            service.getQuote("v4.0", chain.id, fromToken.hex, toToken.hex, amount, protocols?.joinToString(","), gasPrice?.max, complexityLevel, connectorTokens?.joinToString(","), gasLimit, parts, mainRouteParts)
         }
     }
 
@@ -97,26 +92,26 @@ class OneInchService(
             mainRouteParts: Int? = null
     ): Single<Swap> {
         return if (gasPrice is GasPrice.Eip1559) {
-            service.getSwap(fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
+            service.getSwap("v4.1", chain.id, fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
         } else {
-            service.getSwap(fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice?.max, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
+            service.getSwap("v4.0", chain.id, fromTokenAddress.hex, toTokenAddress.hex, amount, fromAddress.hex, slippagePercentage, protocols?.joinToString(","), recipient?.hex, gasPrice?.max, burnChi, complexityLevel, connectorTokens?.joinToString(","), allowPartialFill, gasLimit, parts, mainRouteParts)
         }
     }
 
     private interface OneInchServiceApi {
 
-        @GET("approve/calldata")
+        @GET("v4.0/{ChainId}/approve/calldata")
         fun getApproveCallData(
+                @Path("ChainId") chainId: Int,
                 @Query("tokenAddress") tokenAddress: String,
                 @Query("amount") amount: BigInteger? = null,
                 @Query("infinity") infinity: Boolean? = null
         ): Single<ApproveCallData>
 
-        @GET("approve/spender")
-        fun getApproveSpender(): Single<Spender>
-
-        @GET("quote")
+        @GET("{ApiVersion}/{ChainId}/quote")
         fun getQuote(
+                @Path("ApiVersion") apiVersion: String,
+                @Path("ChainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -129,8 +124,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Quote>
 
-        @GET("quote")
+        @GET("{ApiVersion}/{ChainId}/quote")
         fun getQuote(
+                @Path("ApiVersion") apiVersion: String,
+                @Path("ChainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -144,8 +141,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Quote>
 
-        @GET("swap")
+        @GET("{ApiVersion}/{ChainId}/swap")
         fun getSwap(
+                @Path("ApiVersion") apiVersion: String,
+                @Path("ChainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -164,8 +163,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Swap>
 
-        @GET("swap")
+        @GET("{ApiVersion}/{ChainId}/swap")
         fun getSwap(
+                @Path("ApiVersion") apiVersion: String,
+                @Path("ChainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,

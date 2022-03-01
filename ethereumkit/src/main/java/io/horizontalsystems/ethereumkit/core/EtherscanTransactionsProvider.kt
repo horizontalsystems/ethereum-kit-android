@@ -1,19 +1,19 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.EtherscanTransaction
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.NotSyncedInternalTransaction
-import io.horizontalsystems.ethereumkit.network.EtherscanService
+import io.horizontalsystems.ethereumkit.models.ProviderTransaction
+import io.horizontalsystems.ethereumkit.network.EtherscanTransactionProvider
 import io.reactivex.Single
 
 class EtherscanTransactionsProvider(
-        private val etherscanService: EtherscanService,
-        private val address: Address
+    private val transactionProvider: EtherscanTransactionProvider,
+    private val address: Address
 ) {
 
-    fun getTransactions(startBlock: Long): Single<List<EtherscanTransaction>> {
-        return etherscanService.getTransactionList(address, startBlock)
+    fun getTransactions(startBlock: Long): Single<List<ProviderTransaction>> {
+        return transactionProvider.getTransactionList(address, startBlock)
                 .map { response ->
                     response.result.distinctBy { it["hash"] }.mapNotNull { tx ->
                         try {
@@ -27,7 +27,7 @@ class EtherscanTransactionsProvider(
                             val gasPrice = tx.getValue("gasPrice").toLong()
                             val timestamp = tx.getValue("timeStamp").toLong()
 
-                            EtherscanTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
+                            ProviderTransaction(hash, nonce, input, from, to, value, gasLimit, gasPrice, timestamp)
                                     .apply {
                                         blockHash = tx["blockHash"]?.hexStringToByteArray()
                                         blockNumber = tx["blockNumber"]?.toLongOrNull()
@@ -46,7 +46,7 @@ class EtherscanTransactionsProvider(
     }
 
     fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>> {
-        return etherscanService.getInternalTransactionList(address, startBlock)
+        return transactionProvider.getInternalTransactionList(address, startBlock)
                 .map { response ->
                     response.result.mapNotNull { internalTx ->
                         try {
@@ -66,7 +66,7 @@ class EtherscanTransactionsProvider(
     }
 
     fun getInternalTransactionsAsync(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>> {
-        return etherscanService.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
+        return transactionProvider.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
                 .map { response ->
                     response.result.mapNotNull { internalTx ->
                         try {

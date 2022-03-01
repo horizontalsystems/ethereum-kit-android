@@ -7,7 +7,9 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.sample.App
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.SingleLiveEvent
-import io.horizontalsystems.ethereumkit.sample.core.*
+import io.horizontalsystems.ethereumkit.sample.core.Erc20BaseAdapter
+import io.horizontalsystems.ethereumkit.sample.core.EthereumBaseAdapter
+import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.ethereumkit.sample.modules.main.ShowTxType
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -95,8 +97,8 @@ class AddressWatchViewModel : ViewModel() {
     }
 
     private fun clearKits() {
-        EthereumKit.clear(App.instance, Configuration.networkType, Configuration.walletId)
-        Erc20Kit.clear(App.instance, Configuration.networkType, Configuration.walletId)
+        EthereumKit.clear(App.instance, Configuration.chain, Configuration.walletId)
+        Erc20Kit.clear(App.instance, Configuration.chain, Configuration.walletId)
     }
 
     private fun updateTransactionsSyncState() {
@@ -121,8 +123,8 @@ class AddressWatchViewModel : ViewModel() {
         val syncSource: EthereumKit.SyncSource?
         val txApiProviderKey: String
 
-        when (Configuration.networkType) {
-            EthereumKit.NetworkType.BscMainNet -> {
+        when (Configuration.chain.id) {
+            56 -> {
                 txApiProviderKey = Configuration.bscScanKey
                 syncSource = if (Configuration.webSocket)
                     EthereumKit.defaultBscWebSocketSyncSource()
@@ -133,13 +135,13 @@ class AddressWatchViewModel : ViewModel() {
                 txApiProviderKey = Configuration.etherscanKey
                 syncSource = if (Configuration.webSocket)
                     EthereumKit.infuraWebSocketSyncSource(
-                        Configuration.networkType,
+                        Configuration.chain,
                         Configuration.infuraProjectId,
                         Configuration.infuraSecret
                     )
                 else
                     EthereumKit.infuraHttpSyncSource(
-                        Configuration.networkType,
+                        Configuration.chain,
                         Configuration.infuraProjectId,
                         Configuration.infuraSecret
                     )
@@ -151,7 +153,7 @@ class AddressWatchViewModel : ViewModel() {
 
         return EthereumKit.getInstance(
             App.instance, wordList, "",
-            Configuration.networkType, syncSource, txApiProviderKey,
+            Configuration.chain, syncSource, txApiProviderKey,
             Configuration.walletId
         )
     }

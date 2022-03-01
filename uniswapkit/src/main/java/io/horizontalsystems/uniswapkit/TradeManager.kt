@@ -2,10 +2,9 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EthereumKit.NetworkType
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
@@ -17,18 +16,26 @@ import java.util.*
 import java.util.logging.Logger
 
 class TradeManager(
-        private val evmKit: EthereumKit
+    private val evmKit: EthereumKit
 ) {
     private val address: Address = evmKit.receiveAddress
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
-    val routerAddress: Address = getRouterAddress(evmKit.networkType)
+    val routerAddress: Address = getRouterAddress(evmKit.chain)
+    val factoryAddressString: String = getFactoryAddressString(evmKit.chain)
+    val initCodeHashString: String = getInitCodeHashString(evmKit.chain)
+
+    sealed class UnsupportedChainError : Throwable() {
+        object NoRouterAddress : UnsupportedChainError()
+        object NoFactoryAddress : UnsupportedChainError()
+        object NoInitCodeHash : UnsupportedChainError()
+    }
 
     fun pair(tokenA: Token, tokenB: Token): Single<Pair> {
 
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
 
-        val pairAddress = Pair.address(token0, token1, evmKit.networkType)
+        val pairAddress = Pair.address(token0, token1, factoryAddressString, initCodeHashString)
 
         logger.info("pairAddress: ${pairAddress.hex}")
 
@@ -114,15 +121,29 @@ class TradeManager(
 
     companion object {
 
-        private fun getRouterAddress(networkType: NetworkType) =
-                when (networkType) {
-                    NetworkType.EthMainNet,
-                    NetworkType.EthRopsten,
-                    NetworkType.EthKovan,
-                    NetworkType.EthGoerli,
-                    NetworkType.EthRinkeby -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
-                    NetworkType.BscMainNet -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
-                }
+        private fun getRouterAddress(chain: Chain) =
+            when (chain.id) {
+                1, 3, 4, 5, 42 -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+                56 -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
+                137 -> Address("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
+                else -> throw UnsupportedChainError.NoRouterAddress
+            }
+
+        private fun getFactoryAddressString(chain: Chain) =
+            when (chain.id) {
+                1, 3, 4, 5, 42 -> "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
+                56 -> "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+                137 -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+                else -> throw UnsupportedChainError.NoFactoryAddress
+            }
+
+        private fun getInitCodeHashString(chain: Chain) =
+            when (chain.id) {
+                1, 3, 4, 5, 42 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                56 -> "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
+                137 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                else -> throw UnsupportedChainError.NoInitCodeHash
+            }
 
         fun tradeExactIn(pairs: List<Pair>, tokenAmountIn: TokenAmount, tokenOut: Token, maxHops: Int = 3, currentPairs: List<Pair> = listOf(), originalTokenAmountIn: TokenAmount? = null): List<Trade> {
             //todo validations
