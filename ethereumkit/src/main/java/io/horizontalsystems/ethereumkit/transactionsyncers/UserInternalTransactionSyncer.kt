@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
+import io.horizontalsystems.ethereumkit.core.ITransactionProvider
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
 import io.horizontalsystems.ethereumkit.models.FullTransaction
@@ -11,7 +11,7 @@ import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
 class UserInternalTransactionSyncer(
-        private val etherscanTransactionsProvider: EtherscanTransactionsProvider,
+        private val transactionProvider: ITransactionProvider,
         private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("user_internal_transaction_syncer") {
 
@@ -30,7 +30,7 @@ class UserInternalTransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        etherscanTransactionsProvider.getInternalTransactions(lastSyncBlockNumber + 1)
+        transactionProvider.getInternalTransactions(lastSyncBlockNumber + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ internalTransactions ->
                     handle(internalTransactions)

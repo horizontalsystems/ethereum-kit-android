@@ -1,14 +1,15 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.erc20kit.models.EtherscanTokenTransaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.ITransactionProvider
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
 import io.horizontalsystems.ethereumkit.transactionsyncers.AbstractTransactionSyncer
 import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
 class Erc20TransactionSyncer(
-        private val etherscanTransactionsProvider: EtherscanTransactionsProvider
+        private val transactionProvider: ITransactionProvider
 ) : AbstractTransactionSyncer("erc20_transaction_syncer") {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
@@ -27,7 +28,7 @@ class Erc20TransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        etherscanTransactionsProvider.getTokenTransactions(lastSyncBlockNumber + 1)
+        transactionProvider.getTokenTransactions(lastSyncBlockNumber + 1)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ tokenTransactions ->
                     logger.info("---> sync() onFetched: ${tokenTransactions.size}")
@@ -42,7 +43,7 @@ class Erc20TransactionSyncer(
                 .let { disposables.add(it) }
     }
 
-    private fun handle(tokenTransactions: List<EtherscanTokenTransaction>) {
+    private fun handle(tokenTransactions: List<ProviderTokenTransaction>) {
         if (tokenTransactions.isNotEmpty()) {
             val latestBlockNumber = tokenTransactions.maxByOrNull { it.blockNumber ?: 0 }?.blockNumber
             latestBlockNumber?.let {

@@ -30,23 +30,22 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
-import java.net.URL
 import java.security.Security
 import java.util.*
 import java.util.logging.Logger
 
 class EthereumKit(
-    private val blockchain: IBlockchain,
-    private val transactionManager: TransactionManager,
-    private val transactionSyncManager: TransactionSyncManager,
-    private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
-    private val connectionManager: ConnectionManager,
-    private val address: Address,
-    val chain: Chain,
-    val walletId: String,
-    val etherscanTransactionProvider: EtherscanTransactionProvider,
-    private val decorationManager: DecorationManager,
-    private val state: EthereumKitState = EthereumKitState()
+        private val blockchain: IBlockchain,
+        private val transactionManager: TransactionManager,
+        private val transactionSyncManager: TransactionSyncManager,
+        private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
+        private val connectionManager: ConnectionManager,
+        private val address: Address,
+        val chain: Chain,
+        val walletId: String,
+        val transactionProvider: ITransactionProvider,
+        private val decorationManager: DecorationManager,
+        private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
@@ -351,44 +350,44 @@ class EthereumKit(
                 words: List<String>,
                 passphrase: String = "",
                 chain: Chain,
-                syncSource: SyncSource,
-                etherscanApiKey: String,
+                rpcSource: RpcSource,
+                transactionSource: TransactionSource,
                 walletId: String
         ): EthereumKit {
             val seed = Mnemonic().toSeed(words, passphrase)
             val privateKey = privateKey(seed, chain)
             val address = ethereumAddress(privateKey)
-            return getInstance(application, address, chain, syncSource, etherscanApiKey, walletId)
+            return getInstance(application, address, chain, rpcSource, transactionSource, walletId)
         }
 
         fun getInstance(
                 application: Application,
                 address: Address,
                 chain: Chain,
-                syncSource: SyncSource,
-                etherscanApiKey: String,
+                rpcSource: RpcSource,
+                transactionSource: TransactionSource,
                 walletId: String
         ): EthereumKit {
 
             val connectionManager = ConnectionManager(application)
 
-            val syncer: IRpcSyncer = when (syncSource) {
-                is SyncSource.WebSocket -> {
-                    val rpcWebSocket = NodeWebSocket(syncSource.url, gson, syncSource.auth)
+            val syncer: IRpcSyncer = when (rpcSource) {
+                is RpcSource.WebSocket -> {
+                    val rpcWebSocket = NodeWebSocket(rpcSource.url, gson, rpcSource.auth)
                     val webSocketRpcSyncer = WebSocketRpcSyncer(rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
 
                     webSocketRpcSyncer
                 }
-                is SyncSource.Http -> {
-                    val apiProvider = NodeApiProvider(syncSource.urls, syncSource.blockTime, gson, syncSource.auth)
+                is RpcSource.Http -> {
+                    val apiProvider = NodeApiProvider(rpcSource.urls, chain.blockTime, gson, rpcSource.auth)
                     ApiRpcSyncer(apiProvider, connectionManager)
                 }
             }
 
             val transactionBuilder = TransactionBuilder(address, chain.id)
-            val transactionProvider = EtherscanTransactionProvider("transactionSource", etherscanApiKey)
+            val transactionProvider = transactionProvider(transactionSource, address)
 
             val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, chain)
             val storage = ApiStorage(apiDatabase)
@@ -399,10 +398,9 @@ class EthereumKit(
             val transactionStorage = TransactionStorage(transactionDatabase)
             val notSyncedTransactionPool = NotSyncedTransactionPool(transactionStorage)
 
-            val etherscanTransactionsProvider = EtherscanTransactionsProvider(transactionProvider, address)
-            val ethereumTransactionsProvider = EthereumTransactionSyncer(etherscanTransactionsProvider)
-            val userInternalTransactionsProvider = UserInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
-            val transactionInternalTransactionSyncer = TransactionInternalTransactionSyncer(etherscanTransactionsProvider, transactionStorage)
+            val ethereumTransactionsProvider = EthereumTransactionSyncer(transactionProvider)
+            val userInternalTransactionsProvider = UserInternalTransactionSyncer(transactionProvider, transactionStorage)
+            val transactionInternalTransactionSyncer = TransactionInternalTransactionSyncer(transactionProvider, transactionStorage)
             val outgoingPendingTransactionSyncer = PendingTransactionSyncer(blockchain, transactionStorage)
 
             val transactionSyncer = TransactionSyncer(blockchain, transactionStorage)
@@ -455,62 +453,20 @@ class EthereumKit(
             EthereumDatabaseManager.clear(context, chain, walletId)
         }
 
-        fun infuraWebSocketSyncSource(chain: Chain, projectId: String, projectSecret: String?): SyncSource? =
-                infuraDomain(chain)?.let { infuraDomain ->
-                    val url = URL("https://$infuraDomain/ws/v3/$projectId")
-                    SyncSource.WebSocket(url, projectSecret)
+        private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
+            when (transactionSource.type) {
+                is TransactionSource.SourceType.Etherscan -> {
+                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKey)
+                    return EtherscanTransactionProvider(service, address)
                 }
-
-        fun infuraHttpSyncSource(chain: Chain, projectId: String, projectSecret: String?): SyncSource? =
-                infuraDomain(chain)?.let { infuraDomain ->
-                    val url = URL("https://$infuraDomain/v3/$projectId")
-                    SyncSource.Http(listOf(url), chain.blockTime, projectSecret)
-                }
-
-        fun defaultBscWebSocketSyncSource(): SyncSource =
-                SyncSource.WebSocket(URL("https://bsc-ws-node.nariox.org:443"), null)
-
-
-        fun defaultBscHttpSyncSource(): SyncSource =
-            SyncSource.Http(
-                listOf(
-                        URL("https://bsc-dataseed.binance.org"),
-                        URL("https://bsc-dataseed1.defibit.io"),
-                        URL("https://bsc-dataseed1.ninicoin.io"),
-                        URL("https://bsc-dataseed2.defibit.io"),
-                        URL("https://bsc-dataseed3.defibit.io"),
-                        URL("https://bsc-dataseed4.defibit.io"),
-                        URL("https://bsc-dataseed2.ninicoin.io"),
-                        URL("https://bsc-dataseed3.ninicoin.io"),
-                        URL("https://bsc-dataseed4.ninicoin.io"),
-                        URL("https://bsc-dataseed1.binance.org"),
-                        URL("https://bsc-dataseed2.binance.org"),
-                        URL("https://bsc-dataseed3.binance.org"),
-                        URL("https://bsc-dataseed4.binance.org")
-                ),
-                Chain.binanceSmartChain.blockTime, null
-            )
-
-        private fun infuraDomain(chain: Chain): String? =
-            when (chain) {
-                Chain.ethereum -> "mainnet.infura.io"
-                Chain.ethereumRopsten -> "ropsten.infura.io"
-                Chain.ethereumKovan -> "kovan.infura.io"
-                Chain.ethereumRinkeby -> "rinkeby.infura.io"
-                Chain.ethereumGoerli -> "goerli.infura.io"
-                else -> null
             }
+        }
 
         private fun ethereumAddress(privateKey: BigInteger): Address {
             val publicKey = CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1).toByteArray()
             return Address(CryptoUtils.sha3(publicKey).takeLast(20).toByteArray())
         }
 
-    }
-
-    sealed class SyncSource {
-        class WebSocket(val url: URL, val auth: String?) : SyncSource()
-        class Http(val urls: List<URL>, val blockTime: Long, val auth: String?) : SyncSource()
     }
 
 }

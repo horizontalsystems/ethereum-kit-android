@@ -2,7 +2,7 @@ package io.horizontalsystems.ethereumkit.models
 
 import java.math.BigInteger
 
-class ProviderTransaction(
+data class ProviderTransaction(
         val hash: ByteArray,
         val nonce: Long,
         val input: ByteArray,
@@ -19,4 +19,9 @@ class ProviderTransaction(
         var isError: Int? = null,
         var transactionIndex: Int? = null,
         var txReceiptStatus: Int? = null
+)
+
+data class ProviderTokenTransaction(
+        val hash: ByteArray,
+        val blockNumber: Long?,
 )

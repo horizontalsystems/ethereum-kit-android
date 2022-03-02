@@ -4,6 +4,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.models.RpcSource
+import io.horizontalsystems.ethereumkit.models.TransactionSource
 import io.horizontalsystems.ethereumkit.sample.App
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.SingleLiveEvent
@@ -120,40 +122,48 @@ class AddressWatchViewModel : ViewModel() {
     }
 
     private fun createKit(wordList: List<String>): EthereumKit {
-        val syncSource: EthereumKit.SyncSource?
-        val txApiProviderKey: String
+        val rpcSource: RpcSource?
+        val transactionSource: TransactionSource?
 
         when (Configuration.chain.id) {
             56 -> {
-                txApiProviderKey = Configuration.bscScanKey
-                syncSource = if (Configuration.webSocket)
-                    EthereumKit.defaultBscWebSocketSyncSource()
+                transactionSource = TransactionSource.bscscan(Configuration.bscScanKey)
+                rpcSource = if (Configuration.webSocket)
+                    RpcSource.binanceSmartChainWebSocket()
                 else
-                    EthereumKit.defaultBscHttpSyncSource()
+                    RpcSource.binanceSmartChainHttp()
+            }
+            1 -> {
+                transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
+                rpcSource = if (Configuration.webSocket)
+                    RpcSource.ethereumInfuraWebsocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                else
+                    RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+            }
+            3 -> {
+                transactionSource = TransactionSource.ropstenEtherscan(Configuration.etherscanKey)
+                rpcSource = if (Configuration.webSocket)
+                    RpcSource.ropstenInfuraWebsocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                else
+                    RpcSource.ropstenInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
             else -> {
-                txApiProviderKey = Configuration.etherscanKey
-                syncSource = if (Configuration.webSocket)
-                    EthereumKit.infuraWebSocketSyncSource(
-                        Configuration.chain,
-                        Configuration.infuraProjectId,
-                        Configuration.infuraSecret
-                    )
-                else
-                    EthereumKit.infuraHttpSyncSource(
-                        Configuration.chain,
-                        Configuration.infuraProjectId,
-                        Configuration.infuraSecret
-                    )
+                rpcSource = null
+                transactionSource = null
             }
         }
-        checkNotNull(syncSource) {
-            throw Exception("Could not get syncSource!")
+
+        checkNotNull(rpcSource) {
+            throw Exception("Could not get rpcSource!")
+        }
+
+        checkNotNull(transactionSource) {
+            throw Exception("Could not get transactionSource!")
         }
 
         return EthereumKit.getInstance(
             App.instance, wordList, "",
-            Configuration.chain, syncSource, txApiProviderKey,
+            Configuration.chain, rpcSource, transactionSource,
             Configuration.walletId
         )
     }

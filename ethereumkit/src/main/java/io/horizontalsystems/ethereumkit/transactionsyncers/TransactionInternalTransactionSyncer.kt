@@ -8,7 +8,7 @@ import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
 class TransactionInternalTransactionSyncer(
-        private val provider: EtherscanTransactionsProvider,
+        private val transactionProvider: ITransactionProvider,
         private val storage: ITransactionStorage
 ) : AbstractTransactionSyncer("transaction_internal_transaction_syncer") {
 
@@ -52,7 +52,7 @@ class TransactionInternalTransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        provider.getInternalTransactionsAsync(notSyncedInternalTransaction)
+        transactionProvider.getInternalTransactionsAsync(notSyncedInternalTransaction)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ internalTransactions ->
                     handle(notSyncedInternalTransaction, internalTransactions)
