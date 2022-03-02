@@ -154,6 +154,6 @@ interface ITransactionWatcher {
 interface ITransactionProvider {
     fun getTransactions(startBlock: Long): Single<List<ProviderTransaction>>
     fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
-    fun getInternalTransactionsAsync(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>>
+    fun getInternalTransactionsAsync(hash: ByteArray): Single<List<InternalTransaction>>
     fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>>
 }

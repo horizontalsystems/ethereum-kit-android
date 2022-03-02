@@ -139,9 +139,8 @@ class TradeManager(
 
         private fun getInitCodeHashString(chain: Chain) =
             when (chain.id) {
-                1, 3, 4, 5, 42 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                1, 3, 4, 5, 42, 137 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
                 56 -> "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
-                137 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
                 else -> throw UnsupportedChainError.NoInitCodeHash
             }
 
