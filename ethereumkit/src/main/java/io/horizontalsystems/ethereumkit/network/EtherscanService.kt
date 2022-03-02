@@ -18,7 +18,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import java.util.logging.Logger
 
-class EtherscanTransactionProvider(
+class EtherscanService(
         private val baseUrl: String,
         private val apiKey: String
 ) {

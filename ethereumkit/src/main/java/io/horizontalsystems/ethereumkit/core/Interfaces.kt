@@ -10,8 +10,6 @@ import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.horizontalsystems.ethereumkit.models.RawTransaction
-import io.horizontalsystems.ethereumkit.models.Signature
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigInteger
@@ -151,4 +149,11 @@ interface IDecorator {
 
 interface ITransactionWatcher {
     fun needInternalTransactions(fullTransaction: FullTransaction): Boolean
+}
+
+interface ITransactionProvider {
+    fun getTransactions(startBlock: Long): Single<List<ProviderTransaction>>
+    fun getInternalTransactions(startBlock: Long): Single<List<InternalTransaction>>
+    fun getInternalTransactionsAsync(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>>
+    fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>>
 }

@@ -2,13 +2,13 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.EtherscanTransactionsProvider
+import io.horizontalsystems.ethereumkit.core.ITransactionProvider
 import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
 import io.reactivex.schedulers.Schedulers
 import java.util.logging.Logger
 
 class EthereumTransactionSyncer(
-        private val etherscanTransactionsProvider: EtherscanTransactionsProvider
+        private val transactionProvider: ITransactionProvider
 ) : AbstractTransactionSyncer("ethereum_transaction_syncer") {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
@@ -24,7 +24,7 @@ class EthereumTransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        etherscanTransactionsProvider.getTransactions(lastSyncBlockNumber + 1)
+        transactionProvider.getTransactions(lastSyncBlockNumber + 1)
                 .map { transactions ->
                     transactions.map { etherscanTransaction ->
                         NotSyncedTransaction(

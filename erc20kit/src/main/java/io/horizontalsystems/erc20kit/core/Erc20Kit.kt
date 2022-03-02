@@ -144,8 +144,7 @@ class Erc20Kit(
         }
 
         fun addTransactionSyncer(ethereumKit: EthereumKit) {
-            val transactionsProvider = EtherscanTransactionsProvider(ethereumKit.etherscanTransactionProvider, ethereumKit.receiveAddress)
-            ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(transactionsProvider))
+            ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(ethereumKit.transactionProvider))
         }
 
         fun addDecorator(ethereumKit: EthereumKit) {
