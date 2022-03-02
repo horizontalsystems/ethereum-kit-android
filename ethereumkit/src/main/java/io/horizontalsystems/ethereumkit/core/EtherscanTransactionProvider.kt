@@ -1,6 +1,9 @@
 package io.horizontalsystems.ethereumkit.core
 
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderTransaction
 import io.horizontalsystems.ethereumkit.network.EtherscanService
 import io.reactivex.Single
 
@@ -62,12 +65,12 @@ class EtherscanTransactionProvider(
                 }
     }
 
-    override fun getInternalTransactionsAsync(notSyncedInternalTransaction: NotSyncedInternalTransaction): Single<List<InternalTransaction>> {
-        return etherscanService.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
+    override fun getInternalTransactionsAsync(hash: ByteArray): Single<List<InternalTransaction>> {
+        return etherscanService.getInternalTransactionsAsync(hash)
                 .map { response ->
                     response.result.mapNotNull { internalTx ->
                         try {
-                            val hash = notSyncedInternalTransaction.hash
+                            val hash = hash
                             val blockNumber = internalTx.getValue("blockNumber").toLong()
                             val from = Address(internalTx.getValue("from"))
                             val to = Address(internalTx.getValue("to").hexStringToByteArray())

@@ -52,7 +52,7 @@ class TransactionInternalTransactionSyncer(
 
         state = EthereumKit.SyncState.Syncing()
 
-        transactionProvider.getInternalTransactionsAsync(notSyncedInternalTransaction)
+        transactionProvider.getInternalTransactionsAsync(notSyncedInternalTransaction.hash)
                 .subscribeOn(Schedulers.io())
                 .subscribe({ internalTransactions ->
                     handle(notSyncedInternalTransaction, internalTransactions)

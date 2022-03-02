@@ -136,14 +136,14 @@ class AddressWatchViewModel : ViewModel() {
             1 -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
-                    RpcSource.ethereumInfuraWebsocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                    RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
             3 -> {
                 transactionSource = TransactionSource.ropstenEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
-                    RpcSource.ropstenInfuraWebsocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                    RpcSource.ropstenInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
                     RpcSource.ropstenInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }

@@ -11,8 +11,8 @@ sealed class RpcSource() {
             return RpcSource.Http(listOf(URL("https://$subdomain.infura.io/v3/$projectId")), projectSecret)
         }
 
-        private fun infuraWebsocket(subdomain: String, projectId: String, projectSecret: String? = null): RpcSource {
-            return RpcSource.WebSocket(URL("wss://$subdomain.infura.io/ws/v3/$projectId"), projectSecret)
+        private fun infuraWebSocket(subdomain: String, projectId: String, projectSecret: String? = null): RpcSource {
+            return RpcSource.WebSocket(URL("https://$subdomain.infura.io/ws/v3/$projectId"), projectSecret)
         }
 
         fun ethereumInfuraHttp(projectId: String, projectSecret: String? = null): RpcSource {
@@ -35,24 +35,24 @@ sealed class RpcSource() {
             return infuraHttp("goerli", projectId, projectSecret)
         }
 
-        fun ethereumInfuraWebsocket(projectId: String, projectSecret: String? = null): RpcSource {
-            return infuraWebsocket("mainnet", projectId, projectSecret)
+        fun ethereumInfuraWebSocket(projectId: String, projectSecret: String? = null): RpcSource {
+            return infuraWebSocket("mainnet", projectId, projectSecret)
         }
 
-        fun ropstenInfuraWebsocket(projectId: String, projectSecret: String? = null): RpcSource {
-            return infuraWebsocket("ropsten", projectId, projectSecret)
+        fun ropstenInfuraWebSocket(projectId: String, projectSecret: String? = null): RpcSource {
+            return infuraWebSocket("ropsten", projectId, projectSecret)
         }
 
-        fun kovanInfuraWebsocket(projectId: String, projectSecret: String? = null): RpcSource {
-            return infuraWebsocket("kovan", projectId, projectSecret)
+        fun kovanInfuraWebSocket(projectId: String, projectSecret: String? = null): RpcSource {
+            return infuraWebSocket("kovan", projectId, projectSecret)
         }
 
-        fun rinkebyInfuraWebsocket(projectId: String, projectSecret: String? = null): RpcSource {
-            return infuraWebsocket("rinkeby", projectId, projectSecret)
+        fun rinkebyInfuraWebSocket(projectId: String, projectSecret: String? = null): RpcSource {
+            return infuraWebSocket("rinkeby", projectId, projectSecret)
         }
 
-        fun goerliInfuraWebsocket(projectId: String, projectSecret: String? = null): RpcSource {
-            return infuraWebsocket("goerli", projectId, projectSecret)
+        fun goerliInfuraWebSocket(projectId: String, projectSecret: String? = null): RpcSource {
+            return infuraWebSocket("goerli", projectId, projectSecret)
         }
 
         fun binanceSmartChainHttp(): RpcSource {
@@ -77,7 +77,7 @@ sealed class RpcSource() {
         }
 
         fun binanceSmartChainWebSocket(): RpcSource {
-            return RpcSource.WebSocket(URL("wss://bsc-ws-node.nariox.org:443"), null)
+            return RpcSource.WebSocket(URL("https://bsc-ws-node.nariox.org:443"), null)
         }
 
         fun polygonRpcHttp(): RpcSource {
