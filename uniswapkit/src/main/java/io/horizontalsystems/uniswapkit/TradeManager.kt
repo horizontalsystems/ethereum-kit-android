@@ -122,25 +122,25 @@ class TradeManager(
     companion object {
 
         private fun getRouterAddress(chain: Chain) =
-            when (chain.id) {
-                1, 3, 4, 5, 42 -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
-                56 -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
-                137 -> Address("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
+            when (chain) {
+                Chain.Ethereum, Chain.EthereumRopsten, Chain.EthereumKovan, Chain.EthereumRinkeby, Chain.EthereumGoerli -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
+                Chain.BinanceSmartChain -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
+                Chain.Polygon -> Address("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
                 else -> throw UnsupportedChainError.NoRouterAddress
             }
 
         private fun getFactoryAddressString(chain: Chain) =
-            when (chain.id) {
-                1, 3, 4, 5, 42 -> "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
-                56 -> "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-                137 -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+            when (chain) {
+                Chain.Ethereum, Chain.EthereumRopsten, Chain.EthereumKovan, Chain.EthereumRinkeby, Chain.EthereumGoerli -> "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
+                Chain.BinanceSmartChain -> "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+                Chain.Polygon -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
                 else -> throw UnsupportedChainError.NoFactoryAddress
             }
 
         private fun getInitCodeHashString(chain: Chain) =
-            when (chain.id) {
-                1, 3, 4, 5, 42, 137 -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
-                56 -> "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
+            when (chain) {
+                Chain.Ethereum, Chain.EthereumRopsten, Chain.EthereumKovan, Chain.EthereumRinkeby, Chain.EthereumGoerli, Chain.Polygon -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                Chain.BinanceSmartChain -> "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
                 else -> throw UnsupportedChainError.NoInitCodeHash
             }
 

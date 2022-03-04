@@ -10,10 +10,7 @@ import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
 import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.GasPrice
-import io.horizontalsystems.ethereumkit.models.RpcSource
-import io.horizontalsystems.ethereumkit.models.TransactionSource
+import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.sample.App
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.SingleLiveEvent
@@ -219,22 +216,22 @@ class MainViewModel : ViewModel() {
         val rpcSource: RpcSource?
         val transactionSource: TransactionSource?
 
-        when (Configuration.chain.id) {
-            56 -> {
+        when (Configuration.chain) {
+            Chain.BinanceSmartChain -> {
                 transactionSource = TransactionSource.bscscan(Configuration.bscScanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.binanceSmartChainWebSocket()
                 else
                     RpcSource.binanceSmartChainHttp()
             }
-            1 -> {
+            Chain.Ethereum -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
-            3 -> {
+            Chain.EthereumRopsten -> {
                 transactionSource = TransactionSource.ropstenEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.ropstenInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)

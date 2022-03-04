@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.models.TransactionSource
 import io.horizontalsystems.ethereumkit.sample.App
@@ -125,22 +126,22 @@ class AddressWatchViewModel : ViewModel() {
         val rpcSource: RpcSource?
         val transactionSource: TransactionSource?
 
-        when (Configuration.chain.id) {
-            56 -> {
+        when (Configuration.chain) {
+            Chain.BinanceSmartChain -> {
                 transactionSource = TransactionSource.bscscan(Configuration.bscScanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.binanceSmartChainWebSocket()
                 else
                     RpcSource.binanceSmartChainHttp()
             }
-            1 -> {
+            Chain.Ethereum -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
-            3 -> {
+            Chain.EthereumRopsten -> {
                 transactionSource = TransactionSource.ropstenEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
                     RpcSource.ropstenInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
