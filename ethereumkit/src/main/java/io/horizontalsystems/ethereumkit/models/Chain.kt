@@ -1,21 +1,19 @@
 package io.horizontalsystems.ethereumkit.models
 
-data class Chain(
+sealed class Chain(
     val id: Int,
     val coinType: Int,
     val blockTime: Long,
     val isEIP1559Supported: Boolean
 ) {
-    val isMainNet get() = coinType != 1
+    val isMainNet = coinType != 1
 
-    companion object {
-        val ethereum = Chain(1, 60, 15, true)
-        val binanceSmartChain = Chain(56, 60, 5, false)
-        val polygon = Chain(137, 60, 1, true)
-        val ethereumRopsten = Chain(3, 1, 15, true)
-        val ethereumKovan = Chain(42, 1, 4, true)
-        val ethereumRinkeby = Chain(4, 1, 15, true)
-        val ethereumGoerli = Chain(5, 1, 15, true)
-    }
+    object Ethereum: Chain(1, 60, 15, true)
+    object BinanceSmartChain: Chain(56, 60, 5, false)
+    object Polygon: Chain(137, 60, 1, true)
+    object EthereumRopsten: Chain(3, 1, 15, true)
+    object EthereumKovan: Chain(42, 1, 4, true)
+    object EthereumRinkeby: Chain(4, 1, 15, true)
+    object EthereumGoerli: Chain(5, 1, 15, true)
 
 }

@@ -100,18 +100,18 @@ class OneInchService(
 
     private interface OneInchServiceApi {
 
-        @GET("v4.0/{ChainId}/approve/calldata")
+        @GET("v4.0/{chainId}/approve/calldata")
         fun getApproveCallData(
-                @Path("ChainId") chainId: Int,
+                @Path("chainId") chainId: Int,
                 @Query("tokenAddress") tokenAddress: String,
                 @Query("amount") amount: BigInteger? = null,
                 @Query("infinity") infinity: Boolean? = null
         ): Single<ApproveCallData>
 
-        @GET("{ApiVersion}/{ChainId}/quote")
+        @GET("{apiVersion}/{chainId}/quote")
         fun getQuote(
-                @Path("ApiVersion") apiVersion: String,
-                @Path("ChainId") chainId: Int,
+                @Path("apiVersion") apiVersion: String,
+                @Path("chainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -124,10 +124,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Quote>
 
-        @GET("{ApiVersion}/{ChainId}/quote")
+        @GET("{apiVersion}/{chainId}/quote")
         fun getQuote(
-                @Path("ApiVersion") apiVersion: String,
-                @Path("ChainId") chainId: Int,
+                @Path("apiVersion") apiVersion: String,
+                @Path("chainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -141,10 +141,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Quote>
 
-        @GET("{ApiVersion}/{ChainId}/swap")
+        @GET("{apiVersion}/{chainId}/swap")
         fun getSwap(
-                @Path("ApiVersion") apiVersion: String,
-                @Path("ChainId") chainId: Int,
+                @Path("apiVersion") apiVersion: String,
+                @Path("chainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,
@@ -163,10 +163,10 @@ class OneInchService(
                 @Query("mainRouteParts") mainRouteParts: Int? = null
         ): Single<Swap>
 
-        @GET("{ApiVersion}/{ChainId}/swap")
+        @GET("{apiVersion}/{chainId}/swap")
         fun getSwap(
-                @Path("ApiVersion") apiVersion: String,
-                @Path("ChainId") chainId: Int,
+                @Path("apiVersion") apiVersion: String,
+                @Path("chainId") chainId: Int,
                 @Query("fromTokenAddress") fromTokenAddress: String,
                 @Query("toTokenAddress") toTokenAddress: String,
                 @Query("amount") amount: BigInteger,

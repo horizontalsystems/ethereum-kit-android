@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
 import io.horizontalsystems.oneinchkit.decorations.OneInchTransactionDecorator
@@ -16,9 +17,9 @@ class OneInchKit(
         private val service: OneInchService
 ) {
 
-    val getRouterAddress: Address = when (evmKit.chain.id) {
-        1, 56, 137 -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
-        3, 4, 5, 42 -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
+    val getRouterAddress: Address = when (evmKit.chain) {
+        Chain.Ethereum, Chain.BinanceSmartChain, Chain.Polygon -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
+        Chain.EthereumRopsten, Chain.EthereumKovan, Chain.EthereumRinkeby, Chain.EthereumGoerli -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
         else -> throw IllegalArgumentException("Invalid Chain: ${evmKit.chain.id}")
     }
 
