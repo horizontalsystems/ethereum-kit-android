@@ -2,11 +2,10 @@ package io.horizontalsystems.ethereumkit.models
 
 class TransactionSource(val name: String, val type: SourceType) {
 
-    fun transactionUrl(hash: String) {
+    fun transactionUrl(hash: String) =
         when (type) {
-            is SourceType.Etherscan ->  "${type.txBaseUrl}/tx/${type.apiKey}"
+            is SourceType.Etherscan -> "${type.txBaseUrl}/tx/$hash"
         }
-    }
 
     sealed class SourceType {
         class Etherscan(val apiBaseUrl: String, val txBaseUrl: String, val apiKey: String) : SourceType()
@@ -15,8 +14,8 @@ class TransactionSource(val name: String, val type: SourceType) {
     companion object {
         private fun etherscan(apiSubdomain: String, txSubdomain: String?, apiKey: String): TransactionSource {
             return TransactionSource(
-                    "etherscan.io",
-                    SourceType.Etherscan("https://$apiSubdomain.etherscan.io", "https://${txSubdomain?.let{"$it."} ?: ""}etherscan.io", apiKey)
+                "etherscan.io",
+                SourceType.Etherscan("https://$apiSubdomain.etherscan.io", "https://${txSubdomain?.let { "$it." } ?: ""}etherscan.io", apiKey)
             )
         }
 
@@ -42,15 +41,29 @@ class TransactionSource(val name: String, val type: SourceType) {
 
         fun bscscan(apiKey: String): TransactionSource {
             return TransactionSource(
-                    "bscscan.com",
-                    SourceType.Etherscan("https://api.bscscan.com", "https://bscscan.com", apiKey)
+                "bscscan.com",
+                SourceType.Etherscan("https://api.bscscan.com", "https://bscscan.com", apiKey)
             )
         }
 
         fun polygonscan(apiKey: String): TransactionSource {
             return TransactionSource(
-                    "polygonscan.com",
-                    SourceType.Etherscan("https://api.polygonscan.com",  "https://polygonscan.com", apiKey)
+                "polygonscan.com",
+                SourceType.Etherscan("https://api.polygonscan.com", "https://polygonscan.com", apiKey)
+            )
+        }
+
+        fun optimisticEtherscan(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "optimistic.etherscan.io",
+                SourceType.Etherscan("https://api-optimistic.etherscan.io", "https://optimistic.etherscan.io", apiKey)
+            )
+        }
+
+        fun arbiscan(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "arbiscan.io",
+                SourceType.Etherscan("https://api.arbiscan.io", "https://arbiscan.io", apiKey)
             )
         }
 

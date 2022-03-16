@@ -18,7 +18,8 @@ class OneInchKit(
 ) {
 
     val getRouterAddress: Address = when (evmKit.chain) {
-        Chain.Ethereum, Chain.BinanceSmartChain, Chain.Polygon -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
+        Chain.Ethereum, Chain.BinanceSmartChain, Chain.Polygon, Chain.ArbitrumOne -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
+        Chain.Optimism -> Address("0x1111111254760f7ab3f16433eea9304126dcd199")
         Chain.EthereumRopsten, Chain.EthereumKovan, Chain.EthereumRinkeby, Chain.EthereumGoerli -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
         else -> throw IllegalArgumentException("Invalid Chain: ${evmKit.chain.id}")
     }
