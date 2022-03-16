@@ -83,5 +83,14 @@ sealed class RpcSource() {
         fun polygonRpcHttp(): RpcSource {
             return RpcSource.Http(listOf(URL("https://polygon-rpc.com")), null)
         }
+
+        fun optimismRpcHttp(): RpcSource {
+            return RpcSource.Http(listOf(URL("https://mainnet.optimism.io")), null)
+        }
+
+        fun arbitrumOneRpcHttp(): RpcSource {
+            return RpcSource.Http(listOf(URL("https://arb1.arbitrum.io/rpc")), null)
+        }
+
     }
 }
