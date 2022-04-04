@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core
 
 import android.content.Context
 import io.horizontalsystems.ethereumkit.api.storage.ApiDatabase
+import io.horizontalsystems.ethereumkit.core.storage.Eip20Database
 import io.horizontalsystems.ethereumkit.core.storage.TransactionDatabase
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.storage.SpvDatabase
@@ -20,11 +21,16 @@ internal object EthereumDatabaseManager {
         return TransactionDatabase.getInstance(context, getDbNameTransactions(walletId, chain))
     }
 
+    fun getErc20Database(context: Context, walletId: String, chain: Chain): Eip20Database {
+        return Eip20Database.getInstance(context, getDbNameErc20Events(walletId, chain))
+    }
+
     fun clear(context: Context, chain: Chain, walletId: String) {
         synchronized(this) {
             context.deleteDatabase(getDbNameApi(walletId, chain))
             context.deleteDatabase(getDbNameSpv(walletId, chain))
             context.deleteDatabase(getDbNameTransactions(walletId, chain))
+            context.deleteDatabase(getDbNameErc20Events(walletId, chain))
         }
     }
 
@@ -38,6 +44,10 @@ internal object EthereumDatabaseManager {
 
     private fun getDbNameTransactions(walletId: String, chain: Chain): String {
         return getDbName(chain, walletId, "txs")
+    }
+
+    private fun getDbNameErc20Events(walletId: String, chain: Chain): String {
+        return getDbName(chain, walletId, "erc20_events")
     }
 
     private fun getDbName(chain: Chain, walletId: String, suffix: String): String {

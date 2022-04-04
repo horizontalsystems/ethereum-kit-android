@@ -86,10 +86,7 @@ class MainViewModel : ViewModel() {
         Erc20Kit.addDecorator(ethereumKit)
 
         UniswapKit.addDecorator(ethereumKit)
-        UniswapKit.addTransactionWatcher(ethereumKit)
-
         OneInchKit.addDecorator(ethereumKit)
-        OneInchKit.addTransactionWatcher(ethereumKit)
 
         updateBalance()
         updateErc20Balance()
@@ -261,10 +258,12 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateLastBlockHeight() {
+        Log.v("LALALA BlockHeight", ethereumKit.lastBlockHeight.toString())
         lastBlockHeight.postValue(ethereumKit.lastBlockHeight)
     }
 
     private fun updateState() {
+        Log.v("LALALA State", ethereumAdapter.syncState.toString())
         syncState.postValue(ethereumAdapter.syncState)
     }
 
@@ -293,6 +292,7 @@ class MainViewModel : ViewModel() {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
+                    Log.v("LALALA ETH", list.size.toString())
                     ethTxs = list
                     updateTransactionList()
                 }.let {
@@ -305,6 +305,7 @@ class MainViewModel : ViewModel() {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { list: List<TransactionRecord> ->
+                    Log.v("LALALA ERC20", list.size.toString())
                     erc20Txs = list
                     updateTransactionList()
                 }.let {
@@ -408,12 +409,12 @@ class MainViewModel : ViewModel() {
     }
 
     fun filterTransactions(ethTx: Boolean) {
-        if (ethTx) {
+        showTxType = if (ethTx) {
             updateEthTransactions()
-            showTxType = ShowTxType.Eth
+            ShowTxType.Eth
         } else {
             updateErc20Transactions()
-            showTxType = ShowTxType.Erc20
+            ShowTxType.Erc20
         }
         showTxTypeLiveData.postValue(showTxType)
     }

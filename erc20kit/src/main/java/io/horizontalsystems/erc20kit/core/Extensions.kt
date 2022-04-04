@@ -9,7 +9,7 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 
-fun TransactionLog.getErc20Event(): ContractEventDecoration? {
+fun TransactionLog.getErc20EventDecoration(): ContractEventDecoration? {
     return try {
         if (topics.size != 3) {
             return null

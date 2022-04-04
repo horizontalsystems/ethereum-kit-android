@@ -24,7 +24,7 @@ class TransactionManager(
     val transactionsAsync: Flowable<List<FullTransaction>> = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     init {
-        ethereumKit.getTransactionsFlowable(tags)
+        ethereumKit.getFullTransactionsFlowable(tags)
                 .subscribeOn(Schedulers.io())
                 .subscribe {
                     processTransactions(it)
@@ -41,11 +41,11 @@ class TransactionManager(
     }
 
     fun getTransactionsAsync(fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
-        return ethereumKit.getTransactionsAsync(tags, fromHash, limit)
+        return ethereumKit.getFullTransactionsAsync(tags, fromHash, limit)
     }
 
     fun getPendingTransactions(): List<FullTransaction> {
-        return ethereumKit.getPendingTransactions(tags)
+        return ethereumKit.getPendingFullTransactions(tags)
     }
 
     private fun processTransactions(erc20Transactions: List<FullTransaction>) {

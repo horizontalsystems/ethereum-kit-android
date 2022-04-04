@@ -1,13 +1,12 @@
 package io.horizontalsystems.ethereumkit.decorations
 
 import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.FullRpcTransaction
 import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
 
-class DecorationManager(
-        private val address: Address
-) {
+class DecorationManager {
     private val decorators = mutableListOf<IDecorator>()
 
     fun addDecorator(decorator: IDecorator) {
@@ -15,42 +14,56 @@ class DecorationManager(
     }
 
     fun decorateTransaction(transactionData: TransactionData): ContractMethodDecoration? {
-        if (transactionData.input.isEmpty())
-            return null
+        if (transactionData.input.isEmpty()) return null
 
         for (decorator in decorators) {
-            decorator.decorate(transactionData, null)?.let {
+            decorator.decorate(transactionData)?.let {
                 return it
             }
         }
+
         return null
     }
 
-    fun decorateFullTransaction(fullTransaction: FullTransaction): FullTransaction {
-        val transaction = fullTransaction.transaction
-        val toAddress = transaction.to ?: return fullTransaction
-        val transactionData = TransactionData(toAddress, transaction.value, transaction.input)
-
-        if (transactionData.input.isEmpty())
-            return fullTransaction
+    fun decorateFullRpcTransaction(fullRpcTransaction: FullRpcTransaction): FullTransaction {
+        val fullTransaction = FullTransaction(fullRpcTransaction.transaction)
 
         for (decorator in decorators) {
-            decorator.decorate(transactionData, fullTransaction)?.let {
-                fullTransaction.mainDecoration = it
-            }
-            fullTransaction.receiptWithLogs?.let {
-                fullTransaction.eventDecorations.addAll(decorator.decorate(it.logs))
-            }
+            decorator.decorate(fullTransaction, fullRpcTransaction)
         }
 
-        if (fullTransaction.mainDecoration == null) {
-            val methodId = fullTransaction.transaction.input.take(4).toByteArray()
-            val inputArguments = fullTransaction.transaction.input.takeLast(4).toByteArray()
-
-            fullTransaction.mainDecoration = UnknownMethodDecoration(methodId, inputArguments)
-        }
+        decorateMain(fullTransaction)
 
         return fullTransaction
+    }
+
+
+    fun decorateTransactions(transactions: List<Transaction>): List<FullTransaction> {
+        val fullTransactions: MutableMap<String, FullTransaction> = mutableMapOf()
+
+        for (transaction in transactions) {
+            fullTransactions[transaction.hashString] = FullTransaction(transaction)
+        }
+
+        for (decorator in decorators) {
+            decorator.decorateTransactions(fullTransactions)
+        }
+
+        for (fullTransaction in fullTransactions.values) {
+            decorateMain(fullTransaction)
+        }
+
+        return fullTransactions.values.toList()
+    }
+
+    private fun decorateMain(fullTransaction: FullTransaction) {
+        if (fullTransaction.mainDecoration != null) return
+        val transactionData = fullTransaction.transactionData ?: return
+
+        val methodId = transactionData.input.take(4).toByteArray()
+        val inputArguments = transactionData.input.takeLast(4).toByteArray()
+
+        fullTransaction.mainDecoration = UnknownMethodDecoration(methodId, inputArguments)
     }
 
 }

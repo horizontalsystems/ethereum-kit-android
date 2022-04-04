@@ -2,86 +2,45 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteQuery
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.Single
 
 @Dao
 interface TransactionDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transaction: Transaction)
-
-    @Query("SELECT hash FROM `Transaction`")
-    fun getTransactionHashes(): List<ByteArray>
-
-    @androidx.room.Transaction
     @Query("SELECT * FROM `Transaction` WHERE hash=:hash")
-    fun getTransaction(hash: ByteArray): FullTransaction?
+    fun getTransaction(hash: ByteArray): Transaction?
 
-    @androidx.room.Transaction
+    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NOT NULL ORDER BY blockNumber DESC LIMIT 1")
+    fun getLastTransaction() : Transaction?
+
     @Query("SELECT * FROM `Transaction` WHERE hash IN (:hashes)")
-    fun getTransactions(hashes: List<ByteArray>): List<FullTransaction>
+    fun getTransactions(hashes: List<ByteArray>): List<Transaction>
+
+    @RawQuery
+    fun getTransactionsBeforeAsync(query: SupportSQLiteQuery): Single<List<Transaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(transactionReceipt: TransactionReceipt)
+    fun insert(transactions: List<Transaction>)
 
-    @Query("SELECT * FROM TransactionReceipt WHERE transactionHash=:transactionHash")
-    fun getTransactionReceipt(transactionHash: ByteArray): TransactionReceipt?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(logs: List<TransactionLog>)
-
-    @Delete
-    fun deleteLog(log: TransactionLog)
-
-    @androidx.room.Transaction
-    fun deleteLogs(logs: List<TransactionLog>) {
-        logs.forEach {
-            deleteLog(it)
-        }
-    }
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
-
-    @androidx.room.Transaction
-    @Query("""
-        SELECT tx.* 
-            FROM `Transaction` as tx
-            LEFT JOIN TransactionReceipt as receipt
-            ON tx.hash == receipt.transactionHash
-            LEFT JOIN DroppedTransaction as droppedTx
-            ON tx.hash == droppedTx.hash
-            WHERE receipt.transactionHash IS NULL AND droppedTx.hash IS NULL
-            ORDER BY tx.nonce, tx.timestamp
-            """)
+    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NULL AND isFailed IS 0")
     fun getPendingTransactions(): List<Transaction>
 
     @androidx.room.Transaction
-    @Query(
-        """
-        SELECT tx.* 
-            FROM `Transaction` as tx
-            LEFT JOIN TransactionReceipt as receipt
-                ON tx.hash == receipt.transactionHash
-            LEFT JOIN DroppedTransaction as dropped
-                ON tx.hash == dropped.hash
-            WHERE
-                receipt.transactionHash IS NULL 
-                AND dropped.hash IS NULL 
-                AND tx.nonce = :nonce
-            """
-    )
-    fun getPendingTransactionList(nonce: Long): List<Transaction>
+    @RawQuery
+    fun getPending(query: SupportSQLiteQuery): List<Transaction>
+
+    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NOT NULL AND nonce IN (:nonces)")
+    fun getNonPendingByNonces(nonces: List<Long>): List<Transaction>
+
+    @Query("SELECT * FROM `InternalTransaction`")
+    fun getInternalTransactions(): List<InternalTransaction>
+
+    @Query("SELECT * FROM `InternalTransaction` WHERE hash IN (:hashes)")
+    fun getInternalTransactionsByHashes(hashes: List<ByteArray>): List<InternalTransaction>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(droppedTransaction: DroppedTransaction)
-
-    @RawQuery
-    fun getPending(query: SupportSQLiteQuery): List<FullTransaction>
-
-    @RawQuery
-    fun getTransactionsBeforeAsync(query: SupportSQLiteQuery): Single<List<FullTransaction>>
+    fun insertInternalTransactions(internalTransactions: List<InternalTransaction>)
 
 }

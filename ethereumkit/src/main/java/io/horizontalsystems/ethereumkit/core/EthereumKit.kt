@@ -12,14 +12,19 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
+import io.horizontalsystems.ethereumkit.core.storage.Eip20Storage
+import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
 import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
 import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
+import io.horizontalsystems.ethereumkit.decorations.InternalTransactionsDecorator
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
-import io.horizontalsystems.ethereumkit.transactionsyncers.*
+import io.horizontalsystems.ethereumkit.transactionsyncers.EthereumTransactionSyncer
+import io.horizontalsystems.ethereumkit.transactionsyncers.InternalTransactionSyncer
+import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
 import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
@@ -35,17 +40,17 @@ import java.util.*
 import java.util.logging.Logger
 
 class EthereumKit(
-        private val blockchain: IBlockchain,
-        private val transactionManager: TransactionManager,
-        private val transactionSyncManager: TransactionSyncManager,
-        private val internalTransactionSyncer: TransactionInternalTransactionSyncer,
-        private val connectionManager: ConnectionManager,
-        private val address: Address,
-        val chain: Chain,
-        val walletId: String,
-        val transactionProvider: ITransactionProvider,
-        private val decorationManager: DecorationManager,
-        private val state: EthereumKitState = EthereumKitState()
+    private val blockchain: IBlockchain,
+    private val transactionManager: TransactionManager,
+    private val transactionSyncManager: TransactionSyncManager,
+    private val connectionManager: ConnectionManager,
+    private val address: Address,
+    val chain: Chain,
+    val walletId: String,
+    val transactionProvider: ITransactionProvider,
+    val eip20Storage: IEip20Storage,
+    private val decorationManager: DecorationManager,
+    private val state: EthereumKitState = EthereumKitState()
 ) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
@@ -65,11 +70,10 @@ class EthereumKit(
         state.lastBlockHeight = blockchain.lastBlockHeight
         state.accountState = blockchain.accountState
 
-        transactionManager.allTransactionsAsync
+        transactionManager.fullTransactionsAsync
                 .subscribeOn(Schedulers.io())
-                .subscribe { transactions ->
+                .subscribe {
                     blockchain.syncAccountState()
-                    internalTransactionSyncer.sync(transactions)
                 }.let {
                     disposables.add(it)
                 }
@@ -103,7 +107,7 @@ class EthereumKit(
         get() = accountStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     val allTransactionsFlowable: Flowable<List<FullTransaction>>
-        get() = transactionManager.allTransactionsAsync
+        get() = transactionManager.fullTransactionsAsync
 
     fun start() {
         if (started)
@@ -111,17 +115,18 @@ class EthereumKit(
         started = true
 
         blockchain.start()
+        transactionSyncManager.sync()
     }
 
     fun stop() {
         started = false
         blockchain.stop()
         state.clear()
-        transactionSyncManager.stop()
     }
 
     fun refresh() {
         blockchain.refresh()
+        transactionSyncManager.sync()
     }
 
     fun onEnterForeground() {
@@ -132,16 +137,16 @@ class EthereumKit(
         connectionManager.onEnterBackground()
     }
 
-    fun getTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
-        return transactionManager.getTransactionsFlowable(tags)
+    fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
+        return transactionManager.getFullTransactionsFlowable(tags)
     }
 
-    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
-        return transactionManager.getTransactionsAsync(tags, fromHash, limit)
+    fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
+        return transactionManager.getFullTransactionsAsync(tags, fromHash, limit)
     }
 
-    fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
-        return transactionManager.getPendingTransactions(tags)
+    fun getPendingFullTransactions(tags: List<List<String>>): List<FullTransaction> {
+        return transactionManager.getPendingFullTransactions(tags)
     }
 
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
@@ -204,7 +209,7 @@ class EthereumKit(
 
         return blockchain.send(rawTransaction, signature)
                     .doOnSuccess { transaction ->
-                        transactionManager.handle(transaction)
+                        transactionManager.handle(listOf(transaction))
                     }.map {
                         FullTransaction(it)
                     }
@@ -257,6 +262,7 @@ class EthereumKit(
 
         state.lastBlockHeight = lastBlockHeight
         lastBlockHeightSubject.onNext(lastBlockHeight)
+        transactionSyncManager.sync()
     }
 
     override fun onUpdateSyncState(syncState: SyncState) {
@@ -276,10 +282,6 @@ class EthereumKit(
 
     fun addDecorator(decorator: IDecorator) {
         decorationManager.addDecorator(decorator)
-    }
-
-    fun addTransactionWatcher(transactionWatcher: ITransactionWatcher) {
-        internalTransactionSyncer.add(transactionWatcher)
     }
 
     internal fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
@@ -396,49 +398,37 @@ class EthereumKit(
 
             val transactionDatabase = EthereumDatabaseManager.getTransactionDatabase(application, walletId, chain)
             val transactionStorage = TransactionStorage(transactionDatabase)
-            val notSyncedTransactionPool = NotSyncedTransactionPool(transactionStorage)
 
-            val ethereumTransactionsProvider = EthereumTransactionSyncer(transactionProvider)
-            val userInternalTransactionsProvider = UserInternalTransactionSyncer(transactionProvider, transactionStorage)
-            val transactionInternalTransactionSyncer = TransactionInternalTransactionSyncer(transactionProvider, transactionStorage)
-            val outgoingPendingTransactionSyncer = PendingTransactionSyncer(blockchain, transactionStorage)
+            val erc20Database = EthereumDatabaseManager.getErc20Database(application, walletId, chain)
+            val erc20Storage = Eip20Storage(erc20Database)
 
-            val transactionSyncer = TransactionSyncer(blockchain, transactionStorage)
+            val ethereumTransactionSyncer = EthereumTransactionSyncer(transactionProvider)
+            val internalTransactionsSyncer = InternalTransactionSyncer(transactionProvider, transactionStorage)
 
-            val notSyncedTransactionManager = NotSyncedTransactionManager(notSyncedTransactionPool, transactionStorage)
-
-            val transactionSyncManager = TransactionSyncManager(notSyncedTransactionManager)
-            transactionSyncer.listener = transactionSyncManager
-            userInternalTransactionsProvider.listener = transactionSyncManager
-            transactionInternalTransactionSyncer.listener = transactionSyncManager
-            outgoingPendingTransactionSyncer.listener = transactionSyncManager
-
-            transactionSyncManager.add(userInternalTransactionsProvider)
-            transactionSyncManager.add(transactionInternalTransactionSyncer)
-            transactionSyncManager.add(ethereumTransactionsProvider)
-            transactionSyncManager.add(transactionSyncer)
-            transactionSyncManager.add(outgoingPendingTransactionSyncer)
-
-            val decorationManager = DecorationManager(address)
+            val decorationManager = DecorationManager()
             val tagGenerator = TagGenerator(address)
-            val transactionManager = TransactionManager(address, transactionSyncManager, transactionStorage, decorationManager, tagGenerator)
+            val transactionManager = TransactionManager(transactionStorage, decorationManager, tagGenerator)
+            val transactionSyncManager = TransactionSyncManager(transactionManager)
+
+            transactionSyncManager.add(internalTransactionsSyncer)
+            transactionSyncManager.add(ethereumTransactionSyncer)
 
             val ethereumKit = EthereumKit(
                     blockchain,
                     transactionManager,
                     transactionSyncManager,
-                    transactionInternalTransactionSyncer,
                     connectionManager,
                     address,
                     chain,
                     walletId,
                     transactionProvider,
+                    erc20Storage,
                     decorationManager
             )
 
             blockchain.listener = ethereumKit
-            transactionSyncManager.set(ethereumKit)
 
+            decorationManager.addDecorator(InternalTransactionsDecorator(transactionStorage))
             decorationManager.addDecorator(ContractCallDecorator(address))
 
             return ethereumKit

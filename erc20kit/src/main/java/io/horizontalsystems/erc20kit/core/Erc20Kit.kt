@@ -144,11 +144,11 @@ class Erc20Kit(
         }
 
         fun addTransactionSyncer(ethereumKit: EthereumKit) {
-            ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(ethereumKit.transactionProvider))
+            ethereumKit.addTransactionSyncer(Erc20TransactionSyncer(ethereumKit.transactionProvider, ethereumKit.eip20Storage))
         }
 
         fun addDecorator(ethereumKit: EthereumKit) {
-            val decorator = Eip20TransactionDecorator(ethereumKit.receiveAddress, Eip20ContractMethodFactories)
+            val decorator = Eip20TransactionDecorator(ethereumKit.receiveAddress, Eip20ContractMethodFactories, ethereumKit.eip20Storage)
             ethereumKit.addDecorator(decorator)
         }
 

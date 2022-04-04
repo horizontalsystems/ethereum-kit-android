@@ -13,7 +13,7 @@ class DataProvider(
 
     override fun getBalance(contractAddress: Address, address: Address): Single<BigInteger> {
         return ethereumKit.call(contractAddress, BalanceOfMethod(address).encodedABI())
-                .map { it.toBigInteger() }
+                .map { it.sliceArray(IntRange(0, 31)).toBigInteger() }
     }
 
 }

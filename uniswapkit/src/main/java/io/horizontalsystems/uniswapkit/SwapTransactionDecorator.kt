@@ -1,6 +1,6 @@
 package io.horizontalsystems.uniswapkit
 
-import io.horizontalsystems.erc20kit.core.getErc20Event
+import io.horizontalsystems.erc20kit.core.getErc20EventDecoration
 import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
 import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
@@ -17,19 +17,40 @@ class SwapTransactionDecorator(
         private val contractMethodFactories: SwapContractMethodFactories
 ) : IDecorator {
 
-    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? {
+    override fun decorate(transactionData: TransactionData): ContractMethodDecoration? =
+        getMethodDecoration(transactionData)
 
-        if (fullTransaction != null && fullTransaction.transaction.from != address) {
+    override fun decorate(fullTransaction: FullTransaction, fullRpcTransaction: FullRpcTransaction) {
+        decorateMain(fullTransaction, fullRpcTransaction.rpcReceipt.logs.mapNotNull { it.getErc20EventDecoration() })
+    }
+
+    override fun decorateTransactions(fullTransactions: Map<String, FullTransaction>) {
+        for (fullTransaction in fullTransactions.values) {
+            decorateMain(fullTransaction, fullTransaction.eventDecorations)
+        }
+    }
+
+    private fun decorateMain(fullTransaction: FullTransaction, eventDecorations: List<ContractEventDecoration>) {
+        if (fullTransaction.transaction.from != address) {
             // We only parse transactions created by the user (owner of this wallet).
             // If a swap was initiated by someone else and "recipient" is set to user's it should be shown as just an incoming transaction
-            return null
+            return
         }
 
+        val transactionData = fullTransaction.transactionData ?: return
+        val decoration = getMethodDecoration(transactionData, fullTransaction.internalTransactions, eventDecorations) ?: return
+
+        fullTransaction.mainDecoration = decoration
+    }
+
+    private fun getMethodDecoration(transactionData: TransactionData, internalTransactions: List<InternalTransaction>? = null, eventDecorations: List<ContractEventDecoration>? = null): ContractMethodDecoration? {
         return when (val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input)) {
             is SwapETHForExactTokensMethod -> {
-                val amountIn: BigInteger? = fullTransaction?.let { fullTx ->
-                    val change = totalETHIncoming(contractMethod.to, fullTransaction.internalTransactions)
-                    fullTx.transaction.value - change
+                val amountIn: BigInteger? = null
+
+                if (internalTransactions != null) {
+                    val change = totalETHIncoming(contractMethod.to, internalTransactions)
+                    transactionData.value - change
                 }
 
                 val trade = Trade.ExactOut(contractMethod.amountOut, transactionData.value, amountIn)
@@ -38,8 +59,10 @@ class SwapTransactionDecorator(
                 SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
             }
             is SwapExactETHForTokensMethod -> {
-                val amountOut: BigInteger? = fullTransaction?.receiptWithLogs?.logs?.let { logs ->
-                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), logs, false)
+                val amountOut: BigInteger? = null
+
+                if (eventDecorations != null) {
+                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), eventDecorations, false)
                 }
 
                 val trade = Trade.ExactIn(transactionData.value, contractMethod.amountOutMin, amountOut)
@@ -48,7 +71,9 @@ class SwapTransactionDecorator(
                 SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
             }
             is SwapExactTokensForETHMethod -> {
-                val amountOut: BigInteger? = fullTransaction?.internalTransactions?.let { internalTransactions ->
+                val amountOut: BigInteger? = null
+
+                if (internalTransactions != null) {
                     totalETHIncoming(contractMethod.to, internalTransactions)
                 }
 
@@ -58,8 +83,10 @@ class SwapTransactionDecorator(
                 SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
             }
             is SwapExactTokensForTokensMethod -> {
-                val amountOut: BigInteger? = fullTransaction?.receiptWithLogs?.logs?.let { logs ->
-                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), logs, false)
+                val amountOut: BigInteger? = null
+
+                if (eventDecorations != null) {
+                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), eventDecorations, false)
                 }
 
                 val trade = Trade.ExactIn(contractMethod.amountIn, contractMethod.amountOutMin, amountOut)
@@ -68,8 +95,10 @@ class SwapTransactionDecorator(
                 SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
             }
             is SwapTokensForExactETHMethod -> {
-                val amountIn: BigInteger? = fullTransaction?.receiptWithLogs?.logs?.let { logs ->
-                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), logs, true)
+                val amountIn: BigInteger? = null
+
+                if (eventDecorations != null) {
+                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), eventDecorations, true)
                 }
 
                 val trade = Trade.ExactOut(contractMethod.amountOut, contractMethod.amountInMax, amountIn)
@@ -78,8 +107,10 @@ class SwapTransactionDecorator(
                 SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
             }
             is SwapTokensForExactTokensMethod -> {
-                val amountIn: BigInteger? = fullTransaction?.receiptWithLogs?.logs?.let { logs ->
-                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), logs, true)
+                val amountIn: BigInteger? = null
+
+                if (eventDecorations != null) {
+                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), eventDecorations, true)
                 }
 
                 val trade = Trade.ExactOut(contractMethod.amountOut, contractMethod.amountInMax, amountIn)
@@ -91,24 +122,18 @@ class SwapTransactionDecorator(
         }
     }
 
-    override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
-        return emptyList()
-    }
-
-    private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, logs: List<TransactionLog>, collectIncomingAmounts: Boolean): BigInteger {
+    private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, eventDecorations: List<ContractEventDecoration>, collectIncomingAmounts: Boolean): BigInteger {
         var amountIn: BigInteger = 0.toBigInteger()
         var amountOut: BigInteger = 0.toBigInteger()
 
-        logs.forEach { log ->
-            if (log.address == tokenAddress) {
-                (log.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
+        eventDecorations.forEach { decoration ->
+            if (decoration.contractAddress == tokenAddress) {
+                (decoration as? TransferEventDecoration)?.let { transferEventDecoration ->
                     if (transferEventDecoration.from == userAddress) {
                         amountIn += transferEventDecoration.value
-                        log.relevant = true
                     }
                     if (transferEventDecoration.to == userAddress) {
                         amountOut += transferEventDecoration.value
-                        log.relevant = true
                     }
                 }
             }
@@ -128,4 +153,5 @@ class SwapTransactionDecorator(
 
         return amountOut
     }
+
 }

@@ -74,11 +74,6 @@ class OneInchKit(
             evmKit.addDecorator(decorator)
         }
 
-        fun addTransactionWatcher(evmKit: EthereumKit) {
-            val watcher = OneInchTransactionWatcher(evmKit.receiveAddress)
-            evmKit.addTransactionWatcher(watcher)
-        }
-
     }
 
 }

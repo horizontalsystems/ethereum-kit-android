@@ -4,7 +4,6 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
 import java.math.BigInteger
 
-
 interface IBalanceManagerListener {
     fun onSyncBalanceSuccess(balance: BigInteger)
     fun onSyncBalanceError(error: Throwable)

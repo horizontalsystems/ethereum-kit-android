@@ -103,12 +103,12 @@ open class Erc20BaseAdapter(
     private fun transactionRecord(fullTransaction: FullTransaction): TransactionRecord {
         val transaction = fullTransaction.transaction
 
-        val from = TransactionAddress(transaction.from.hex, transaction.from == receiveAddress)
+        val from = TransactionAddress(transaction.from?.hex, transaction.from == receiveAddress)
         val to = TransactionAddress(transaction.to?.hex, transaction.to == receiveAddress)
 
-        var amount: BigDecimal
+        var amount: BigDecimal = 0.toBigDecimal()
 
-        transaction.value.toBigDecimal().let {
+        transaction.value?.toBigDecimal()?.let {
             amount = it.movePointLeft(decimals)
             if (from.mine) {
                 amount = -amount
@@ -117,14 +117,14 @@ open class Erc20BaseAdapter(
 
         return TransactionRecord(
                 transactionHash = transaction.hash.toHexString(),
-                transactionIndex = fullTransaction.receiptWithLogs?.receipt?.transactionIndex ?: 0,
+                transactionIndex = fullTransaction.transaction.transactionIndex ?: 0,
                 interTransactionIndex = 0,
                 amount = amount,
                 timestamp = transaction.timestamp,
                 from = from,
                 to = to,
-                blockHeight = fullTransaction.receiptWithLogs?.receipt?.blockNumber,
-                isError = fullTransaction.isFailed(),
+                blockHeight = fullTransaction.transaction.blockNumber,
+                isError = fullTransaction.transaction.isFailed,
                 type = "",
                 mainDecoration = fullTransaction.mainDecoration,
                 eventsDecorations = fullTransaction.eventDecorations
