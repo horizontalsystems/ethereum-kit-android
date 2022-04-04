@@ -1,120 +1,106 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
-import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.FullTransaction
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
+import io.horizontalsystems.ethereumkit.models.*
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
+import java.util.logging.Logger
 
 class TransactionManager(
-        private val address: Address,
-        transactionSyncManager: TransactionSyncManager,
-        private val storage: ITransactionStorage,
-        private val decorationManager: DecorationManager,
-        private val tagGenerator: TagGenerator
+    private val storage: ITransactionStorage,
+    private val decorationManager: DecorationManager,
+    private val tagGenerator: TagGenerator
 ) {
-    private val disposables = CompositeDisposable()
-    private val allTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
-    private val transactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
+    val lastTransaction: Transaction?
+        get() = storage.getLastTransaction()
 
-    init {
-        transactionSyncManager.transactionsAsync
-                .subscribeOn(Schedulers.io())
-                .subscribe { transactions ->
-                    handle(transactions)
-                }
-                .let { disposables.add(it) }
-    }
+    private val logger = Logger.getLogger(this.javaClass.simpleName)
+    private val fullTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
+    private val fullTransactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
 
-    val allTransactionsAsync: Flowable<List<FullTransaction>> = allTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val fullTransactionsAsync: Flowable<List<FullTransaction>> = fullTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    fun getTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
-        return transactionsWithTagsSubject.toFlowable(BackpressureStrategy.BUFFER)
-                .map { transactions ->
-                    transactions.mapNotNull { transactionWithTags ->
-                        for (andTags in tags) {
-                            if (transactionWithTags.tags.all { !andTags.contains(it) }) {
-                                return@mapNotNull null
-                            }
+    fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
+        return fullTransactionsWithTagsSubject.toFlowable(BackpressureStrategy.BUFFER)
+            .map { transactions ->
+                transactions.mapNotNull { transactionWithTags ->
+                    for (andTags in tags) {
+                        if (transactionWithTags.tags.all { !andTags.contains(it) }) {
+                            return@mapNotNull null
                         }
-                        return@mapNotNull transactionWithTags.transaction
                     }
-                }
-                .filter { it.isNotEmpty() }
-    }
-
-    fun getTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
-        return storage.getTransactionsBeforeAsync(tags, fromHash, limit)
-                .map { transactions ->
-                    transactions.map { transaction ->
-                        decorationManager.decorateFullTransaction(transaction)
-                    }
-                }
-    }
-
-    fun getPendingTransactions(tags: List<List<String>>): List<FullTransaction> {
-        return storage.getPendingTransactions(tags)
-                .map { transaction ->
-                    decorationManager.decorateFullTransaction(transaction)
-                }
-    }
-
-    fun handle(transaction: Transaction) {
-        storage.save(transaction)
-
-        val fullTransaction = FullTransaction(transaction)
-        handle(listOf(fullTransaction))
-    }
-
-    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> {
-        return storage.getFullTransactions(hashes)
-    }
-
-    private fun handle(syncedTransactions: List<FullTransaction>) {
-        val decoratedTransactions = syncedTransactions.map { fullTransaction ->
-            val decoratedTransaction = decorationManager.decorateFullTransaction(fullTransaction)
-            decoratedTransaction.receiptWithLogs?.logs?.let { logs ->
-                val neededLogs = logs.filter { it.relevant }
-                if (logs.size > neededLogs.size) {
-                    //delete all transactions, then save only relevant ones
-                    storage.remove(logs)
-                    storage.save(neededLogs)
+                    return@mapNotNull transactionWithTags.transaction
                 }
             }
+            .filter { it.isNotEmpty() }
+    }
 
-            decoratedTransaction
-        }
+    fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> =
+        storage.getTransactionsBeforeAsync(tags, fromHash, limit)
+            .map { transactions ->
+                decorationManager.decorateTransactions(transactions)
+            }
+
+    fun getPendingFullTransactions(tags: List<List<String>>): List<FullTransaction> =
+        decorationManager.decorateTransactions(storage.getPendingTransactions(tags))
+
+    fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> =
+        decorationManager.decorateTransactions(storage.getTransactions(hashes))
+
+    fun handle(transactions: List<Transaction>) {
+        if (transactions.isEmpty()) return
+
+        storage.save(transactions)
+        val failedTransactions = failPendingTransactions()
+        val decoratedTransactions = decorationManager.decorateTransactions(transactions + failedTransactions)
 
         val transactionWithTags = mutableListOf<TransactionWithTags>()
+        val allTags: MutableList<TransactionTag> = mutableListOf()
 
         decoratedTransactions.forEach { transaction ->
             val tags = tagGenerator.generate(transaction)
-            storage.set(tags)
-
+            allTags.addAll(tags)
             transactionWithTags.add(TransactionWithTags(transaction, tags.map { it.name }))
         }
 
-        if (decoratedTransactions.isNotEmpty()) {
-            allTransactionsSubject.onNext(decoratedTransactions)
-            transactionsWithTagsSubject.onNext(transactionWithTags)
-        }
+        storage.saveTags(allTags)
+
+        fullTransactionsSubject.onNext(decoratedTransactions)
+        fullTransactionsWithTagsSubject.onNext(transactionWithTags)
     }
 
     fun etherTransferTransactionData(address: Address, value: BigInteger): TransactionData {
         return TransactionData(address, value, byteArrayOf())
     }
 
+    private fun failPendingTransactions(): List<Transaction> {
+        val pendingTransactions = storage.getPendingTransactions()
+
+        if (pendingTransactions.isEmpty()) return listOf()
+
+        val pendingTransactionNonces = pendingTransactions.mapNotNull { it.nonce }.toSet().toList()
+        val nonPendingTransactions = storage.getNonPendingTransactionsByNonces(pendingTransactionNonces)
+        val processedTransactions: MutableList<Transaction> = mutableListOf()
+
+        for (nonPendingTransaction in nonPendingTransactions) {
+            val duplicateTransactions = pendingTransactions.filter { it.nonce == nonPendingTransaction.nonce }
+            for (transaction in duplicateTransactions) {
+                transaction.isFailed = true
+                transaction.replacedWith = nonPendingTransaction.hash
+                processedTransactions.add(transaction)
+            }
+        }
+
+        storage.save(processedTransactions)
+        return processedTransactions
+    }
+
     data class TransactionWithTags(
-            val transaction: FullTransaction,
-            val tags: List<String>
+        val transaction: FullTransaction,
+        val tags: List<String>
     )
 
 }

@@ -3,9 +3,9 @@ package io.horizontalsystems.ethereumkit.decorations
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.FullRpcTransaction
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 import kotlin.reflect.KClass
 
@@ -19,14 +19,7 @@ class ContractCallDecorator(val address: Address) : IDecorator {
                 listOf(Address::class, BigInteger::class, Address::class, Address::class, BigInteger::class, BigInteger::class, Address::class, BigInteger::class, ByteArray::class))
     }
 
-    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? {
-
-        val transaction = fullTransaction?.transaction ?: return null
-
-        if (transaction.from != address) {
-            return null
-        }
-
+    override fun decorate(transactionData: TransactionData): ContractMethodDecoration? {
         val methodId = transactionData.input.take(4).toByteArray()
         val inputArguments = transactionData.input.takeLast(4).toByteArray()
 
@@ -37,8 +30,22 @@ class ContractCallDecorator(val address: Address) : IDecorator {
         return RecognizedMethodDecoration(method.name, arguments)
     }
 
-    override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
-        return emptyList()
+    override fun decorate(fullTransaction: FullTransaction, fullRpcTransaction: FullRpcTransaction) {
+        decorateMain(fullTransaction)
+    }
+
+    override fun decorateTransactions(fullTransactions: Map<String, FullTransaction>) {
+        for (fullTransaction in fullTransactions.values) {
+            decorateMain(fullTransaction)
+        }
+    }
+
+    private fun decorateMain(fullTransaction: FullTransaction) {
+        if (fullTransaction.transaction.from != address) return
+        val transactionData = fullTransaction.transactionData ?: return
+        val decoration = decorate(transactionData) ?: return
+
+        fullTransaction.mainDecoration = decoration
     }
 
     private fun addMethod(name: String, signature: String, arguments: List<KClass<out Any>>) {

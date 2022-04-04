@@ -1,58 +1,44 @@
 package io.horizontalsystems.erc20kit.core
 
-import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.IEip20Storage
 import io.horizontalsystems.ethereumkit.core.ITransactionProvider
-import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
+import io.horizontalsystems.ethereumkit.models.Eip20Event
 import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
-import io.horizontalsystems.ethereumkit.transactionsyncers.AbstractTransactionSyncer
-import io.reactivex.schedulers.Schedulers
-import java.util.logging.Logger
+import io.horizontalsystems.ethereumkit.models.Transaction
 
 class Erc20TransactionSyncer(
-        private val transactionProvider: ITransactionProvider
-) : AbstractTransactionSyncer("erc20_transaction_syncer") {
-    private val logger = Logger.getLogger(this.javaClass.simpleName)
+        private val transactionProvider: ITransactionProvider,
+        private val storage: IEip20Storage
+): ITransactionSyncer {
 
-    override fun start() {
-        sync()
-    }
+    private fun handle(transactions: List<ProviderTokenTransaction>) {
+        if (transactions.isEmpty()) return
 
-    override fun onLastBlockNumber(blockNumber: Long) {
-        sync()
-    }
-
-    private fun sync() {
-        logger.info("---> sync() state: $state")
-
-        if (state is EthereumKit.SyncState.Syncing) return
-
-        state = EthereumKit.SyncState.Syncing()
-
-        transactionProvider.getTokenTransactions(lastSyncBlockNumber + 1)
-                .subscribeOn(Schedulers.io())
-                .subscribe({ tokenTransactions ->
-                    logger.info("---> sync() onFetched: ${tokenTransactions.size}")
-
-                    handle(tokenTransactions)
-                    state = EthereumKit.SyncState.Synced()
-                }, {
-                    logger.info("---> sync() onError: ${it.message}")
-
-                    state = EthereumKit.SyncState.NotSynced(it)
-                })
-                .let { disposables.add(it) }
-    }
-
-    private fun handle(tokenTransactions: List<ProviderTokenTransaction>) {
-        if (tokenTransactions.isNotEmpty()) {
-            val latestBlockNumber = tokenTransactions.maxByOrNull { it.blockNumber ?: 0 }?.blockNumber
-            latestBlockNumber?.let {
-                lastSyncBlockNumber = it
-            }
-
-            val notSyncedTransactions = tokenTransactions.map { NotSyncedTransaction(it.hash) }
-            delegate.add(notSyncedTransactions)
+        val events = transactions.map { tx ->
+            Eip20Event(tx.hash, tx.contractAddress, tx.from, tx.to, tx.value, tx.tokenName, tx.tokenSymbol, tx.tokenDecimal, )
         }
+
+        storage.save(events)
     }
+
+    override fun getTransactionsSingle(lastTransactionBlockNumber: Long) =
+        transactionProvider.getTokenTransactions(lastTransactionBlockNumber + 1)
+            .doOnSuccess { providerTokenTransactions -> handle(providerTokenTransactions) }
+            .map { providerTokenTransactions ->
+                providerTokenTransactions.map { transaction ->
+                    Transaction(
+                        hash = transaction.hash,
+                        timestamp = transaction.timestamp,
+                        isFailed = false,
+                        blockNumber = transaction.blockNumber,
+                        transactionIndex = transaction.transactionIndex,
+                        nonce = transaction.nonce,
+                        gasPrice = transaction.gasPrice,
+                        gasLimit = transaction.gasLimit,
+                        gasUsed = transaction.gasUsed
+                    )
+                }
+            }
 
 }

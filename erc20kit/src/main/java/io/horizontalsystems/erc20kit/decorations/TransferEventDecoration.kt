@@ -7,10 +7,11 @@ import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class TransferEventDecoration(
-        contractAddress: Address, val from: Address, val to: Address, val value: BigInteger
+        contractAddress: Address, val from: Address, val to: Address, val value: BigInteger,
+        val tokenName: String? = null, val tokenSymbol: String? = null, val tokenDecimal: Int? = null
 ) : ContractEventDecoration(contractAddress) {
 
-    override fun tags(fromAddress: Address, toAddress: Address, userAddress: Address): List<String> {
+    override fun tags(userAddress: Address): List<String> {
         val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)
 
         if (from == userAddress) {

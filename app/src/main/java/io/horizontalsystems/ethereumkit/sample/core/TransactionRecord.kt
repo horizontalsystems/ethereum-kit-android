@@ -1,7 +1,7 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
-import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import java.math.BigDecimal
 
 class TransactionRecord(
@@ -17,7 +17,7 @@ class TransactionRecord(
         val blockHeight: Long?,
         val isError: Boolean,
         val type: String = "",
-        val mainDecoration: TransactionDecoration?,
+        val mainDecoration: ContractMethodDecoration?,
         val eventsDecorations: List<ContractEventDecoration>
 )
 

@@ -95,9 +95,6 @@ class UniswapKit(
             ethereumKit.addDecorator(decorator)
         }
 
-        fun addTransactionWatcher(evmKit: EthereumKit) {
-            evmKit.addTransactionWatcher(UniswapTransactionWatcher(evmKit.receiveAddress))
-        }
     }
 
 }

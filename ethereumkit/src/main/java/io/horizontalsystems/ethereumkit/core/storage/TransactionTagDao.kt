@@ -9,6 +9,6 @@ import io.horizontalsystems.ethereumkit.models.TransactionTag
 interface TransactionTagDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(tag: TransactionTag)
+    fun insert(tags: List<TransactionTag>)
 
 }

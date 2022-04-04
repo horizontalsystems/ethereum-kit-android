@@ -1,76 +1,46 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
-import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
-import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ITransactionProvider
-import io.horizontalsystems.ethereumkit.models.NotSyncedTransaction
-import io.reactivex.schedulers.Schedulers
-import java.util.logging.Logger
+import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
+import io.horizontalsystems.ethereumkit.models.Transaction
 
 class EthereumTransactionSyncer(
         private val transactionProvider: ITransactionProvider
-) : AbstractTransactionSyncer("ethereum_transaction_syncer") {
+): ITransactionSyncer {
 
-    private val logger = Logger.getLogger(this.javaClass.simpleName)
-
-    override fun onLastBlockNumber(blockNumber: Long) {
-        sync()
-    }
-
-    private fun sync() {
-        logger.info("---> sync() state: $state")
-
-        if (state is EthereumKit.SyncState.Syncing) return
-
-        state = EthereumKit.SyncState.Syncing()
-
-        transactionProvider.getTransactions(lastSyncBlockNumber + 1)
-                .map { transactions ->
-                    transactions.map { etherscanTransaction ->
-                        NotSyncedTransaction(
-                                hash = etherscanTransaction.hash,
-                                transaction = RpcTransaction(
-                                        hash = etherscanTransaction.hash,
-                                        nonce = etherscanTransaction.nonce,
-                                        blockHash = etherscanTransaction.blockHash,
-                                        blockNumber = etherscanTransaction.blockNumber,
-                                        transactionIndex = etherscanTransaction.transactionIndex,
-                                        from = etherscanTransaction.from,
-                                        to = etherscanTransaction.to,
-                                        value = etherscanTransaction.value,
-                                        gasPrice = etherscanTransaction.gasPrice,
-                                        gasLimit = etherscanTransaction.gasLimit,
-                                        input = etherscanTransaction.input
-                                ),
-                                timestamp = etherscanTransaction.timestamp
-                        )
+    override fun getTransactionsSingle(lastTransactionBlockNumber: Long) =
+        transactionProvider.getTransactions(lastTransactionBlockNumber + 1).map { providerTransactions ->
+            providerTransactions.map { transaction ->
+                val isFailed = when {
+                    transaction.txReceiptStatus != null -> {
+                        transaction.txReceiptStatus != 1
+                    }
+                    transaction.isError != null -> {
+                        transaction.isError != 0
+                    }
+                    transaction.gasUsed != null -> {
+                        transaction.gasUsed == transaction.gasLimit
+                    }
+                    else -> {
+                        false
                     }
                 }
-                .subscribeOn(Schedulers.io())
-                .subscribe({ notSyncedTransactions ->
-                    logger.info("---> sync() onFetched: ${notSyncedTransactions.size}")
 
-                    handle(notSyncedTransactions)
-
-                    state = EthereumKit.SyncState.Synced()
-                }, {
-                    logger.info("---> sync() onError: ${it.message}")
-
-                    state = EthereumKit.SyncState.NotSynced(it)
-                })
-                .let { disposables.add(it) }
-
-    }
-
-
-    private fun handle(notSyncedTransactions: List<NotSyncedTransaction>) {
-        if (notSyncedTransactions.isNotEmpty()) {
-            delegate.add(notSyncedTransactions)
-
-            notSyncedTransactions.firstOrNull()?.transaction?.blockNumber?.let {
-                lastSyncBlockNumber = it
+                Transaction(
+                    hash = transaction.hash,
+                    timestamp = transaction.timestamp,
+                    isFailed = isFailed,
+                    blockNumber = transaction.blockNumber,
+                    transactionIndex = transaction.transactionIndex,
+                    from = transaction.from,
+                    to = transaction.to,
+                    value = transaction.value,
+                    input = transaction.input,
+                    nonce = transaction.nonce,
+                    gasPrice = transaction.gasPrice,
+                    gasUsed = transaction.gasUsed
+                )
             }
         }
-    }
 
 }

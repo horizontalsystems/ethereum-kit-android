@@ -2,7 +2,6 @@ package io.horizontalsystems.ethereumkit.api.jsonrpc.models
 
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionLog
-import io.horizontalsystems.ethereumkit.models.TransactionReceipt
 
 class RpcTransactionReceipt(
         val transactionHash: ByteArray,
@@ -19,23 +18,4 @@ class RpcTransactionReceipt(
         val logsBloom: ByteArray,
         val root: ByteArray?,
         val status: Int?
-) {
-
-    constructor(transactionReceipt: TransactionReceipt, logs: List<TransactionLog>) : this(
-            transactionReceipt.transactionHash,
-            transactionReceipt.transactionIndex,
-            transactionReceipt.blockHash,
-            transactionReceipt.blockNumber,
-            transactionReceipt.from,
-            transactionReceipt.to,
-            transactionReceipt.effectiveGasPrice,
-            transactionReceipt.cumulativeGasUsed,
-            transactionReceipt.gasUsed,
-            transactionReceipt.contractAddress,
-            logs,
-            transactionReceipt.logsBloom,
-            transactionReceipt.root,
-            transactionReceipt.status
-    )
-
-}
+)

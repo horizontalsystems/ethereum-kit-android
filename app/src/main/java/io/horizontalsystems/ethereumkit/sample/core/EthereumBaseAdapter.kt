@@ -1,5 +1,6 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
+import android.util.Log
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
@@ -85,22 +86,22 @@ open class EthereumBaseAdapter(private val ethereumKit: EthereumKit) : IAdapter 
     }
 
     override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
-        return ethereumKit.getTransactionsAsync(listOf(listOf("ETH")), fromHash, limit)
+        return ethereumKit.getFullTransactionsAsync(listOf(), fromHash, limit)
             .map { transactions ->
+                Log.v("LALALA in app: transactions count: ", "${transactions.size}")
                 transactions.map { transactionRecord(it) }
             }
     }
 
     private fun transactionRecord(fullTransaction: FullTransaction): TransactionRecord {
         val transaction = fullTransaction.transaction
-        val receipt = fullTransaction.receiptWithLogs?.receipt
         val mineAddress = ethereumKit.receiveAddress
 
-        val from = TransactionAddress(transaction.from.hex, transaction.from == mineAddress)
-        val to = TransactionAddress(transaction.to!!.hex, transaction.to == mineAddress)
-        var amount: BigDecimal
+        val from = TransactionAddress(transaction.from?.hex, transaction.from == mineAddress)
+        val to = TransactionAddress(transaction.to?.hex, transaction.to == mineAddress)
+        var amount: BigDecimal = 0.toBigDecimal()
 
-        transaction.value.toBigDecimal().let {
+        transaction.value?.toBigDecimal()?.let {
             amount = it.movePointLeft(decimal)
             if (from.mine) {
                 amount = -amount
@@ -116,14 +117,14 @@ open class EthereumBaseAdapter(private val ethereumKit: EthereumKit) : IAdapter 
 
         return TransactionRecord(
             transactionHash = transaction.hash.toHexString(),
-            transactionIndex = receipt?.transactionIndex ?: 0,
+            transactionIndex = transaction.transactionIndex ?: 0,
             interTransactionIndex = 0,
-            blockHeight = receipt?.blockNumber,
+            blockHeight = transaction.blockNumber,
             amount = amount,
             timestamp = transaction.timestamp,
             from = from,
             to = to,
-            isError = fullTransaction.isFailed(),
+            isError = fullTransaction.transaction.isFailed,
             mainDecoration = fullTransaction.mainDecoration,
             eventsDecorations = fullTransaction.eventDecorations
         )

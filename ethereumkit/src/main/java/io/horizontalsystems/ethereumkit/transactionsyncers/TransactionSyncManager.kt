@@ -1,34 +1,29 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
-import io.horizontalsystems.ethereumkit.api.models.AccountState
+import android.util.Log
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
-import io.horizontalsystems.ethereumkit.core.ITransactionSyncerListener
-import io.horizontalsystems.ethereumkit.models.BloomFilter
-import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.core.TransactionManager
+import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Logger
 
 class TransactionSyncManager(
-        private val notSyncedTransactionManager: NotSyncedTransactionManager
-) : ITransactionSyncerListener {
+    private val transactionManager: TransactionManager
+) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
     private val disposables = CompositeDisposable()
-    private val syncerStateDisposables = hashMapOf<String, Disposable>()
 
     private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
-    private val transactionsSubject = PublishSubject.create<List<FullTransaction>>()
     private val syncers = CopyOnWriteArrayList<ITransactionSyncer>()
-
-    private lateinit var ethereumKit: EthereumKit
-    private var accountState: AccountState? = null
 
     var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
@@ -37,118 +32,67 @@ class TransactionSyncManager(
         }
     val syncStateAsync: Flowable<EthereumKit.SyncState> = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val transactionsAsync: Flowable<List<FullTransaction>> = transactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
-
-    fun set(ethereumKit: EthereumKit) {
-        this.ethereumKit = ethereumKit
-
-        subscribe(ethereumKit)
-    }
-
     fun add(syncer: ITransactionSyncer) {
-        if (syncers.any { it.id == syncer.id }) return
-
-        syncer.set(delegate = notSyncedTransactionManager)
-
         syncers.add(syncer)
-
-        syncer.stateAsync
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe { syncState() }
-                .let { syncerStateDisposables[syncer.id] = it }
-
-        syncer.start()
     }
 
-    fun stop() {
-        syncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
+    fun sync() {
+        if (syncState is EthereumKit.SyncState.Syncing) return
 
-        syncers.forEach {
-            stopSyncer(it)
+        syncState = EthereumKit.SyncState.Syncing()
+
+        Single.zip(syncers.map { it.getTransactionsSingle(transactionManager.lastTransaction?.blockNumber ?: 0) }) { array ->
+            array
+                .map { it as List<Transaction> }
+                .reduce { acc, list -> acc + list }
         }
-        syncers.clear()
-    }
-
-    override fun onTransactionsSynced(transactions: List<FullTransaction>) {
-        transactionsSubject.onNext(transactions)
-    }
-
-    private fun stopSyncer(syncer: ITransactionSyncer) {
-        syncerStateDisposables.remove(syncer.id)?.dispose()
-        syncer.stop()
-    }
-
-    private fun subscribe(ethereumKit: EthereumKit) {
-        accountState = ethereumKit.accountState
-
-        ethereumKit.accountStateFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info(" ---> accountStateFlowable: $it, syncers: ${syncers.size}")
-                    onAccountState(it)
-                }
-                .let { disposables.add(it) }
-
-        ethereumKit.lastBlockHeightFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info(" ---> lastBlockHeightFlowable: $it, syncers: ${syncers.size}")
-                    onLastBlockNumber(it)
-                }
-                .let { disposables.add(it) }
-
-        ethereumKit.syncStateFlowable
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    logger.info(" ---> syncStateFlowable: $it, syncers: ${syncers.size}")
-                    onEthereumKitSyncState(it)
-                }
-                .let { disposables.add(it) }
-    }
-
-    private fun onEthereumKitSyncState(state: EthereumKit.SyncState) {
-        logger.info(" ---> onEthKitSyncState: $state, syncers: ${syncers.size}")
-
-        if (state is EthereumKit.SyncState.Synced) { //?? resync on network reconnection
-            performOnSyncers { syncer -> syncer.onEthereumKitSynced() }
-        }
-    }
-
-    private fun onLastBlockBloomFilter(bloomFilter: BloomFilter) {
-        performOnSyncers { syncer -> syncer.onLastBlockBloomFilter(bloomFilter) }
-    }
-
-    private fun onAccountState(accountState: AccountState) {
-        if (this.accountState != null) {
-            performOnSyncers { syncer -> syncer.onUpdateAccountState(accountState) }
-        }
-        this.accountState = accountState
-    }
-
-    private fun onLastBlockNumber(blockNumber: Long) {
-        performOnSyncers { syncer -> syncer.onLastBlockNumber(blockNumber) }
-    }
-
-    private fun performOnSyncers(action: (ITransactionSyncer) -> Unit) {
-        syncers.forEach { action(it) }
-    }
-
-    @Synchronized
-    private fun syncState() {
-        when (syncState) {
-            is EthereumKit.SyncState.Synced -> {
-                val notSyncedSyncerState = syncers.find { it.state is EthereumKit.SyncState.NotSynced }?.state
-                if (notSyncedSyncerState != null) {
-                    syncState = notSyncedSyncerState
-                }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ transactions ->
+                handle(transactions)
+                syncState = EthereumKit.SyncState.Synced()
+            }, {
+                syncState = EthereumKit.SyncState.NotSynced(it)
+                logger.warning("sync ERROR = ${it.message}")
+            }).let {
+                disposables.add(it)
             }
-            is EthereumKit.SyncState.Syncing, is EthereumKit.SyncState.NotSynced -> {
-                syncState = syncers.find { it.state is EthereumKit.SyncState.NotSynced }?.state
-                        ?: syncers.find { it.state is EthereumKit.SyncState.Syncing }?.state
-                                ?: EthereumKit.SyncState.Synced()
+    }
+
+    private fun merge(tx1: Transaction, tx2: Transaction) =
+        Transaction(
+            tx1.hash,
+            tx1.timestamp,
+            tx1.isFailed,
+            tx1.blockNumber ?: tx2.blockNumber,
+            tx1.transactionIndex ?: tx2.transactionIndex,
+            tx1.from ?: tx2.from,
+            tx1.to ?: tx2.to,
+            tx1.value ?: tx2.value,
+            tx1.input ?: tx2.input,
+            tx1.nonce ?: tx2.nonce,
+            tx1.gasPrice ?: tx2.gasPrice,
+            tx1.maxFeePerGas ?: tx2.maxFeePerGas,
+            tx1.maxPriorityFeePerGas ?: tx2.maxPriorityFeePerGas,
+            tx1.gasLimit ?: tx2.gasLimit,
+            tx1.gasUsed ?: tx2.gasUsed
+        )
+
+    private fun handle(transactions: List<Transaction>) {
+        Log.v("LALALA Transactions count", transactions.size.toString())
+        val map: MutableMap<String, Transaction> = mutableMapOf()
+
+        for (transaction in transactions) {
+            val tx = map[transaction.hashString]
+
+            if (tx == null) {
+                map[transaction.hashString] = transaction
+            } else {
+                map[transaction.hashString] = merge(transaction, tx)
             }
         }
+
+        transactionManager.handle(map.values.toList())
     }
 
 }

@@ -1,6 +1,6 @@
 package io.horizontalsystems.oneinchkit.decorations
 
-import io.horizontalsystems.erc20kit.core.getErc20Event
+import io.horizontalsystems.erc20kit.core.getErc20EventDecoration
 import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
 import io.horizontalsystems.ethereumkit.core.IDecorator
 import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
@@ -20,38 +20,52 @@ class OneInchTransactionDecorator(
 
     private val evmTokenAddresses = mutableListOf("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0x0000000000000000000000000000000000000000")
 
-    override fun decorate(logs: List<TransactionLog>): List<ContractEventDecoration> {
-        return listOf()
+    override fun decorate(transactionData: TransactionData): ContractMethodDecoration? =
+        getMethodDecoration(transactionData)
+
+    override fun decorate(fullTransaction: FullTransaction, fullRpcTransaction: FullRpcTransaction) {
+        decorateMain(fullTransaction, fullRpcTransaction.rpcReceipt.logs.mapNotNull { it.getErc20EventDecoration() })
     }
 
-    override fun decorate(transactionData: TransactionData, fullTransaction: FullTransaction?): ContractMethodDecoration? {
-        val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input) ?: return null
+    override fun decorateTransactions(fullTransactions: Map<String, FullTransaction>) {
+        for (fullTransaction in fullTransactions.values) {
+            decorateMain(fullTransaction, fullTransaction.eventDecorations)
+        }
+    }
 
-        if (fullTransaction != null && fullTransaction.transaction.from != address) {
+    private fun decorateMain(fullTransaction: FullTransaction, eventDecorations: List<ContractEventDecoration>) {
+        if (fullTransaction.transaction.from != address) {
             // We only parse transactions created by the user (owner of this wallet).
             // If a swap was initiated by someone else and "recipient" is set to user's it should be shown as just an incoming transaction
-            return null
+            return
         }
 
-        return when (contractMethod) {
+        val transactionData = fullTransaction.transactionData ?: return
+        val decoration = getMethodDecoration(transactionData, fullTransaction.internalTransactions, eventDecorations) ?: return
+
+        fullTransaction.mainDecoration = decoration
+    }
+
+    private fun getMethodDecoration(transactionData: TransactionData, internalTransactions: List<InternalTransaction>? = null, eventDecorations: List<ContractEventDecoration>? = null): ContractMethodDecoration? {
+        return when (val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input)) {
             is UnoswapMethod -> {
                 var toToken: Token? = null
                 var toAmount: BigInteger? = null
-                fullTransaction?.let {
-                    totalETHIncoming(address, fullTransaction.internalTransactions)?.let { amount ->
+
+                if (internalTransactions != null) {
+                    totalETHIncoming(address, internalTransactions)?.let { amount ->
                         toAmount = amount
                         toToken = Token.EvmCoin
                     }
                 }
 
-                val logs = fullTransaction?.receiptWithLogs?.logs
-                if (toToken == null && logs != null) {
-                    val incomingEip20Log = logs.firstOrNull { log ->
-                        (log.getErc20Event() as? TransferEventDecoration)?.to == address
+                if (toToken == null && eventDecorations != null) {
+                    val incomingEip20EventDecoration = eventDecorations.firstOrNull { eventDecoration ->
+                        (eventDecoration as? TransferEventDecoration)?.to == address
                     }
 
-                    (incomingEip20Log?.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
-                        totalTokenIncoming(address, transferEventDecoration.contractAddress, logs)?.let { amount ->
+                    incomingEip20EventDecoration?.let { transferEventDecoration ->
+                        totalTokenIncoming(address, transferEventDecoration.contractAddress, eventDecorations)?.let { amount ->
                             toAmount = amount
                             toToken = Token.Eip20(transferEventDecoration.contractAddress)
                         }
@@ -72,15 +86,15 @@ class OneInchTransactionDecorator(
                 val swapDescription = contractMethod.swapDescription
                 val toToken = addressToToken(swapDescription.dstToken)
 
-                if (fullTransaction != null && toToken == Token.EvmCoin) {
-                    totalETHIncoming(swapDescription.dstReceiver, fullTransaction.internalTransactions)?.let { amount ->
+                if (internalTransactions != null && toToken == Token.EvmCoin) {
+                    totalETHIncoming(swapDescription.dstReceiver, internalTransactions)?.let { amount ->
                         toAmount = amount
                     }
                 }
 
                 if (toAmount == null) {
-                    fullTransaction?.receiptWithLogs?.logs?.let { logs ->
-                        totalTokenIncoming(swapDescription.dstReceiver, swapDescription.dstToken, logs)?.let { amount ->
+                    eventDecorations?.let { decorations ->
+                        totalTokenIncoming(swapDescription.dstReceiver, swapDescription.dstToken, decorations)?.let { amount ->
                             toAmount = amount
                         }
                     }
@@ -105,15 +119,14 @@ class OneInchTransactionDecorator(
 
     }
 
-    private fun totalTokenIncoming(userAddress: Address, tokenAddress: Address, logs: List<TransactionLog>): BigInteger? {
+    private fun totalTokenIncoming(userAddress: Address, tokenAddress: Address, eventDecorations: List<ContractEventDecoration>): BigInteger? {
         var amountOut = BigInteger.ZERO
 
-        for (log in logs) {
-            if (log.address == tokenAddress) {
-                (log.getErc20Event() as? TransferEventDecoration)?.let { transferEventDecoration ->
+        for (decoration in eventDecorations) {
+            if (decoration.contractAddress == tokenAddress) {
+                (decoration as? TransferEventDecoration)?.let { transferEventDecoration ->
                     if (transferEventDecoration.to == userAddress && transferEventDecoration.value > BigInteger.ZERO) {
                         amountOut += transferEventDecoration.value
-                        log.relevant = true
                     }
                 }
             }
