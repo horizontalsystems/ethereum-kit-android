@@ -67,6 +67,14 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun pulsescan(apiKey: String): TransactionSource {
+            //See: https://gitlab.com/pulsechaincom/blockscout (PulseChain blockscout fork)
+            return TransactionSource(
+                "scan.v2b.testnet.pulsechain.com",
+                SourceType.Etherscan("https://scan.v2b.testnet.pulsechain.com", "https://scan.v2b.testnet.pulsechain.com", apiKey)
+            )
+        }
+
     }
 
 }

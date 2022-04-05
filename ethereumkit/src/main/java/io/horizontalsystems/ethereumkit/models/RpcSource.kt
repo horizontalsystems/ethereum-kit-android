@@ -92,5 +92,9 @@ sealed class RpcSource() {
             return RpcSource.Http(listOf(URL("https://arb1.arbitrum.io/rpc")), null)
         }
 
+        fun pulseChainTestnetV2bRpcHttp(): RpcSource {
+            return RpcSource.Http(listOf(URL("https://rpc.v2b.testnet.pulsechain.com")), null)
+        }
+
     }
 }

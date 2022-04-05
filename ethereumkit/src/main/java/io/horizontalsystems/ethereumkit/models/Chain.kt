@@ -17,5 +17,6 @@ sealed class Chain(
     object EthereumKovan: Chain(42, 1, 4, true)
     object EthereumRinkeby: Chain(4, 1, 15, true)
     object EthereumGoerli: Chain(5, 1, 15, true)
+    object PulseChainTestnetV2b: Chain(941, 60, 3, true)
 
 }

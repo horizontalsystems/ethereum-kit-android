@@ -15,6 +15,8 @@ import java.math.BigInteger
 import java.util.*
 import java.util.logging.Logger
 
+//TODO add https://pulsex.com/ unsiwap fork on pulse chain
+
 class TradeManager(
     private val evmKit: EthereumKit
 ) {

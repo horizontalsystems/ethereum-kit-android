@@ -29,6 +29,7 @@ class TokenFactory(chain: Chain) {
                 Chain.EthereumRopsten, Chain.EthereumRinkeby -> "0xc778417E063141139Fce010982780140Aa0cD5Ab"
                 Chain.EthereumKovan -> "0xd0A1E359811322d97991E03f863a0C30C2cF029C"
                 Chain.EthereumGoerli -> "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"
+                Chain.PulseChain -> "0x02efa0844df40adfba24e22e203f4818637dd685" //See: https://tokens.pulseramp.com/
                  else -> throw UnsupportedChainError.NoWethAddress
             }
             return Address(wethAddressHex)
