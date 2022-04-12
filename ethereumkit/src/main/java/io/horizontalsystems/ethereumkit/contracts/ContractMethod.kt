@@ -1,13 +1,13 @@
 package io.horizontalsystems.ethereumkit.contracts
 
-abstract class ContractMethod {
+open class ContractMethod {
     val methodId: ByteArray by lazy { ContractMethodHelper.getMethodId(methodSignature) }
 
-    protected abstract val methodSignature: String
+    protected open val methodSignature: String = ""
 
     fun encodedABI(): ByteArray {
         return ContractMethodHelper.encodedABI(methodId, getArguments())
     }
 
-    protected abstract fun getArguments(): List<Any>
+    protected open fun getArguments(): List<Any> = listOf()
 }

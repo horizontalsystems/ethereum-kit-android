@@ -7,14 +7,15 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
+import io.horizontalsystems.oneinchkit.decorations.OneInchMethodDecorator
 import io.horizontalsystems.oneinchkit.decorations.OneInchTransactionDecorator
 import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
 
 class OneInchKit(
-        private val evmKit: EthereumKit,
-        private val service: OneInchService
+    private val evmKit: EthereumKit,
+    private val service: OneInchService
 ) {
 
     val getRouterAddress: Address = when (evmKit.chain) {
@@ -29,35 +30,35 @@ class OneInchKit(
     }
 
     fun getQuoteAsync(
-            fromToken: Address,
-            toToken: Address,
-            amount: BigInteger,
-            protocols: List<String>? = null,
-            gasPrice: GasPrice? = null,
-            complexityLevel: Int? = null,
-            connectorTokens: List<String>? = null,
-            gasLimit: Long? = null,
-            mainRouteParts: Int? = null,
-            parts: Int? = null
+        fromToken: Address,
+        toToken: Address,
+        amount: BigInteger,
+        protocols: List<String>? = null,
+        gasPrice: GasPrice? = null,
+        complexityLevel: Int? = null,
+        connectorTokens: List<String>? = null,
+        gasLimit: Long? = null,
+        mainRouteParts: Int? = null,
+        parts: Int? = null
     ): Single<Quote> {
         return service.getQuoteAsync(fromToken, toToken, amount, protocols, gasPrice, complexityLevel, connectorTokens, gasLimit, mainRouteParts, parts)
     }
 
     fun getSwapAsync(
-            fromToken: Address,
-            toToken: Address,
-            amount: BigInteger,
-            slippagePercentage: Float,
-            protocols: List<String>? = null,
-            recipient: Address? = null,
-            gasPrice: GasPrice? = null,
-            burnChi: Boolean = false,
-            complexityLevel: Int? = null,
-            connectorTokens: List<String>? = null,
-            allowPartialFill: Boolean = false,
-            gasLimit: Long? = null,
-            parts: Int? = null,
-            mainRouteParts: Int? = null
+        fromToken: Address,
+        toToken: Address,
+        amount: BigInteger,
+        slippagePercentage: Float,
+        protocols: List<String>? = null,
+        recipient: Address? = null,
+        gasPrice: GasPrice? = null,
+        burnChi: Boolean = false,
+        complexityLevel: Int? = null,
+        connectorTokens: List<String>? = null,
+        allowPartialFill: Boolean = false,
+        gasLimit: Long? = null,
+        parts: Int? = null,
+        mainRouteParts: Int? = null
     ): Single<Swap> {
         return service.getSwapAsync(fromToken, toToken, amount, evmKit.receiveAddress, slippagePercentage, protocols, recipient, gasPrice, burnChi, complexityLevel, connectorTokens, allowPartialFill, gasLimit, parts, mainRouteParts)
     }
@@ -70,8 +71,8 @@ class OneInchKit(
         }
 
         fun addDecorator(evmKit: EthereumKit) {
-            val decorator = OneInchTransactionDecorator(evmKit.receiveAddress, OneInchContractMethodFactories)
-            evmKit.addDecorator(decorator)
+            evmKit.addMethodDecorator(OneInchMethodDecorator(OneInchContractMethodFactories))
+            evmKit.addTransactionDecorator(OneInchTransactionDecorator(evmKit.receiveAddress))
         }
 
     }
@@ -79,20 +80,20 @@ class OneInchKit(
 }
 
 data class Token(
-        val symbol: String,
-        val name: String,
-        val decimals: Int,
-        val address: String,
-        val logoURI: String
+    val symbol: String,
+    val name: String,
+    val decimals: Int,
+    val address: String,
+    val logoURI: String
 )
 
 data class Quote(
-        val fromToken: Token,
-        val toToken: Token,
-        val fromTokenAmount: BigInteger,
-        val toTokenAmount: BigInteger,
-        @SerializedName("protocols") val route: List<Any>,
-        val estimatedGas: Long
+    val fromToken: Token,
+    val toToken: Token,
+    val fromTokenAmount: BigInteger,
+    val toTokenAmount: BigInteger,
+    @SerializedName("protocols") val route: List<Any>,
+    val estimatedGas: Long
 ) {
     override fun toString(): String {
         return "Quote {fromToken: ${fromToken.name}, toToken: ${toToken.name}, fromTokenAmount: $fromTokenAmount, toTokenAmount: $toTokenAmount}"
@@ -100,14 +101,14 @@ data class Quote(
 }
 
 data class SwapTransaction(
-        val from: Address,
-        val to: Address,
-        val data: ByteArray,
-        val value: BigInteger,
-        val gasPrice: Long?,
-        val maxFeePerGas: Long?,
-        val maxPriorityFeePerGas: Long?,
-        @SerializedName("gas") val gasLimit: Long
+    val from: Address,
+    val to: Address,
+    val data: ByteArray,
+    val value: BigInteger,
+    val gasPrice: Long?,
+    val maxFeePerGas: Long?,
+    val maxPriorityFeePerGas: Long?,
+    @SerializedName("gas") val gasLimit: Long
 ) {
     override fun toString(): String {
         return "SwapTransaction {\nfrom: ${from.hex}, \nto: ${to.hex}, \ndata: ${data.toHexString()}, \nvalue: $value, \ngasPrice: $gasPrice, \ngasLimit: $gasLimit\n}"
@@ -115,12 +116,12 @@ data class SwapTransaction(
 }
 
 data class Swap(
-        val fromToken: Token,
-        val toToken: Token,
-        val fromTokenAmount: BigInteger,
-        val toTokenAmount: BigInteger,
-        @SerializedName("protocols") val route: List<Any>,
-        @SerializedName("tx") val transaction: SwapTransaction
+    val fromToken: Token,
+    val toToken: Token,
+    val fromTokenAmount: BigInteger,
+    val toTokenAmount: BigInteger,
+    @SerializedName("protocols") val route: List<Any>,
+    @SerializedName("tx") val transaction: SwapTransaction
 ) {
     override fun toString(): String {
         return "Swap {\nfromToken: ${fromToken.name}, \ntoToken: ${toToken.name}, \nfromTokenAmount: $fromTokenAmount, \ntoTokenAmount: $toTokenAmount, \ntx: $transaction\n}"
@@ -128,10 +129,10 @@ data class Swap(
 }
 
 data class ApproveCallData(
-        val data: ByteArray,
-        val gasPrice: Long,
-        val to: Address,
-        val value: BigInteger
+    val data: ByteArray,
+    val gasPrice: Long,
+    val to: Address,
+    val value: BigInteger
 ) {
     override fun equals(other: Any?): Boolean {
         return when {

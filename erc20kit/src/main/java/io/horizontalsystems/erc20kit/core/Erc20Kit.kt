@@ -148,8 +148,9 @@ class Erc20Kit(
         }
 
         fun addDecorator(ethereumKit: EthereumKit) {
-            val decorator = Eip20TransactionDecorator(ethereumKit.receiveAddress, Eip20ContractMethodFactories, ethereumKit.eip20Storage)
-            ethereumKit.addDecorator(decorator)
+            ethereumKit.addMethodDecorator(Eip20MethodDecorator(Eip20ContractMethodFactories))
+            ethereumKit.addEventDecorator(Eip20EventDecorator(ethereumKit.receiveAddress, ethereumKit.eip20Storage))
+            ethereumKit.addTransactionDecorator(Eip20TransactionDecorator(ethereumKit.receiveAddress))
         }
 
         fun clear(context: Context, chain: Chain, walletId: String) {

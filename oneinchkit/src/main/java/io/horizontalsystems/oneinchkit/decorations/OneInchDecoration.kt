@@ -1,0 +1,31 @@
+package io.horizontalsystems.oneinchkit.decorations
+
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
+import java.math.BigInteger
+
+open class OneInchDecoration(
+    open val contractAddress: Address
+) : TransactionDecoration() {
+
+    sealed class Amount(val value: BigInteger) {
+        class Exact(value: BigInteger) : Amount(value)
+        class Extremum(value: BigInteger) : Amount(value)
+    }
+
+    sealed class Token {
+        object EvmCoin : Token()
+        class Eip20Coin(val address: Address) : Token()
+    }
+
+    override fun tags(): List<String> =
+        listOf(contractAddress.hex, "swap")
+
+    internal fun getTags(token: Token, type: String): List<String> =
+        when (token) {
+            is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
+            is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
+        }
+
+}

@@ -97,36 +97,22 @@ open class EthereumBaseAdapter(private val ethereumKit: EthereumKit) : IAdapter 
         val transaction = fullTransaction.transaction
         val mineAddress = ethereumKit.receiveAddress
 
-        val from = TransactionAddress(transaction.from?.hex, transaction.from == mineAddress)
-        val to = TransactionAddress(transaction.to?.hex, transaction.to == mineAddress)
         var amount: BigDecimal = 0.toBigDecimal()
 
         transaction.value?.toBigDecimal()?.let {
             amount = it.movePointLeft(decimal)
-            if (from.mine) {
-                amount = -amount
-            }
-        }
-
-        fullTransaction.internalTransactions.forEach { internalTransaction ->
-            var internalAmount = internalTransaction.value.toBigDecimal().movePointLeft(decimal)
-            internalAmount =
-                if (internalTransaction.from == receiveAddress) internalAmount.negate() else internalAmount
-            amount += internalAmount
         }
 
         return TransactionRecord(
             transactionHash = transaction.hash.toHexString(),
-            transactionIndex = transaction.transactionIndex ?: 0,
-            interTransactionIndex = 0,
-            blockHeight = transaction.blockNumber,
-            amount = amount,
             timestamp = transaction.timestamp,
-            from = from,
-            to = to,
             isError = fullTransaction.transaction.isFailed,
-            mainDecoration = fullTransaction.mainDecoration,
-            eventsDecorations = fullTransaction.eventDecorations
+            from = transaction.from,
+            to = transaction.to,
+            amount = amount,
+            blockHeight = transaction.blockNumber,
+            transactionIndex = transaction.transactionIndex ?: 0,
+            decoration = fullTransaction.decoration.toString()
         )
     }
 }

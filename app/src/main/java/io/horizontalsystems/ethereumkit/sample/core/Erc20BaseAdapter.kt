@@ -16,9 +16,9 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 open class Erc20BaseAdapter(
-        context: Context,
-        token: Erc20Token,
-        private val ethereumKit: EthereumKit
+    context: Context,
+    token: Erc20Token,
+    private val ethereumKit: EthereumKit
 ) : IAdapter {
 
     private val contractAddress: Address = token.contractAddress
@@ -71,9 +71,9 @@ open class Erc20BaseAdapter(
     }
 
     override fun estimatedGasLimit(
-            toAddress: Address,
-            value: BigDecimal,
-            gasPrice: GasPrice
+        toAddress: Address,
+        value: BigDecimal,
+        gasPrice: GasPrice
     ): Single<Long> {
         val valueBigInteger = value.movePointRight(decimals).toBigInteger()
         val transactionData = erc20Kit.buildTransferTransactionData(toAddress, valueBigInteger)
@@ -81,19 +81,19 @@ open class Erc20BaseAdapter(
     }
 
     override fun send(
-            address: Address,
-            amount: BigDecimal,
-            gasPrice: GasPrice,
-            gasLimit: Long
+        address: Address,
+        amount: BigDecimal,
+        gasPrice: GasPrice,
+        gasLimit: Long
     ): Single<FullTransaction> {
         throw Exception("Subclass must override")
     }
 
     override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
         return erc20Kit.getTransactionsAsync(fromHash, limit)
-                .map { transactions ->
-                    transactions.map { transactionRecord(it) }
-                }
+            .map { transactions ->
+                transactions.map { transactionRecord(it) }
+            }
     }
 
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {
@@ -102,32 +102,22 @@ open class Erc20BaseAdapter(
 
     private fun transactionRecord(fullTransaction: FullTransaction): TransactionRecord {
         val transaction = fullTransaction.transaction
-
-        val from = TransactionAddress(transaction.from?.hex, transaction.from == receiveAddress)
-        val to = TransactionAddress(transaction.to?.hex, transaction.to == receiveAddress)
-
         var amount: BigDecimal = 0.toBigDecimal()
 
         transaction.value?.toBigDecimal()?.let {
             amount = it.movePointLeft(decimals)
-            if (from.mine) {
-                amount = -amount
-            }
         }
 
         return TransactionRecord(
-                transactionHash = transaction.hash.toHexString(),
-                transactionIndex = fullTransaction.transaction.transactionIndex ?: 0,
-                interTransactionIndex = 0,
-                amount = amount,
-                timestamp = transaction.timestamp,
-                from = from,
-                to = to,
-                blockHeight = fullTransaction.transaction.blockNumber,
-                isError = fullTransaction.transaction.isFailed,
-                type = "",
-                mainDecoration = fullTransaction.mainDecoration,
-                eventsDecorations = fullTransaction.eventDecorations
+            transactionHash = transaction.hash.toHexString(),
+            timestamp = transaction.timestamp,
+            isError = fullTransaction.transaction.isFailed,
+            from = transaction.from,
+            to = transaction.to,
+            amount = amount,
+            blockHeight = fullTransaction.transaction.blockNumber,
+            transactionIndex = fullTransaction.transaction.transactionIndex ?: 0,
+            decoration = fullTransaction.decoration.toString()
         )
     }
 

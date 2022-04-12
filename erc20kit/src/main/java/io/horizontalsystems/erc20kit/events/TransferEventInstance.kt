@@ -1,15 +1,15 @@
-package io.horizontalsystems.erc20kit.decorations
+package io.horizontalsystems.erc20kit.events
 
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
-import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
+import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
-class TransferEventDecoration(
-        contractAddress: Address, val from: Address, val to: Address, val value: BigInteger,
-        val tokenName: String? = null, val tokenSymbol: String? = null, val tokenDecimal: Int? = null
-) : ContractEventDecoration(contractAddress) {
+class TransferEventInstance(
+    contractAddress: Address, val from: Address, val to: Address, val value: BigInteger,
+    val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int
+) : ContractEventInstance(contractAddress) {
 
     override fun tags(userAddress: Address): List<String> {
         val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)
@@ -29,12 +29,12 @@ class TransferEventDecoration(
 
     companion object {
         val signature = ContractEvent(
-                "Transfer",
-                listOf(
-                        ContractEvent.Argument.Address,
-                        ContractEvent.Argument.Address,
-                        ContractEvent.Argument.Uint256
-                )
+            "Transfer",
+            listOf(
+                ContractEvent.Argument.Address,
+                ContractEvent.Argument.Address,
+                ContractEvent.Argument.Uint256
+            )
         ).signature
     }
 }

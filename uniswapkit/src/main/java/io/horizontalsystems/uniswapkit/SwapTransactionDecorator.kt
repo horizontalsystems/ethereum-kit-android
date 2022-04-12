@@ -1,134 +1,157 @@
 package io.horizontalsystems.uniswapkit
 
-import io.horizontalsystems.erc20kit.core.getErc20EventDecoration
-import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
-import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
-import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.erc20kit.events.TransferEventInstance
+import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.uniswapkit.contract.*
-import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
-import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration.Token
-import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration.Trade
+import io.horizontalsystems.uniswapkit.decorations.SwapDecoration
 import java.math.BigInteger
 
-class SwapTransactionDecorator(
-        private val address: Address,
-        private val contractMethodFactories: SwapContractMethodFactories
-) : IDecorator {
+class SwapTransactionDecorator : ITransactionDecorator {
 
-    override fun decorate(transactionData: TransactionData): ContractMethodDecoration? =
-        getMethodDecoration(transactionData)
+    override fun decoration(from: Address?, to: Address?, value: BigInteger?, contractMethod: ContractMethod?, internalTransactions: List<InternalTransaction>, eventInstances: List<ContractEventInstance>): TransactionDecoration? {
+        if (from == null || to == null || value == null || contractMethod == null) return null
 
-    override fun decorate(fullTransaction: FullTransaction, fullRpcTransaction: FullRpcTransaction) {
-        decorateMain(fullTransaction, fullRpcTransaction.rpcReceipt.logs.mapNotNull { it.getErc20EventDecoration() })
-    }
-
-    override fun decorateTransactions(fullTransactions: Map<String, FullTransaction>) {
-        for (fullTransaction in fullTransactions.values) {
-            decorateMain(fullTransaction, fullTransaction.eventDecorations)
-        }
-    }
-
-    private fun decorateMain(fullTransaction: FullTransaction, eventDecorations: List<ContractEventDecoration>) {
-        if (fullTransaction.transaction.from != address) {
-            // We only parse transactions created by the user (owner of this wallet).
-            // If a swap was initiated by someone else and "recipient" is set to user's it should be shown as just an incoming transaction
-            return
-        }
-
-        val transactionData = fullTransaction.transactionData ?: return
-        val decoration = getMethodDecoration(transactionData, fullTransaction.internalTransactions, eventDecorations) ?: return
-
-        fullTransaction.mainDecoration = decoration
-    }
-
-    private fun getMethodDecoration(transactionData: TransactionData, internalTransactions: List<InternalTransaction>? = null, eventDecorations: List<ContractEventDecoration>? = null): ContractMethodDecoration? {
-        return when (val contractMethod = contractMethodFactories.createMethodFromInput(transactionData.input)) {
+        when (contractMethod) {
             is SwapETHForExactTokensMethod -> {
-                val amountIn: BigInteger? = null
+                val lastCoinInPath = contractMethod.path.lastOrNull() ?: return null
 
-                if (internalTransactions != null) {
+                val amountIn = if (internalTransactions.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(value)
+                } else {
                     val change = totalETHIncoming(contractMethod.to, internalTransactions)
-                    transactionData.value - change
+                    SwapDecoration.Amount.Exact(value - change)
                 }
 
-                val trade = Trade.ExactOut(contractMethod.amountOut, transactionData.value, amountIn)
-                val tokenIn = Token.EvmCoin
-                val tokenOut = Token.Eip20Coin(contractMethod.path.last())
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    amountIn,
+                    SwapDecoration.Amount.Exact(contractMethod.amountOut),
+                    SwapDecoration.Token.EvmCoin,
+                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+                )
             }
+
             is SwapExactETHForTokensMethod -> {
-                val amountOut: BigInteger? = null
+                val lastCoinInPath = contractMethod.path.lastOrNull() ?: return null
 
-                if (eventDecorations != null) {
-                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), eventDecorations, false)
+                val amountOut = if (eventInstances.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(contractMethod.amountOutMin)
+                } else {
+                    SwapDecoration.Amount.Exact(totalTokenAmount(contractMethod.to, lastCoinInPath, eventInstances, false))
                 }
 
-                val trade = Trade.ExactIn(transactionData.value, contractMethod.amountOutMin, amountOut)
-                val tokenIn = Token.EvmCoin
-                val tokenOut = Token.Eip20Coin(contractMethod.path.last())
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    SwapDecoration.Amount.Exact(value),
+                    amountOut,
+                    SwapDecoration.Token.EvmCoin,
+                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+                )
             }
+
             is SwapExactTokensForETHMethod -> {
-                val amountOut: BigInteger? = null
+                val firstCoinInPath = contractMethod.path.firstOrNull() ?: return null
 
-                if (internalTransactions != null) {
-                    totalETHIncoming(contractMethod.to, internalTransactions)
+                val amountOut = if (internalTransactions.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(contractMethod.amountOutMin)
+                } else {
+                    SwapDecoration.Amount.Exact(totalETHIncoming(contractMethod.to, internalTransactions))
                 }
 
-                val trade = Trade.ExactIn(contractMethod.amountIn, contractMethod.amountOutMin, amountOut)
-                val tokenIn = Token.Eip20Coin(contractMethod.path.first())
-                val tokenOut = Token.EvmCoin
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    SwapDecoration.Amount.Exact(contractMethod.amountIn),
+                    amountOut,
+                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    SwapDecoration.Token.EvmCoin,
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+                )
             }
+
             is SwapExactTokensForTokensMethod -> {
-                val amountOut: BigInteger? = null
+                val firstCoinInPath = contractMethod.path.firstOrNull() ?: return null
+                val lastCoinInPath = contractMethod.path.lastOrNull() ?: return null
 
-                if (eventDecorations != null) {
-                    totalTokenAmount(contractMethod.to, contractMethod.path.last(), eventDecorations, false)
+                val amountOut = if (eventInstances.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(contractMethod.amountOutMin)
+                } else {
+                    SwapDecoration.Amount.Exact(totalTokenAmount(contractMethod.to, lastCoinInPath, eventInstances, false))
                 }
 
-                val trade = Trade.ExactIn(contractMethod.amountIn, contractMethod.amountOutMin, amountOut)
-                val tokenIn = Token.Eip20Coin(contractMethod.path.first())
-                val tokenOut = Token.Eip20Coin(contractMethod.path.last())
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    SwapDecoration.Amount.Exact(contractMethod.amountIn),
+                    amountOut,
+                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+                )
             }
+
             is SwapTokensForExactETHMethod -> {
-                val amountIn: BigInteger? = null
+                val firstCoinInPath = contractMethod.path.firstOrNull() ?: return null
 
-                if (eventDecorations != null) {
-                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), eventDecorations, true)
+                val amountIn = if (eventInstances.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(contractMethod.amountInMax)
+                } else {
+                    SwapDecoration.Amount.Exact(totalTokenAmount(contractMethod.to, firstCoinInPath, eventInstances, true))
                 }
 
-                val trade = Trade.ExactOut(contractMethod.amountOut, contractMethod.amountInMax, amountIn)
-                val tokenIn = Token.Eip20Coin(contractMethod.path.first())
-                val tokenOut = Token.EvmCoin
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    amountIn,
+                    SwapDecoration.Amount.Exact(contractMethod.amountOut),
+                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    SwapDecoration.Token.EvmCoin,
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+                )
             }
+
             is SwapTokensForExactTokensMethod -> {
-                val amountIn: BigInteger? = null
+                val firstCoinInPath = contractMethod.path.firstOrNull() ?: return null
+                val lastCoinInPath = contractMethod.path.lastOrNull() ?: return null
 
-                if (eventDecorations != null) {
-                    totalTokenAmount(contractMethod.to, contractMethod.path.first(), eventDecorations, true)
+                val amountIn = if (eventInstances.isEmpty()) {
+                    SwapDecoration.Amount.Extremum(contractMethod.amountInMax)
+                } else {
+                    SwapDecoration.Amount.Exact(totalTokenAmount(contractMethod.to, firstCoinInPath, eventInstances, true))
                 }
 
-                val trade = Trade.ExactOut(contractMethod.amountOut, contractMethod.amountInMax, amountIn)
-                val tokenIn = Token.Eip20Coin(contractMethod.path.first())
-                val tokenOut = Token.Eip20Coin(contractMethod.path.last())
-                SwapMethodDecoration(trade, tokenIn, tokenOut, contractMethod.to, contractMethod.deadline)
+                return SwapDecoration(
+                    to,
+                    amountIn,
+                    SwapDecoration.Amount.Exact(contractMethod.amountOut),
+                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    if (contractMethod.to == from) null else contractMethod.to,
+                    contractMethod.deadline
+
+                )
             }
-            else -> null
+
+            else -> return null
         }
     }
 
-    private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, eventDecorations: List<ContractEventDecoration>, collectIncomingAmounts: Boolean): BigInteger {
+    private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, eventInstances: List<ContractEventInstance>, collectIncomingAmounts: Boolean): BigInteger {
         var amountIn: BigInteger = 0.toBigInteger()
         var amountOut: BigInteger = 0.toBigInteger()
 
-        eventDecorations.forEach { decoration ->
-            if (decoration.contractAddress == tokenAddress) {
-                (decoration as? TransferEventDecoration)?.let { transferEventDecoration ->
+        eventInstances.forEach { eventInstance ->
+            if (eventInstance.contractAddress == tokenAddress) {
+                (eventInstance as? TransferEventInstance)?.let { transferEventDecoration ->
                     if (transferEventDecoration.from == userAddress) {
                         amountIn += transferEventDecoration.value
                     }
