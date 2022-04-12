@@ -5,7 +5,9 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
+import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
@@ -91,10 +93,17 @@ interface ITransactionSyncer {
     fun getTransactionsSingle(lastTransactionBlockNumber: Long): Single<List<Transaction>>
 }
 
-interface IDecorator {
-    fun decorate(transactionData: TransactionData): ContractMethodDecoration?
-    fun decorate(fullTransaction: FullTransaction, fullRpcTransaction: FullRpcTransaction)
-    fun decorateTransactions(fullTransactions: Map<String, FullTransaction>)
+interface IMethodDecorator {
+    fun contractMethod(input: ByteArray): ContractMethod?
+}
+
+interface IEventDecorator {
+    fun contractEventInstancesMap(transactions: List<Transaction>): Map<String, List<ContractEventInstance>>
+    fun contractEventInstances(logs: List<TransactionLog>): List<ContractEventInstance>
+}
+
+interface ITransactionDecorator {
+    fun decoration(from: Address?, to: Address?, value: BigInteger?, contractMethod: ContractMethod?, internalTransactions: List<InternalTransaction>, eventInstances: List<ContractEventInstance>): TransactionDecoration?
 }
 
 interface ITransactionProvider {

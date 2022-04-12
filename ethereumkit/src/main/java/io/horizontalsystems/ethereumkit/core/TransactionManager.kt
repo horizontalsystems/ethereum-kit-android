@@ -12,7 +12,6 @@ import java.util.logging.Logger
 class TransactionManager(
     private val storage: ITransactionStorage,
     private val decorationManager: DecorationManager,
-    private val tagGenerator: TagGenerator
 ) {
     val lastTransaction: Transaction?
         get() = storage.getLastTransaction()
@@ -50,26 +49,28 @@ class TransactionManager(
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> =
         decorationManager.decorateTransactions(storage.getTransactions(hashes))
 
-    fun handle(transactions: List<Transaction>) {
-        if (transactions.isEmpty()) return
+    fun handle(transactions: List<Transaction>): List<FullTransaction> {
+        if (transactions.isEmpty()) return listOf()
 
         storage.save(transactions)
         val failedTransactions = failPendingTransactions()
-        val decoratedTransactions = decorationManager.decorateTransactions(transactions + failedTransactions)
+        val fullTransactions = decorationManager.decorateTransactions(transactions + failedTransactions)
 
         val transactionWithTags = mutableListOf<TransactionWithTags>()
         val allTags: MutableList<TransactionTag> = mutableListOf()
 
-        decoratedTransactions.forEach { transaction ->
-            val tags = tagGenerator.generate(transaction)
+        fullTransactions.forEach { fullTransaction ->
+            val tags = fullTransaction.decoration.tags().map { TransactionTag(it, fullTransaction.transaction.hash) }
             allTags.addAll(tags)
-            transactionWithTags.add(TransactionWithTags(transaction, tags.map { it.name }))
+            transactionWithTags.add(TransactionWithTags(fullTransaction, tags.map { it.name }))
         }
 
         storage.saveTags(allTags)
 
-        fullTransactionsSubject.onNext(decoratedTransactions)
+        fullTransactionsSubject.onNext(fullTransactions)
         fullTransactionsWithTagsSubject.onNext(transactionWithTags)
+
+        return fullTransactions
     }
 
     fun etherTransferTransactionData(address: Address, value: BigInteger): TransactionData {

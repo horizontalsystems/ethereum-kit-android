@@ -11,20 +11,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.horizontalsystems.erc20kit.decorations.ApproveEventDecoration
-import io.horizontalsystems.erc20kit.decorations.ApproveMethodDecoration
-import io.horizontalsystems.erc20kit.decorations.TransferEventDecoration
-import io.horizontalsystems.erc20kit.decorations.TransferMethodDecoration
-import io.horizontalsystems.ethereumkit.decorations.ContractEventDecoration
-import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
-import io.horizontalsystems.ethereumkit.decorations.RecognizedMethodDecoration
-import io.horizontalsystems.ethereumkit.decorations.UnknownMethodDecoration
-import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
-import io.horizontalsystems.oneinchkit.decorations.OneInchSwapMethodDecoration
-import io.horizontalsystems.oneinchkit.decorations.OneInchUnoswapMethodDecoration
-import io.horizontalsystems.uniswapkit.decorations.SwapMethodDecoration
 import kotlinx.android.synthetic.main.fragment_transactions.*
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -63,7 +51,7 @@ class TransactionsFragment : Fragment() {
             }
         })
 
-        viewModel.showTxTypeLiveData.observe(viewLifecycleOwner, { showTxType ->
+        viewModel.showTxTypeLiveData.observe(viewLifecycleOwner) { showTxType ->
             context?.let { ctx ->
                 when (showTxType) {
                     ShowTxType.Eth -> {
@@ -79,7 +67,7 @@ class TransactionsFragment : Fragment() {
                 }
             }
 
-        })
+        }
 
         ethFilter.setOnClickListener {
             viewModel.filterTransactions(true)
@@ -98,7 +86,7 @@ class TransactionsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun getItemCount() = items.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
-            ViewHolderTransaction(LayoutInflater.from(parent.context).inflate(R.layout.view_holder_transaction, parent, false))
+        ViewHolderTransaction(LayoutInflater.from(parent.context).inflate(R.layout.view_holder_transaction, parent, false))
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
@@ -123,100 +111,18 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
         - Tx Hash: ${tx.transactionHash}
         - Block Number: ${tx.blockHeight ?: "n/a"}
         - Tx Index: ${tx.transactionIndex}
-        - Inter Tx Index: ${tx.interTransactionIndex}
         - Time: ${format.format(Date(tx.timestamp * 1000))}
-        - From: ${tx.from.address}
-        - To: ${tx.to.address}
-        - Amount: ${readableAmount(tx.amount)} ETH
+        - From: ${tx.from ?: "n/a"}
+        - To: ${tx.to ?: "n/a"}
+        - Amount: ${tx.amount?.let { readableAmount(it) }} ETH
         - isError: ${tx.isError}
-        - Decoration: ${tx.mainDecoration?.let { stringify(it, tx) } ?: "n/a"}
-        - EventDecorations: ${stringify(tx.eventsDecorations, tx)}
+        - Decoration: ${tx.decoration}
         """
 
         if (lastBlockHeight > 0)
             value += "\n- Confirmations: ${tx.blockHeight?.let { lastBlockHeight - it + 1 } ?: 0}"
 
         summary.text = value.trimIndent()
-    }
-
-    private fun stringify(eventsDecorations: List<ContractEventDecoration>, transactionRecord: TransactionRecord): String {
-        return eventsDecorations.map { event ->
-            when (event) {
-                is TransferEventDecoration -> {
-                    val coin = Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == event.contractAddress.eip55 }?.name
-                            ?: event.tokenSymbol
-                            ?: "n/a"
-                    val fromAddress = event.from.eip55.take(6)
-                    val toAddress = event.to.eip55.take(6)
-                    return "${readableNumber(event.value, event.tokenDecimal ?: 18)} $coin ($fromAddress -> $toAddress)"
-                }
-                is ApproveEventDecoration -> {
-                    val coin = Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == event.contractAddress.eip55 }?.name
-                            ?: "n/a"
-                    val owner = event.owner.eip55.take(6)
-                    val spender = event.spender.eip55.take(6)
-                    return "${readableNumber(event.value)} $coin ($owner - approved -> $spender)"
-                }
-                else -> return "unknown event"
-            }
-        }.joinToString("\n")
-
-    }
-
-    private fun stringify(decoration: ContractMethodDecoration, transaction: TransactionRecord): String {
-        val coinName = Configuration.erc20Tokens.firstOrNull { it.contractAddress.hex == transaction.to.address }?.name ?: "n/a"
-        val fromAddress = transaction.from.address?.take(6)
-
-        return when (decoration) {
-            is SwapMethodDecoration -> {
-                "uniswap swap ${amountIn(decoration.trade)} ${stringify(decoration.tokenIn)} <-> ${amountOut(decoration.trade)} ${stringify(decoration.tokenOut)}"
-            }
-            is TransferMethodDecoration -> {
-                "Erc20 Transfer ${readableNumber(decoration.value)} $coinName $fromAddress -> ${decoration.to.eip55.take(6)}"
-            }
-            is ApproveMethodDecoration -> {
-                "Erc20 Approve ${readableNumber(decoration.value)} $coinName approved"
-            }
-            is OneInchSwapMethodDecoration -> {
-                "1inch swap ${decoration.fromAmount} ${decoration.fromToken} -> ${decoration.toAmount ?: decoration.toAmountMin} ${decoration.toToken}"
-            }
-            is OneInchUnoswapMethodDecoration -> {
-                "1inch unoswap ${decoration.fromAmount} ${decoration.fromToken} -> ${decoration.toAmount ?: decoration.toAmountMin} ${decoration.toToken}"
-            }
-            is RecognizedMethodDecoration -> {
-                "Recognized ${decoration.method} ${decoration.arguments.size} arguments"
-            }
-            is UnknownMethodDecoration -> {
-                "Unknown method ${decoration.method}"
-            }
-            else -> "contract call"
-        }
-    }
-
-    private fun stringify(token: SwapMethodDecoration.Token): String {
-        return when (token) {
-            is SwapMethodDecoration.Token.EvmCoin -> "ETH"
-            is SwapMethodDecoration.Token.Eip20Coin -> Configuration.erc20Tokens.firstOrNull { it.contractAddress.eip55 == token.address.eip55 }?.code
-                    ?: "n/a"
-        }
-    }
-
-    private fun amountIn(trade: SwapMethodDecoration.Trade): String {
-        val amount: BigInteger = when (trade) {
-            is SwapMethodDecoration.Trade.ExactIn -> trade.amountIn
-            is SwapMethodDecoration.Trade.ExactOut -> trade.amountIn ?: trade.amountInMax
-        }
-
-        return readableNumber(amount)
-    }
-
-    private fun amountOut(trade: SwapMethodDecoration.Trade): String {
-        val amount: BigInteger = when (trade) {
-            is SwapMethodDecoration.Trade.ExactIn -> trade.amountOut ?: trade.amountOutMin
-            is SwapMethodDecoration.Trade.ExactOut -> trade.amountOut
-        }
-
-        return readableNumber(amount)
     }
 
     private fun readableNumber(amount: BigInteger, tokenDecimal: Int = 18): String {
@@ -229,8 +135,8 @@ class ViewHolderTransaction(private val containerView: View) : RecyclerView.View
             return "0"
         }
         return value
-                .setScale(8, RoundingMode.HALF_EVEN)
-                .stripTrailingZeros()
-                .toPlainString()
+            .setScale(8, RoundingMode.HALF_EVEN)
+            .stripTrailingZeros()
+            .toPlainString()
     }
 }

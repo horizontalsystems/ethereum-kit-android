@@ -16,10 +16,9 @@ import io.horizontalsystems.ethereumkit.core.storage.Eip20Storage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
-import io.horizontalsystems.ethereumkit.decorations.ContractCallDecorator
-import io.horizontalsystems.ethereumkit.decorations.ContractMethodDecoration
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
-import io.horizontalsystems.ethereumkit.decorations.InternalTransactionsDecorator
+import io.horizontalsystems.ethereumkit.decorations.EthereumDecorator
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.*
 import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.EthereumTransactionSyncer
@@ -71,12 +70,12 @@ class EthereumKit(
         state.accountState = blockchain.accountState
 
         transactionManager.fullTransactionsAsync
-                .subscribeOn(Schedulers.io())
-                .subscribe {
-                    blockchain.syncAccountState()
-                }.let {
-                    disposables.add(it)
-                }
+            .subscribeOn(Schedulers.io())
+            .subscribe {
+                blockchain.syncAccountState()
+            }.let {
+                disposables.add(it)
+            }
     }
 
     val lastBlockHeight: Long?
@@ -208,15 +207,11 @@ class EthereumKit(
         logger.info("send rawTransaction: $rawTransaction")
 
         return blockchain.send(rawTransaction, signature)
-                    .doOnSuccess { transaction ->
-                        transactionManager.handle(listOf(transaction))
-                    }.map {
-                        FullTransaction(it)
-                    }
+            .map { transactionManager.handle(listOf(it)).first() }
     }
 
-    fun decorate(transactionData: TransactionData): ContractMethodDecoration? {
-        return decorationManager.decorateTransaction(transactionData)
+    fun decorate(transactionData: TransactionData): TransactionDecoration? {
+        return decorationManager.decorateTransaction(address, transactionData)
     }
 
     fun transferTransactionData(address: Address, value: BigInteger): TransactionData {
@@ -280,8 +275,16 @@ class EthereumKit(
         transactionSyncManager.add(transactionSyncer)
     }
 
-    fun addDecorator(decorator: IDecorator) {
-        decorationManager.addDecorator(decorator)
+    fun addMethodDecorator(decorator: IMethodDecorator) {
+        decorationManager.addMethodDecorator(decorator)
+    }
+
+    fun addEventDecorator(decorator: IEventDecorator) {
+        decorationManager.addEventDecorator(decorator)
+    }
+
+    fun addTransactionDecorator(decorator: ITransactionDecorator) {
+        decorationManager.addTransactionDecorator(decorator)
     }
 
     internal fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
@@ -329,18 +332,18 @@ class EthereumKit(
     companion object {
 
         private val gson = GsonBuilder()
-                .setLenient()
-                .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
-                .registerTypeAdapter(Long::class.java, LongTypeAdapter())
-                .registerTypeAdapter(object : TypeToken<Long?>() {}.type, LongTypeAdapter())
-                .registerTypeAdapter(Int::class.java, IntTypeAdapter())
-                .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
-                .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
-                .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
-                .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
-                .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
-                .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
-                .create()
+            .setLenient()
+            .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
+            .registerTypeAdapter(Long::class.java, LongTypeAdapter())
+            .registerTypeAdapter(object : TypeToken<Long?>() {}.type, LongTypeAdapter())
+            .registerTypeAdapter(Int::class.java, IntTypeAdapter())
+            .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
+            .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
+            .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
+            .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
+            .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
+            .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
+            .create()
 
         fun init() {
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
@@ -348,13 +351,13 @@ class EthereumKit(
         }
 
         fun getInstance(
-                application: Application,
-                words: List<String>,
-                passphrase: String = "",
-                chain: Chain,
-                rpcSource: RpcSource,
-                transactionSource: TransactionSource,
-                walletId: String
+            application: Application,
+            words: List<String>,
+            passphrase: String = "",
+            chain: Chain,
+            rpcSource: RpcSource,
+            transactionSource: TransactionSource,
+            walletId: String
         ): EthereumKit {
             val seed = Mnemonic().toSeed(words, passphrase)
             val privateKey = privateKey(seed, chain)
@@ -363,12 +366,12 @@ class EthereumKit(
         }
 
         fun getInstance(
-                application: Application,
-                address: Address,
-                chain: Chain,
-                rpcSource: RpcSource,
-                transactionSource: TransactionSource,
-                walletId: String
+            application: Application,
+            address: Address,
+            chain: Chain,
+            rpcSource: RpcSource,
+            transactionSource: TransactionSource,
+            walletId: String
         ): EthereumKit {
 
             val connectionManager = ConnectionManager(application)
@@ -405,31 +408,29 @@ class EthereumKit(
             val ethereumTransactionSyncer = EthereumTransactionSyncer(transactionProvider)
             val internalTransactionsSyncer = InternalTransactionSyncer(transactionProvider, transactionStorage)
 
-            val decorationManager = DecorationManager()
-            val tagGenerator = TagGenerator(address)
-            val transactionManager = TransactionManager(transactionStorage, decorationManager, tagGenerator)
+            val decorationManager = DecorationManager(address, transactionStorage)
+            val transactionManager = TransactionManager(transactionStorage, decorationManager)
             val transactionSyncManager = TransactionSyncManager(transactionManager)
 
             transactionSyncManager.add(internalTransactionsSyncer)
             transactionSyncManager.add(ethereumTransactionSyncer)
 
             val ethereumKit = EthereumKit(
-                    blockchain,
-                    transactionManager,
-                    transactionSyncManager,
-                    connectionManager,
-                    address,
-                    chain,
-                    walletId,
-                    transactionProvider,
-                    erc20Storage,
-                    decorationManager
+                blockchain,
+                transactionManager,
+                transactionSyncManager,
+                connectionManager,
+                address,
+                chain,
+                walletId,
+                transactionProvider,
+                erc20Storage,
+                decorationManager
             )
 
             blockchain.listener = ethereumKit
 
-            decorationManager.addDecorator(InternalTransactionsDecorator(transactionStorage))
-            decorationManager.addDecorator(ContractCallDecorator(address))
+            decorationManager.addTransactionDecorator(EthereumDecorator(address))
 
             return ethereumKit
         }

@@ -1,69 +1,129 @@
 package io.horizontalsystems.ethereumkit.decorations
 
-import io.horizontalsystems.ethereumkit.core.IDecorator
-import io.horizontalsystems.ethereumkit.models.FullRpcTransaction
-import io.horizontalsystems.ethereumkit.models.FullTransaction
-import io.horizontalsystems.ethereumkit.models.Transaction
-import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
+import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.EmptyMethod
+import io.horizontalsystems.ethereumkit.core.IEventDecorator
+import io.horizontalsystems.ethereumkit.core.IMethodDecorator
+import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
+import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.models.*
+import java.math.BigInteger
 
-class DecorationManager {
-    private val decorators = mutableListOf<IDecorator>()
+class DecorationManager(private val userAddress: Address, private val storage: ITransactionStorage) {
+    private val methodDecorators = mutableListOf<IMethodDecorator>()
+    private val eventDecorators = mutableListOf<IEventDecorator>()
+    private val transactionDecorators = mutableListOf<ITransactionDecorator>()
 
-    fun addDecorator(decorator: IDecorator) {
-        decorators.add(decorator)
+    fun addMethodDecorator(decorator: IMethodDecorator) {
+        methodDecorators.add(decorator)
     }
 
-    fun decorateTransaction(transactionData: TransactionData): ContractMethodDecoration? {
-        if (transactionData.input.isEmpty()) return null
+    fun addEventDecorator(decorator: IEventDecorator) {
+        eventDecorators.add(decorator)
+    }
 
-        for (decorator in decorators) {
-            decorator.decorate(transactionData)?.let {
-                return it
-            }
+    fun addTransactionDecorator(decorator: ITransactionDecorator) {
+        transactionDecorators.add(decorator)
+    }
+
+    fun decorateTransaction(from: Address, transactionData: TransactionData): TransactionDecoration? {
+        val contractMethod = contractMethod(transactionData.input) ?: return null
+
+        for (decorator in transactionDecorators) {
+            val decoration = decorator.decoration(from, transactionData.to, transactionData.value, contractMethod, listOf(), listOf())
+            if (decoration != null) return decoration
         }
 
         return null
     }
 
-    fun decorateFullRpcTransaction(fullRpcTransaction: FullRpcTransaction): FullTransaction {
-        val fullTransaction = FullTransaction(fullRpcTransaction.transaction)
-
-        for (decorator in decorators) {
-            decorator.decorate(fullTransaction, fullRpcTransaction)
-        }
-
-        decorateMain(fullTransaction)
-
-        return fullTransaction
-    }
-
-
     fun decorateTransactions(transactions: List<Transaction>): List<FullTransaction> {
-        val fullTransactions: MutableMap<String, FullTransaction> = mutableMapOf()
+        val internalTransactionsMap: MutableMap<String, List<InternalTransaction>> = getInternalTransactionsMap(transactions).toMutableMap()
+        val eventInstancesMap: MutableMap<String, List<ContractEventInstance>> = mutableMapOf()
 
-        for (transaction in transactions) {
-            fullTransactions[transaction.hashString] = FullTransaction(transaction)
+        for (decorator in eventDecorators) {
+            for ((hash, eventInstances) in decorator.contractEventInstancesMap(transactions)) {
+                eventInstancesMap[hash] = (eventInstancesMap[hash] ?: listOf()) + eventInstances
+            }
         }
 
-        for (decorator in decorators) {
-            decorator.decorateTransactions(fullTransactions)
-        }
+        return transactions.map { transaction ->
+            val decoration = decoration(
+                transaction.from,
+                transaction.to,
+                transaction.value,
+                contractMethod(transaction.input),
+                internalTransactionsMap[transaction.hashString] ?: listOf(),
+                eventInstancesMap[transaction.hashString] ?: listOf()
+            )
 
-        for (fullTransaction in fullTransactions.values) {
-            decorateMain(fullTransaction)
+            return@map FullTransaction(transaction, decoration)
         }
-
-        return fullTransactions.values.toList()
     }
 
-    private fun decorateMain(fullTransaction: FullTransaction) {
-        if (fullTransaction.mainDecoration != null) return
-        val transactionData = fullTransaction.transactionData ?: return
+    fun decorateRpcTransactions(fullRpcTransaction: FullRpcTransaction): FullTransaction {
+        val transaction = fullRpcTransaction.transaction
+        val decoration = decoration(
+            transaction.from,
+            transaction.to,
+            transaction.value,
+            contractMethod(transaction.input),
+            fullRpcTransaction.internalTransactions,
+            eventInstances(fullRpcTransaction.rpcReceipt.logs)
+        )
 
-        val methodId = transactionData.input.take(4).toByteArray()
-        val inputArguments = transactionData.input.takeLast(4).toByteArray()
+        return FullTransaction(transaction, decoration)
+    }
 
-        fullTransaction.mainDecoration = UnknownMethodDecoration(methodId, inputArguments)
+    private fun getInternalTransactionsMap(transactions: List<Transaction>): Map<String, List<InternalTransaction>> {
+        val internalTransactions: List<InternalTransaction> = if (transactions.size > 100) {
+            storage.getInternalTransactions()
+        } else {
+            val hashes = transactions.map { it.hash }
+            storage.getInternalTransactionsByHashes(hashes)
+        }
+
+        val map: MutableMap<String, List<InternalTransaction>> = mutableMapOf()
+
+        for (internalTransaction in internalTransactions) {
+            map[internalTransaction.hashString] = (map[internalTransaction.hashString] ?: mutableListOf()) + listOf(internalTransaction)
+        }
+
+        return map
+    }
+
+    private fun contractMethod(input: ByteArray?): ContractMethod? {
+        if (input == null) return null
+        if (input.isEmpty()) return EmptyMethod()
+
+        for (decorator in methodDecorators) {
+            val contractMethod = decorator.contractMethod(input)
+
+            if (contractMethod != null) return contractMethod
+        }
+
+        return null
+    }
+
+
+    private fun decoration(from: Address?, to: Address?, value: BigInteger?, contractMethod: ContractMethod? = null, internalTransactions: List<InternalTransaction> = listOf(), eventInstances: List<ContractEventInstance> = listOf()): TransactionDecoration {
+        for (decorator in transactionDecorators) {
+            val decoration = decorator.decoration(from, to, value, contractMethod, internalTransactions, eventInstances)
+            if (decoration != null) return decoration
+        }
+
+        return UnknownTransactionDecoration(userAddress, value, internalTransactions, eventInstances)
+    }
+
+    private fun eventInstances(logs: List<TransactionLog>): List<ContractEventInstance> {
+        val eventInstances: MutableList<ContractEventInstance> = mutableListOf()
+
+        for (decorator in eventDecorators) {
+            eventInstances.addAll(decorator.contractEventInstances(logs))
+        }
+
+        return eventInstances
     }
 
 }
