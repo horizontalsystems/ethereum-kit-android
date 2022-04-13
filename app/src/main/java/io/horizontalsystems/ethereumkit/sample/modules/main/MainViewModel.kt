@@ -83,9 +83,9 @@ class MainViewModel : ViewModel() {
         uniswapKit = UniswapKit.getInstance(ethereumKit)
 
         Erc20Kit.addTransactionSyncer(ethereumKit)
-        Erc20Kit.addDecorator(ethereumKit)
-        UniswapKit.addDecorator(ethereumKit)
-        OneInchKit.addDecorator(ethereumKit)
+        Erc20Kit.addDecorators(ethereumKit)
+        UniswapKit.addDecorators(ethereumKit)
+        OneInchKit.addDecorators(ethereumKit)
 
         updateBalance()
         updateErc20Balance()

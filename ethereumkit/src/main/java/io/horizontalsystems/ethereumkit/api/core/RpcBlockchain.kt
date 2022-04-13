@@ -12,7 +12,6 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
-import java.util.*
 
 class RpcBlockchain(
         private val address: Address,
@@ -123,15 +122,15 @@ class RpcBlockchain(
         return syncer.single(EstimateGasJsonRpc(address, to, amount, gasLimit, gasPrice, data))
     }
 
-    override fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>> {
+    override fun getTransactionReceipt(transactionHash: ByteArray): Single<RpcTransactionReceipt> {
         return syncer.single(GetTransactionReceiptJsonRpc(transactionHash))
     }
 
-    override fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>> {
+    override fun getTransaction(transactionHash: ByteArray): Single<RpcTransaction> {
         return syncer.single(GetTransactionByHashJsonRpc(transactionHash))
     }
 
-    override fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>> {
+    override fun getBlock(blockNumber: Long): Single<RpcBlock> {
         return syncer.single(GetBlockByNumberJsonRpc(blockNumber))
     }
 
@@ -156,7 +155,7 @@ class RpcBlockchain(
             logsByBlockNumber[log.blockNumber] = logs
         }
 
-        val requestSingles: MutableList<Single<Optional<RpcBlock>>> = mutableListOf()
+        val requestSingles: MutableList<Single<RpcBlock>> = mutableListOf()
 
         for ((blockNumber, _) in logsByBlockNumber) {
             requestSingles.add(syncer.single(GetBlockByNumberJsonRpc(blockNumber)))
@@ -165,8 +164,7 @@ class RpcBlockchain(
         return Single.merge(requestSingles).toList().map { blocks ->
             val resultLogs: MutableList<TransactionLog> = mutableListOf()
 
-            for (blockOptional in blocks) {
-                val block = blockOptional.orElse(null) ?: continue
+            for (block in blocks) {
                 val logsOfBlock = logsByBlockNumber[block.number] ?: continue
 
                 for (log in logsOfBlock) {

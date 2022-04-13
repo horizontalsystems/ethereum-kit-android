@@ -23,7 +23,7 @@ fun TransactionLog.getErc20EventInstance(): ContractEventInstance? {
 
         when {
             signature.contentEquals(TransferEventInstance.signature) ->
-                TransferEventInstance(address, firstParam, secondParam, BigInteger(data.toRawHexString(), 16), "", "", 18) // TODO: Here we should have token details from smart contract read
+                TransferEventInstance(address, firstParam, secondParam, BigInteger(data.toRawHexString(), 16), null)
             signature.contentEquals(ApproveEip20Decoration.signature) ->
                 ApproveEventInstance(address, firstParam, secondParam, BigInteger(data.toRawHexString(), 16))
             else ->

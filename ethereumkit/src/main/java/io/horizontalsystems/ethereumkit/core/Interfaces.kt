@@ -13,7 +13,6 @@ import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
 import java.math.BigInteger
-import java.util.*
 
 
 interface IApiStorage {
@@ -49,9 +48,9 @@ interface IBlockchain {
     fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction>
     fun getNonce(): Single<Long>
     fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long>
-    fun getTransactionReceipt(transactionHash: ByteArray): Single<Optional<RpcTransactionReceipt>>
-    fun getTransaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>>
-    fun getBlock(blockNumber: Long): Single<Optional<RpcBlock>>
+    fun getTransactionReceipt(transactionHash: ByteArray): Single<RpcTransactionReceipt>
+    fun getTransaction(transactionHash: ByteArray): Single<RpcTransaction>
+    fun getBlock(blockNumber: Long): Single<RpcBlock>
 
     fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>>
     fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
@@ -69,6 +68,7 @@ interface IBlockchainListener {
 interface ITransactionStorage {
     fun getLastTransaction(): Transaction?
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>
+    fun getTransaction(hash: ByteArray): Transaction?
     fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<Transaction>>
     fun save(transactions: List<Transaction>)
 

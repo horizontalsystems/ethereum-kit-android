@@ -62,15 +62,23 @@ class DecorationManager(private val userAddress: Address, private val storage: I
         }
     }
 
-    fun decorateRpcTransactions(fullRpcTransaction: FullRpcTransaction): FullTransaction {
-        val transaction = fullRpcTransaction.transaction
+    fun decorateFullRpcTransaction(fullRpcTransaction: FullRpcTransaction): FullTransaction {
+        val timestamp = if (fullRpcTransaction.rpcBlock != null) {
+            fullRpcTransaction.rpcBlock.timestamp
+        } else {
+            val transaction = storage.getTransaction(fullRpcTransaction.rpcTransaction.hash)
+            transaction?.timestamp ?: throw Exception("Transaction not in DB")
+        }
+
+        val transaction = fullRpcTransaction.transaction(timestamp)
+
         val decoration = decoration(
             transaction.from,
             transaction.to,
             transaction.value,
             contractMethod(transaction.input),
             fullRpcTransaction.internalTransactions,
-            eventInstances(fullRpcTransaction.rpcReceipt.logs)
+            fullRpcTransaction.rpcReceipt?.logs?.let { eventInstances(it) } ?: listOf()
         )
 
         return FullTransaction(transaction, decoration)

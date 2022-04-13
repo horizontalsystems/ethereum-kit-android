@@ -90,7 +90,7 @@ class UniswapKit(
             return UniswapKit(tradeManager, pairSelector, tokenFactory)
         }
 
-        fun addDecorator(ethereumKit: EthereumKit) {
+        fun addDecorators(ethereumKit: EthereumKit) {
             ethereumKit.addMethodDecorator(SwapMethodDecorator(SwapContractMethodFactories))
             ethereumKit.addTransactionDecorator(SwapTransactionDecorator())
         }

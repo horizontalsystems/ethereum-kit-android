@@ -12,6 +12,8 @@ import java.util.logging.Logger
 class TransactionManager(
     private val storage: ITransactionStorage,
     private val decorationManager: DecorationManager,
+    private val blockchain: IBlockchain,
+    private val provider: ITransactionProvider
 ) {
     val lastTransaction: Transaction?
         get() = storage.getLastTransaction()
@@ -75,6 +77,25 @@ class TransactionManager(
 
     fun etherTransferTransactionData(address: Address, value: BigInteger): TransactionData {
         return TransactionData(address, value, byteArrayOf())
+    }
+
+    fun getFullTransactionSingle(hash: ByteArray): Single<FullTransaction> {
+        val fullRpcTransactionSingle = blockchain.getTransaction(hash)
+            .flatMap { transaction ->
+                if (transaction.blockNumber != null) {
+                    return@flatMap Single.zip(
+                        blockchain.getTransactionReceipt(hash),
+                        blockchain.getBlock(transaction.blockNumber),
+                        provider.getInternalTransactionsAsync(hash)
+                    ) { receipt, block, internalTransactions ->
+                        FullRpcTransaction(transaction, receipt, block, internalTransactions.map { it.internalTransaction() }.toMutableList())
+                    }
+                } else {
+                    return@flatMap Single.just(FullRpcTransaction(transaction, null, null, mutableListOf()))
+                }
+            }
+
+        return fullRpcTransactionSingle.map { decorationManager.decorateFullRpcTransaction(it) }
     }
 
     private fun failPendingTransactions(): List<Transaction> {

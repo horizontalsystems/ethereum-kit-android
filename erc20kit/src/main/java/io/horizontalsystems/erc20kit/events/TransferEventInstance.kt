@@ -8,8 +8,10 @@ import java.math.BigInteger
 
 class TransferEventInstance(
     contractAddress: Address, val from: Address, val to: Address, val value: BigInteger,
-    val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int
+    val tokenInfo: TokenInfo?
 ) : ContractEventInstance(contractAddress) {
+
+    class TokenInfo(val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int)
 
     override fun tags(userAddress: Address): List<String> {
         val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)

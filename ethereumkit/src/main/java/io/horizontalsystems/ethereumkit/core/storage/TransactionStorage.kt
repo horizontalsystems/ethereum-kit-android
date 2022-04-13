@@ -17,6 +17,9 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
     override fun getTransactions(hashes: List<ByteArray>): List<Transaction> =
         transactionDao.getTransactions(hashes)
 
+    override fun getTransaction(hash: ByteArray): Transaction? =
+        transactionDao.getTransaction(hash)
+
     override fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<Transaction>> {
         val whereConditions = mutableListOf<String>()
 
