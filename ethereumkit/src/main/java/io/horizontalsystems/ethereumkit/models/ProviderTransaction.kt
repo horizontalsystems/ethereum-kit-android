@@ -51,4 +51,8 @@ data class ProviderInternalTransaction(
     val to: Address,
     val value: BigInteger,
     val traceId: String
-)
+) {
+
+    fun internalTransaction() = InternalTransaction(hash, from, to, value)
+
+}

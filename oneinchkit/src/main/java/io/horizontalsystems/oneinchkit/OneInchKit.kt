@@ -70,7 +70,7 @@ class OneInchKit(
             return OneInchKit(evmKit, service)
         }
 
-        fun addDecorator(evmKit: EthereumKit) {
+        fun addDecorators(evmKit: EthereumKit) {
             evmKit.addMethodDecorator(OneInchMethodDecorator(OneInchContractMethodFactories))
             evmKit.addTransactionDecorator(OneInchTransactionDecorator(evmKit.receiveAddress))
         }

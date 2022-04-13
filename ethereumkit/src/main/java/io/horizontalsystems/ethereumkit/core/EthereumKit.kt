@@ -152,6 +152,10 @@ class EthereumKit(
         return transactionManager.getFullTransactions(hashes)
     }
 
+    fun getFullTransactionSingle(hash: ByteArray): Single<FullTransaction> {
+        return transactionManager.getFullTransactionSingle(hash)
+    }
+
     fun estimateGas(to: Address?, value: BigInteger, gasPrice: GasPrice): Single<Long> {
         // without address - provide default gas limit
         if (to == null) {
@@ -409,7 +413,7 @@ class EthereumKit(
             val internalTransactionsSyncer = InternalTransactionSyncer(transactionProvider, transactionStorage)
 
             val decorationManager = DecorationManager(address, transactionStorage)
-            val transactionManager = TransactionManager(transactionStorage, decorationManager)
+            val transactionManager = TransactionManager(transactionStorage, decorationManager, blockchain, transactionProvider)
             val transactionSyncManager = TransactionSyncManager(transactionManager)
 
             transactionSyncManager.add(internalTransactionsSyncer)

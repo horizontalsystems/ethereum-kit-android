@@ -55,7 +55,7 @@ class AddressWatchViewModel : ViewModel() {
         val erc20Adapter = Erc20BaseAdapter(App.instance, Configuration.erc20Tokens.first(), evmKit)
 
         Erc20Kit.addTransactionSyncer(evmKit)
-        Erc20Kit.addDecorator(evmKit)
+        Erc20Kit.addDecorators(evmKit)
 
         evmAdapter.lastBlockHeightFlowable.subscribe {
             lastBlockHeight.postValue(evmKit.lastBlockHeight)

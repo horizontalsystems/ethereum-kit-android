@@ -24,7 +24,8 @@ class Eip20EventDecorator(
         val map: MutableMap<String, List<ContractEventInstance>> = mutableMapOf()
 
         for (event in erc20Events) {
-            val eventInstance = TransferEventInstance(event.contractAddress, event.from, event.to, event.value, event.tokenName, event.tokenSymbol, event.tokenDecimal)
+            val tokenInfo = TransferEventInstance.TokenInfo(event.tokenName, event.tokenSymbol, event.tokenDecimal)
+            val eventInstance = TransferEventInstance(event.contractAddress, event.from, event.to, event.value, tokenInfo)
 
             map[event.hashString] = (map[event.hashString] ?: listOf()) + listOf(eventInstance)
         }
