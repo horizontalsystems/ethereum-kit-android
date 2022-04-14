@@ -257,12 +257,10 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateLastBlockHeight() {
-        Log.v("LALALA BlockHeight", ethereumKit.lastBlockHeight.toString())
         lastBlockHeight.postValue(ethereumKit.lastBlockHeight)
     }
 
     private fun updateState() {
-        Log.v("LALALA State", ethereumAdapter.syncState.toString())
         syncState.postValue(ethereumAdapter.syncState)
     }
 
@@ -291,7 +289,6 @@ class MainViewModel : ViewModel() {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe { list: List<TransactionRecord> ->
-                Log.v("LALALA ETH", list.size.toString())
                 ethTxs = list
                 updateTransactionList()
             }.let {
@@ -304,7 +301,6 @@ class MainViewModel : ViewModel() {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe { list: List<TransactionRecord> ->
-                Log.v("LALALA ERC20", list.size.toString())
                 erc20Txs = list
                 updateTransactionList()
             }.let {

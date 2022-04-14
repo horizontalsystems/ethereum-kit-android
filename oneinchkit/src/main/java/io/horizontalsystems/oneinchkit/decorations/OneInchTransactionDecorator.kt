@@ -98,7 +98,7 @@ class OneInchTransactionDecorator(
             }
 
             is OneInchV4Method -> {
-                return OneInchDecoration(to)
+                return OneInchUnknownDecoration(to, address, value, internalTransactions, eventInstances)
             }
 
             else -> return null

@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.transactionsyncers
 
-import android.util.Log
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionManager
@@ -79,7 +78,6 @@ class TransactionSyncManager(
         )
 
     private fun handle(transactions: List<Transaction>) {
-        Log.v("LALALA Transactions count", transactions.size.toString())
         val map: MutableMap<String, Transaction> = mutableMapOf()
 
         for (transaction in transactions) {

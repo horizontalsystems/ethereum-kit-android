@@ -6,7 +6,12 @@ import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
-class UnknownTransactionDecoration(private val userAddress: Address, private val value: BigInteger?, val internalTransactions: List<InternalTransaction>, val eventInstances: List<ContractEventInstance>) : TransactionDecoration() {
+open class UnknownTransactionDecoration(
+    private val userAddress: Address,
+    private val value: BigInteger?,
+    open val internalTransactions: List<InternalTransaction>,
+    open val eventInstances: List<ContractEventInstance>
+) : TransactionDecoration() {
 
     override fun tags(): List<String> =
         (tagsFromInternalTransactions + tagsFromEventInstances).toSet().toList()
