@@ -1,6 +1,5 @@
 package io.horizontalsystems.ethereumkit.sample.core
 
-import android.util.Log
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
@@ -88,7 +87,6 @@ open class EthereumBaseAdapter(private val ethereumKit: EthereumKit) : IAdapter 
     override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
         return ethereumKit.getFullTransactionsAsync(listOf(), fromHash, limit)
             .map { transactions ->
-                Log.v("LALALA in app: transactions count: ", "${transactions.size}")
                 transactions.map { transactionRecord(it) }
             }
     }
