@@ -2,9 +2,11 @@ package io.horizontalsystems.ethereumkit.sample.core
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
+import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.oneinchkit.decorations.OneInchUnknownDecoration
 import io.reactivex.Flowable
 import io.reactivex.Single
 import java.math.BigDecimal
@@ -110,7 +112,20 @@ open class EthereumBaseAdapter(private val ethereumKit: EthereumKit) : IAdapter 
             amount = amount,
             blockHeight = transaction.blockNumber,
             transactionIndex = transaction.transactionIndex ?: 0,
-            decoration = fullTransaction.decoration.toString()
+            decoration = fullTransaction.decoration.describe()
         )
     }
 }
+
+fun TransactionDecoration.describe(): String =
+    when (this) {
+        is OneInchUnknownDecoration -> {
+            val _out = this.tokenAmountOut?.let { "${it.value} (${it.token.toString()})" } ?: "n/a"
+            val _in = this.tokenAmountIn?.let { "${it.value} (${it.token.toString()})" } ?: "n/a"
+
+            "OneInchUnknownDecoration($_out <-> $_in)"
+        }
+
+        else -> this.toString()
+    }
+

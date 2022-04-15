@@ -117,7 +117,7 @@ open class Erc20BaseAdapter(
             amount = amount,
             blockHeight = fullTransaction.transaction.blockNumber,
             transactionIndex = fullTransaction.transaction.transactionIndex ?: 0,
-            decoration = fullTransaction.decoration.toString()
+            decoration = fullTransaction.decoration.describe()
         )
     }
 
