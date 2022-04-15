@@ -2,6 +2,7 @@ package io.horizontalsystems.oneinchkit.decorations
 
 import io.horizontalsystems.ethereumkit.contracts.Bytes32Array
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class OneInchUnoswapDecoration(
@@ -16,12 +17,12 @@ class OneInchUnoswapDecoration(
     override fun tags(): List<String> {
         val tags = super.tags().toMutableList()
 
-        listOf(contractAddress.hex, "swap")
+        listOf(contractAddress.hex, TransactionTag.SWAP)
 
-        tags.addAll(getTags(tokenIn, "outgoing"))
+        tags.addAll(getTags(tokenIn, TransactionTag.OUTGOING))
 
         if (tokenOut != null) {
-            tags.addAll(getTags(tokenOut, "incoming"))
+            tags.addAll(getTags(tokenOut, TransactionTag.INCOMING))
         }
 
         return tags

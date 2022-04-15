@@ -30,13 +30,13 @@ class OneInchTransactionDecorator(
                 when (tokenOut) {
                     OneInchDecoration.Token.EvmCoin -> {
                         if (internalTransactions.isNotEmpty()) {
-                            amountOut = OneInchDecoration.Amount.Exact(totalETHIncoming(swapDescription.dstReceiver, internalTransactions))
+                            amountOut = OneInchDecoration.Amount.Exact(getTotalETHIncoming(swapDescription.dstReceiver, internalTransactions))
                         }
                     }
 
                     is OneInchDecoration.Token.Eip20Coin -> {
                         if (eventInstances.isNotEmpty()) {
-                            amountOut = OneInchDecoration.Amount.Exact(totalTokenIncoming(swapDescription.dstReceiver, swapDescription.dstToken, eventInstances))
+                            amountOut = OneInchDecoration.Amount.Exact(getTotalToken(swapDescription.dstReceiver, swapDescription.dstToken, eventInstances, true))
                         }
 
                     }
@@ -60,7 +60,7 @@ class OneInchTransactionDecorator(
                 var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(contractMethod.minReturn)
 
                 if (internalTransactions.isNotEmpty()) {
-                    val amount = totalETHIncoming(address, internalTransactions)
+                    val amount = getTotalETHIncoming(address, internalTransactions)
 
                     if (amount > BigInteger.ZERO) {
                         tokenOut = OneInchDecoration.Token.EvmCoin
@@ -69,21 +69,11 @@ class OneInchTransactionDecorator(
                 }
 
                 if (tokenOut == null && eventInstances.isNotEmpty()) {
-                    val incomingEip20EventInstance = eventInstances.firstOrNull { eventInstance ->
-                        if (eventInstance is TransferEventInstance) {
-                            return@firstOrNull eventInstance.to == address
-                        }
+                    val tokenAmountOut = getTokenAmount(eventInstances, true)
 
-                        return@firstOrNull false
-                    }
-
-                    if (incomingEip20EventInstance != null) {
-                        val amount = totalTokenIncoming(address, incomingEip20EventInstance.contractAddress, eventInstances)
-
-                        if (amount > BigInteger.ZERO) {
-                            tokenOut = OneInchDecoration.Token.Eip20Coin(incomingEip20EventInstance.contractAddress)
-                            amountOut = OneInchDecoration.Amount.Exact(amount)
-                        }
+                    if (tokenAmountOut != null) {
+                        tokenOut = tokenAmountOut.first
+                        amountOut = OneInchDecoration.Amount.Exact(tokenAmountOut.second)
                     }
                 }
 
@@ -98,21 +88,74 @@ class OneInchTransactionDecorator(
             }
 
             is OneInchV4Method -> {
-                return OneInchUnknownDecoration(to, address, value, internalTransactions, eventInstances)
+                val tokenAmountIn: OneInchUnknownDecoration.TokenAmount?
+                val tokenAmountOut: OneInchUnknownDecoration.TokenAmount?
+
+                val incomingEth = getTotalETHIncoming(address, internalTransactions)
+                val outgoingEth = value - incomingEth
+                val incomingTokenAmount = getTokenAmount(eventInstances, true)?.let { OneInchUnknownDecoration.TokenAmount(it.first, it.second) }
+                val outgoingTokenAmount = getTokenAmount(eventInstances, false)?.let { OneInchUnknownDecoration.TokenAmount(it.first, it.second) }
+
+                when {
+                    outgoingEth > BigInteger.ZERO -> {
+                        tokenAmountIn = OneInchUnknownDecoration.TokenAmount(OneInchDecoration.Token.EvmCoin, outgoingEth)
+                        tokenAmountOut = incomingTokenAmount
+                    }
+                    outgoingEth < BigInteger.ZERO -> {
+                        tokenAmountIn = outgoingTokenAmount
+                        tokenAmountOut = OneInchUnknownDecoration.TokenAmount(OneInchDecoration.Token.EvmCoin, outgoingEth)
+                    }
+                    else -> {
+                        tokenAmountIn = outgoingTokenAmount
+                        tokenAmountOut = incomingTokenAmount
+                    }
+                }
+
+                return OneInchUnknownDecoration(to, tokenAmountIn, tokenAmountOut)
             }
 
             else -> return null
         }
     }
 
-    private fun totalTokenIncoming(userAddress: Address, tokenAddress: Address, eventInstances: List<ContractEventInstance>): BigInteger {
+    private fun getTokenAmount(eventInstances: List<ContractEventInstance>, incoming: Boolean): Pair<OneInchDecoration.Token, BigInteger>? {
+        var resolvedToken: OneInchDecoration.Token? = null
+        var resolvedAmount: BigInteger? = null
+
+        val eip20EventInstance = eventInstances.firstOrNull { eventInstance ->
+            if (eventInstance is TransferEventInstance) {
+                return@firstOrNull if (incoming) eventInstance.to == address else eventInstance.from == address
+            }
+
+            return@firstOrNull false
+        }
+
+        if (eip20EventInstance != null) {
+            val amount = getTotalToken(address, eip20EventInstance.contractAddress, eventInstances, incoming)
+
+            if (amount > BigInteger.ZERO) {
+                resolvedToken = OneInchDecoration.Token.Eip20Coin(eip20EventInstance.contractAddress)
+                resolvedAmount = amount
+            }
+        }
+
+        return if (resolvedToken != null && resolvedAmount != null) {
+            Pair(resolvedToken, resolvedAmount)
+        } else {
+            null
+        }
+    }
+
+    private fun getTotalToken(userAddress: Address, tokenAddress: Address, eventInstances: List<ContractEventInstance>, incoming: Boolean): BigInteger {
         var amountOut = BigInteger.ZERO
 
         for (eventInstance in eventInstances) {
             if (eventInstance.contractAddress == tokenAddress) {
                 (eventInstance as? TransferEventInstance)?.let { transferEventDecoration ->
-                    if (transferEventDecoration.to == userAddress && transferEventDecoration.value > BigInteger.ZERO) {
-                        amountOut += transferEventDecoration.value
+                    if ((incoming && transferEventDecoration.to == userAddress) || (!incoming && transferEventDecoration.from == userAddress)) {
+                        if (transferEventDecoration.value > BigInteger.ZERO) {
+                            amountOut += transferEventDecoration.value
+                        }
                     }
                 }
             }
@@ -121,7 +164,7 @@ class OneInchTransactionDecorator(
         return amountOut
     }
 
-    private fun totalETHIncoming(userAddress: Address, internalTransactions: List<InternalTransaction>): BigInteger {
+    private fun getTotalETHIncoming(userAddress: Address, internalTransactions: List<InternalTransaction>): BigInteger {
         var amountOut = BigInteger.ZERO
 
         for (internalTransaction in internalTransactions) {
