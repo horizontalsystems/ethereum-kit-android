@@ -24,7 +24,7 @@ class OneInchTransactionDecorator(
         when (contractMethod) {
             is SwapMethod -> {
                 val swapDescription = contractMethod.swapDescription
-                val tokenOut = addressToToken(swapDescription.dstToken)
+                val tokenOut = addressToToken(swapDescription.dstToken, eventInstances)
                 var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(swapDescription.minReturnAmount)
 
                 when (tokenOut) {
@@ -44,7 +44,7 @@ class OneInchTransactionDecorator(
 
                 return OneInchSwapDecoration(
                     to,
-                    addressToToken(swapDescription.srcToken),
+                    addressToToken(swapDescription.srcToken, eventInstances),
                     tokenOut,
                     swapDescription.amount,
                     amountOut,
@@ -79,7 +79,7 @@ class OneInchTransactionDecorator(
 
                 return OneInchUnoswapDecoration(
                     to,
-                    addressToToken(contractMethod.srcToken),
+                    addressToToken(contractMethod.srcToken, eventInstances),
                     tokenOut,
                     contractMethod.amount,
                     amountOut,
@@ -118,6 +118,14 @@ class OneInchTransactionDecorator(
         }
     }
 
+    private fun findEip20Token(eventInstances: List<ContractEventInstance>, tokenAddress: Address): OneInchDecoration.Token {
+        val tokenInfo = eventInstances
+            .mapNotNull { it as TransferEventInstance }
+            .firstOrNull { it.contractAddress == tokenAddress }?.tokenInfo
+
+        return OneInchDecoration.Token.Eip20Coin(tokenAddress, tokenInfo)
+    }
+
     private fun getTokenAmount(eventInstances: List<ContractEventInstance>, incoming: Boolean): Pair<OneInchDecoration.Token, BigInteger>? {
         var resolvedToken: OneInchDecoration.Token? = null
         var resolvedAmount: BigInteger? = null
@@ -134,7 +142,7 @@ class OneInchTransactionDecorator(
             val amount = getTotalToken(address, eip20EventInstance.contractAddress, eventInstances, incoming)
 
             if (amount > BigInteger.ZERO) {
-                resolvedToken = OneInchDecoration.Token.Eip20Coin(eip20EventInstance.contractAddress)
+                resolvedToken = findEip20Token(eventInstances, eip20EventInstance.contractAddress)
                 resolvedAmount = amount
             }
         }
@@ -176,9 +184,9 @@ class OneInchTransactionDecorator(
         return amountOut
     }
 
-    private fun addressToToken(address: Address) = if (evmTokenAddresses.contains(address.eip55))
+    private fun addressToToken(address: Address, eventInstances: List<ContractEventInstance>) = if (evmTokenAddresses.contains(address.eip55))
         OneInchDecoration.Token.EvmCoin
     else
-        OneInchDecoration.Token.Eip20Coin(address)
+        findEip20Token(eventInstances, address)
 
 }

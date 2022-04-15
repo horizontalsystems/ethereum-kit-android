@@ -11,8 +11,6 @@ class TransferEventInstance(
     val tokenInfo: TokenInfo?
 ) : ContractEventInstance(contractAddress) {
 
-    class TokenInfo(val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int)
-
     override fun tags(userAddress: Address): List<String> {
         val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)
 
@@ -40,3 +38,6 @@ class TransferEventInstance(
         ).signature
     }
 }
+
+class TokenInfo(val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int)
+

@@ -1,6 +1,7 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.erc20kit.events.ApproveEventInstance
+import io.horizontalsystems.erc20kit.events.TokenInfo
 import io.horizontalsystems.erc20kit.events.TransferEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.core.IEip20Storage
@@ -24,7 +25,7 @@ class Eip20EventDecorator(
         val map: MutableMap<String, List<ContractEventInstance>> = mutableMapOf()
 
         for (event in erc20Events) {
-            val tokenInfo = TransferEventInstance.TokenInfo(event.tokenName, event.tokenSymbol, event.tokenDecimal)
+            val tokenInfo = TokenInfo(event.tokenName, event.tokenSymbol, event.tokenDecimal)
             val eventInstance = TransferEventInstance(event.contractAddress, event.from, event.to, event.value, tokenInfo)
 
             map[event.hashString] = (map[event.hashString] ?: listOf()) + listOf(eventInstance)

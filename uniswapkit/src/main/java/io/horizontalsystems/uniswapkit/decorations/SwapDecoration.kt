@@ -1,5 +1,6 @@
 package io.horizontalsystems.uniswapkit.decorations
 
+import io.horizontalsystems.erc20kit.events.TokenInfo
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionTag
@@ -22,7 +23,7 @@ class SwapDecoration(
 
     sealed class Token {
         object EvmCoin : Token()
-        class Eip20Coin(val address: Address) : Token()
+        class Eip20Coin(val address: Address, val tokenInfo: TokenInfo? = null) : Token()
     }
 
     override fun tags(): List<String> {

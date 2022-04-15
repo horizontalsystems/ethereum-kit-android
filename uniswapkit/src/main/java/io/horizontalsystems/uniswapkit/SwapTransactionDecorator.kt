@@ -32,7 +32,7 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     amountIn,
                     SwapDecoration.Amount.Exact(contractMethod.amountOut),
                     SwapDecoration.Token.EvmCoin,
-                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    findEip20Token(eventInstances, lastCoinInPath),
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
                 )
@@ -52,7 +52,7 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     SwapDecoration.Amount.Exact(value),
                     amountOut,
                     SwapDecoration.Token.EvmCoin,
-                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    findEip20Token(eventInstances, lastCoinInPath),
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
                 )
@@ -71,7 +71,7 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     to,
                     SwapDecoration.Amount.Exact(contractMethod.amountIn),
                     amountOut,
-                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    findEip20Token(eventInstances, firstCoinInPath),
                     SwapDecoration.Token.EvmCoin,
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
@@ -92,8 +92,8 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     to,
                     SwapDecoration.Amount.Exact(contractMethod.amountIn),
                     amountOut,
-                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
-                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    findEip20Token(eventInstances, firstCoinInPath),
+                    findEip20Token(eventInstances, lastCoinInPath),
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
                 )
@@ -112,7 +112,7 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     to,
                     amountIn,
                     SwapDecoration.Amount.Exact(contractMethod.amountOut),
-                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
+                    findEip20Token(eventInstances, firstCoinInPath),
                     SwapDecoration.Token.EvmCoin,
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
@@ -133,8 +133,8 @@ class SwapTransactionDecorator : ITransactionDecorator {
                     to,
                     amountIn,
                     SwapDecoration.Amount.Exact(contractMethod.amountOut),
-                    SwapDecoration.Token.Eip20Coin(firstCoinInPath),
-                    SwapDecoration.Token.Eip20Coin(lastCoinInPath),
+                    findEip20Token(eventInstances, firstCoinInPath),
+                    findEip20Token(eventInstances, lastCoinInPath),
                     if (contractMethod.to == from) null else contractMethod.to,
                     contractMethod.deadline
 
@@ -143,6 +143,14 @@ class SwapTransactionDecorator : ITransactionDecorator {
 
             else -> return null
         }
+    }
+
+    private fun findEip20Token(eventInstances: List<ContractEventInstance>, tokenAddress: Address): SwapDecoration.Token {
+        val tokenInfo = eventInstances
+            .mapNotNull { it as TransferEventInstance }
+            .firstOrNull { it.contractAddress == tokenAddress }?.tokenInfo
+
+        return SwapDecoration.Token.Eip20Coin(tokenAddress, tokenInfo)
     }
 
     private fun totalTokenAmount(userAddress: Address, tokenAddress: Address, eventInstances: List<ContractEventInstance>, collectIncomingAmounts: Boolean): BigInteger {
