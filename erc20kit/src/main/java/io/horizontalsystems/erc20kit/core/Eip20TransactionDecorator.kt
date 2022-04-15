@@ -4,6 +4,7 @@ import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.erc20kit.contract.TransferMethod
 import io.horizontalsystems.erc20kit.decorations.ApproveEip20Decoration
 import io.horizontalsystems.erc20kit.decorations.OutgoingEip20Decoration
+import io.horizontalsystems.erc20kit.events.TransferEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
@@ -11,7 +12,6 @@ import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import java.math.BigInteger
-
 
 class Eip20TransactionDecorator(
     private val userAddress: Address
@@ -25,7 +25,8 @@ class Eip20TransactionDecorator(
                 to,
                 contractMethod.to,
                 contractMethod.value,
-                contractMethod.to == userAddress
+                contractMethod.to == userAddress,
+                eventInstances.mapNotNull { it as TransferEventInstance }.firstOrNull { it.contractAddress == to }?.tokenInfo
             )
         }
 
