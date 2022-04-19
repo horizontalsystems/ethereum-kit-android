@@ -58,6 +58,7 @@ sealed class RpcSource() {
         fun binanceSmartChainHttp(): RpcSource {
             return RpcSource.Http(
                     listOf(
+                            URL("https://bscrpc.com"),
                             URL("https://bsc-dataseed.binance.org/"),
                             URL("https://bsc-dataseed1.defibit.io/"),
                             URL("https://bsc-dataseed1.ninicoin.io/"),
