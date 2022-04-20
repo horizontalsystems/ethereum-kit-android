@@ -17,6 +17,10 @@ class EthSigner(
         return sign(hashedMessage)
     }
 
+    fun signByteArrayLegacy(message: ByteArray): ByteArray {
+        return sign(message)
+    }
+
     fun signTypedData(rawJsonMessage: String): ByteArray {
         val encodedMessage = eip712Encoder.encodeTypedDataHash(rawJsonMessage)
         return sign(encodedMessage)

@@ -44,6 +44,10 @@ class Signer(
         return ethSigner.signByteArray(message)
     }
 
+    fun signByteArrayLegacy(message: ByteArray): ByteArray {
+        return ethSigner.signByteArrayLegacy(message)
+    }
+
     fun signTypedData(rawJsonMessage: String): ByteArray {
         return ethSigner.signTypedData(rawJsonMessage)
     }
