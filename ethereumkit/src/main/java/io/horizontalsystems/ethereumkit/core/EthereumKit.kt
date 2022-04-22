@@ -390,7 +390,7 @@ class EthereumKit(
                     webSocketRpcSyncer
                 }
                 is RpcSource.Http -> {
-                    val apiProvider = NodeApiProvider(rpcSource.urls, chain.blockTime, gson, rpcSource.auth)
+                    val apiProvider = NodeApiProvider(rpcSource.urls, chain.syncInterval, gson, rpcSource.auth)
                     ApiRpcSyncer(apiProvider, connectionManager)
                 }
             }
