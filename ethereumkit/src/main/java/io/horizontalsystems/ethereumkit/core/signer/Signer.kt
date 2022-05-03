@@ -94,7 +94,7 @@ class Signer(
             return hdWallet.privateKey(0, 0, true).privKey
         }
 
-        private fun ethereumAddress(privateKey: BigInteger): Address {
+        fun ethereumAddress(privateKey: BigInteger): Address {
             val publicKey =
                 CryptoUtils.ecKeyFromPrivate(privateKey).publicKeyPoint.getEncoded(false).drop(1)
                     .toByteArray()
