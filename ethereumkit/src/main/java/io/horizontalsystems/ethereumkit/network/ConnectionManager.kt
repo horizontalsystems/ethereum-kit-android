@@ -43,8 +43,6 @@ class ConnectionManager(context: Context) {
     }
 
     private fun setInitialValues() {
-        hasConnection = false
-        hasValidInternet = false
         isConnected = getInitialConnectionStatus()
         listener?.onConnectionChange()
     }
