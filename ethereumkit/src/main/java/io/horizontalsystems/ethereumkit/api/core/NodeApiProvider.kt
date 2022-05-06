@@ -17,17 +17,18 @@ import retrofit2.http.POST
 import retrofit2.http.Url
 import java.net.URI
 import java.net.URL
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 
 class NodeApiProvider(
-        private val urls: List<URL>,
-        override val blockTime: Long,
-        private val gson: Gson,
-        auth: String? = null
+    private val urls: List<URL>,
+    private val gson: Gson,
+    auth: String? = null
 ) : IRpcApiProvider {
 
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val service: InfuraService
+    private var currentRpcId = AtomicInteger(0)
 
     init {
         val loggingInterceptor = HttpLoggingInterceptor { message -> logger.info(message) }
@@ -58,26 +59,29 @@ class NodeApiProvider(
 
     override val source: String = urls.first().host
 
-    override fun <T> single(rpc: JsonRpc<T>): Single<T> =
-            Single.create { emitter ->
-                var error: Throwable = ApiProviderError.ApiUrlNotFound
+    override fun <T> single(rpc: JsonRpc<T>): Single<T> {
+        rpc.id = currentRpcId.addAndGet(1)
 
-                for (url in urls) {
-                    try {
-                        val rpcResponse = service.single(url.toURI(), gson.toJson(rpc)).blockingGet()
-                        val response  = rpc.parseResponse(rpcResponse, gson)
+        return Single.create { emitter ->
+            var error: Throwable = ApiProviderError.ApiUrlNotFound
 
-                        emitter.onSuccess(response)
-                        return@create
-                    } catch (throwable: Throwable) {
-                        error = throwable
-                        if (throwable is JsonRpc.ResponseError.RpcError) {
-                           break
-                        }
+            for (url in urls) {
+                try {
+                    val rpcResponse = service.single(url.toURI(), gson.toJson(rpc)).blockingGet()
+                    val response = rpc.parseResponse(rpcResponse, gson)
+
+                    emitter.onSuccess(response)
+                    return@create
+                } catch (throwable: Throwable) {
+                    error = throwable
+                    if (throwable is JsonRpc.ResponseError.RpcError) {
+                        break
                     }
                 }
-                emitter.onError(error)
             }
+            emitter.onError(error)
+        }
+    }
 
     private interface InfuraService {
         @POST

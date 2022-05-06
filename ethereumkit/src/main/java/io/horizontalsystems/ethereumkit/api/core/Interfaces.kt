@@ -46,7 +46,6 @@ sealed class WebSocketState {
 
 interface IRpcApiProvider {
     val source: String
-    val blockTime: Long
 
     fun <T> single(rpc: JsonRpc<T>): Single<T>
 }
