@@ -12,13 +12,27 @@ object ContractMethodHelper {
         return CryptoUtils.sha3(methodSignature.toByteArray()).copyOfRange(0, 4)
     }
 
+    fun unsignedBigIntergerToByteArray(bigInteger: BigInteger): ByteArray {
+        val integerBytes = bigInteger.toByteArray()
+        val unsignedIntegerBytes: ByteArray
+        if (integerBytes.size > 0 && integerBytes[0] == 0.toByte()) {
+            unsignedIntegerBytes = ByteArray(integerBytes.size - 1)
+            for (i in unsignedIntegerBytes.indices) {
+                unsignedIntegerBytes[i] = integerBytes[i + 1]
+            }
+        } else {
+            unsignedIntegerBytes = integerBytes
+        }
+        return unsignedIntegerBytes
+    }
+
     fun encodedABI(methodId: ByteArray, arguments: List<Any>): ByteArray {
         var data = methodId
         var arraysData = byteArrayOf()
         arguments.forEach { argument ->
             when (argument) {
                 is BigInteger -> {
-                    data += pad(argument.toByteArray())
+                    data += pad(unsignedBigIntergerToByteArray(argument))
                 }
                 is Address -> {
                     data += pad(argument.raw)
@@ -26,11 +40,11 @@ object ContractMethodHelper {
                 is List<*> -> {
                     val addresses = argument.filterIsInstance<Address>()
 
-                    data += pad(BigInteger.valueOf(arguments.size * 32L + arraysData.size).toByteArray())
+                    data += pad(unsignedBigIntergerToByteArray((BigInteger.valueOf(arguments.size * 32L + arraysData.size))))
                     arraysData += encode(addresses)
                 }
                 is ByteArray -> {
-                    data += pad(BigInteger.valueOf(arguments.size * 32L + arraysData.size).toByteArray())
+                    data += pad(unsignedBigIntergerToByteArray(BigInteger.valueOf(arguments.size * 32L + arraysData.size)))
                     arraysData += pad(BigInteger.valueOf(data.size.toLong()).toByteArray()) + data
                 }
             }
@@ -117,7 +131,7 @@ object ContractMethodHelper {
     }
 
     private fun encode(array: List<Address>): ByteArray {
-        var data = pad(BigInteger.valueOf(array.size.toLong()).toByteArray())
+        var data = pad(unsignedBigIntergerToByteArray(BigInteger.valueOf(array.size.toLong())))
         for (address in array) {
             data += pad(address.raw)
         }
