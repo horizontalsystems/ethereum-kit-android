@@ -8,16 +8,15 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.schedule
 
 class ApiRpcSyncer(
-        private val rpcApiProvider: IRpcApiProvider,
-        private val connectionManager: ConnectionManager
+    private val rpcApiProvider: IRpcApiProvider,
+    private val connectionManager: ConnectionManager,
+    private val syncInterval: Long,
 ) : IRpcSyncer {
     private val disposables = CompositeDisposable()
     private var isStarted = false
-    private var currentRpcId = AtomicInteger(0)
     private var timer: Timer? = null
 
     init {
@@ -53,10 +52,8 @@ class ApiRpcSyncer(
         stopTimer()
     }
 
-    override fun <T> single(rpc: JsonRpc<T>): Single<T> {
-        rpc.id = currentRpcId.addAndGet(1)
-        return rpcApiProvider.single(rpc)
-    }
+    override fun <T> single(rpc: JsonRpc<T>): Single<T> =
+        rpcApiProvider.single(rpc)
     //endregion
 
     private fun handleConnectionChange() {
@@ -73,7 +70,7 @@ class ApiRpcSyncer(
 
     private fun startTimer() {
         timer = Timer().apply {
-            schedule(0, rpcApiProvider.blockTime * 1000) {
+            schedule(0, syncInterval * 1000) {
                 onFireTimer()
             }
         }

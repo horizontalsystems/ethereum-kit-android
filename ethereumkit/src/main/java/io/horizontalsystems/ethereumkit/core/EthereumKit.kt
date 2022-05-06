@@ -335,7 +335,7 @@ class EthereumKit(
 
     companion object {
 
-        private val gson = GsonBuilder()
+        val gson = GsonBuilder()
             .setLenient()
             .registerTypeAdapter(BigInteger::class.java, BigIntegerTypeAdapter())
             .registerTypeAdapter(Long::class.java, LongTypeAdapter())
@@ -390,8 +390,8 @@ class EthereumKit(
                     webSocketRpcSyncer
                 }
                 is RpcSource.Http -> {
-                    val apiProvider = NodeApiProvider(rpcSource.urls, chain.syncInterval, gson, rpcSource.auth)
-                    ApiRpcSyncer(apiProvider, connectionManager)
+                    val apiProvider = NodeApiProvider(rpcSource.urls, gson, rpcSource.auth)
+                    ApiRpcSyncer(apiProvider, connectionManager, chain.syncInterval)
                 }
             }
 
