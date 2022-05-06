@@ -44,7 +44,6 @@ class ConnectionManager(context: Context) {
 
     private fun setInitialValues() {
         isConnected = getInitialConnectionStatus()
-        listener?.onConnectionChange()
     }
 
     private fun getInitialConnectionStatus(): Boolean {
