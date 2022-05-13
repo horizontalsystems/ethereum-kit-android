@@ -10,7 +10,7 @@ data class ProviderTransaction(
     var blockHash: ByteArray? = null,
     var transactionIndex: Int,
     val from: Address,
-    val to: Address,
+    val to: Address?,
     val value: BigInteger,
     val gasLimit: Long,
     val gasPrice: Long,

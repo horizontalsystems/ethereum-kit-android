@@ -24,7 +24,7 @@ class EtherscanTransactionProvider(
                             val blockHash = tx["blockHash"]?.hexStringToByteArray()
                             val transactionIndex = tx.getValue("transactionIndex").toInt()
                             val from = Address(tx.getValue("from"))
-                            val to = Address(tx.getValue("to"))
+                            val to = getAddressOrNull(tx["to"])
                             val value = tx.getValue("value").toBigInteger()
                             val gasLimit = tx.getValue("gas").toLong()
                             val gasPrice = tx.getValue("gasPrice").toLong()
@@ -121,5 +121,8 @@ class EtherscanTransactionProvider(
                     }
                 }
     }
+
+    private fun getAddressOrNull(addressString: String?): Address? =
+        if (!addressString.isNullOrEmpty()) Address(addressString) else null
 
 }
