@@ -15,35 +15,13 @@ class ConnectionManager(context: Context) {
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     var listener: Listener? = null
-    var isConnected = false
+    var isConnected = getInitialConnectionStatus()
     private var hasValidInternet = false
     private var hasConnection = false
     private var callback = ConnectionStatusCallback()
 
     init {
-        onEnterForeground()
-    }
-
-    fun onEnterForeground() {
-        setInitialValues()
-        try {
-            connectivityManager.unregisterNetworkCallback(callback)
-        } catch (e: Exception) {
-            //was not registered, or already unregistered
-        }
         connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
-    }
-
-    fun onEnterBackground() {
-        try {
-            connectivityManager.unregisterNetworkCallback(callback)
-        } catch (e: Exception) {
-            //already unregistered
-        }
-    }
-
-    private fun setInitialValues() {
-        isConnected = getInitialConnectionStatus()
     }
 
     private fun getInitialConnectionStatus(): Boolean {
@@ -91,6 +69,14 @@ class ConnectionManager(context: Context) {
         isConnected = hasConnection && hasValidInternet
         if (oldValue != isConnected) {
             listener?.onConnectionChange()
+        }
+    }
+
+    fun stop() {
+        try {
+            connectivityManager.unregisterNetworkCallback(callback)
+        } catch (e: Exception) {
+            //already unregistered
         }
     }
 }

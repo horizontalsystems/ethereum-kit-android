@@ -2,8 +2,6 @@ package io.horizontalsystems.ethereumkit.core
 
 import android.app.Application
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.core.*
@@ -123,22 +121,12 @@ class EthereumKit(
         started = false
         blockchain.stop()
         state.clear()
+        connectionManager.stop()
     }
 
     fun refresh() {
         blockchain.refresh()
         transactionSyncManager.sync()
-    }
-
-    fun onEnterForeground() {
-        connectionManager.onEnterForeground()
-        Handler(Looper.getMainLooper()).postDelayed({
-            blockchain.refresh()
-        }, 1000)
-    }
-
-    fun onEnterBackground() {
-        connectionManager.onEnterBackground()
     }
 
     fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
