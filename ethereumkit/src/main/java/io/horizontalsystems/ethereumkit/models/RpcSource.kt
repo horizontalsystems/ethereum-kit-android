@@ -55,10 +55,13 @@ sealed class RpcSource() {
             return infuraWebSocket("goerli", projectId, projectSecret)
         }
 
+        fun bscRpcHttp(): Http {
+            return Http(listOf(URL("https://bscrpc.com")), null)
+        }
+
         fun binanceSmartChainHttp(): Http {
             return Http(
                     listOf(
-                            URL("https://bscrpc.com"),
                             URL("https://bsc-dataseed.binance.org/"),
                             URL("https://bsc-dataseed1.defibit.io/"),
                             URL("https://bsc-dataseed1.ninicoin.io/"),
