@@ -10,6 +10,7 @@ import java.util.*
 @Entity
 data class InternalTransaction(
         val hash: ByteArray,
+        val blockNumber: Long,
         val from: Address,
         val to: Address,
         val value: BigInteger,

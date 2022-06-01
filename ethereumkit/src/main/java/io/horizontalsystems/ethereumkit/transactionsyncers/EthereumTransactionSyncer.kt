@@ -2,14 +2,27 @@ package io.horizontalsystems.ethereumkit.transactionsyncers
 
 import io.horizontalsystems.ethereumkit.core.ITransactionProvider
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
+import io.horizontalsystems.ethereumkit.core.storage.TransactionSyncerStateStorage
+import io.horizontalsystems.ethereumkit.models.ProviderTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
+import io.reactivex.Single
 
 class EthereumTransactionSyncer(
-        private val transactionProvider: ITransactionProvider
+        private val transactionProvider: ITransactionProvider,
+        private val storage: TransactionSyncerStateStorage
 ): ITransactionSyncer {
 
-    override fun getTransactionsSingle(lastTransactionBlockNumber: Long) =
-        transactionProvider.getTransactions(lastTransactionBlockNumber + 1).map { providerTransactions ->
+    companion object {
+        const val SyncerId = "ethereum-transaction-syncer"
+    }
+
+    override fun getTransactionsSingle(): Single<List<Transaction>> {
+        val lastTransactionBlockNumber = storage.get(SyncerId)?.lastBlockNumber ?: 0
+
+        return transactionProvider.getTransactions(lastTransactionBlockNumber + 1)
+            .doOnSuccess { providerTransactions -> handle(providerTransactions) }
+            .map { providerTransactions ->
             providerTransactions.map { transaction ->
                 val isFailed = when {
                     transaction.txReceiptStatus != null -> {
@@ -42,5 +55,13 @@ class EthereumTransactionSyncer(
                 )
             }
         }
+    }
+
+    private fun handle(transactions: List<ProviderTransaction>) {
+        val maxBlockNumber = transactions.maxOfOrNull { it.blockNumber } ?: return
+        val syncerState = TransactionSyncerState(SyncerId, maxBlockNumber)
+
+        storage.save(syncerState)
+    }
 
 }

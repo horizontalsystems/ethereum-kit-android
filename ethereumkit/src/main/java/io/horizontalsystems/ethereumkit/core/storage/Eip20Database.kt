@@ -9,7 +9,7 @@ import io.horizontalsystems.ethereumkit.models.Eip20Event
     entities = [
         Eip20Event::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, Eip20Database.TypeConverters::class)

@@ -8,6 +8,9 @@ import io.horizontalsystems.ethereumkit.models.Eip20Event
 @Dao
 interface Eip20EventDao {
 
+    @Query("SELECT * FROM Eip20Event ORDER BY blockNumber DESC LIMIT 1")
+    fun getLastEip20Event(): Eip20Event?
+
     @Insert
     fun insertEip20Events(events: List<Eip20Event>)
 

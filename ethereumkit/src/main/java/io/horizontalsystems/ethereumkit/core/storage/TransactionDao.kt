@@ -12,8 +12,8 @@ interface TransactionDao {
     @Query("SELECT * FROM `Transaction` WHERE hash=:hash")
     fun getTransaction(hash: ByteArray): Transaction?
 
-    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NOT NULL ORDER BY blockNumber DESC LIMIT 1")
-    fun getLastTransaction() : Transaction?
+    @Query("SELECT * FROM `InternalTransaction` ORDER BY blockNumber DESC LIMIT 1")
+    fun getLastInternalTransaction() : InternalTransaction?
 
     @Query("SELECT * FROM `Transaction` WHERE hash IN (:hashes)")
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>

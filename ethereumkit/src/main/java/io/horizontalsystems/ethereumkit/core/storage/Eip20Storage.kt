@@ -6,6 +6,9 @@ import io.horizontalsystems.ethereumkit.models.Eip20Event
 class Eip20Storage(database: Eip20Database) : IEip20Storage {
     private val erc20EventDao = database.eip20EventDao()
 
+    override fun getLastEvent(): Eip20Event? =
+        erc20EventDao.getLastEip20Event()
+
     override fun save(events: List<Eip20Event>) {
         erc20EventDao.insertEip20Events(events)
     }

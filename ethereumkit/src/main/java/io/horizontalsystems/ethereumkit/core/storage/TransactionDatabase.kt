@@ -5,15 +5,17 @@ import androidx.room.*
 import io.horizontalsystems.ethereumkit.api.storage.RoomTypeConverters
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
 import io.horizontalsystems.ethereumkit.models.TransactionTag
 
 @Database(
         entities = [
             Transaction::class,
             InternalTransaction::class,
-            TransactionTag::class
+            TransactionTag::class,
+            TransactionSyncerState::class
         ],
-        version = 11,
+        version = 12,
         exportSchema = false
 )
 @TypeConverters(RoomTypeConverters::class, TransactionDatabase.TypeConverters::class)
@@ -21,6 +23,7 @@ abstract class TransactionDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
     abstract fun transactionTagDao(): TransactionTagDao
+    abstract fun transactionSyncerStateDao(): TransactionSyncerStateDao
 
     companion object {
 

@@ -40,7 +40,9 @@ class TransactionSyncManager(
 
         syncState = EthereumKit.SyncState.Syncing()
 
-        Single.zip(syncers.map { it.getTransactionsSingle(transactionManager.lastTransaction?.blockNumber ?: 0) }) { array ->
+        Single.zip(syncers.map {
+            it.getTransactionsSingle().onErrorReturnItem(listOf())
+        }) { array ->
             array
                 .map { it as List<Transaction> }
                 .reduce { acc, list -> acc + list }
