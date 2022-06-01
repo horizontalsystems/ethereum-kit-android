@@ -9,6 +9,7 @@ import java.math.BigInteger
 @Entity
 class Eip20Event(
     val hash: ByteArray,
+    val blockNumber: Long,
     val contractAddress: Address,
     val from: Address,
     val to: Address,

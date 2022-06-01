@@ -7,7 +7,6 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
-import java.util.logging.Logger
 
 class TransactionManager(
     private val storage: ITransactionStorage,
@@ -15,10 +14,7 @@ class TransactionManager(
     private val blockchain: IBlockchain,
     private val provider: ITransactionProvider
 ) {
-    val lastTransaction: Transaction?
-        get() = storage.getLastTransaction()
 
-    private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val fullTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
     private val fullTransactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
 

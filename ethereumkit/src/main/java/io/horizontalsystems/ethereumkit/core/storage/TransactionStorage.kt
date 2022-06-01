@@ -11,9 +11,6 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
     private val transactionDao = database.transactionDao()
     private val tagsDao = database.transactionTagDao()
 
-    override fun getLastTransaction(): Transaction? =
-        transactionDao.getLastTransaction()
-
     override fun getTransactions(hashes: List<ByteArray>): List<Transaction> =
         transactionDao.getTransactions(hashes)
 
@@ -123,6 +120,9 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
 
     override fun getNonPendingTransactionsByNonces(pendingTransactionNonces: List<Long>): List<Transaction> =
         transactionDao.getNonPendingByNonces(pendingTransactionNonces)
+
+    override fun getLastInternalTransaction(): InternalTransaction? =
+        transactionDao.getLastInternalTransaction()
 
     override fun getInternalTransactions(): List<InternalTransaction> =
         transactionDao.getInternalTransactions()

@@ -66,7 +66,6 @@ interface IBlockchainListener {
 }
 
 interface ITransactionStorage {
-    fun getLastTransaction(): Transaction?
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>
     fun getTransaction(hash: ByteArray): Transaction?
     fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<Transaction>>
@@ -76,6 +75,7 @@ interface ITransactionStorage {
     fun getPendingTransactions(tags: List<List<String>>): List<Transaction>
     fun getNonPendingTransactionsByNonces(pendingTransactionNonces: List<Long>): List<Transaction>
 
+    fun getLastInternalTransaction(): InternalTransaction?
     fun getInternalTransactions(): List<InternalTransaction>
     fun getInternalTransactionsByHashes(hashes: List<ByteArray>): List<InternalTransaction>
     fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
@@ -84,13 +84,14 @@ interface ITransactionStorage {
 }
 
 interface IEip20Storage {
+    fun getLastEvent(): Eip20Event?
     fun save(events: List<Eip20Event>)
     fun getEvents(): List<Eip20Event>
     fun getEventsByHashes(hashes: List<ByteArray>): List<Eip20Event>
 }
 
 interface ITransactionSyncer {
-    fun getTransactionsSingle(lastTransactionBlockNumber: Long): Single<List<Transaction>>
+    fun getTransactionsSingle(): Single<List<Transaction>>
 }
 
 interface IMethodDecorator {
