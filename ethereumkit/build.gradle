@@ -56,7 +56,7 @@ dependencies {
 
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.65'
 
-    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:7a559bd'
+    implementation 'com.github.horizontalsystems:hd-wallet-kit-android:1642a09'
 
     implementation 'io.reactivex.rxjava2:rxjava:2.2.19'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
