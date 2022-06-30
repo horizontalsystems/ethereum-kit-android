@@ -67,6 +67,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun snowtrace(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "snowtrace.io",
+                SourceType.Etherscan("https://api.snowtrace.io", "https://snowtrace.io", apiKey)
+            )
+        }
+
     }
 
 }
