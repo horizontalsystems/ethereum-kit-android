@@ -96,5 +96,9 @@ sealed class RpcSource() {
             return Http(listOf(URL("https://arb1.arbitrum.io/rpc")), null)
         }
 
+        fun avaxNetworkHttp(): Http {
+            return Http(listOf(URL("https://api.avax.network/ext/bc/C/rpc")), null)
+        }
+
     }
 }

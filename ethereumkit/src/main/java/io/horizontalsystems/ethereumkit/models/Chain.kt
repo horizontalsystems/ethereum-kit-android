@@ -13,6 +13,7 @@ sealed class Chain(
     object Polygon: Chain(137, 60, 15, true)
     object Optimism: Chain(10, 60, 15, false)
     object ArbitrumOne: Chain(42161, 60, 15, false)
+    object Avalanche: Chain(43114, 60, 15, true)
     object EthereumRopsten: Chain(3, 1, 15, true)
     object EthereumKovan: Chain(42, 1, 15, true)
     object EthereumRinkeby: Chain(4, 1, 15, true)
