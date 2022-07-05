@@ -7,6 +7,8 @@ import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 open class UnknownTransactionDecoration(
+    private val fromAddress: Address?,
+    private val toAddress: Address?,
     private val userAddress: Address,
     private val value: BigInteger?,
     open val internalTransactions: List<InternalTransaction>,
@@ -18,19 +20,31 @@ open class UnknownTransactionDecoration(
 
     private val tagsFromInternalTransactions: List<String>
         get() {
-            val incomingInternalTransactions = internalTransactions.filter { it.to == userAddress }
-            if (incomingInternalTransactions.isEmpty()) return listOf()
-
-            var totalAmount: BigInteger = BigInteger.ZERO
-
-            for (internalTx in incomingInternalTransactions) {
-                totalAmount += internalTx.value
+            var outgoingValue = if (fromAddress == userAddress) value ?: BigInteger.ZERO else BigInteger.ZERO
+            for (internalTx in internalTransactions.filter { it.from == userAddress }) {
+                outgoingValue += internalTx.value
             }
 
-            if (totalAmount > (value ?: BigInteger.ZERO))
-                return listOf(TransactionTag.EVM_COIN_OUTGOING, TransactionTag.EVM_COIN, TransactionTag.OUTGOING)
+            var incomingValue = if (toAddress == userAddress) value ?: BigInteger.ZERO else BigInteger.ZERO
+            for (internalTx in internalTransactions.filter { it.to == userAddress }) {
+                incomingValue += internalTx.value
+            }
 
-            return listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.EVM_COIN, TransactionTag.INCOMING)
+            if (incomingValue == BigInteger.ZERO && outgoingValue == BigInteger.ZERO) return listOf()
+
+            val tags = mutableListOf(TransactionTag.EVM_COIN)
+
+            if (incomingValue > outgoingValue) {
+                tags.add(TransactionTag.EVM_COIN_INCOMING)
+                tags.add(TransactionTag.INCOMING)
+            }
+
+            if (outgoingValue > incomingValue) {
+                tags.add(TransactionTag.EVM_COIN_OUTGOING)
+                tags.add(TransactionTag.OUTGOING)
+            }
+
+            return tags
         }
 
     private val tagsFromEventInstances: List<String>

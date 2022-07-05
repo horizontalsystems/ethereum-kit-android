@@ -121,7 +121,7 @@ class DecorationManager(private val userAddress: Address, private val storage: I
             if (decoration != null) return decoration
         }
 
-        return UnknownTransactionDecoration(userAddress, value, internalTransactions, eventInstances)
+        return UnknownTransactionDecoration(from, to, userAddress, value, internalTransactions, eventInstances)
     }
 
     private fun eventInstances(logs: List<TransactionLog>): List<ContractEventInstance> {
