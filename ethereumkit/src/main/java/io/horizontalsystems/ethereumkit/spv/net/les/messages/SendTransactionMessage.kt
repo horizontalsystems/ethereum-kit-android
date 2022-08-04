@@ -20,7 +20,7 @@ class SendTransactionMessage(val requestID: Long, val rawTransaction: RawTransac
                                 RLP.encodeElement(rawTransaction.to.raw),
                                 RLP.encodeBigInteger(rawTransaction.value),
                                 RLP.encodeElement(rawTransaction.data),
-                                RLP.encodeByte(signature.v),
+                                RLP.encodeInt(signature.v),
                                 RLP.encodeElement(signature.r),
                                 RLP.encodeElement(signature.s)
                         )

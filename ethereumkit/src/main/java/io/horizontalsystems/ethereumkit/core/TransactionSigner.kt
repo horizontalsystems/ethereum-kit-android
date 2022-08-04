@@ -27,7 +27,7 @@ class TransactionSigner(
 
     private fun signatureLegacy(signatureData: ByteArray): Signature {
         return Signature(
-                v = (signatureData[64] + if (chainId == 0) 27 else (35 + 2 * chainId)).toByte(),
+                v = signatureData[64] + if (chainId == 0) 27 else (35 + 2 * chainId),
                 r = signatureData.copyOfRange(0, 32),
                 s = signatureData.copyOfRange(32, 64)
         )
@@ -35,7 +35,7 @@ class TransactionSigner(
 
     private fun signatureEip1559(signatureData: ByteArray): Signature {
         return Signature(
-                v = signatureData[64],
+                v = signatureData[64].toInt(),
                 r = signatureData.copyOfRange(0, 32),
                 s = signatureData.copyOfRange(32, 64)
         )
@@ -49,7 +49,7 @@ class TransactionSigner(
                 RLP.encodeElement(rawTransaction.to.raw),
                 RLP.encodeBigInteger(rawTransaction.value),
                 RLP.encodeElement(rawTransaction.data),
-                RLP.encodeByte(chainId.toByte()),
+                RLP.encodeInt(chainId),
                 RLP.encodeElement(ByteArray(0)),
                 RLP.encodeElement(ByteArray(0)))
 

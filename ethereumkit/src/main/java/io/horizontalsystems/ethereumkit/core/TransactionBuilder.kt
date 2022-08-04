@@ -44,7 +44,7 @@ class TransactionBuilder(
         fun encode(rawTransaction: RawTransaction, signature: Signature?, chainId: Int = 1): ByteArray {
             val signatureArray = signature?.let {
                 arrayOf(
-                        RLP.encodeByte(it.v),
+                        RLP.encodeInt(it.v),
                         RLP.encodeBigInteger(it.r.toBigInteger()),
                         RLP.encodeBigInteger(it.s.toBigInteger())
                 )
