@@ -7,16 +7,15 @@ import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 open class UnknownTransactionDecoration(
-    private val fromAddress: Address?,
-    private val toAddress: Address?,
-    private val userAddress: Address,
-    private val value: BigInteger?,
-    open val internalTransactions: List<InternalTransaction>,
-    open val eventInstances: List<ContractEventInstance>
+        val fromAddress: Address?,
+        private val toAddress: Address?,
+        private val userAddress: Address,
+        private val value: BigInteger?,
+        open val internalTransactions: List<InternalTransaction>,
+        open val eventInstances: List<ContractEventInstance>
 ) : TransactionDecoration() {
 
-    override fun tags(): List<String> =
-        (tagsFromInternalTransactions + tagsFromEventInstances).toSet().toList()
+    override fun tags(): List<String> = (tagsFromInternalTransactions + tagsFromEventInstances).toSet().toList()
 
     private val tagsFromInternalTransactions: List<String>
         get() {

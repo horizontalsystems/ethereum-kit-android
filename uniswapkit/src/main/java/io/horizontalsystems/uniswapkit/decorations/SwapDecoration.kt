@@ -7,13 +7,13 @@ import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class SwapDecoration(
-    val contractAddress: Address,
-    val amountIn: Amount,
-    val amountOut: Amount,
-    val tokenIn: Token,
-    val tokenOut: Token,
-    val recipient: Address?,
-    val deadline: BigInteger
+        val contractAddress: Address,
+        val amountIn: Amount,
+        val amountOut: Amount,
+        val tokenIn: Token,
+        val tokenOut: Token,
+        val recipient: Address?,
+        val deadline: BigInteger
 ) : TransactionDecoration() {
 
     sealed class Amount(val value: BigInteger) {
@@ -24,6 +24,12 @@ class SwapDecoration(
     sealed class Token {
         object EvmCoin : Token()
         class Eip20Coin(val address: Address, val tokenInfo: TokenInfo? = null) : Token()
+
+        val info: TokenInfo?
+            get() = when (this) {
+                is Eip20Coin -> tokenInfo
+                EvmCoin -> null
+            }
     }
 
     override fun tags(): List<String> {
@@ -39,9 +45,9 @@ class SwapDecoration(
     }
 
     private fun tags(token: Token, type: String): List<String> =
-        when (token) {
-            is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
-            is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
-        }
+            when (token) {
+                is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
+                is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
+            }
 
 }

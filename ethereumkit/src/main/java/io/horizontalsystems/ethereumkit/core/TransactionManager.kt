@@ -15,10 +15,10 @@ class TransactionManager(
     private val provider: ITransactionProvider
 ) {
 
-    private val fullTransactionsSubject = PublishSubject.create<List<FullTransaction>>()
+    private val fullTransactionsSubject = PublishSubject.create<Pair<List<FullTransaction>, Boolean>>()
     private val fullTransactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
 
-    val fullTransactionsAsync: Flowable<List<FullTransaction>> = fullTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val fullTransactionsAsync: Flowable<Pair<List<FullTransaction>, Boolean>> = fullTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
 
     fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
         return fullTransactionsWithTagsSubject.toFlowable(BackpressureStrategy.BUFFER)
@@ -47,7 +47,7 @@ class TransactionManager(
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> =
         decorationManager.decorateTransactions(storage.getTransactions(hashes))
 
-    fun handle(transactions: List<Transaction>): List<FullTransaction> {
+    fun handle(transactions: List<Transaction>, initial: Boolean = false): List<FullTransaction> {
         if (transactions.isEmpty()) return listOf()
 
         storage.save(transactions)
@@ -65,7 +65,7 @@ class TransactionManager(
 
         storage.saveTags(allTags)
 
-        fullTransactionsSubject.onNext(fullTransactions)
+        fullTransactionsSubject.onNext(Pair(fullTransactions, initial))
         fullTransactionsWithTagsSubject.onNext(transactionWithTags)
 
         return fullTransactions

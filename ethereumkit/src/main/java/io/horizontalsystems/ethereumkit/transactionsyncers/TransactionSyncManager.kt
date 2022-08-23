@@ -15,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Logger
 
 class TransactionSyncManager(
-    private val transactionManager: TransactionManager
+        private val transactionManager: TransactionManager
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
@@ -41,45 +41,49 @@ class TransactionSyncManager(
         syncState = EthereumKit.SyncState.Syncing()
 
         Single.zip(syncers.map {
-            it.getTransactionsSingle().onErrorReturnItem(listOf())
+            it.getTransactionsSingle()
         }) { array ->
-            array
-                .map { it as List<Transaction> }
-                .reduce { acc, list -> acc + list }
+            array.map { it as Pair<List<Transaction>, Boolean> }
+                    .reduce { acc, list ->
+                        Pair(acc.first + list.first, acc.second && list.second)
+                    }
         }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ transactions ->
-                handle(transactions)
-                syncState = EthereumKit.SyncState.Synced()
-            }, {
-                syncState = EthereumKit.SyncState.NotSynced(it)
-                logger.warning("sync ERROR = ${it.message}")
-            }).let {
-                disposables.add(it)
-            }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ transactions ->
+                    handle(transactions)
+                    syncState = EthereumKit.SyncState.Synced()
+                }, {
+                    syncState = EthereumKit.SyncState.NotSynced(it)
+                    logger.warning("sync ERROR = ${it.message}")
+                }).let {
+                    disposables.add(it)
+                }
     }
 
     private fun merge(tx1: Transaction, tx2: Transaction) =
-        Transaction(
-            tx1.hash,
-            tx1.timestamp,
-            tx1.isFailed,
-            tx1.blockNumber ?: tx2.blockNumber,
-            tx1.transactionIndex ?: tx2.transactionIndex,
-            tx1.from ?: tx2.from,
-            tx1.to ?: tx2.to,
-            tx1.value ?: tx2.value,
-            tx1.input ?: tx2.input,
-            tx1.nonce ?: tx2.nonce,
-            tx1.gasPrice ?: tx2.gasPrice,
-            tx1.maxFeePerGas ?: tx2.maxFeePerGas,
-            tx1.maxPriorityFeePerGas ?: tx2.maxPriorityFeePerGas,
-            tx1.gasLimit ?: tx2.gasLimit,
-            tx1.gasUsed ?: tx2.gasUsed
-        )
+            Transaction(
+                    tx1.hash,
+                    tx1.timestamp,
+                    tx1.isFailed,
+                    tx1.blockNumber ?: tx2.blockNumber,
+                    tx1.transactionIndex ?: tx2.transactionIndex,
+                    tx1.from ?: tx2.from,
+                    tx1.to ?: tx2.to,
+                    tx1.value ?: tx2.value,
+                    tx1.input ?: tx2.input,
+                    tx1.nonce ?: tx2.nonce,
+                    tx1.gasPrice ?: tx2.gasPrice,
+                    tx1.maxFeePerGas ?: tx2.maxFeePerGas,
+                    tx1.maxPriorityFeePerGas ?: tx2.maxPriorityFeePerGas,
+                    tx1.gasLimit ?: tx2.gasLimit,
+                    tx1.gasUsed ?: tx2.gasUsed
+            )
 
-    private fun handle(transactions: List<Transaction>) {
+    private fun handle(result: Pair<List<Transaction>, Boolean>) {
+        val transactions = result.first
+        val initial = result.second
+
         val map: MutableMap<String, Transaction> = mutableMapOf()
 
         for (transaction in transactions) {
@@ -92,7 +96,7 @@ class TransactionSyncManager(
             }
         }
 
-        transactionManager.handle(map.values.toList())
+        transactionManager.handle(map.values.toList(), initial)
     }
 
 }
