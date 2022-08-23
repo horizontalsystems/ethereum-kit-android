@@ -91,7 +91,7 @@ interface IEip20Storage {
 }
 
 interface ITransactionSyncer {
-    fun getTransactionsSingle(): Single<List<Transaction>>
+    fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>>
 }
 
 interface IMethodDecorator {

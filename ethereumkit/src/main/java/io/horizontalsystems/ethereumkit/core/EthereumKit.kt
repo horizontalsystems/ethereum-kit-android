@@ -106,7 +106,7 @@ class EthereumKit(
     val accountStateFlowable: Flowable<AccountState>
         get() = accountStateSubject.toFlowable(BackpressureStrategy.BUFFER)
 
-    val allTransactionsFlowable: Flowable<List<FullTransaction>>
+    val allTransactionsFlowable: Flowable<Pair<List<FullTransaction>, Boolean>>
         get() = transactionManager.fullTransactionsAsync
 
     fun start() {
