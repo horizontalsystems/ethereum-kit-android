@@ -19,17 +19,17 @@ sealed class RpcSource() {
             return infuraHttp("mainnet", projectId, projectSecret)
         }
 
-        fun ropstenInfuraHttp(projectId: String, projectSecret: String? = null): Http {
-            return infuraHttp("ropsten", projectId, projectSecret)
-        }
+//        fun ropstenInfuraHttp(projectId: String, projectSecret: String? = null): Http {
+//            return infuraHttp("ropsten", projectId, projectSecret)
+//        }
 
-        fun kovanInfuraHttp(projectId: String, projectSecret: String? = null): Http {
-            return infuraHttp("kovan", projectId, projectSecret)
-        }
+//        fun kovanInfuraHttp(projectId: String, projectSecret: String? = null): Http {
+//            return infuraHttp("kovan", projectId, projectSecret)
+//        }
 
-        fun rinkebyInfuraHttp(projectId: String, projectSecret: String? = null): Http {
-            return infuraHttp("rinkeby", projectId, projectSecret)
-        }
+//        fun rinkebyInfuraHttp(projectId: String, projectSecret: String? = null): Http {
+//            return infuraHttp("rinkeby", projectId, projectSecret)
+//        }
 
         fun goerliInfuraHttp(projectId: String, projectSecret: String? = null): Http {
             return infuraHttp("goerli", projectId, projectSecret)
@@ -39,17 +39,17 @@ sealed class RpcSource() {
             return infuraWebSocket("mainnet", projectId, projectSecret)
         }
 
-        fun ropstenInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
-            return infuraWebSocket("ropsten", projectId, projectSecret)
-        }
+//        fun ropstenInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
+//            return infuraWebSocket("ropsten", projectId, projectSecret)
+//        }
 
-        fun kovanInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
-            return infuraWebSocket("kovan", projectId, projectSecret)
-        }
+//        fun kovanInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
+//            return infuraWebSocket("kovan", projectId, projectSecret)
+//        }
 
-        fun rinkebyInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
-            return infuraWebSocket("rinkeby", projectId, projectSecret)
-        }
+//        fun rinkebyInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
+//            return infuraWebSocket("rinkeby", projectId, projectSecret)
+//        }
 
         fun goerliInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
             return infuraWebSocket("goerli", projectId, projectSecret)
