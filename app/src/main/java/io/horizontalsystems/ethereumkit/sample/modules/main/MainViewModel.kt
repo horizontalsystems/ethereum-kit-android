@@ -227,12 +227,12 @@ class MainViewModel : ViewModel() {
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
-            Chain.EthereumRopsten -> {
-                transactionSource = TransactionSource.ropstenEtherscan(Configuration.etherscanKey)
+            Chain.EthereumGoerli -> {
+                transactionSource = TransactionSource.goerliEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
-                    RpcSource.ropstenInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                    RpcSource.goerliInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
-                    RpcSource.ropstenInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+                    RpcSource.goerliInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
             else -> {
                 rpcSource = null
