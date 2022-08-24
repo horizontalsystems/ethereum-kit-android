@@ -19,6 +19,8 @@ open class ContractMethodFactories {
     }
 
     fun createMethodFromInput(input: ByteArray): ContractMethod? {
+        if (input.size < 4) return null
+
         val methodId = input.copyOfRange(0, 4)
 
         val erc20MethodFactory = methodFactories[methodId.toInt()]
