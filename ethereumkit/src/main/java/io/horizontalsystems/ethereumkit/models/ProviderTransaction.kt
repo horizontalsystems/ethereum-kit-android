@@ -56,3 +56,45 @@ data class ProviderInternalTransaction(
     fun internalTransaction() = InternalTransaction(hash, blockNumber, from, to, value)
 
 }
+
+data class ProviderEip721Transaction(
+    val blockNumber: Long,
+    val timestamp: Long,
+    val hash: ByteArray,
+    val nonce: Long,
+    val blockHash: ByteArray,
+    val transactionIndex: Int,
+    val gasLimit: Long,
+    val gasPrice: Long,
+    val gasUsed: Long,
+    val cumulativeGasUsed: Long,
+
+    val contractAddress: Address,
+    val from: Address,
+    val to: Address,
+    val tokenId: BigInteger,
+    val tokenName: String,
+    val tokenSymbol: String,
+    val tokenDecimal: Int
+)
+
+data class ProviderEip1155Transaction(
+    val blockNumber: Long,
+    val timestamp: Long,
+    val hash: ByteArray,
+    val nonce: Long,
+    val blockHash: ByteArray,
+    val transactionIndex: Int,
+    val gasLimit: Long,
+    val gasPrice: Long,
+    val gasUsed: Long,
+    val cumulativeGasUsed: Long,
+
+    val contractAddress: Address,
+    val from: Address,
+    val to: Address,
+    val tokenId: BigInteger,
+    val tokenValue: Int,
+    val tokenName: String,
+    val tokenSymbol: String
+)

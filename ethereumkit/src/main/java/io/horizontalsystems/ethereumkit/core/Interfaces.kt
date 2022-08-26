@@ -104,7 +104,14 @@ interface IEventDecorator {
 }
 
 interface ITransactionDecorator {
-    fun decoration(from: Address?, to: Address?, value: BigInteger?, contractMethod: ContractMethod?, internalTransactions: List<InternalTransaction>, eventInstances: List<ContractEventInstance>): TransactionDecoration?
+    fun decoration(
+        from: Address?,
+        to: Address?,
+        value: BigInteger?,
+        contractMethod: ContractMethod?,
+        internalTransactions: List<InternalTransaction>,
+        eventInstances: List<ContractEventInstance>
+    ): TransactionDecoration?
 }
 
 interface ITransactionProvider {
@@ -112,4 +119,6 @@ interface ITransactionProvider {
     fun getInternalTransactions(startBlock: Long): Single<List<ProviderInternalTransaction>>
     fun getInternalTransactionsAsync(hash: ByteArray): Single<List<ProviderInternalTransaction>>
     fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>>
+    fun getEip721Transactions(startBlock: Long): Single<List<ProviderEip721Transaction>>
+    fun getEip1155Transactions(startBlock: Long): Single<List<ProviderEip1155Transaction>>
 }
