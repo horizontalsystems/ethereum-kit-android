@@ -49,7 +49,6 @@ class TransactionSyncManager(
                     }
         }
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({ transactions ->
                     handle(transactions)
                     syncState = EthereumKit.SyncState.Synced()
