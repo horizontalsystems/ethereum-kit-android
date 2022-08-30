@@ -8,7 +8,7 @@ object Configuration {
     const val webSocket: Boolean = false
     val chain: Chain = Chain.EthereumGoerli
     const val walletId = "walletId"
-    val watchAddress: String? = "0x79c4213a328e3b4f1d87b4953c14759399db25e2"
+    val watchAddress: String? = null
     const val defaultsWords = "apart approve black comfort steel spin real renew tone primary key cherry"
 
     const val infuraProjectId = "2a1306f1d12f4c109a4d4fb9be46b02e"
