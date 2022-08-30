@@ -77,6 +77,8 @@ class NftKit(
             val balanceSyncManager = BalanceSyncManager(evmKit.receiveAddress, storage, dataProvider)
             val balanceManager = BalanceManager(balanceSyncManager, storage)
 
+            balanceSyncManager.listener = balanceManager
+
             return NftKit(evmKit, balanceManager, balanceSyncManager, storage)
         }
 

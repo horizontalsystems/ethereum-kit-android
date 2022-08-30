@@ -7,17 +7,15 @@ import android.view.ViewGroup
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.*
+import androidx.compose.material.Divider
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -39,47 +37,20 @@ class NftsFragment : Fragment() {
             setContent {
                 MaterialTheme {
                     val viewModel = viewModel<NftsViewModel>(factory = NftsViewModelFactory(mainViewModel.ethereumKit))
-
                     val nftBalances by viewModel.nftBalancesFlow.collectAsState(initial = listOf())
 
-                    var textState by rememberSaveable("", stateSaver = TextFieldValue.Saver) {
-                        mutableStateOf(TextFieldValue(""))
-                    }
-
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Spacer(modifier = Modifier.height(24.dp))
-/*
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextField(
-                                modifier = Modifier
-                                    .weight(1f),
-                                value = textState,
-                                textStyle = MaterialTheme.typography.body1,
-                                onValueChange = {
-                                    textState = it
-                                },
-                                label = { Text("Enter Address") }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-
-                                }) {
-                                Text(text = "OK")
-                            }
-                        }
-*/
                         LazyColumn {
                             nftBalances.forEach {
                                 item {
-                                    Divider()
-                                    Row(modifier = Modifier) {
+                                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                        Divider()
+                                        Spacer(modifier = Modifier.height(8.dp))
                                         SelectionContainer {
                                             Text(
                                                 text = "Name: ${it.nft.tokenName}\n" +

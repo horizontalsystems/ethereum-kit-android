@@ -35,14 +35,14 @@ class BalanceManager(
         balanceSyncManager.sync()
     }
 
-    suspend fun didSync(nfts: List<Nft>, type: NftType) {
-        handleNftsFromTransactions(type, nfts)
-    }
-
-    fun syncNftBalances() {
+    private fun syncNftBalances() {
         _nftBalances.update {
             storage.existingNftBalances()
         }
+    }
+
+    suspend fun didSync(nfts: List<Nft>, type: NftType) {
+        handleNftsFromTransactions(type, nfts)
     }
 
     override fun didFinishSyncBalances() {
