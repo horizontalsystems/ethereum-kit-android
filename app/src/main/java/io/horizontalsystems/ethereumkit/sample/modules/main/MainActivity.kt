@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -17,6 +18,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     private val transactionsFragment = TransactionsFragment()
     private val sendReceiveFragment = SendReceiveFragment()
     private val swapFragment = SwapFragment()
+    private val nftsFragment = NftsFragment()
     private val fm = supportFragmentManager
     private var active: Fragment = balanceFragment
 
@@ -40,10 +42,13 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         val navigation = findViewById<BottomNavigationView>(R.id.navigation)
         navigation.setOnNavigationItemSelectedListener(this)
 
+        fm.beginTransaction().add(R.id.fragment_container, nftsFragment, "5").hide(nftsFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, swapFragment, "4").hide(swapFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, sendReceiveFragment, "3").hide(sendReceiveFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, transactionsFragment, "2").hide(transactionsFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, balanceFragment, "1").commit()
+
+        navigation.selectedItemId = R.id.navigation_nfts
 
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.init()
@@ -55,6 +60,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             R.id.navigation_transactions -> transactionsFragment
             R.id.navigation_send_receive -> sendReceiveFragment
             R.id.navigation_swap -> swapFragment
+            R.id.navigation_nfts -> nftsFragment
             else -> null
         }
 
@@ -66,6 +72,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                     .commit()
 
             active = fragment
+            findViewById<Toolbar>(R.id.toolbar)?.title = item.title
 
             return true
         }

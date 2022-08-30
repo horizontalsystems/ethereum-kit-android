@@ -17,4 +17,8 @@
         android:id="@+id/navigation_swap"
         android:title="Swap" />
 
+    <item
+        android:id="@+id/navigation_nfts"
+        android:title="Nfts" />
+
 </menu>

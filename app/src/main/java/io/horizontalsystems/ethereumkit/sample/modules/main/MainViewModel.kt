@@ -18,6 +18,7 @@ import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.Mnemonic
+import io.horizontalsystems.nftkit.core.NftKit
 import io.horizontalsystems.oneinchkit.OneInchKit
 import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
@@ -35,7 +36,7 @@ class MainViewModel : ViewModel() {
 
     private val disposables = CompositeDisposable()
 
-    private lateinit var ethereumKit: EthereumKit
+    lateinit var ethereumKit: EthereumKit
     private lateinit var ethereumAdapter: EthereumAdapter
     private lateinit var signer: Signer
 
@@ -248,12 +249,20 @@ class MainViewModel : ViewModel() {
             throw Exception("Could not get transactionSource!")
         }
 
-        val words = Configuration.defaultsWords.split(" ")
-        return EthereumKit.getInstance(
-            App.instance, words, "",
-            Configuration.chain, rpcSource, transactionSource,
-            Configuration.walletId
-        )
+        return if (Configuration.watchAddress != null) {
+            EthereumKit.getInstance(
+                App.instance, Address(Configuration.watchAddress),
+                Configuration.chain, rpcSource, transactionSource,
+                Configuration.walletId
+            )
+        } else {
+            val words = Configuration.defaultsWords.split(" ")
+            EthereumKit.getInstance(
+                App.instance, words, "",
+                Configuration.chain, rpcSource, transactionSource,
+                Configuration.walletId
+            )
+        }
     }
 
     private fun updateLastBlockHeight() {
