@@ -34,7 +34,8 @@ class NftsViewModelFactory(private val evmKit: EthereumKit) : ViewModelProvider.
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
         val nftKit = NftKit.getInstance(App.instance, evmKit)
-        NftKit.addTransactionSyncers(nftKit, evmKit)
+        NftKit.addEip1155TransactionSyncer(nftKit, evmKit)
+        NftKit.addEip721TransactionSyncer(nftKit, evmKit)
 
         return NftsViewModel(nftKit) as T
     }
