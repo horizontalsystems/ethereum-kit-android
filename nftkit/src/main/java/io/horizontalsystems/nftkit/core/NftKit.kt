@@ -80,15 +80,18 @@ class NftKit(
             return NftKit(evmKit, balanceManager, balanceSyncManager, storage)
         }
 
-        fun addTransactionSyncers(nftKit: NftKit, evmKit: EthereumKit) {
-            val eip721Syncer = Eip721TransactionSyncer(evmKit.transactionProvider, nftKit.storage)
+        fun addEip1155TransactionSyncer(nftKit: NftKit, evmKit: EthereumKit) {
             val eip1155Syncer = Eip1155TransactionSyncer(evmKit.transactionProvider, nftKit.storage)
-
-            eip721Syncer.listener = nftKit
             eip1155Syncer.listener = nftKit
 
-            evmKit.addTransactionSyncer(eip721Syncer)
             evmKit.addTransactionSyncer(eip1155Syncer)
+        }
+
+        fun addEip721TransactionSyncer(nftKit: NftKit, evmKit: EthereumKit) {
+            val eip721Syncer = Eip721TransactionSyncer(evmKit.transactionProvider, nftKit.storage)
+            eip721Syncer.listener = nftKit
+
+            evmKit.addTransactionSyncer(eip721Syncer)
         }
     }
 }
