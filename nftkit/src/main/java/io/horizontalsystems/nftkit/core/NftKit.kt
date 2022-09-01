@@ -42,6 +42,14 @@ class NftKit(
         }
     }
 
+    fun sync() {
+        if (evmKit.syncState is EthereumKit.SyncState.Synced) {
+            coroutineScope.launch {
+                balanceSyncManager.sync()
+            }
+        }
+    }
+
     fun refresh() {
         //TODO
     }
