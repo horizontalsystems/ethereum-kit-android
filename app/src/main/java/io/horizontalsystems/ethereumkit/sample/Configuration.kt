@@ -28,8 +28,8 @@ object Configuration {
                         Erc20Token("BUSD", "BUSD", Address("0xe9e7cea3dedca5984780bafc599bd69add087d56"), 18)
                 )
                 Chain.EthereumGoerli -> listOf(
-                        Erc20Token("DAI", "DAI", Address("0xad6d458402f60fd3bd25163575031acdce07538d"), 18),
-                        Erc20Token("WEENUS", "WEENUS", Address("0x101848d5c5bbca18e6b4431eedf6b95e9adf82fa"), 18)
+                    Erc20Token("WEENUS", "WEENUS", Address("0xaff4481d10270f50f203e0763e2597776068cbc5"), 18),
+                    Erc20Token("USDT", "USDT", Address("0x183F3D42f1F78498f16bC6de7F5A6328fE39f25c"), 6)
                 )
                 else -> listOf()
             }
