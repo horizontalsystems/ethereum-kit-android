@@ -1,53 +1,20 @@
 package io.horizontalsystems.ethereumkit.crypto
 
 import com.google.gson.Gson
-import pm.gnosis.eip712.EIP712JsonAdapter
-import pm.gnosis.eip712.EIP712JsonParser
-import pm.gnosis.eip712.typedDataHash
-import java.io.BufferedReader
-import java.io.InputStream
-import java.io.InputStreamReader
+import org.web3j.crypto.StructuredDataEncoder
 
 class EIP712Encoder {
-
-    private val eip712JsonAdapter = EIP712GsonAdapter()
+    private val gson = Gson()
 
     fun encodeTypedDataHash(rawJsonMessage: String): ByteArray {
-        val domainWithMessage = EIP712JsonParser(eip712JsonAdapter).parseMessage(rawJsonMessage)
-        return typedDataHash(domainWithMessage.message, domainWithMessage.domain)
+        return StructuredDataEncoder(rawJsonMessage).hashStructuredData()
     }
 
     fun parseTypedData(rawJsonMessage: String): TypedData? {
         return try {
-            eip712JsonAdapter.parseTypedData(rawJsonMessage)
+            gson.fromJson(rawJsonMessage, TypedData::class.java)
         } catch (error: Throwable) {
             null
-        }
-    }
-
-    private class EIP712GsonAdapter : EIP712JsonAdapter {
-        private val gson = Gson()
-
-        override fun parse(inputStream: InputStream): EIP712JsonAdapter.Result {
-            val typedData = gson.fromJson(BufferedReader(InputStreamReader(inputStream)), TypedData::class.java)
-            return convert(typedData)
-        }
-
-        override fun parse(typedDataJson: String): EIP712JsonAdapter.Result {
-            return convert(parseTypedData(typedDataJson))
-        }
-
-        fun parseTypedData(rawJsonMessage: String): TypedData {
-            return gson.fromJson(rawJsonMessage, TypedData::class.java)
-        }
-
-        private fun convert(typedData: TypedData): EIP712JsonAdapter.Result {
-            return EIP712JsonAdapter.Result(
-                    primaryType = typedData.primaryType,
-                    domain = typedData.domain,
-                    message = typedData.message,
-                    types = typedData.types.mapValues { (_, types) -> types.map { EIP712JsonAdapter.Parameter(it.name, it.type) } }
-            )
         }
     }
 }
