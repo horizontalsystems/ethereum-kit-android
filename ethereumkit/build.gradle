@@ -84,8 +84,7 @@ dependencies {
     kapt "androidx.room:room-compiler:$room_version"
 
     //Eip712
-    def kethereum_version = "0.83.6"
-    implementation "com.github.komputing.kethereum:erc712:$kethereum_version"
+    implementation 'org.web3j:crypto:4.9.4'
 
     // Test helpers
     testImplementation 'junit:junit:4.13.2'
