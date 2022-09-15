@@ -1,7 +1,9 @@
 package io.horizontalsystems.nftkit.models
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
@@ -18,4 +20,11 @@ data class Eip1155Event(
     val tokenSymbol: String,
 
     @PrimaryKey(autoGenerate = true) val id: Long = 0
-)
+) {
+
+    @delegate:Ignore
+    val hashString: String by lazy {
+        hash.toHexString()
+    }
+
+}
