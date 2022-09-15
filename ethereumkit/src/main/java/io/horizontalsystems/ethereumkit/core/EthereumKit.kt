@@ -408,7 +408,7 @@ class EthereumKit(
             val internalTransactionsSyncer = InternalTransactionSyncer(transactionProvider, transactionStorage)
 
             val decorationManager = DecorationManager(address, transactionStorage)
-            val transactionManager = TransactionManager(transactionStorage, decorationManager, blockchain, transactionProvider)
+            val transactionManager = TransactionManager(address, transactionStorage, decorationManager, blockchain, transactionProvider)
             val transactionSyncManager = TransactionSyncManager(transactionManager)
 
             transactionSyncManager.add(internalTransactionsSyncer)

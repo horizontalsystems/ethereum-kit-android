@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionTag
@@ -118,8 +119,8 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
         return transactionDao.getPending(SimpleSQLiteQuery(sqlQuery))
     }
 
-    override fun getNonPendingTransactionsByNonces(pendingTransactionNonces: List<Long>): List<Transaction> =
-        transactionDao.getNonPendingByNonces(pendingTransactionNonces)
+    override fun getNonPendingTransactionsByNonces(from: Address, pendingTransactionNonces: List<Long>): List<Transaction> =
+        transactionDao.getNonPendingByNonces(from.raw, pendingTransactionNonces)
 
     override fun getLastInternalTransaction(): InternalTransaction? =
         transactionDao.getLastInternalTransaction()
