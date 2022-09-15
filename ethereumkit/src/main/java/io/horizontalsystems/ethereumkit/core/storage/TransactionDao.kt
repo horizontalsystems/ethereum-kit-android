@@ -31,8 +31,8 @@ interface TransactionDao {
     @RawQuery
     fun getPending(query: SupportSQLiteQuery): List<Transaction>
 
-    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NOT NULL AND nonce IN (:nonces)")
-    fun getNonPendingByNonces(nonces: List<Long>): List<Transaction>
+    @Query("SELECT * FROM `Transaction` WHERE blockNumber IS NOT NULL AND nonce IN (:nonces) AND `from`=:from")
+    fun getNonPendingByNonces(from: ByteArray, nonces: List<Long>): List<Transaction>
 
     @Query("SELECT * FROM `InternalTransaction`")
     fun getInternalTransactions(): List<InternalTransaction>

@@ -73,7 +73,7 @@ interface ITransactionStorage {
 
     fun getPendingTransactions(): List<Transaction>
     fun getPendingTransactions(tags: List<List<String>>): List<Transaction>
-    fun getNonPendingTransactionsByNonces(pendingTransactionNonces: List<Long>): List<Transaction>
+    fun getNonPendingTransactionsByNonces(from: Address, pendingTransactionNonces: List<Long>): List<Transaction>
 
     fun getLastInternalTransaction(): InternalTransaction?
     fun getInternalTransactions(): List<InternalTransaction>

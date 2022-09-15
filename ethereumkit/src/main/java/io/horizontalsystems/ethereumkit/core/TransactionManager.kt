@@ -9,6 +9,7 @@ import io.reactivex.subjects.PublishSubject
 import java.math.BigInteger
 
 class TransactionManager(
+    private val address: Address,
     private val storage: ITransactionStorage,
     private val decorationManager: DecorationManager,
     private val blockchain: IBlockchain,
@@ -100,7 +101,7 @@ class TransactionManager(
         if (pendingTransactions.isEmpty()) return listOf()
 
         val pendingTransactionNonces = pendingTransactions.mapNotNull { it.nonce }.toSet().toList()
-        val nonPendingTransactions = storage.getNonPendingTransactionsByNonces(pendingTransactionNonces)
+        val nonPendingTransactions = storage.getNonPendingTransactionsByNonces(address, pendingTransactionNonces)
         val processedTransactions: MutableList<Transaction> = mutableListOf()
 
         for (nonPendingTransaction in nonPendingTransactions) {
