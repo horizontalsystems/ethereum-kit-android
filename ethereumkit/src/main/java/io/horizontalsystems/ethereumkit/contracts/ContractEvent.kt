@@ -3,8 +3,8 @@ package io.horizontalsystems.ethereumkit.contracts
 import io.horizontalsystems.ethereumkit.crypto.CryptoUtils
 
 class ContractEvent(
-        private val name: String,
-        private val arguments: List<Argument>
+    private val name: String,
+    private val arguments: List<Argument>
 ) {
 
     val signature: ByteArray by lazy {
@@ -15,7 +15,9 @@ class ContractEvent(
     }
 
     enum class Argument(val type: String) {
-        Uint256("uint256"), Address("address")
+        Uint256("uint256"),
+        Uint256Array("uint256[]"),
+        Address("address")
     }
 
 }

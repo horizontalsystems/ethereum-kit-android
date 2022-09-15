@@ -35,7 +35,9 @@ class NftsViewModelFactory(private val evmKit: EthereumKit) : ViewModelProvider.
 
         val nftKit = NftKit.getInstance(App.instance, evmKit)
         NftKit.addEip1155TransactionSyncer(nftKit, evmKit)
+        NftKit.addEip1155Decorators(nftKit, evmKit)
         NftKit.addEip721TransactionSyncer(nftKit, evmKit)
+        NftKit.addEip721Decorators(nftKit, evmKit)
 
         return NftsViewModel(nftKit) as T
     }

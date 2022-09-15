@@ -103,5 +103,13 @@ class NftKit(
 
             evmKit.addTransactionSyncer(eip721Syncer)
         }
+
+        fun addEip721Decorators(nftKit: NftKit, evmKit: EthereumKit) {
+            evmKit.addEventDecorator(Eip721EventDecorator(evmKit.receiveAddress, nftKit.storage))
+        }
+
+        fun addEip1155Decorators(nftKit: NftKit, evmKit: EthereumKit) {
+            evmKit.addEventDecorator(Eip1155EventDecorator(evmKit.receiveAddress, nftKit.storage))
+        }
     }
 }
