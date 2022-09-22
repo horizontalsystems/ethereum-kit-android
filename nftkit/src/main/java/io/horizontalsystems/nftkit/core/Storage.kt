@@ -1,7 +1,9 @@
 package io.horizontalsystems.nftkit.core
 
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.nftkit.core.db.NftKitDatabase
 import io.horizontalsystems.nftkit.models.*
+import java.math.BigInteger
 
 class Storage(
     database: NftKitDatabase
@@ -18,6 +20,9 @@ class Storage(
 
     fun nonSyncedNftBalances(): List<NftBalance> =
         balanceDao.nonSyncedNftBalances()
+
+    fun existingNftBalance(contractAddress: Address, tokenId: BigInteger): NftBalance? =
+        balanceDao.existingNftBalance(contractAddress, tokenId)
 
     fun setNotSynced(nfts: List<Nft>) =
         nfts.forEach { balanceDao.setNotSynced(it.contractAddress, it.tokenId) }

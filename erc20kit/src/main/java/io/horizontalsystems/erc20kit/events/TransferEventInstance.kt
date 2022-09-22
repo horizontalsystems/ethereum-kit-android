@@ -15,12 +15,12 @@ class TransferEventInstance(
         val tags = mutableListOf(contractAddress.hex, TransactionTag.EIP20_TRANSFER)
 
         if (from == userAddress) {
-            tags.add(TransactionTag.eip20Outgoing(contractAddress.hex))
+            tags.add(TransactionTag.tokenOutgoing(contractAddress.hex))
             tags.add(TransactionTag.OUTGOING)
         }
 
         if (to == userAddress) {
-            tags.add(TransactionTag.eip20Incoming(contractAddress.hex))
+            tags.add(TransactionTag.tokenIncoming(contractAddress.hex))
             tags.add(TransactionTag.INCOMING)
         }
 

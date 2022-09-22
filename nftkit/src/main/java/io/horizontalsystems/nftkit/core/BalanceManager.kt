@@ -1,5 +1,6 @@
 package io.horizontalsystems.nftkit.core
 
+import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.nftkit.models.Nft
 import io.horizontalsystems.nftkit.models.NftBalance
 import io.horizontalsystems.nftkit.models.NftType
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.math.BigInteger
 
 class BalanceManager(
     private val balanceSyncManager: BalanceSyncManager,
@@ -23,6 +25,9 @@ class BalanceManager(
     init {
         syncNftBalances()
     }
+
+    fun nftBalance(contractAddress: Address, tokenId: BigInteger): NftBalance? =
+        storage.existingNftBalance(contractAddress, tokenId)
 
     private suspend fun handleNftsFromTransactions(type: NftType, nfts: List<Nft>) {
         val existingBalances = storage.nftBalances(type)

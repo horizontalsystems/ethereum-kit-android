@@ -26,7 +26,7 @@ class Eip20TransactionDecorator(
                 contractMethod.to,
                 contractMethod.value,
                 contractMethod.to == userAddress,
-                eventInstances.mapNotNull { it as TransferEventInstance }.firstOrNull { it.contractAddress == to }?.tokenInfo
+                eventInstances.mapNotNull { it as? TransferEventInstance }.firstOrNull { it.contractAddress == to }?.tokenInfo
             )
         }
 

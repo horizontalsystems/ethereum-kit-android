@@ -18,8 +18,8 @@ class TransactionTag(
         const val EIP20_TRANSFER = "eip20Transfer"
         const val EIP20_APPROVE = "eip20Approve"
 
-        fun eip20Incoming(contractAddress: String): String = "${contractAddress}_$INCOMING"
-        fun eip20Outgoing(contractAddress: String): String = "${contractAddress}_$OUTGOING"
+        fun tokenIncoming(contractAddress: String): String = "${contractAddress}_$INCOMING"
+        fun tokenOutgoing(contractAddress: String): String = "${contractAddress}_$OUTGOING"
     }
 
 }
