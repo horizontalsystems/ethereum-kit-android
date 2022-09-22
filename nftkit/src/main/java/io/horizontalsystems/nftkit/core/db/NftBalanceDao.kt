@@ -21,6 +21,9 @@ interface NftBalanceDao {
     @Query("SELECT * FROM NftBalanceRecord WHERE synced = 0")
     fun nonSyncedNftBalances(): List<NftBalance>
 
+    @Query("SELECT * FROM NftBalanceRecord WHERE contractAddress = :contractAddress AND tokenId = :tokenId")
+    fun existingNftBalance(contractAddress: Address, tokenId: BigInteger): NftBalance?
+
     @Query("UPDATE NftBalanceRecord SET synced = 1, balance = :balance WHERE contractAddress = :contractAddress AND tokenId = :tokenId")
     fun setSynced(contractAddress: Address, tokenId: BigInteger, balance: Int)
 

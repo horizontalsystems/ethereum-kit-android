@@ -120,7 +120,7 @@ class OneInchTransactionDecorator(
 
     private fun findEip20Token(eventInstances: List<ContractEventInstance>, tokenAddress: Address): OneInchDecoration.Token {
         val tokenInfo = eventInstances
-            .mapNotNull { it as TransferEventInstance }
+            .mapNotNull { it as? TransferEventInstance }
             .firstOrNull { it.contractAddress == tokenAddress }?.tokenInfo
 
         return OneInchDecoration.Token.Eip20Coin(tokenAddress, tokenInfo)
