@@ -3,6 +3,7 @@ package io.horizontalsystems.erc20kit.core
 import io.horizontalsystems.erc20kit.contract.AllowanceMethod
 import io.horizontalsystems.erc20kit.contract.ApproveMethod
 import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.TransactionData
@@ -19,7 +20,7 @@ class AllowanceManager(
         return ethereumKit
                 .call(contractAddress, AllowanceMethod(address, spenderAddress).encodedABI(), defaultBlockParameter)
                 .map { result ->
-                    BigInteger(result.sliceArray(0..31))
+                    BigInteger(result.sliceArray(0..31).toRawHexString(), 16)
                 }
     }
 
