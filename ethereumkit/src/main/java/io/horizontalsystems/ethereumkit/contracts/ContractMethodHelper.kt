@@ -45,7 +45,7 @@ object ContractMethodHelper {
                 }
                 is ByteArray -> {
                     data += pad(unsignedBigIntergerToByteArray(BigInteger.valueOf(arguments.size * 32L + arraysData.size)))
-                    arraysData += pad(BigInteger.valueOf(data.size.toLong()).toByteArray()) + argument
+                    arraysData += pad(BigInteger.valueOf(argument.size.toLong()).toByteArray()) + argument
                 }
             }
         }
