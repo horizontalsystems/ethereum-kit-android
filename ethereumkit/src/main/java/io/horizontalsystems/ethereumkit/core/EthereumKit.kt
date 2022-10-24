@@ -12,6 +12,7 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.api.models.EthereumKitState
 import io.horizontalsystems.ethereumkit.api.storage.ApiStorage
+import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.storage.Eip20Storage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionStorage
 import io.horizontalsystems.ethereumkit.core.storage.TransactionSyncerStateStorage
@@ -25,7 +26,6 @@ import io.horizontalsystems.ethereumkit.network.*
 import io.horizontalsystems.ethereumkit.transactionsyncers.EthereumTransactionSyncer
 import io.horizontalsystems.ethereumkit.transactionsyncers.InternalTransactionSyncer
 import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
-import io.horizontalsystems.hdwalletkit.HDWallet
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -358,7 +358,7 @@ class EthereumKit(
             walletId: String
         ): EthereumKit {
             val seed = Mnemonic().toSeed(words, passphrase)
-            val privateKey = privateKey(seed, chain)
+            val privateKey = Signer.privateKey(seed, chain)
             val address = ethereumAddress(privateKey)
             return getInstance(application, address, chain, rpcSource, transactionSource, walletId)
         }
@@ -432,11 +432,6 @@ class EthereumKit(
             decorationManager.addTransactionDecorator(EthereumDecorator(address))
 
             return ethereumKit
-        }
-
-        fun privateKey(seed: ByteArray, chain: Chain): BigInteger {
-            val hdWallet = HDWallet(seed, chain.coinType)
-            return hdWallet.privateKey(0, 0, true).privKey
         }
 
         fun clear(context: Context, chain: Chain, walletId: String) {
