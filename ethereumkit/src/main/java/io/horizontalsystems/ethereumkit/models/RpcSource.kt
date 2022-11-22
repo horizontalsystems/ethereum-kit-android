@@ -76,5 +76,9 @@ sealed class RpcSource() {
             return Http(listOf(URL("https://api.avax.network/ext/bc/C/rpc")), null)
         }
 
+        fun gitshockRpcHttp(): Http {
+                	return Http(listOf(URL("https://rpc-cartenz.gitshock.com")), null)
+                }
+
     }
 }

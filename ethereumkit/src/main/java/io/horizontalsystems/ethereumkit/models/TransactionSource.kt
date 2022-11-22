@@ -62,6 +62,12 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun gitshockscan(apiKey: String): TransactionSource {
+                	return TransactionSource(
+                		"gitscan.gitshock.com",
+                		SourceType.EtherScan("https://api.scan.gitshock.com", "https://gitscan.gitshock.com", apiKey)
+            )
+        }
     }
 
 }
