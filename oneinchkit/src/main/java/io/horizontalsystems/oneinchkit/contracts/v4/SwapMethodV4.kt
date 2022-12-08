@@ -1,13 +1,13 @@
-package io.horizontalsystems.oneinchkit.contracts
+package io.horizontalsystems.oneinchkit.contracts.v4
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class SwapMethod(
-        val caller: Address,
-        val swapDescription: SwapDescription,
-        val data: ByteArray
+class SwapMethodV4(
+    val caller: Address,
+    val swapDescription: SwapDescription,
+    val data: ByteArray
 ) : ContractMethod() {
 
     override val methodSignature = Companion.methodSignature

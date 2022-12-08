@@ -1,11 +1,11 @@
-package io.horizontalsystems.oneinchkit.contracts
+package io.horizontalsystems.oneinchkit.contracts.v4
 
 import io.horizontalsystems.ethereumkit.contracts.Bytes32Array
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class UnoswapMethod(
+class UnoswapMethodV4(
         val srcToken: Address,
         val amount: BigInteger,
         val minReturn: BigInteger,
