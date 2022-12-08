@@ -9,7 +9,6 @@ import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.oneinchkit.contracts.OneInchContractMethodFactories
 import io.horizontalsystems.oneinchkit.decorations.OneInchMethodDecorator
 import io.horizontalsystems.oneinchkit.decorations.OneInchTransactionDecorator
-import io.reactivex.Single
 import java.math.BigInteger
 import java.util.*
 
@@ -18,16 +17,18 @@ class OneInchKit(
     private val service: OneInchService
 ) {
 
-    val getRouterAddress: Address = when (evmKit.chain) {
-        Chain.Ethereum, Chain.BinanceSmartChain, Chain.Polygon, Chain.ArbitrumOne, Chain.Avalanche -> Address("0x1111111254fb6c44bac0bed2854e76f90643097d")
-        Chain.Optimism -> Address("0x1111111254760f7ab3f16433eea9304126dcd199")
-        Chain.EthereumGoerli -> Address("0x11111112542d85b3ef69ae05771c2dccff4faa26")
+    val routerAddress: Address = when (evmKit.chain) {
+        Chain.Ethereum,
+        Chain.BinanceSmartChain,
+        Chain.Polygon,
+        Chain.Optimism,
+        Chain.ArbitrumOne,
+        Chain.Avalanche -> Address("0x1111111254eeb25477b68fb85ed929f73a960582")
         else -> throw IllegalArgumentException("Invalid Chain: ${evmKit.chain.id}")
     }
 
-    fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger): Single<ApproveCallData> {
-        return service.getApproveCallDataAsync(tokenAddress, amount)
-    }
+    fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger) =
+        service.getApproveCallDataAsync(tokenAddress, amount)
 
     fun getQuoteAsync(
         fromToken: Address,
@@ -40,9 +41,18 @@ class OneInchKit(
         gasLimit: Long? = null,
         mainRouteParts: Int? = null,
         parts: Int? = null
-    ): Single<Quote> {
-        return service.getQuoteAsync(fromToken, toToken, amount, protocols, gasPrice, complexityLevel, connectorTokens, gasLimit, mainRouteParts, parts)
-    }
+    ) = service.getQuoteAsync(
+        fromToken,
+        toToken,
+        amount,
+        protocols,
+        gasPrice,
+        complexityLevel,
+        connectorTokens,
+        gasLimit,
+        mainRouteParts,
+        parts
+    )
 
     fun getSwapAsync(
         fromToken: Address,
@@ -59,12 +69,25 @@ class OneInchKit(
         gasLimit: Long? = null,
         parts: Int? = null,
         mainRouteParts: Int? = null
-    ): Single<Swap> {
-        return service.getSwapAsync(fromToken, toToken, amount, evmKit.receiveAddress, slippagePercentage, protocols, recipient, gasPrice, burnChi, complexityLevel, connectorTokens, allowPartialFill, gasLimit, parts, mainRouteParts)
-    }
+    ) = service.getSwapAsync(
+        fromToken,
+        toToken,
+        amount,
+        evmKit.receiveAddress,
+        slippagePercentage,
+        protocols,
+        recipient,
+        gasPrice,
+        burnChi,
+        complexityLevel,
+        connectorTokens,
+        allowPartialFill,
+        gasLimit,
+        parts,
+        mainRouteParts
+    )
 
     companion object {
-
         fun getInstance(evmKit: EthereumKit): OneInchKit {
             val service = OneInchService(evmKit.chain)
             return OneInchKit(evmKit, service)
@@ -74,7 +97,6 @@ class OneInchKit(
             evmKit.addMethodDecorator(OneInchMethodDecorator(OneInchContractMethodFactories))
             evmKit.addTransactionDecorator(OneInchTransactionDecorator(evmKit.receiveAddress))
         }
-
     }
 
 }
@@ -150,6 +172,3 @@ data class ApproveCallData(
         return "ApproveCallData {\nto: ${to.hex}, \nvalue: $value, \ndata: ${data.toHexString()}\n}"
     }
 }
-
-data class Spender(val address: Address)
-
