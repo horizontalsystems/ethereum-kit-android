@@ -1,4 +1,4 @@
-package io.horizontalsystems.oneinchkit.contracts
+package io.horizontalsystems.oneinchkit.contracts.v4
 
 import io.horizontalsystems.ethereumkit.contracts.Bytes32Array
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
@@ -7,9 +7,9 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class UnoswapMethodFactory : ContractMethodFactory {
+class UnoswapMethodFactoryV4 : ContractMethodFactory {
 
-    override val methodId = ContractMethodHelper.getMethodId(UnoswapMethod.methodSignature)
+    override val methodId = ContractMethodHelper.getMethodId(UnoswapMethodV4.methodSignature)
 
     override fun createMethod(inputArguments: ByteArray): ContractMethod {
         val argumentTypes = listOf(Address::class, BigInteger::class, BigInteger::class, Bytes32Array::class)
@@ -21,7 +21,7 @@ class UnoswapMethodFactory : ContractMethodFactory {
         val minReturn = parsedArguments[2] as BigInteger
         val params = parsedArguments[3] as Bytes32Array
 
-        return UnoswapMethod(srcToken, amount, minReturn, params)
+        return UnoswapMethodV4(srcToken, amount, minReturn, params)
     }
 
 }

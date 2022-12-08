@@ -1,4 +1,4 @@
-package io.horizontalsystems.oneinchkit.contracts
+package io.horizontalsystems.oneinchkit.contracts.v4
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactory
@@ -6,9 +6,9 @@ import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
-class SwapMethodFactory : ContractMethodFactory {
+class SwapMethodFactoryV4 : ContractMethodFactory {
 
-    override val methodId = ContractMethodHelper.getMethodId(SwapMethod.methodSignature)
+    override val methodId = ContractMethodHelper.getMethodId(SwapMethodV4.methodSignature)
 
     override fun createMethod(inputArguments: ByteArray): ContractMethod {
         val argumentTypes = listOf(
@@ -30,11 +30,11 @@ class SwapMethodFactory : ContractMethodFactory {
         val flags = swapDescriptionArguments[6] as BigInteger
         val permit = swapDescriptionArguments[7] as ByteArray
 
-        val swapDescription = SwapMethod.SwapDescription(srcToken, dstToken, srcReceiver, dstReceiver, amount, minReturnAmount, flags, permit)
+        val swapDescription = SwapMethodV4.SwapDescription(srcToken, dstToken, srcReceiver, dstReceiver, amount, minReturnAmount, flags, permit)
 
         val data = parsedArguments[2] as ByteArray
 
-        return SwapMethod(caller, swapDescription, data)
+        return SwapMethodV4(caller, swapDescription, data)
     }
 
 }

@@ -7,9 +7,9 @@ import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.oneinchkit.contracts.OneInchV4Method
-import io.horizontalsystems.oneinchkit.contracts.SwapMethod
-import io.horizontalsystems.oneinchkit.contracts.UnoswapMethod
+import io.horizontalsystems.oneinchkit.contracts.v4.UnparsedSwapMethodV4
+import io.horizontalsystems.oneinchkit.contracts.v4.SwapMethodV4
+import io.horizontalsystems.oneinchkit.contracts.v4.UnoswapMethodV4
 import java.math.BigInteger
 
 class OneInchTransactionDecorator(
@@ -22,7 +22,7 @@ class OneInchTransactionDecorator(
         if (from == null || to == null || value == null || contractMethod == null) return null
 
         when (contractMethod) {
-            is SwapMethod -> {
+            is SwapMethodV4 -> {
                 val swapDescription = contractMethod.swapDescription
                 val tokenOut = addressToToken(swapDescription.dstToken, eventInstances)
                 var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(swapDescription.minReturnAmount)
@@ -55,7 +55,7 @@ class OneInchTransactionDecorator(
                 )
             }
 
-            is UnoswapMethod -> {
+            is UnoswapMethodV4 -> {
                 var tokenOut: OneInchDecoration.Token? = null
                 var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(contractMethod.minReturn)
 
@@ -87,7 +87,7 @@ class OneInchTransactionDecorator(
                 )
             }
 
-            is OneInchV4Method -> {
+            is UnparsedSwapMethodV4 -> {
                 val tokenAmountIn: OneInchUnknownDecoration.TokenAmount?
                 val tokenAmountOut: OneInchUnknownDecoration.TokenAmount?
 
