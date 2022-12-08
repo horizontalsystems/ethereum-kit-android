@@ -6,8 +6,8 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
-open class OneInchDecoration(
-        open val contractAddress: Address
+abstract class OneInchDecoration(
+    open val contractAddress: Address
 ) : TransactionDecoration() {
 
     sealed class Amount(val value: BigInteger) {
@@ -27,12 +27,12 @@ open class OneInchDecoration(
     }
 
     override fun tags(): List<String> =
-            listOf(contractAddress.hex, "swap")
+        listOf(contractAddress.hex, "swap")
 
     internal fun getTags(token: Token, type: String): List<String> =
-            when (token) {
-                is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
-                is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
-            }
+        when (token) {
+            is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
+            is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
+        }
 
 }

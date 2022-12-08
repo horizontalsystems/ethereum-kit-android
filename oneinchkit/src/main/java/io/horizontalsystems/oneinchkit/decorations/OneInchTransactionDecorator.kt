@@ -1,15 +1,19 @@
 package io.horizontalsystems.oneinchkit.decorations
 
 import io.horizontalsystems.erc20kit.events.TransferEventInstance
+import io.horizontalsystems.ethereumkit.contracts.Bytes32Array
 import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.oneinchkit.contracts.v4.UnparsedSwapMethodV4
 import io.horizontalsystems.oneinchkit.contracts.v4.SwapMethodV4
 import io.horizontalsystems.oneinchkit.contracts.v4.UnoswapMethodV4
+import io.horizontalsystems.oneinchkit.contracts.v4.UnparsedSwapMethodV4
+import io.horizontalsystems.oneinchkit.contracts.v5.SwapMethodV5
+import io.horizontalsystems.oneinchkit.contracts.v5.UnoswapMethodV5
+import io.horizontalsystems.oneinchkit.contracts.v5.UnparsedSwapMethodV5
 import java.math.BigInteger
 
 class OneInchTransactionDecorator(
@@ -18,7 +22,14 @@ class OneInchTransactionDecorator(
 
     private val evmTokenAddresses = mutableListOf("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0x0000000000000000000000000000000000000000")
 
-    override fun decoration(from: Address?, to: Address?, value: BigInteger?, contractMethod: ContractMethod?, internalTransactions: List<InternalTransaction>, eventInstances: List<ContractEventInstance>): TransactionDecoration? {
+    override fun decoration(
+        from: Address?,
+        to: Address?,
+        value: BigInteger?,
+        contractMethod: ContractMethod?,
+        internalTransactions: List<InternalTransaction>,
+        eventInstances: List<ContractEventInstance>
+    ): TransactionDecoration? {
         if (from == null || to == null || value == null || contractMethod == null) return null
 
         when (contractMethod) {
@@ -36,9 +47,15 @@ class OneInchTransactionDecorator(
 
                     is OneInchDecoration.Token.Eip20Coin -> {
                         if (eventInstances.isNotEmpty()) {
-                            amountOut = OneInchDecoration.Amount.Exact(getTotalToken(swapDescription.dstReceiver, swapDescription.dstToken, eventInstances, true))
+                            amountOut = OneInchDecoration.Amount.Exact(
+                                getTotalToken(
+                                    swapDescription.dstReceiver,
+                                    swapDescription.dstToken,
+                                    eventInstances,
+                                    true
+                                )
+                            )
                         }
-
                     }
                 }
 
@@ -50,6 +67,45 @@ class OneInchTransactionDecorator(
                     amountOut,
                     swapDescription.flags,
                     swapDescription.permit,
+                    contractMethod.data,
+                    if (swapDescription.dstReceiver == from) null else swapDescription.dstReceiver
+                )
+            }
+
+            is SwapMethodV5 -> {
+                val swapDescription = contractMethod.swapDescription
+                val tokenOut = addressToToken(swapDescription.dstToken, eventInstances)
+                var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(swapDescription.minReturnAmount)
+
+                when (tokenOut) {
+                    OneInchDecoration.Token.EvmCoin -> {
+                        if (internalTransactions.isNotEmpty()) {
+                            amountOut = OneInchDecoration.Amount.Exact(getTotalETHIncoming(swapDescription.dstReceiver, internalTransactions))
+                        }
+                    }
+
+                    is OneInchDecoration.Token.Eip20Coin -> {
+                        if (eventInstances.isNotEmpty()) {
+                            amountOut = OneInchDecoration.Amount.Exact(
+                                getTotalToken(
+                                    swapDescription.dstReceiver,
+                                    swapDescription.dstToken,
+                                    eventInstances,
+                                    true
+                                )
+                            )
+                        }
+                    }
+                }
+
+                return OneInchSwapDecoration(
+                    to,
+                    addressToToken(swapDescription.srcToken, eventInstances),
+                    tokenOut,
+                    swapDescription.amount,
+                    amountOut,
+                    swapDescription.flags,
+                    contractMethod.permit,
                     contractMethod.data,
                     if (swapDescription.dstReceiver == from) null else swapDescription.dstReceiver
                 )
@@ -87,7 +143,39 @@ class OneInchTransactionDecorator(
                 )
             }
 
-            is UnparsedSwapMethodV4 -> {
+            is UnoswapMethodV5 -> {
+                var tokenOut: OneInchDecoration.Token? = null
+                var amountOut: OneInchDecoration.Amount = OneInchDecoration.Amount.Extremum(contractMethod.minReturn)
+
+                if (internalTransactions.isNotEmpty()) {
+                    val amount = getTotalETHIncoming(address, internalTransactions)
+
+                    if (amount > BigInteger.ZERO) {
+                        tokenOut = OneInchDecoration.Token.EvmCoin
+                        amountOut = OneInchDecoration.Amount.Exact(amount)
+                    }
+                }
+
+                if (tokenOut == null && eventInstances.isNotEmpty()) {
+                    val tokenAmountOut = getTokenAmount(eventInstances, true)
+
+                    if (tokenAmountOut != null) {
+                        tokenOut = tokenAmountOut.first
+                        amountOut = OneInchDecoration.Amount.Exact(tokenAmountOut.second)
+                    }
+                }
+
+                return OneInchUnoswapDecoration(
+                    to,
+                    addressToToken(contractMethod.srcToken, eventInstances),
+                    tokenOut,
+                    contractMethod.amount,
+                    amountOut,
+                    Bytes32Array(arrayOf())
+                )
+            }
+
+            is UnparsedSwapMethodV4, is UnparsedSwapMethodV5 -> {
                 val tokenAmountIn: OneInchUnknownDecoration.TokenAmount?
                 val tokenAmountOut: OneInchUnknownDecoration.TokenAmount?
 
@@ -154,7 +242,12 @@ class OneInchTransactionDecorator(
         }
     }
 
-    private fun getTotalToken(userAddress: Address, tokenAddress: Address, eventInstances: List<ContractEventInstance>, incoming: Boolean): BigInteger {
+    private fun getTotalToken(
+        userAddress: Address,
+        tokenAddress: Address,
+        eventInstances: List<ContractEventInstance>,
+        incoming: Boolean
+    ): BigInteger {
         var amountOut = BigInteger.ZERO
 
         for (eventInstance in eventInstances) {

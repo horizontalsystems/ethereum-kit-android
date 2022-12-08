@@ -52,7 +52,8 @@ object ContractMethodHelper {
         return data + arraysData
     }
 
-    data class StructParameter(val argumentTypes: List<Any>)
+    data class DynamicStruct(val argumentTypes: List<Any>)
+    data class StaticStruct(val argumentTypes: List<Any>)
 
     fun decodeABI(inputArguments: ByteArray, argumentTypes: List<Any>): List<Any> {
         var position = 0
@@ -61,33 +62,44 @@ object ContractMethodHelper {
             when (type) {
                 BigInteger::class -> {
                     parsedArguments.add(inputArguments.copyOfRange(position, position + 32).toBigInteger())
+                    position += 32
                 }
                 Address::class -> {
                     parsedArguments.add(parseAddress(inputArguments.copyOfRange(position, position + 32)))
+                    position += 32
                 }
                 List::class -> {
                     val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
                     val array = parseAddressArray(arrayPosition, inputArguments)
                     parsedArguments.add(array)
+                    position += 32
                 }
                 ByteArray::class -> {
                     val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
                     val byteArray: ByteArray = parseByteArray(arrayPosition, inputArguments)
                     parsedArguments.add(byteArray)
+                    position += 32
                 }
                 Bytes32Array::class -> {
                     val arrayPosition = inputArguments.copyOfRange(position, position + 32).toInt()
                     val bytes32Array = parseBytes32Array(arrayPosition, inputArguments)
                     parsedArguments.add(bytes32Array)
+                    position += 32
                 }
-                is StructParameter -> {
+                is DynamicStruct -> {
                     val argumentsPosition = inputArguments.copyOfRange(position, position + 32).toInt()
                     val structParameterData = inputArguments.copyOfRange(argumentsPosition, inputArguments.size)
                     val structParameter = decodeABI(structParameterData, type.argumentTypes)
                     parsedArguments.add(structParameter)
+                    position += 32
+                }
+                is StaticStruct -> {
+                    val structParameterData = inputArguments.copyOfRange(position, inputArguments.size)
+                    val structParameter = decodeABI(structParameterData, type.argumentTypes)
+                    parsedArguments.add(structParameter)
+                    position += 32 * type.argumentTypes.size
                 }
             }
-            position += 32
         }
 
         return parsedArguments
