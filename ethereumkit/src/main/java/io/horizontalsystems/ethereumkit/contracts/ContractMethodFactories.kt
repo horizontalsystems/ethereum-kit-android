@@ -23,9 +23,9 @@ open class ContractMethodFactories {
 
         val methodId = input.copyOfRange(0, 4)
 
-        val erc20MethodFactory = methodFactories[methodId.toInt()]
+        val methodFactory = methodFactories[methodId.toInt()]
 
-        return erc20MethodFactory?.createMethod(input.copyOfRange(4, input.size))
+        return methodFactory?.createMethod(input.copyOfRange(4, input.size))
     }
 
 }
