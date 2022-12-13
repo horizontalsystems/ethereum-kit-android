@@ -56,10 +56,6 @@ sealed class RpcSource() {
             )
         }
 
-        fun binanceSmartChainWebSocket(): WebSocket {
-            return WebSocket(URL("https://bsc-ws-node.nariox.org:443"), null)
-        }
-
         fun polygonRpcHttp(): Http {
             return Http(listOf(URL("https://polygon-rpc.com")), null)
         }
