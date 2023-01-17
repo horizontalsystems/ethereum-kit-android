@@ -12,6 +12,7 @@ enum class Chain(
     Optimism(10, 60, 15, false),
     ArbitrumOne(42161, 60, 15, false),
     Avalanche(43114, 60, 15, true),
+    Gnosis(100, 60, 15, true),
     EthereumGoerli(5, 1, 15, true);
 
     val isMainNet = coinType != 1
