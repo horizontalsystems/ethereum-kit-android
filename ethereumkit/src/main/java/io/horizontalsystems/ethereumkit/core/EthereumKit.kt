@@ -438,6 +438,10 @@ class EthereumKit(
             EthereumDatabaseManager.clear(context, chain, walletId)
         }
 
+        fun getNodeApiProvider(rpcSource: RpcSource.Http): NodeApiProvider {
+            return NodeApiProvider(rpcSource.urls, gson, rpcSource.auth)
+        }
+
         private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
             when (transactionSource.type) {
                 is TransactionSource.SourceType.Etherscan -> {
