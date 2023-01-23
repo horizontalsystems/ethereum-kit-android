@@ -39,5 +39,5 @@ class TransferEventInstance(
     }
 }
 
-class TokenInfo(val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int)
+data class TokenInfo(val tokenName: String, val tokenSymbol: String, val tokenDecimal: Int)
 
