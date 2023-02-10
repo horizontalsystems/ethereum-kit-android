@@ -114,8 +114,8 @@ class RpcBlockchain(
                 .map { transaction }
     }
 
-    override fun getNonce(): Single<Long> {
-        return syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Pending))
+    override fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
+        return syncer.single(GetTransactionCountJsonRpc(address, defaultBlockParameter))
     }
 
     override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {

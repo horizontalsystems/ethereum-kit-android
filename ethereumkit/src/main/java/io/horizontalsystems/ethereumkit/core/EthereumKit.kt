@@ -130,6 +130,9 @@ class EthereumKit(
         transactionSyncManager.sync()
     }
 
+    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
+        return blockchain.getNonce(defaultBlockParameter)
+    }
     fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
         return transactionManager.getFullTransactionsFlowable(tags)
     }
@@ -194,7 +197,7 @@ class EthereumKit(
         gasLimit: Long,
         nonce: Long? = null
     ): Single<RawTransaction> {
-        val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce()
+        val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce(DefaultBlockParameter.Pending)
 
         return nonceSingle.flatMap { nonce ->
             Single.just(RawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput))
