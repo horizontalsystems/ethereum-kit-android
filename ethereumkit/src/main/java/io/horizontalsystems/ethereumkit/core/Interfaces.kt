@@ -46,7 +46,7 @@ interface IBlockchain {
     val accountState: AccountState?
 
     fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction>
-    fun getNonce(): Single<Long>
+    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long>
     fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long>
     fun getTransactionReceipt(transactionHash: ByteArray): Single<RpcTransactionReceipt>
     fun getTransaction(transactionHash: ByteArray): Single<RpcTransaction>

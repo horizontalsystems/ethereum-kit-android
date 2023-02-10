@@ -90,7 +90,7 @@ class SpvBlockchain(
         }
     }
 
-    override fun getNonce(): Single<Long> {
+    override fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
         TODO("not implemented")
     }
 
