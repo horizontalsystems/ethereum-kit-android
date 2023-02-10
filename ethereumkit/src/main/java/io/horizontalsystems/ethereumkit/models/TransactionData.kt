@@ -7,13 +7,12 @@ import java.util.*
 data class TransactionData(
         val to: Address,
         val value: BigInteger,
-        val input: ByteArray,
-        val nonce: Long? = null
+        val input: ByteArray
 ) {
     override fun equals(other: Any?): Boolean {
         return when {
             this === other -> true
-            other is TransactionData -> to == other.to && value == other.value && input.contentEquals(other.input) && nonce == other.nonce
+            other is TransactionData -> to == other.to && value == other.value && input.contentEquals(other.input)
             else -> false
         }
     }
