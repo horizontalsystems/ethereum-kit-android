@@ -13,7 +13,8 @@ enum class Chain(
     ArbitrumOne(42161, 60, 15, false),
     Avalanche(43114, 60, 15, true),
     Gnosis(100, 60, 15, true),
-    EthereumGoerli(5, 1, 15, true);
+    EthereumGoerli(5, 1, 15, true),
+    Mumbai(80001, 60, 15, true);
 
     val isMainNet = coinType != 1
 }
