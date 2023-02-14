@@ -20,12 +20,12 @@ class L1FeeProvider(
         override fun getArguments() = listOf(transaction)
     }
 
-    fun getL1Fee(gasPrice: GasPrice, gasLimit: Long, to: Address, value: BigInteger, data: ByteArray, nonce: Long?): Single<BigInteger> {
-        val rawTransaction = RawTransaction(gasPrice, gasLimit, to, value, nonce ?: 1, data)
+    fun getL1Fee(gasPrice: GasPrice, gasLimit: Long, to: Address, value: BigInteger, data: ByteArray): Single<BigInteger> {
+        val rawTransaction = RawTransaction(gasPrice, gasLimit, to, value, 1, data)
         val encoded = TransactionBuilder.encode(rawTransaction, null, evmKit.chain.id)
-        val data = L1FeeMethod(encoded).encodedABI()
+        val feeMethodABI = L1FeeMethod(encoded).encodedABI()
 
-        return evmKit.call(contractAddress, data)
+        return evmKit.call(contractAddress, feeMethodABI)
                 .map { it.sliceArray(IntRange(0, 31)).toBigInteger() }
     }
 
