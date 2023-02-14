@@ -9,7 +9,9 @@ import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -38,6 +40,13 @@ class EtherscanService(
 
         val httpClient = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(Interceptor { chain ->
+                val originalRequest: Request = chain.request()
+                val requestWithUserAgent: Request = originalRequest.newBuilder()
+                    .header("User-Agent", "Mobile App Agent")
+                    .build()
+                chain.proceed(requestWithUserAgent)
+            })
 
         gson = GsonBuilder()
             .setLenient()
