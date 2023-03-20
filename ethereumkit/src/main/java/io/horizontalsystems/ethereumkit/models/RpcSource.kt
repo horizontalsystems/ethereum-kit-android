@@ -76,5 +76,9 @@ sealed class RpcSource() {
             return Http(listOf(URL("https://rpc.gnosischain.com")), null)
         }
 
+        fun fantomRpcHttp(): Http {
+            return Http(listOf(URL("https://rpc.fantom.network")), null)
+        }
+
     }
 }
