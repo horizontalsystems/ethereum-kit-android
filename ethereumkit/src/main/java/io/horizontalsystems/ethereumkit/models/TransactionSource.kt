@@ -69,6 +69,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun fantom(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "ftmscan.com",
+                SourceType.Etherscan("https://api.ftmscan.com", "https://ftmscan.com", apiKey)
+            )
+        }
+
     }
 
 }
