@@ -76,6 +76,20 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun goerliArbiscan(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "goerli.arbiscan.io",
+                SourceType.Etherscan("https://api-goerli.arbiscan.io", "https://goerli.arbiscan.io/", apiKey)
+            )
+        }
+
+        fun mumbaiPolygonscan(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "mumbai.polygonscan.com",
+                SourceType.Etherscan("https://api-testnet.polygonscan.com/", "https://mumbai.polygonscan.com", apiKey)
+            )
+        }
+
     }
 
 }
