@@ -6,7 +6,7 @@ import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 
 object Configuration {
     const val webSocket: Boolean = false
-    val chain: Chain = Chain.EthereumGoerli
+    val chain: Chain = Chain.Ethereum
     const val walletId = "walletId"
     val watchAddress: String? = null
     const val defaultsWords = "apart approve black comfort steel spin real renew tone primary key cherry"
