@@ -6,14 +6,13 @@ import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.Quoter.Quoter
 import io.horizontalsystems.uniswapkit.v3.SwapRouter.SwapRouter
-import java.math.BigDecimal
 import java.math.BigInteger
 
 class UniswapV3Kit(
-    private val ethereumKit: EthereumKit,
     private val quoter: Quoter,
     private val swapRouter: SwapRouter
 ) {
+    val routerAddress get() = swapRouter.swapRouterAddress
 
     fun bestTradeExactIn(
         tokenIn: Address,
@@ -31,8 +30,8 @@ class UniswapV3Kit(
         tradeType: TradeType,
         tokenIn: Address,
         tokenOut: Address,
-        amountIn: BigDecimal,
-        amountOut: BigDecimal,
+        amountIn: BigInteger,
+        amountOut: BigInteger,
         tradeOptions: TradeOptions
     ) = swapRouter.transactionData(
         tradeType,
@@ -45,7 +44,7 @@ class UniswapV3Kit(
 
     companion object {
         fun getInstance(ethereumKit: EthereumKit): UniswapV3Kit {
-            return UniswapV3Kit(ethereumKit, Quoter(ethereumKit), SwapRouter(ethereumKit))
+            return UniswapV3Kit(Quoter(ethereumKit), SwapRouter(ethereumKit))
         }
 
 //        fun addDecorators(ethereumKit: EthereumKit) {

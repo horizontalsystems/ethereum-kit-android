@@ -6,17 +6,16 @@ import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
-import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.*
 
 class SwapRouter(private val ethereumKit: EthereumKit) {
-    private val swapRouterAddress = when (ethereumKit.chain) {
+    val swapRouterAddress = when (ethereumKit.chain) {
         Chain.Ethereum,
         Chain.Polygon,
         Chain.Optimism,
         Chain.ArbitrumOne,
-        Chain.EthereumGoerli -> "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+        Chain.EthereumGoerli -> Address("0xE592427A0AEce92De3Edee1F18E0157C05861564")
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
@@ -24,18 +23,21 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         tradeType: TradeType,
         tokenIn: Address,
         tokenOut: Address,
-        amountIn: BigDecimal,
-        amountOut: BigDecimal,
+        amountIn: BigInteger,
+        amountOut: BigInteger,
         tradeOptions: TradeOptions
     ): TransactionData {
         val recipient = tradeOptions.recipient ?: ethereumKit.receiveAddress
         val deadline = (Date().time / 1000 + tradeOptions.ttl).toBigInteger()
+        val fee = BigInteger.valueOf(100)
 
-        return when (tradeType) {
+        val ethValue = BigInteger.ZERO
+        val method = when (tradeType) {
             TradeType.ExactIn -> {
-                transactionDataExactIn(
+                ExactInputSingleMethod(
                     tokenIn = tokenIn,
                     tokenOut = tokenOut,
+                    fee = fee,
                     recipient = recipient,
                     deadline = deadline,
                     amountIn = amountIn,
@@ -43,25 +45,24 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     sqrtPriceLimitX96 = BigInteger.ZERO
                 )
             }
-            TradeType.ExactOut -> TODO()
+            TradeType.ExactOut -> {
+                ExactOutputSingleMethod(
+                    tokenIn = tokenIn,
+                    tokenOut = tokenOut,
+                    fee = fee,
+                    recipient = recipient,
+                    deadline = deadline,
+                    amountOut = amountOut,
+                    amountInMaximum = amountIn,
+                    sqrtPriceLimitX96 = BigInteger.ZERO
+                )
+            }
         }
-    }
-
-    private fun transactionDataExactIn(
-        tokenIn: Address,
-        tokenOut: Address,
-        recipient: Address,
-        deadline: BigInteger,
-        amountIn: BigDecimal,
-        amountOutMinimum: BigDecimal,
-        sqrtPriceLimitX96: BigInteger,
-    ): TransactionData {
-        val ethValue = BigInteger.ZERO
 
         return TransactionData(
-            to = Address(swapRouterAddress),
+            to = swapRouterAddress,
             value = ethValue,
-            input = ExactInputSingleMethod().encodedABI()
+            input = method.encodedABI()
         )
     }
 }
