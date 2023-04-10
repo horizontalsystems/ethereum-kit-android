@@ -17,12 +17,13 @@ class Quoter(private val ethereumKit: EthereumKit) {
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
+    private val fee = BigInteger.valueOf(3000)
+
     fun bestTradeExactIn(
         tokenIn: Address,
         tokenOut: Address,
         amountIn: BigInteger
     ): Single<BigInteger> {
-        val fee = BigInteger.valueOf(100)
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
         return ethereumKit.call(
@@ -44,7 +45,6 @@ class Quoter(private val ethereumKit: EthereumKit) {
         tokenOut: Address,
         amountOut: BigInteger
     ): Single<BigInteger> {
-        val fee = BigInteger.valueOf(100)
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
         return ethereumKit.call(
