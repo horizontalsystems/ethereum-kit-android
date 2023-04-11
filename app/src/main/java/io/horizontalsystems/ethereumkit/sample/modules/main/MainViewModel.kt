@@ -7,7 +7,6 @@ import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
-import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.*
@@ -18,7 +17,6 @@ import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.horizontalsystems.nftkit.core.NftKit
 import io.horizontalsystems.oneinchkit.OneInchKit
 import io.horizontalsystems.uniswapkit.UniswapKit
 import io.horizontalsystems.uniswapkit.models.SwapData
@@ -38,9 +36,9 @@ class MainViewModel : ViewModel() {
 
     lateinit var ethereumKit: EthereumKit
     private lateinit var ethereumAdapter: EthereumAdapter
-    private lateinit var signer: Signer
+    lateinit var signer: Signer
 
-    private lateinit var erc20Adapter: Erc20Adapter
+    lateinit var erc20Adapter: Erc20Adapter
 
     val transactions = MutableLiveData<List<TransactionRecord>>()
     val balance = MutableLiveData<BigDecimal>()
@@ -69,9 +67,9 @@ class MainViewModel : ViewModel() {
     var tradeData = MutableLiveData<TradeData?>()
     val swapStatus = SingleLiveEvent<Throwable?>()
 
-    val fromToken: Erc20Token? = Configuration.erc20Tokens[0]
-    val toToken: Erc20Token? = Configuration.erc20Tokens[1]
-
+    val fromToken: Erc20Token = Configuration.erc20Tokens[0]
+    val toToken: Erc20Token = Configuration.erc20Tokens[1]
+    lateinit var gasPriceHelper: GasPriceHelper
 
     fun init() {
         val words = Configuration.defaultsWords.split(" ")
@@ -165,48 +163,17 @@ class MainViewModel : ViewModel() {
         ethereumAdapter.start()
         erc20Adapter.start()
 
-        val eip1559GasPriceProvider = Eip1559GasPriceProvider(ethereumKit)
-
-        eip1559GasPriceProvider
-            .feeHistory(4, rewardPercentile = listOf(50))
+        gasPriceHelper = GasPriceHelper(Eip1559GasPriceProvider(ethereumKit))
+        gasPriceHelper.gasPriceFlowable()
             .subscribe({
-                Log.e("AAA", "FeeHistory: $it")
-                handle(it)
-            }, {
-                Log.e("AAA", "error: ${it.localizedMessage ?: it.message ?: it.javaClass.simpleName}")
-            }).let { disposables.add(it) }
-
-    }
-
-    private fun handle(feeHistory: FeeHistory) {
-        var recommendedBaseFee: Long? = null
-        var recommendedPriorityFee: Long? = null
-
-        feeHistory.baseFeePerGas.lastOrNull()?.let { currentBaseFee ->
-            recommendedBaseFee = currentBaseFee
-        }
-
-        var priorityFeeSum: Long = 0
-        var priorityFeesCount = 0
-        feeHistory.reward.forEach { priorityFeeArray ->
-            priorityFeeArray.firstOrNull()?.let { priorityFee ->
-                priorityFeeSum += priorityFee
-                priorityFeesCount += 1
-            }
-        }
-
-        if (priorityFeesCount > 0) {
-            recommendedPriorityFee = priorityFeeSum / priorityFeesCount
-        }
-
-        recommendedBaseFee?.let { baseFee ->
-            recommendedPriorityFee?.let { tip ->
-
-                gasPrice = GasPrice.Eip1559(baseFee + tip, tip)
+                gasPrice = it
                 Log.e("AAA", "set gasPrice: $gasPrice")
-            }
-
-        }
+            }, {
+                Log.e(
+                    "AAA",
+                    "error: ${it.localizedMessage ?: it.message ?: it.javaClass.simpleName}"
+                )
+            }).let { disposables.add(it) }
     }
 
     private fun createKit(): EthereumKit {
