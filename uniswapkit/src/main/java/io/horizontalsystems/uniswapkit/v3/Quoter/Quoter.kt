@@ -4,7 +4,8 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
-import io.reactivex.Single
+import io.horizontalsystems.uniswapkit.v3.FeeAmount
+import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 
 class Quoter(private val ethereumKit: EthereumKit) {
@@ -17,47 +18,70 @@ class Quoter(private val ethereumKit: EthereumKit) {
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
-    private val fee = BigInteger.valueOf(3000)
-
-    fun bestTradeExactIn(
+    suspend fun bestTradeExactIn(
         tokenIn: Address,
         tokenOut: Address,
         amountIn: BigInteger
-    ): Single<BigInteger> {
+    ): BestTradeExactIn {
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
-        return ethereumKit.call(
-            contractAddress = Address(quoterAddress),
-            data = QuoteExactInputSingleMethod(
-                tokenIn = tokenIn,
-                tokenOut = tokenOut,
-                fee = fee,
-                amountIn = amountIn,
-                sqrtPriceLimitX96 = sqrtPriceLimitX96
-            ).encodedABI(),
-        ).map {
-            it.sliceArray(IntRange(0, 31)).toBigInteger()
+        val amounts = FeeAmount.sorted().mapNotNull { fee ->
+            try {
+                val callResponse = ethereumKit
+                    .call(
+                        contractAddress = Address(quoterAddress),
+                        data = QuoteExactInputSingleMethod(
+                            tokenIn = tokenIn,
+                            tokenOut = tokenOut,
+                            fee = fee.value,
+                            amountIn = amountIn,
+                            sqrtPriceLimitX96 = sqrtPriceLimitX96
+                        ).encodedABI(),
+                    )
+                    .await()
+
+                val amountOut = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
+                BestTradeExactIn(fee, amountOut)
+            } catch (t: Throwable) {
+                null
+            }
         }
+
+        return amounts.maxBy { it.amountOut }
     }
 
-    fun bestTradeExactOut(
+    suspend fun bestTradeExactOut(
         tokenIn: Address,
         tokenOut: Address,
         amountOut: BigInteger
-    ): Single<BigInteger> {
+    ): BestTradeExactOut {
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
-        return ethereumKit.call(
-            contractAddress = Address(quoterAddress),
-            data = QuoteExactOutputSingleMethod(
-                tokenIn = tokenIn,
-                tokenOut = tokenOut,
-                fee = fee,
-                amountOut = amountOut,
-                sqrtPriceLimitX96 = sqrtPriceLimitX96
-            ).encodedABI(),
-        ).map {
-            it.sliceArray(IntRange(0, 31)).toBigInteger()
+        val amounts = FeeAmount.sorted().mapNotNull { fee ->
+            try {
+                val callResponse = ethereumKit
+                    .call(
+                        contractAddress = Address(quoterAddress),
+                        data = QuoteExactOutputSingleMethod(
+                            tokenIn = tokenIn,
+                            tokenOut = tokenOut,
+                            fee = fee.value,
+                            amountOut = amountOut,
+                            sqrtPriceLimitX96 = sqrtPriceLimitX96
+                        ).encodedABI(),
+                    )
+                    .await()
+
+                val amountIn = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
+                BestTradeExactOut(fee, amountIn)
+            } catch (t: Throwable) {
+                null
+            }
         }
+
+        return amounts.minBy { it.amountIn }
     }
 }
+
+data class BestTradeExactIn(val fee: FeeAmount, val amountOut: BigInteger)
+data class BestTradeExactOut(val fee: FeeAmount, val amountIn: BigInteger)
