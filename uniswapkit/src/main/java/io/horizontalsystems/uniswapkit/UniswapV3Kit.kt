@@ -14,13 +14,13 @@ class UniswapV3Kit(
 ) {
     val routerAddress get() = swapRouter.swapRouterAddress
 
-    fun bestTradeExactIn(
+    suspend fun bestTradeExactIn(
         tokenIn: Address,
         tokenOut: Address,
         amountIn: BigInteger
     ) = quoter.bestTradeExactIn(tokenIn, tokenOut, amountIn)
 
-    fun bestTradeExactOut(
+    suspend fun bestTradeExactOut(
         tokenIn: Address,
         tokenOut: Address,
         amountOut: BigInteger
