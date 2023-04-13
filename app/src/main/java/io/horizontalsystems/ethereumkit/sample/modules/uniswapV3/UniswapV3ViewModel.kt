@@ -18,6 +18,7 @@ import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.uniswapkit.UniswapV3Kit
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
+import io.horizontalsystems.uniswapkit.v3.SwapPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -43,6 +44,7 @@ class UniswapV3ViewModel(
     private var tradeType: TradeType? = null
     private var loading = false
     private var error: Throwable? = null
+    private var swapPath: SwapPath? = null
 
     var swapState by mutableStateOf(
         SwapState(
@@ -105,6 +107,7 @@ class UniswapV3ViewModel(
         job?.cancel()
         this.amountIn = amountIn
         amountOut = null
+        swapPath = null
         tradeType = TradeType.ExactIn
         error = null
 
@@ -124,6 +127,7 @@ class UniswapV3ViewModel(
 
                 if (bestTradeExactIn != null) {
                     amountOut = BigDecimal(bestTradeExactIn.amountOut, toToken.decimals)
+                    swapPath = bestTradeExactIn.swapPath
                 } else {
                     error = Exception("No pool found for swap")
                 }
@@ -138,6 +142,7 @@ class UniswapV3ViewModel(
         job?.cancel()
         this.amountOut = amountOut
         amountIn = null
+        swapPath = null
         tradeType = TradeType.ExactOut
         error = null
 
@@ -157,6 +162,7 @@ class UniswapV3ViewModel(
 
                 if (bestTradeExactOut != null) {
                     amountIn = BigDecimal(bestTradeExactOut.amountIn, fromToken.decimals)
+                    swapPath = bestTradeExactOut.swapPath
                 } else {
                     error = Exception("No pool found for swap")
                 }
@@ -184,12 +190,14 @@ class UniswapV3ViewModel(
         val tmpAmountIn = amountIn ?: return
         val tmpAmountOut = amountOut ?: return
         val tradeType = tradeType ?: return
+        val swapPath = swapPath ?: return
 
         viewModelScope.launch {
             val amountIn = tmpAmountIn.movePointRight(fromToken.decimals).toBigInteger()
             val amountOut = tmpAmountOut.movePointRight(toToken.decimals).toBigInteger()
             val transactionData = uniswapV3Kit.transactionData(
                 tradeType = tradeType,
+                swapPath = swapPath,
                 tokenIn = fromToken.contractAddress,
                 tokenOut = toToken.contractAddress,
                 amountIn = amountIn,

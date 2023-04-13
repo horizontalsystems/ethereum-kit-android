@@ -6,6 +6,7 @@ import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
+import io.horizontalsystems.uniswapkit.v3.SwapPath
 import java.math.BigInteger
 import java.util.*
 
@@ -21,6 +22,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
 
     fun transactionData(
         tradeType: TradeType,
+        swapPath: SwapPath,
         tokenIn: Address,
         tokenOut: Address,
         amountIn: BigInteger,
@@ -32,30 +34,52 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         val fee = BigInteger.valueOf(100)
 
         val ethValue = BigInteger.ZERO
-        val method = when (tradeType) {
-            TradeType.ExactIn -> {
-                ExactInputSingleMethod(
-                    tokenIn = tokenIn,
-                    tokenOut = tokenOut,
-                    fee = fee,
-                    recipient = recipient,
-                    deadline = deadline,
-                    amountIn = amountIn,
-                    amountOutMinimum = amountOut,
-                    sqrtPriceLimitX96 = BigInteger.ZERO
-                )
+        val method = when {
+            swapPath.singleSwap -> when (tradeType) {
+                TradeType.ExactIn -> {
+                    ExactInputSingleMethod(
+                        tokenIn = tokenIn,
+                        tokenOut = tokenOut,
+                        fee = fee,
+                        recipient = recipient,
+                        deadline = deadline,
+                        amountIn = amountIn,
+                        amountOutMinimum = amountOut,
+                        sqrtPriceLimitX96 = BigInteger.ZERO
+                    )
+                }
+                TradeType.ExactOut -> {
+                    ExactOutputSingleMethod(
+                        tokenIn = tokenIn,
+                        tokenOut = tokenOut,
+                        fee = fee,
+                        recipient = recipient,
+                        deadline = deadline,
+                        amountOut = amountOut,
+                        amountInMaximum = amountIn,
+                        sqrtPriceLimitX96 = BigInteger.ZERO
+                    )
+                }
             }
-            TradeType.ExactOut -> {
-                ExactOutputSingleMethod(
-                    tokenIn = tokenIn,
-                    tokenOut = tokenOut,
-                    fee = fee,
-                    recipient = recipient,
-                    deadline = deadline,
-                    amountOut = amountOut,
-                    amountInMaximum = amountIn,
-                    sqrtPriceLimitX96 = BigInteger.ZERO
-                )
+            else -> when (tradeType) {
+                TradeType.ExactIn -> {
+                    ExactInputMethod(
+                        path = swapPath,
+                        recipient = recipient,
+                        deadline = deadline,
+                        amountIn = amountIn,
+                        amountOutMinimum = amountOut,
+                    )
+                }
+                TradeType.ExactOut -> {
+                    ExactOutputMethod(
+                        path = swapPath,
+                        recipient = recipient,
+                        deadline = deadline,
+                        amountOut = amountOut,
+                        amountInMaximum = amountIn,
+                    )
+                }
             }
         }
 
