@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
+import io.horizontalsystems.uniswapkit.v3.SwapPath
 import io.horizontalsystems.uniswapkit.v3.quoter.Quoter
 import io.horizontalsystems.uniswapkit.v3.router.SwapRouter
 import java.math.BigInteger
@@ -28,6 +29,7 @@ class UniswapV3Kit(
 
     fun transactionData(
         tradeType: TradeType,
+        swapPath: SwapPath,
         tokenIn: Address,
         tokenOut: Address,
         amountIn: BigInteger,
@@ -35,6 +37,7 @@ class UniswapV3Kit(
         tradeOptions: TradeOptions
     ) = swapRouter.transactionData(
         tradeType,
+        swapPath,
         tokenIn,
         tokenOut,
         amountIn,

@@ -6,6 +6,7 @@ import java.math.BigInteger
 import kotlin.math.max
 
 data class SwapPath(val items: List<SwapPathItem>) {
+    val singleSwap = items.size == 1
 
     fun abiEncodePacked(): ByteArray {
         var res = items.first().token1.raw
