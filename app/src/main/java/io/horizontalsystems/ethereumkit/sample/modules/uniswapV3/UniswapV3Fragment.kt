@@ -85,7 +85,10 @@ fun UniswapV3Screen(
             TradeType.ExactOut -> {
                 amountIn = swapState.amountIn
             }
-            null -> Unit
+            null -> {
+                amountOut = null
+                amountIn = null
+            }
         }
     }
 

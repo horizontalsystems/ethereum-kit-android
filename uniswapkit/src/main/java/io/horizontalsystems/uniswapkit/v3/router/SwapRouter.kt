@@ -1,4 +1,4 @@
-package io.horizontalsystems.uniswapkit.v3.SwapRouter
+package io.horizontalsystems.uniswapkit.v3.router
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
