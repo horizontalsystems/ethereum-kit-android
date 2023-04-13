@@ -4,11 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -78,7 +80,7 @@ fun UniswapV3Screen(
     }
 
     LaunchedEffect(swapState) {
-        when (swapState?.tradeType) {
+        when (swapState.tradeType) {
             TradeType.ExactIn -> {
                 amountOut = swapState.amountOut
             }
@@ -106,6 +108,14 @@ fun UniswapV3Screen(
                 initial = amountOut
             ) {
                 viewModel.onChangeAmountOut(it)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            AnimatedVisibility(visible = swapState.loading) {
+                CircularProgressIndicator()
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            swapState.error?.let {
+                Text(text = "Error: ${it.message} ${it.javaClass.simpleName}")
             }
         }
     }

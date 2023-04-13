@@ -32,20 +32,28 @@ class UniswapV3ViewModel(
     private val signer: Signer
 ) : ViewModel() {
 
-    private var amountIn: BigDecimal? = null
-    private var amountOut: BigDecimal? = null
-    private var tradeType: TradeType? = null
+    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit)
+    private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
     val fromToken: Erc20Token = Configuration.erc20Tokens[0]
     val toToken: Erc20Token = Configuration.erc20Tokens[1]
 
-    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit)
+    private var amountIn: BigDecimal? = null
+    private var amountOut: BigDecimal? = null
+    private var tradeType: TradeType? = null
+    private var loading = false
+    private var error: Throwable? = null
 
-    var swapState by mutableStateOf<SwapState?>(null)
+    var swapState by mutableStateOf(
+        SwapState(
+            amountIn = amountIn,
+            amountOut = amountOut,
+            tradeType = tradeType,
+            loading = loading,
+            error = error
+        )
+    )
         private set
-    private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
-
-    val swapStatus = mutableStateOf<Throwable?>(null)
 
     private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
 
@@ -96,31 +104,32 @@ class UniswapV3ViewModel(
     fun onChangeAmountIn(amountIn: BigDecimal?) {
         job?.cancel()
         this.amountIn = amountIn
-        this.tradeType = TradeType.ExactIn
+        amountOut = null
+        tradeType = TradeType.ExactIn
+        error = null
 
         if (amountIn == null) {
-            amountOut = null
+            loading = false
             emitState()
-            return
-        }
+        } else {
+            loading = true
+            emitState()
 
-        job = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val bestTradeExactIn = uniswapV3Kit
-                    .bestTradeExactIn(
-                        tokenIn = fromToken.contractAddress,
-                        tokenOut = toToken.contractAddress,
-                        amountIn = amountIn.multiply(BigDecimal(10).pow(fromToken.decimals))
-                            .toBigInteger()
-                    )
-
-                amountOut = BigDecimal(bestTradeExactIn.amountOut, toToken.decimals)
-                emitState()
-            } catch (error: Throwable) {
-                Log.e(
-                    "AAA",
-                    "bestTradeExactIn error: ${error.javaClass.simpleName} (${error.localizedMessage})"
+            job = viewModelScope.launch(Dispatchers.IO) {
+                val bestTradeExactIn = uniswapV3Kit.bestTradeExactIn(
+                    tokenIn = fromToken.contractAddress,
+                    tokenOut = toToken.contractAddress,
+                    amountIn = amountIn.movePointRight(fromToken.decimals).toBigInteger()
                 )
+
+                if (bestTradeExactIn != null) {
+                    amountOut = BigDecimal(bestTradeExactIn.amountOut, toToken.decimals)
+                } else {
+                    error = Exception("No pool found for swap")
+                }
+
+                loading = false
+                emitState()
             }
         }
     }
@@ -128,57 +137,59 @@ class UniswapV3ViewModel(
     fun onChangeAmountOut(amountOut: BigDecimal?) {
         job?.cancel()
         this.amountOut = amountOut
-        this.tradeType = TradeType.ExactOut
+        amountIn = null
+        tradeType = TradeType.ExactOut
+        error = null
 
         if (amountOut == null) {
-            amountIn = null
+            loading = false
             emitState()
-            return
-        }
+        } else {
+            loading = true
+            emitState()
 
-        job = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val bestTradeExactOut = uniswapV3Kit
-                    .bestTradeExactOut(
-                        tokenIn = fromToken.contractAddress,
-                        tokenOut = toToken.contractAddress,
-                        amountOut = amountOut.multiply(BigDecimal(10).pow(toToken.decimals))
-                            .toBigInteger()
-                    )
-
-                amountIn = BigDecimal(bestTradeExactOut.amountIn, fromToken.decimals)
-                emitState()
-            } catch (error: Throwable) {
-                Log.e(
-                    "AAA",
-                    "bestTradeExactOut error: ${error.javaClass.simpleName} (${error.localizedMessage})"
+            job = viewModelScope.launch(Dispatchers.IO) {
+                val bestTradeExactOut = uniswapV3Kit.bestTradeExactOut(
+                    tokenIn = fromToken.contractAddress,
+                    tokenOut = toToken.contractAddress,
+                    amountOut = amountOut.movePointRight(toToken.decimals).toBigInteger()
                 )
+
+                if (bestTradeExactOut != null) {
+                    amountIn = BigDecimal(bestTradeExactOut.amountIn, fromToken.decimals)
+                } else {
+                    error = Exception("No pool found for swap")
+                }
+
+                loading = false
+                emitState()
             }
         }
     }
 
     private fun emitState() {
         viewModelScope.launch {
-            swapState = tradeType?.let {
-                SwapState(
-                    amountIn = amountIn,
-                    amountOut = amountOut,
-                    tradeType = it
-                )
-            }
+            swapState = SwapState(
+                amountOut = amountOut,
+                amountIn = amountIn,
+                tradeType = tradeType,
+                loading = loading,
+                error = error
+            )
+            Log.e("AAA", "swapState: $swapState")
         }
     }
 
     fun swap() {
-        val swapState = swapState ?: return
-        val amountInDecimal = swapState.amountIn ?: return
-        val amountOutDecimal = swapState.amountOut ?: return
+        val tmpAmountIn = amountIn ?: return
+        val tmpAmountOut = amountOut ?: return
+        val tradeType = tradeType ?: return
 
         viewModelScope.launch {
-            val amountIn = amountInDecimal.multiply(BigDecimal(10).pow(fromToken.decimals)).toBigInteger()
-            val amountOut = amountOutDecimal.multiply(BigDecimal(10).pow(toToken.decimals)).toBigInteger()
+            val amountIn = tmpAmountIn.movePointRight(fromToken.decimals).toBigInteger()
+            val amountOut = tmpAmountOut.movePointRight(toToken.decimals).toBigInteger()
             val transactionData = uniswapV3Kit.transactionData(
-                tradeType = swapState.tradeType,
+                tradeType = tradeType,
                 tokenIn = fromToken.contractAddress,
                 tokenOut = toToken.contractAddress,
                 amountIn = amountIn,
@@ -192,11 +203,10 @@ class UniswapV3ViewModel(
                 val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit).await()
                 val signature = signer.signature(rawTransaction)
                 val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
-                swapStatus.value = null
+                error = null
                 Log.e("AAA", "swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
             } catch (it: Throwable) {
-                swapStatus.value = it
-                Log.e("AAA", "swap ERROR, error=${it.message}")
+                error = it
                 it.printStackTrace()
             }
         }
@@ -219,5 +229,7 @@ class UniswapV3ViewModel(
 data class SwapState(
     val amountOut: BigDecimal?,
     val amountIn: BigDecimal?,
-    val tradeType: TradeType,
+    val tradeType: TradeType?,
+    val loading: Boolean,
+    val error: Throwable?,
 )
