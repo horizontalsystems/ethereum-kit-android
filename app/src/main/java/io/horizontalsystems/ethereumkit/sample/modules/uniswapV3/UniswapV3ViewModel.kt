@@ -19,6 +19,7 @@ import io.horizontalsystems.uniswapkit.UniswapV3Kit
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.rx2.await
@@ -30,6 +31,10 @@ class UniswapV3ViewModel(
     private val gasPriceHelper: GasPriceHelper,
     private val signer: Signer
 ) : ViewModel() {
+
+    private var amountIn: BigDecimal? = null
+    private var amountOut: BigDecimal? = null
+    private var tradeType: TradeType? = null
 
     val fromToken: Erc20Token = Configuration.erc20Tokens[0]
     val toToken: Erc20Token = Configuration.erc20Tokens[1]
@@ -43,6 +48,8 @@ class UniswapV3ViewModel(
     val swapStatus = mutableStateOf<Throwable?>(null)
 
     private val tradeOptions = TradeOptions(allowedSlippagePercent = BigDecimal("0.5"))
+
+    private var job: Job? = null
 
     init {
         viewModelScope.launch {
@@ -87,64 +94,77 @@ class UniswapV3ViewModel(
     }
 
     fun onChangeAmountIn(amountIn: BigDecimal?) {
+        job?.cancel()
+        this.amountIn = amountIn
+        this.tradeType = TradeType.ExactIn
+
         if (amountIn == null) {
-            swapState = SwapState(
-                amountIn = null,
-                amountOut = null,
-                tradeType = TradeType.ExactIn
-            )
+            amountOut = null
+            emitState()
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        job = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val it = uniswapV3Kit
+                val bestTradeExactIn = uniswapV3Kit
                     .bestTradeExactIn(
                         tokenIn = fromToken.contractAddress,
                         tokenOut = toToken.contractAddress,
-                        amountIn = amountIn.multiply(BigDecimal(10).pow(fromToken.decimals)).toBigInteger()
+                        amountIn = amountIn.multiply(BigDecimal(10).pow(fromToken.decimals))
+                            .toBigInteger()
                     )
-                    .await()
-                val amountOut = it.toBigDecimal().divide(BigDecimal(10).pow(toToken.decimals))
-                swapState = SwapState(
-                    amountIn = amountIn,
-                    amountOut = amountOut,
-                    tradeType = TradeType.ExactIn
-                )
+
+                amountOut = BigDecimal(bestTradeExactIn.amountOut, toToken.decimals)
+                emitState()
             } catch (error: Throwable) {
-                Log.e("AAA", "bestTradeExactIn error: ${error.javaClass.simpleName} (${error.localizedMessage})")
+                Log.e(
+                    "AAA",
+                    "bestTradeExactIn error: ${error.javaClass.simpleName} (${error.localizedMessage})"
+                )
             }
         }
     }
 
     fun onChangeAmountOut(amountOut: BigDecimal?) {
+        job?.cancel()
+        this.amountOut = amountOut
+        this.tradeType = TradeType.ExactOut
+
         if (amountOut == null) {
-            swapState = SwapState(
-                amountIn = null,
-                amountOut = null,
-                tradeType = TradeType.ExactOut
-            )
+            amountIn = null
+            emitState()
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        job = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val it = uniswapV3Kit
+                val bestTradeExactOut = uniswapV3Kit
                     .bestTradeExactOut(
                         tokenIn = fromToken.contractAddress,
                         tokenOut = toToken.contractAddress,
-                        amountOut = amountOut.multiply(BigDecimal(10).pow(toToken.decimals)).toBigInteger()
+                        amountOut = amountOut.multiply(BigDecimal(10).pow(toToken.decimals))
+                            .toBigInteger()
                     )
-                    .await()
 
-                val amountIn = it.toBigDecimal().divide(BigDecimal(10).pow(fromToken.decimals))
-                swapState = SwapState(
+                amountIn = BigDecimal(bestTradeExactOut.amountIn, fromToken.decimals)
+                emitState()
+            } catch (error: Throwable) {
+                Log.e(
+                    "AAA",
+                    "bestTradeExactOut error: ${error.javaClass.simpleName} (${error.localizedMessage})"
+                )
+            }
+        }
+    }
+
+    private fun emitState() {
+        viewModelScope.launch {
+            swapState = tradeType?.let {
+                SwapState(
                     amountIn = amountIn,
                     amountOut = amountOut,
-                    tradeType = TradeType.ExactOut
+                    tradeType = it
                 )
-            } catch (error: Throwable) {
-                Log.e("AAA", "bestTradeExactOut error: ${error.javaClass.simpleName} (${error.localizedMessage})")
             }
         }
     }
@@ -199,5 +219,5 @@ class UniswapV3ViewModel(
 data class SwapState(
     val amountOut: BigDecimal?,
     val amountIn: BigDecimal?,
-    val tradeType: TradeType
+    val tradeType: TradeType,
 )

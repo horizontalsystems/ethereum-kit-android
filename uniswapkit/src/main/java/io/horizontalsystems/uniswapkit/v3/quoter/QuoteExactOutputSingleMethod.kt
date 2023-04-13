@@ -1,4 +1,4 @@
-package io.horizontalsystems.uniswapkit.v3.Quoter
+package io.horizontalsystems.uniswapkit.v3.quoter
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.models.Address
