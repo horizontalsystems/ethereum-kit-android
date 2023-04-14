@@ -45,6 +45,8 @@ class UniswapV3ViewModel(
     private var loading = false
     private var error: Throwable? = null
     private var swapPath: SwapPath? = null
+    private var allowance: BigDecimal = BigDecimal.ZERO
+
 
     var swapState by mutableStateOf(
         SwapState(
@@ -52,7 +54,8 @@ class UniswapV3ViewModel(
             amountOut = amountOut,
             tradeType = tradeType,
             loading = loading,
-            error = error
+            error = error,
+            allowance = allowance
         )
     )
         private set
@@ -67,28 +70,35 @@ class UniswapV3ViewModel(
                 gasPrice = it
             }
         }
-    }
 
-    fun syncAllowance() {
-        viewModelScope.launch {
-            try {
-                val it = erc20Adapter.allowance(uniswapV3Kit.routerAddress).await()
-                Log.e("AAA", "allowance: ${it.toPlainString()}")
-            } catch (it: Throwable) {
-                Log.e("AAA", "swapData ERROR = ${it.message}")
-            }
+        viewModelScope.launch(Dispatchers.IO) {
+            syncAllowance()
+            emitState()
         }
     }
 
-    fun approve(decimalAmount: BigDecimal) {
+    suspend fun syncAllowance() {
+        allowance = try {
+            erc20Adapter.allowance(uniswapV3Kit.routerAddress).await().stripTrailingZeros()
+        } catch (it: Throwable) {
+            Log.e("AAA", "allowance error", it)
+            BigDecimal.ZERO
+        }
+    }
+
+    fun approve() {
+        val tmpAmountIn = amountIn ?: return
         val spenderAddress = uniswapV3Kit.routerAddress
 
         val token = fromToken
-        val amount = decimalAmount.movePointRight(token.decimals).toBigInteger()
+        val amount = tmpAmountIn.movePointRight(token.decimals).toBigInteger()
 
         val transactionData = erc20Adapter.approveTransactionData(spenderAddress, amount)
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            loading = true
+            emitState()
+
             try {
                 val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice).await()
                 Log.e("AAA", "gas limit: $gasLimit")
@@ -96,10 +106,13 @@ class UniswapV3ViewModel(
                 val signature = signer.signature(rawTransaction)
                 val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
                 Log.e("AAA", "approve: ${fullTransaction.transaction.hash}")
-
             } catch (it: Throwable) {
                 Log.e("AAA", "approve ERROR = ${it.message}")
             }
+            syncAllowance()
+
+            loading = false
+            emitState()
         }
     }
 
@@ -175,12 +188,17 @@ class UniswapV3ViewModel(
 
     private fun emitState() {
         viewModelScope.launch {
+            if (error == null && erc20Adapter.balance < (amountIn ?: BigDecimal.ZERO)) {
+                error = Exception("Not enough funds")
+            }
+
             swapState = SwapState(
                 amountOut = amountOut,
                 amountIn = amountIn,
                 tradeType = tradeType,
                 loading = loading,
-                error = error
+                error = error,
+                allowance = allowance
             )
             Log.e("AAA", "swapState: $swapState")
         }
@@ -192,7 +210,7 @@ class UniswapV3ViewModel(
         val tradeType = tradeType ?: return
         val swapPath = swapPath ?: return
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val amountIn = tmpAmountIn.movePointRight(fromToken.decimals).toBigInteger()
             val amountOut = tmpAmountOut.movePointRight(toToken.decimals).toBigInteger()
             val transactionData = uniswapV3Kit.transactionData(
@@ -205,18 +223,23 @@ class UniswapV3ViewModel(
                 tradeOptions = tradeOptions
             )
 
+            loading = true
+            emitState()
+
             try {
                 val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice).await()
                 Log.e("AAA", "gas limit: $gasLimit")
                 val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit).await()
                 val signature = signer.signature(rawTransaction)
-                val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
-                error = null
-                Log.e("AAA", "swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
+//                val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
+//                error = null
+//                Log.e("AAA", "swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
             } catch (it: Throwable) {
                 error = it
-                it.printStackTrace()
             }
+
+            loading = false
+            emitState()
         }
     }
 
@@ -240,4 +263,5 @@ data class SwapState(
     val tradeType: TradeType?,
     val loading: Boolean,
     val error: Throwable?,
+    val allowance: BigDecimal,
 )
