@@ -10,12 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.input.KeyboardType
@@ -96,6 +94,9 @@ fun UniswapV3Screen(
 
     MaterialTheme {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(text = "Allowance: ${swapState.allowance?.toPlainString() ?: "n/a"}")
+            Spacer(modifier = Modifier.height(12.dp))
+
             AmountInput(
                 title = "Amount In (${viewModel.fromToken.code})",
                 initial = amountIn
@@ -115,7 +116,19 @@ fun UniswapV3Screen(
             }
             Spacer(modifier = Modifier.height(12.dp))
             swapState.error?.let {
-                Text(text = "Error: ${it.message} ${it.javaClass.simpleName}")
+                Text(text = "Error: ${it.message} ${it.javaClass.simpleName}", color = Color.Red)
+            }
+
+            if (swapState.error == null && swapState.amountIn != null && swapState.amountOut != null) {
+                if (swapState.amountIn > swapState.allowance) {
+                    Button(onClick = viewModel::approve) {
+                        Text(text = "Approve")
+                    }
+                } else {
+                    Button(onClick = viewModel::swap) {
+                        Text(text = "Swap")
+                    }
+                }
             }
         }
     }
