@@ -31,7 +31,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
     ): TransactionData {
         val recipient = tradeOptions.recipient ?: ethereumKit.receiveAddress
         val deadline = (Date().time / 1000 + tradeOptions.ttl).toBigInteger()
-        val fee = BigInteger.valueOf(100)
 
         val ethValue = BigInteger.ZERO
         val method = when {
@@ -40,7 +39,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     ExactInputSingleMethod(
                         tokenIn = tokenIn,
                         tokenOut = tokenOut,
-                        fee = fee,
+                        fee = swapPath.singleSwapFee.value,
                         recipient = recipient,
                         deadline = deadline,
                         amountIn = amountIn,
@@ -52,7 +51,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     ExactOutputSingleMethod(
                         tokenIn = tokenIn,
                         tokenOut = tokenOut,
-                        fee = fee,
+                        fee = swapPath.singleSwapFee.value,
                         recipient = recipient,
                         deadline = deadline,
                         amountOut = amountOut,
