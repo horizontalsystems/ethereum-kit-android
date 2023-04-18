@@ -5,7 +5,7 @@ open class ContractMethod {
 
     protected open val methodSignature: String = ""
 
-    fun encodedABI(): ByteArray {
+    open fun encodedABI(): ByteArray {
         return ContractMethodHelper.encodedABI(methodId, getArguments())
     }
 
