@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.SwapPath
@@ -11,27 +12,36 @@ import java.math.BigInteger
 
 class UniswapV3Kit(
     private val quoter: Quoter,
-    private val swapRouter: SwapRouter
+    private val swapRouter: SwapRouter,
+    private val tokenFactory: TokenFactory
 ) {
     val routerAddress get() = swapRouter.swapRouterAddress
 
+    fun etherToken(): Token {
+        return tokenFactory.etherToken()
+    }
+
+    fun token(contractAddress: Address, decimals: Int): Token {
+        return tokenFactory.token(contractAddress, decimals)
+    }
+
     suspend fun bestTradeExactIn(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountIn: BigInteger
     ) = quoter.bestTradeExactIn(tokenIn, tokenOut, amountIn)
 
     suspend fun bestTradeExactOut(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountOut: BigInteger
     ) = quoter.bestTradeExactOut(tokenIn, tokenOut, amountOut)
 
     fun transactionData(
         tradeType: TradeType,
         swapPath: SwapPath,
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountIn: BigInteger,
         amountOut: BigInteger,
         tradeOptions: TradeOptions
@@ -47,7 +57,11 @@ class UniswapV3Kit(
 
     companion object {
         fun getInstance(ethereumKit: EthereumKit): UniswapV3Kit {
-            return UniswapV3Kit(Quoter(ethereumKit), SwapRouter(ethereumKit))
+            val tokenFactory = TokenFactory(ethereumKit.chain)
+            val quoter = Quoter(ethereumKit, tokenFactory.etherToken())
+            val swapRouter = SwapRouter(ethereumKit)
+
+            return UniswapV3Kit(quoter, swapRouter, tokenFactory)
         }
 
 //        fun addDecorators(ethereumKit: EthereumKit) {

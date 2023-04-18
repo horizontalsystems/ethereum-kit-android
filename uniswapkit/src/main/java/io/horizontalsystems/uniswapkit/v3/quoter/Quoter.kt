@@ -4,7 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
-import io.horizontalsystems.uniswapkit.TokenFactory
+import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.v3.FeeAmount
 import io.horizontalsystems.uniswapkit.v3.SwapPath
 import io.horizontalsystems.uniswapkit.v3.SwapPathItem
@@ -13,8 +13,7 @@ import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 import kotlin.coroutines.coroutineContext
 
-class Quoter(private val ethereumKit: EthereumKit) {
-    private val tokenFactory = TokenFactory(ethereumKit.chain)
+class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
 
     private val quoterAddress = when (ethereumKit.chain) {
         Chain.Ethereum,
@@ -26,8 +25,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     suspend fun bestTradeExactIn(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountIn: BigInteger
     ): BestTradeExactIn? {
         quoteExactInputSingle(tokenIn, tokenOut, amountIn)?.let {
@@ -41,8 +40,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     private suspend fun quoteExactInputSingle(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountIn: BigInteger
     ): BestTradeExactIn? {
         val sqrtPriceLimitX96 = BigInteger.ZERO
@@ -53,8 +52,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
                 val callResponse = ethCall(
                     contractAddress = Address(quoterAddress),
                     data = QuoteExactInputSingleMethod(
-                        tokenIn = tokenIn,
-                        tokenOut = tokenOut,
+                        tokenIn = tokenIn.address,
+                        tokenOut = tokenOut.address,
                         fee = fee.value,
                         amountIn = amountIn,
                         sqrtPriceLimitX96 = sqrtPriceLimitX96
@@ -62,7 +61,7 @@ class Quoter(private val ethereumKit: EthereumKit) {
                 )
 
                 val amountOut = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
-                BestTradeExactIn(SwapPath(listOf(SwapPathItem(tokenIn, tokenOut, fee))), amountOut)
+                BestTradeExactIn(SwapPath(listOf(SwapPathItem(tokenIn.address, tokenOut.address, fee))), amountOut)
             } catch (t: Throwable) {
                 null
             }
@@ -72,20 +71,19 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     private suspend fun quoteExactInputMultihop(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountIn: BigInteger
     ): BestTradeExactIn? {
-        val weth = tokenFactory.etherToken()
 
         val swapInToWeth = quoteExactInputSingle(
             tokenIn = tokenIn,
-            tokenOut = weth.address,
+            tokenOut = weth,
             amountIn = amountIn
         ) ?: return null
 
         val swapWethToOut = quoteExactInputSingle(
-            tokenIn = weth.address,
+            tokenIn = weth,
             tokenOut = tokenOut,
             amountIn = swapInToWeth.amountOut
         ) ?: return null
@@ -110,8 +108,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     suspend fun bestTradeExactOut(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountOut: BigInteger
     ): BestTradeExactOut? {
         return quoteExactOutputSingle(tokenIn, tokenOut, amountOut)
@@ -119,8 +117,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     private suspend fun quoteExactOutputSingle(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountOut: BigInteger
     ): BestTradeExactOut? {
         val sqrtPriceLimitX96 = BigInteger.ZERO
@@ -131,8 +129,8 @@ class Quoter(private val ethereumKit: EthereumKit) {
                 val callResponse = ethCall(
                     contractAddress = Address(quoterAddress),
                     data = QuoteExactOutputSingleMethod(
-                        tokenIn = tokenIn,
-                        tokenOut = tokenOut,
+                        tokenIn = tokenIn.address,
+                        tokenOut = tokenOut.address,
                         fee = fee.value,
                         amountOut = amountOut,
                         sqrtPriceLimitX96 = sqrtPriceLimitX96
@@ -140,7 +138,7 @@ class Quoter(private val ethereumKit: EthereumKit) {
                 )
 
                 val amountIn = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
-                BestTradeExactOut(SwapPath(listOf(SwapPathItem(tokenOut, tokenIn, fee))), amountIn)
+                BestTradeExactOut(SwapPath(listOf(SwapPathItem(tokenOut.address, tokenIn.address, fee))), amountIn)
             } catch (t: Throwable) {
                 null
             }
@@ -150,21 +148,19 @@ class Quoter(private val ethereumKit: EthereumKit) {
     }
 
     private suspend fun quoteExactOutputMultihop(
-        tokenIn: Address,
-        tokenOut: Address,
+        tokenIn: Token,
+        tokenOut: Token,
         amountOut: BigInteger
     ): BestTradeExactOut? {
-        val weth = tokenFactory.etherToken()
-
         val swapWethToOut = quoteExactOutputSingle(
-            tokenIn = weth.address,
+            tokenIn = weth,
             tokenOut = tokenOut,
             amountOut = amountOut
         ) ?: return null
 
         val swapInToWeth = quoteExactOutputSingle(
             tokenIn = tokenIn,
-            tokenOut = weth.address,
+            tokenOut = weth,
             amountOut = swapWethToOut.amountIn
         ) ?: return null
 

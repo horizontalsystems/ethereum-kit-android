@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
@@ -133,8 +132,8 @@ class UniswapV3ViewModel(
 
             job = viewModelScope.launch(Dispatchers.IO) {
                 val bestTradeExactIn = uniswapV3Kit.bestTradeExactIn(
-                    tokenIn = fromToken.contractAddress,
-                    tokenOut = toToken.contractAddress,
+                    tokenIn = uniswapToken(fromToken),
+                    tokenOut = uniswapToken(toToken),
                     amountIn = amountIn.movePointRight(fromToken.decimals).toBigInteger()
                 )
 
@@ -149,6 +148,11 @@ class UniswapV3ViewModel(
                 emitState()
             }
         }
+    }
+
+    private fun uniswapToken(token: Erc20Token?) = when (token) {
+        null -> uniswapV3Kit.etherToken()
+        else -> uniswapV3Kit.token(token.contractAddress, token.decimals)
     }
 
     fun onChangeAmountOut(amountOut: BigDecimal?) {
@@ -168,8 +172,8 @@ class UniswapV3ViewModel(
 
             job = viewModelScope.launch(Dispatchers.IO) {
                 val bestTradeExactOut = uniswapV3Kit.bestTradeExactOut(
-                    tokenIn = fromToken.contractAddress,
-                    tokenOut = toToken.contractAddress,
+                    tokenIn = uniswapToken(fromToken),
+                    tokenOut = uniswapToken(toToken),
                     amountOut = amountOut.movePointRight(toToken.decimals).toBigInteger()
                 )
 
@@ -216,8 +220,8 @@ class UniswapV3ViewModel(
             val transactionData = uniswapV3Kit.transactionData(
                 tradeType = tradeType,
                 swapPath = swapPath,
-                tokenIn = fromToken.contractAddress,
-                tokenOut = toToken.contractAddress,
+                tokenIn = uniswapToken(fromToken),
+                tokenOut = uniswapToken(toToken),
                 amountIn = amountIn,
                 amountOut = amountOut,
                 tradeOptions = tradeOptions

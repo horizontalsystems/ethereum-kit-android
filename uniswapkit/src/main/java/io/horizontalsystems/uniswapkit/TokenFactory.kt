@@ -28,6 +28,7 @@ class TokenFactory(chain: Chain) {
                 Chain.Polygon -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
                 Chain.Avalanche -> "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
                 Chain.EthereumGoerli -> "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6"
+                Chain.ArbitrumOne -> "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
                  else -> throw UnsupportedChainError.NoWethAddress
             }
             return Address(wethAddressHex)
