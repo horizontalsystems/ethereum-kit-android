@@ -39,7 +39,7 @@ class UniswapV3ViewModel(
     private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
     val fromToken: Erc20Token? = Configuration.erc20Tokens[0]
-    val toToken: Erc20Token? = null
+    val toToken: Erc20Token? = Configuration.erc20Tokens[1]
 
     private val fromUniswapToken = uniswapToken(fromToken)
     private val toUniswapToken = uniswapToken(toToken)

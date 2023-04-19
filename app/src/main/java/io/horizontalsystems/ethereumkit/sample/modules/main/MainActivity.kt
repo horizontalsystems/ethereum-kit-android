@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.ethereumkit.sample.modules.addresswatch.AddressWatchActivity
+import io.horizontalsystems.ethereumkit.sample.modules.uniswapV3.UniswapV3Fragment
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
@@ -18,6 +19,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     private val transactionsFragment = TransactionsFragment()
     private val sendReceiveFragment = SendReceiveFragment()
     private val swapFragment = SwapFragment()
+    private val uniswapV3Fragment = UniswapV3Fragment()
     private val nftsFragment = NftsFragment()
     private val fm = supportFragmentManager
     private var active: Fragment = balanceFragment
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         val navigation = findViewById<BottomNavigationView>(R.id.navigation)
         navigation.setOnNavigationItemSelectedListener(this)
 
+        fm.beginTransaction().add(R.id.fragment_container, uniswapV3Fragment, "6").hide(uniswapV3Fragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, nftsFragment, "5").hide(nftsFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, swapFragment, "4").hide(swapFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, sendReceiveFragment, "3").hide(sendReceiveFragment).commit()
@@ -59,7 +62,8 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             R.id.navigation_home -> balanceFragment
             R.id.navigation_transactions -> transactionsFragment
             R.id.navigation_send_receive -> sendReceiveFragment
-            R.id.navigation_swap -> swapFragment
+//            R.id.navigation_swap -> swapFragment
+            R.id.navigation_uniswapV3 -> uniswapV3Fragment
             R.id.navigation_nfts -> nftsFragment
             else -> null
         }

@@ -14,14 +14,22 @@ object Configuration {
     const val infuraProjectId = "2a1306f1d12f4c109a4d4fb9be46b02e"
     const val infuraSecret = "fc479a9290b64a84a15fa6544a130218"
     const val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
+    const val arbiscanApiKey = "Z43JN5434XVNA5D73UGPWKF26G5D9MGDPZ"
     const val bscScanKey = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
 
     val erc20Tokens: List<Erc20Token>
         get() {
             return when (chain) {
                 Chain.Ethereum -> listOf(
+                        Erc20Token("1INCH", "1INCH", Address("0x111111111117dC0aa78b770fA6A738034120C302"), 18),
+                        Erc20Token("ArcBlock", "ABT", Address("0xB98d4C97425d9908E66E53A6fDf673ACcA0BE986"), 18),
                         Erc20Token("DAI", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18),
+                        Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
                         Erc20Token("USD Coin", "USDC", Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), 6)
+                )
+                Chain.ArbitrumOne -> listOf(
+                        Erc20Token("USDT", "USDT", Address("0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"), 6),
+                        Erc20Token("Uniswap", "UNI", Address("0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0"), 18),
                 )
                 Chain.BinanceSmartChain -> listOf(
                         Erc20Token("Beefy.Finance", "BIFI", Address("0xCa3F508B8e4Dd382eE878A314789373D80A5190A"), 18),

@@ -13,9 +13,13 @@
         android:id="@+id/navigation_send_receive"
         android:title="Send/Receive" />
 
+<!--    <item-->
+<!--        android:id="@+id/navigation_swap"-->
+<!--        android:title="Swap" />-->
+
     <item
-        android:id="@+id/navigation_swap"
-        android:title="Swap" />
+        android:id="@+id/navigation_uniswapV3"
+        android:title="Uniswap V3" />
 
     <item
         android:id="@+id/navigation_nfts"
