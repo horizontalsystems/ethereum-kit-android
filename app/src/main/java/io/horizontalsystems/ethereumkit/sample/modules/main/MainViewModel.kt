@@ -35,7 +35,7 @@ class MainViewModel : ViewModel() {
     private val disposables = CompositeDisposable()
 
     lateinit var ethereumKit: EthereumKit
-    private lateinit var ethereumAdapter: EthereumAdapter
+    lateinit var ethereumAdapter: EthereumAdapter
     lateinit var signer: Signer
 
     lateinit var erc20Adapter: Erc20Adapter
@@ -191,6 +191,10 @@ class MainViewModel : ViewModel() {
                     RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+            }
+            Chain.ArbitrumOne -> {
+                transactionSource = TransactionSource.arbiscan(Configuration.arbiscanApiKey)
+                rpcSource = RpcSource.arbitrumOneRpcHttp()
             }
             Chain.EthereumGoerli -> {
                 transactionSource = TransactionSource.goerliEtherscan(Configuration.etherscanKey)
