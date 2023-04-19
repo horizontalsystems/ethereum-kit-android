@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
+import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.ethereumkit.sample.modules.main.MainViewModel
 import io.horizontalsystems.uniswapkit.models.TradeType
@@ -45,6 +46,7 @@ class UniswapV3Fragment : Fragment() {
                 UniswapV3Screen(
                     mainViewModel.ethereumKit,
                     mainViewModel.erc20Adapter,
+                    mainViewModel.ethereumAdapter,
                     mainViewModel.gasPriceHelper,
                     mainViewModel.signer,
                 )
@@ -57,12 +59,14 @@ class UniswapV3Fragment : Fragment() {
 fun UniswapV3Screen(
     ethereumKit: EthereumKit,
     erc20Adapter: Erc20Adapter,
+    ethereumAdapter: EthereumAdapter,
     gasPriceHelper: GasPriceHelper,
     signer: Signer
 ) {
     val factory = UniswapV3ViewModel.Factory(
         ethereumKit,
         erc20Adapter,
+        ethereumAdapter,
         gasPriceHelper,
         signer
     )
@@ -98,14 +102,14 @@ fun UniswapV3Screen(
             Spacer(modifier = Modifier.height(12.dp))
 
             AmountInput(
-                title = "Amount In (${viewModel.fromToken.code})",
+                title = "Amount In (${viewModel.fromToken?.code ?: "ETH"})",
                 initial = amountIn
             ) {
                 viewModel.onChangeAmountIn(it)
             }
             Spacer(modifier = Modifier.height(12.dp))
             AmountInput(
-                title = "Amount Out (${viewModel.toToken.code})",
+                title = "Amount Out (${viewModel.toToken?.code ?: "ETH"})",
                 initial = amountOut
             ) {
                 viewModel.onChangeAmountOut(it)

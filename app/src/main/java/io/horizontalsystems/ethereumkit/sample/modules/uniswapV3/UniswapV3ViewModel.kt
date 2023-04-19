@@ -9,9 +9,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
+import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
+import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.uniswapkit.UniswapV3Kit
@@ -28,6 +30,7 @@ import java.math.BigDecimal
 class UniswapV3ViewModel(
     private val ethereumKit: EthereumKit,
     private val erc20Adapter: Erc20Adapter,
+    private val ethereumAdapter: EthereumAdapter,
     private val gasPriceHelper: GasPriceHelper,
     private val signer: Signer
 ) : ViewModel() {
@@ -35,8 +38,11 @@ class UniswapV3ViewModel(
     private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit)
     private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
-    val fromToken: Erc20Token = Configuration.erc20Tokens[0]
-    val toToken: Erc20Token = Configuration.erc20Tokens[1]
+    val fromToken: Erc20Token? = Configuration.erc20Tokens[0]
+    val toToken: Erc20Token? = null
+
+    private val fromUniswapToken = uniswapToken(fromToken)
+    private val toUniswapToken = uniswapToken(toToken)
 
     private var amountIn: BigDecimal? = null
     private var amountOut: BigDecimal? = null
@@ -77,11 +83,15 @@ class UniswapV3ViewModel(
     }
 
     suspend fun syncAllowance() {
-        allowance = try {
-            erc20Adapter.allowance(uniswapV3Kit.routerAddress).await().stripTrailingZeros()
-        } catch (it: Throwable) {
-            Log.e("AAA", "allowance error", it)
-            BigDecimal.ZERO
+        if (fromToken == null) {
+            allowance = BigDecimal(Int.MAX_VALUE)
+        } else {
+            allowance = try {
+                erc20Adapter.allowance(uniswapV3Kit.routerAddress).await().stripTrailingZeros()
+            } catch (it: Throwable) {
+                Log.e("AAA", "allowance error", it)
+                BigDecimal.ZERO
+            }
         }
     }
 
@@ -89,7 +99,7 @@ class UniswapV3ViewModel(
         val tmpAmountIn = amountIn ?: return
         val spenderAddress = uniswapV3Kit.routerAddress
 
-        val token = fromToken
+        val token = fromUniswapToken
         val amount = tmpAmountIn.movePointRight(token.decimals).toBigInteger()
 
         val transactionData = erc20Adapter.approveTransactionData(spenderAddress, amount)
@@ -132,13 +142,13 @@ class UniswapV3ViewModel(
 
             job = viewModelScope.launch(Dispatchers.IO) {
                 val bestTradeExactIn = uniswapV3Kit.bestTradeExactIn(
-                    tokenIn = uniswapToken(fromToken),
-                    tokenOut = uniswapToken(toToken),
-                    amountIn = amountIn.movePointRight(fromToken.decimals).toBigInteger()
+                    tokenIn = fromUniswapToken,
+                    tokenOut = toUniswapToken,
+                    amountIn = amountIn.movePointRight(fromUniswapToken.decimals).toBigInteger()
                 )
 
                 if (bestTradeExactIn != null) {
-                    amountOut = BigDecimal(bestTradeExactIn.amountOut, toToken.decimals)
+                    amountOut = BigDecimal(bestTradeExactIn.amountOut, toUniswapToken.decimals)
                     swapPath = bestTradeExactIn.swapPath
                 } else {
                     error = Exception("No pool found for swap")
@@ -172,13 +182,13 @@ class UniswapV3ViewModel(
 
             job = viewModelScope.launch(Dispatchers.IO) {
                 val bestTradeExactOut = uniswapV3Kit.bestTradeExactOut(
-                    tokenIn = uniswapToken(fromToken),
-                    tokenOut = uniswapToken(toToken),
-                    amountOut = amountOut.movePointRight(toToken.decimals).toBigInteger()
+                    tokenIn = fromUniswapToken,
+                    tokenOut = toUniswapToken,
+                    amountOut = amountOut.movePointRight(toUniswapToken.decimals).toBigInteger()
                 )
 
                 if (bestTradeExactOut != null) {
-                    amountIn = BigDecimal(bestTradeExactOut.amountIn, fromToken.decimals)
+                    amountIn = BigDecimal(bestTradeExactOut.amountIn, fromUniswapToken.decimals)
                     swapPath = bestTradeExactOut.swapPath
                 } else {
                     error = Exception("No pool found for swap")
@@ -192,7 +202,13 @@ class UniswapV3ViewModel(
 
     private fun emitState() {
         viewModelScope.launch {
-            if (error == null && erc20Adapter.balance < (amountIn ?: BigDecimal.ZERO)) {
+            val balance = if (fromToken == null) {
+                ethereumAdapter.balance
+            } else {
+                erc20Adapter.balance
+            }
+
+            if (error == null && balance < (amountIn ?: BigDecimal.ZERO)) {
                 error = Exception("Not enough funds")
             }
 
@@ -215,13 +231,13 @@ class UniswapV3ViewModel(
         val swapPath = swapPath ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val amountIn = tmpAmountIn.movePointRight(fromToken.decimals).toBigInteger()
-            val amountOut = tmpAmountOut.movePointRight(toToken.decimals).toBigInteger()
+            val amountIn = tmpAmountIn.movePointRight(fromUniswapToken.decimals).toBigInteger()
+            val amountOut = tmpAmountOut.movePointRight(toUniswapToken.decimals).toBigInteger()
             val transactionData = uniswapV3Kit.transactionData(
                 tradeType = tradeType,
                 swapPath = swapPath,
-                tokenIn = uniswapToken(fromToken),
-                tokenOut = uniswapToken(toToken),
+                tokenIn = fromUniswapToken,
+                tokenOut = toUniswapToken,
                 amountIn = amountIn,
                 amountOut = amountOut,
                 tradeOptions = tradeOptions
@@ -250,12 +266,13 @@ class UniswapV3ViewModel(
     class Factory(
         private val ethereumKit: EthereumKit,
         private val erc20Adapter: Erc20Adapter,
+        private val ethereumAdapter: EthereumAdapter,
         private val gasPriceHelper: GasPriceHelper,
         private val signer: Signer
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return UniswapV3ViewModel(ethereumKit, erc20Adapter, gasPriceHelper, signer) as T
+            return UniswapV3ViewModel(ethereumKit, erc20Adapter, ethereumAdapter, gasPriceHelper, signer) as T
         }
     }
 }
