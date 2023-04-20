@@ -80,5 +80,13 @@ sealed class RpcSource() {
             return Http(listOf(URL("https://rpc.fantom.network")), null)
         }
 
+        fun arbitrumGoerliRpcHttp(): Http {
+            return Http(listOf(URL("https://goerli-rollup.arbitrum.io/rpc")), null)
+        }
+
+        fun mumbaiRpcHttp(): Http {
+            return Http(listOf(URL("https://matic-mumbai.chainstacklabs.com")), null)
+        }
+
     }
 }
