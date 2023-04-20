@@ -82,18 +82,8 @@ fun UniswapV3Screen(
     }
 
     LaunchedEffect(swapState) {
-        when (swapState.tradeType) {
-            TradeType.ExactIn -> {
-                amountOut = swapState.amountOut
-            }
-            TradeType.ExactOut -> {
-                amountIn = swapState.amountIn
-            }
-            null -> {
-                amountOut = null
-                amountIn = null
-            }
-        }
+        amountOut = swapState.amountOut
+        amountIn = swapState.amountIn
     }
 
     MaterialTheme {
