@@ -47,7 +47,6 @@ class UniswapV3ViewModel(
     private var amountOut: BigDecimal? = null
     private var loading = false
     private var error: Throwable? = null
-    private var swapPath: SwapPath? = null
     private var allowance: BigDecimal = BigDecimal.ZERO
     private var bestTrade: BestTrade? = null
 
@@ -126,7 +125,6 @@ class UniswapV3ViewModel(
         job?.cancel()
         this.amountIn = amountIn
         amountOut = null
-        swapPath = null
         error = null
         bestTrade = null
 
@@ -146,7 +144,6 @@ class UniswapV3ViewModel(
 
                 if (bestTradeExactIn != null) {
                     amountOut = BigDecimal(bestTradeExactIn.amountOut, toUniswapToken.decimals)
-                    swapPath = bestTradeExactIn.swapPath
                     bestTrade = bestTradeExactIn
                 } else {
                     error = Exception("No pool found for swap")
@@ -167,7 +164,6 @@ class UniswapV3ViewModel(
         job?.cancel()
         this.amountOut = amountOut
         amountIn = null
-        swapPath = null
         error = null
         bestTrade = null
 
@@ -187,7 +183,6 @@ class UniswapV3ViewModel(
 
                 if (bestTradeExactOut != null) {
                     amountIn = BigDecimal(bestTradeExactOut.amountIn, fromUniswapToken.decimals)
-                    swapPath = bestTradeExactOut.swapPath
                     bestTrade = bestTradeExactOut
                 } else {
                     error = Exception("No pool found for swap")
