@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
-import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
@@ -18,8 +17,8 @@ import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.uniswapkit.UniswapV3Kit
 import io.horizontalsystems.uniswapkit.models.TradeOptions
-import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.SwapPath
+import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -46,18 +45,16 @@ class UniswapV3ViewModel(
 
     private var amountIn: BigDecimal? = null
     private var amountOut: BigDecimal? = null
-    private var tradeType: TradeType? = null
     private var loading = false
     private var error: Throwable? = null
     private var swapPath: SwapPath? = null
     private var allowance: BigDecimal = BigDecimal.ZERO
-
+    private var bestTrade: BestTrade? = null
 
     var swapState by mutableStateOf(
         SwapState(
             amountIn = amountIn,
             amountOut = amountOut,
-            tradeType = tradeType,
             loading = loading,
             error = error,
             allowance = allowance
@@ -130,8 +127,8 @@ class UniswapV3ViewModel(
         this.amountIn = amountIn
         amountOut = null
         swapPath = null
-        tradeType = TradeType.ExactIn
         error = null
+        bestTrade = null
 
         if (amountIn == null) {
             loading = false
@@ -150,6 +147,7 @@ class UniswapV3ViewModel(
                 if (bestTradeExactIn != null) {
                     amountOut = BigDecimal(bestTradeExactIn.amountOut, toUniswapToken.decimals)
                     swapPath = bestTradeExactIn.swapPath
+                    bestTrade = bestTradeExactIn
                 } else {
                     error = Exception("No pool found for swap")
                 }
@@ -170,8 +168,8 @@ class UniswapV3ViewModel(
         this.amountOut = amountOut
         amountIn = null
         swapPath = null
-        tradeType = TradeType.ExactOut
         error = null
+        bestTrade = null
 
         if (amountOut == null) {
             loading = false
@@ -190,6 +188,7 @@ class UniswapV3ViewModel(
                 if (bestTradeExactOut != null) {
                     amountIn = BigDecimal(bestTradeExactOut.amountIn, fromUniswapToken.decimals)
                     swapPath = bestTradeExactOut.swapPath
+                    bestTrade = bestTradeExactOut
                 } else {
                     error = Exception("No pool found for swap")
                 }
@@ -215,7 +214,6 @@ class UniswapV3ViewModel(
             swapState = SwapState(
                 amountOut = amountOut,
                 amountIn = amountIn,
-                tradeType = tradeType,
                 loading = loading,
                 error = error,
                 allowance = allowance
@@ -225,21 +223,11 @@ class UniswapV3ViewModel(
     }
 
     fun swap() {
-        val tmpAmountIn = amountIn ?: return
-        val tmpAmountOut = amountOut ?: return
-        val tradeType = tradeType ?: return
-        val swapPath = swapPath ?: return
+        val bestTrade = bestTrade ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val amountIn = tmpAmountIn.movePointRight(fromUniswapToken.decimals).toBigInteger()
-            val amountOut = tmpAmountOut.movePointRight(toUniswapToken.decimals).toBigInteger()
             val transactionData = uniswapV3Kit.transactionData(
-                tradeType = tradeType,
-                swapPath = swapPath,
-                tokenIn = fromUniswapToken,
-                tokenOut = toUniswapToken,
-                amountIn = amountIn,
-                amountOut = amountOut,
+                bestTrade = bestTrade,
                 tradeOptions = tradeOptions
             )
 
@@ -281,7 +269,6 @@ class UniswapV3ViewModel(
 data class SwapState(
     val amountOut: BigDecimal?,
     val amountIn: BigDecimal?,
-    val tradeType: TradeType?,
     val loading: Boolean,
     val error: Throwable?,
     val allowance: BigDecimal,

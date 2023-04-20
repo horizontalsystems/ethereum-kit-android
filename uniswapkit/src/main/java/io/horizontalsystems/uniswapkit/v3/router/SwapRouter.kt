@@ -4,10 +4,9 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
-import io.horizontalsystems.uniswapkit.v3.SwapPath
+import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import java.math.BigInteger
 import java.util.*
 
@@ -22,47 +21,33 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
     }
 
     fun transactionData(
-        tradeType: TradeType,
-        swapPath: SwapPath,
-        tokenIn: Token,
-        tokenOut: Token,
-        amountIn: BigInteger,
-        amountOut: BigInteger,
+        bestTrade: BestTrade,
         tradeOptions: TradeOptions
     ): TransactionData {
         val recipient = tradeOptions.recipient ?: ethereumKit.receiveAddress
         val deadline = (Date().time / 1000 + tradeOptions.ttl).toBigInteger()
 
         val swapRecipient = when {
-            tokenOut.isEther -> Address("0x0000000000000000000000000000000000000000")
+            bestTrade.tokenOut.isEther -> Address("0x0000000000000000000000000000000000000000")
             else -> recipient
         }
 
         val ethValue = when {
-            tokenIn.isEther -> amountIn
+            bestTrade.tokenIn.isEther -> bestTrade.amountIn
             else -> BigInteger.ZERO
         }
 
-        val swapMethod = buildSwapMethod(
-            tradeType,
-            swapPath,
-            tokenIn,
-            tokenOut,
-            amountIn,
-            amountOut,
-            swapRecipient,
-            deadline
-        )
+        val swapMethod = buildSwapMethod(bestTrade, swapRecipient, deadline)
 
         val methods = buildList {
             add(swapMethod)
 
             when {
-                tokenIn.isEther && tradeType == TradeType.ExactOut -> {
+                bestTrade.tokenIn.isEther && bestTrade.tradeType == TradeType.ExactOut -> {
                     add(RefundETHMethod())
                 }
-                tokenOut.isEther -> {
-                    add(UnwrapWETH9Method(amountOut, recipient))
+                bestTrade.tokenOut.isEther -> {
+                    add(UnwrapWETH9Method(bestTrade.amountOut, recipient))
                 }
             }
         }
@@ -77,58 +62,53 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
     }
 
     private fun buildSwapMethod(
-        tradeType: TradeType,
-        swapPath: SwapPath,
-        tokenIn: Token,
-        tokenOut: Token,
-        amountIn: BigInteger,
-        amountOut: BigInteger,
+        bestTrade: BestTrade,
         swapRecipient: Address,
         deadline: BigInteger
     ) = when {
-        swapPath.singleSwap -> when (tradeType) {
+        bestTrade.singleSwap -> when (bestTrade.tradeType) {
             TradeType.ExactIn -> {
                 ExactInputSingleMethod(
-                    tokenIn = tokenIn.address,
-                    tokenOut = tokenOut.address,
-                    fee = swapPath.singleSwapFee.value,
+                    tokenIn = bestTrade.tokenIn.address,
+                    tokenOut = bestTrade.tokenOut.address,
+                    fee = bestTrade.singleSwapFee.value,
                     recipient = swapRecipient,
                     deadline = deadline,
-                    amountIn = amountIn,
-                    amountOutMinimum = amountOut,
+                    amountIn = bestTrade.amountIn,
+                    amountOutMinimum = bestTrade.amountOut,
                     sqrtPriceLimitX96 = BigInteger.ZERO
                 )
             }
             TradeType.ExactOut -> {
                 ExactOutputSingleMethod(
-                    tokenIn = tokenIn.address,
-                    tokenOut = tokenOut.address,
-                    fee = swapPath.singleSwapFee.value,
+                    tokenIn = bestTrade.tokenIn.address,
+                    tokenOut = bestTrade.tokenOut.address,
+                    fee = bestTrade.singleSwapFee.value,
                     recipient = swapRecipient,
                     deadline = deadline,
-                    amountOut = amountOut,
-                    amountInMaximum = amountIn,
+                    amountOut = bestTrade.amountOut,
+                    amountInMaximum = bestTrade.amountIn,
                     sqrtPriceLimitX96 = BigInteger.ZERO
                 )
             }
         }
-        else -> when (tradeType) {
+        else -> when (bestTrade.tradeType) {
             TradeType.ExactIn -> {
                 ExactInputMethod(
-                    path = swapPath,
+                    path = bestTrade.swapPath,
                     recipient = swapRecipient,
                     deadline = deadline,
-                    amountIn = amountIn,
-                    amountOutMinimum = amountOut,
+                    amountIn = bestTrade.amountIn,
+                    amountOutMinimum = bestTrade.amountOut,
                 )
             }
             TradeType.ExactOut -> {
                 ExactOutputMethod(
-                    path = swapPath,
+                    path = bestTrade.swapPath,
                     recipient = swapRecipient,
                     deadline = deadline,
-                    amountOut = amountOut,
-                    amountInMaximum = amountIn,
+                    amountOut = bestTrade.amountOut,
+                    amountInMaximum = bestTrade.amountIn,
                 )
             }
         }

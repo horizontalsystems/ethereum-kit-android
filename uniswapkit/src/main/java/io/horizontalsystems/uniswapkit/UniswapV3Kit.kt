@@ -4,8 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
-import io.horizontalsystems.uniswapkit.models.TradeType
-import io.horizontalsystems.uniswapkit.v3.SwapPath
+import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import io.horizontalsystems.uniswapkit.v3.quoter.Quoter
 import io.horizontalsystems.uniswapkit.v3.router.SwapRouter
 import java.math.BigInteger
@@ -38,20 +37,10 @@ class UniswapV3Kit(
     ) = quoter.bestTradeExactOut(tokenIn, tokenOut, amountOut)
 
     fun transactionData(
-        tradeType: TradeType,
-        swapPath: SwapPath,
-        tokenIn: Token,
-        tokenOut: Token,
-        amountIn: BigInteger,
-        amountOut: BigInteger,
+        bestTrade: BestTrade,
         tradeOptions: TradeOptions
     ) = swapRouter.transactionData(
-        tradeType,
-        swapPath,
-        tokenIn,
-        tokenOut,
-        amountIn,
-        amountOut,
+        bestTrade,
         tradeOptions
     )
 
