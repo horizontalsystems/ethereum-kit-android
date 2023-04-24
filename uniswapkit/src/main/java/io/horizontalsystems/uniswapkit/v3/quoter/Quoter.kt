@@ -64,7 +64,7 @@ class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
                 val amountOut = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
                 BestTrade(
                     tradeType = TradeType.ExactIn,
-                    swapPath = SwapPath(listOf(SwapPathItem(tokenIn, tokenOut, fee))),
+                    swapPath = SwapPath(listOf(SwapPathItem(tokenIn.address, tokenOut.address, fee))),
                     amountIn = amountIn,
                     amountOut = amountOut,
                     tokenIn = tokenIn,
@@ -155,7 +155,7 @@ class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
                 val amountIn = callResponse.sliceArray(IntRange(0, 31)).toBigInteger()
                 BestTrade(
                     tradeType = TradeType.ExactOut,
-                    swapPath = SwapPath(listOf(SwapPathItem(tokenOut, tokenIn, fee))),
+                    swapPath = SwapPath(listOf(SwapPathItem(tokenOut.address, tokenIn.address, fee))),
                     amountIn = amountIn,
                     amountOut = amountOut,
                     tokenIn = tokenIn,

@@ -1,6 +1,8 @@
 package io.horizontalsystems.uniswapkit.v3.router
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactory
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 
@@ -27,7 +29,37 @@ class ExactOutputSingleMethod(
     )
 
     companion object {
-        const val methodSignature =
+        private const val methodSignature =
             "exactOutputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"
+    }
+
+    class Factory : ContractMethodFactory {
+        override val methodId = ContractMethodHelper.getMethodId(methodSignature)
+
+        override fun createMethod(inputArguments: ByteArray): ContractMethod {
+            val parsedArguments = ContractMethodHelper.decodeABI(
+                inputArguments, listOf(
+                    Address::class,
+                    Address::class,
+                    BigInteger::class,
+                    Address::class,
+                    BigInteger::class,
+                    BigInteger::class,
+                    BigInteger::class,
+                    BigInteger::class,
+                )
+            )
+
+            return ExactOutputSingleMethod(
+                tokenIn = parsedArguments[0] as Address,
+                tokenOut = parsedArguments[1] as Address,
+                fee = parsedArguments[2] as BigInteger,
+                recipient = parsedArguments[3] as Address,
+                deadline = parsedArguments[4] as BigInteger,
+                amountOut = parsedArguments[5] as BigInteger,
+                amountInMaximum = parsedArguments[6] as BigInteger,
+                sqrtPriceLimitX96 = parsedArguments[7] as BigInteger,
+            )
+        }
     }
 }

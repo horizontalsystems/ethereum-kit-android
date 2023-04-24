@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.uniswapkit.models.Token
 
 class TokenFactory(chain: Chain) {
-    private val wethAddress = getWethAddress(chain)
+    val wethAddress = getWethAddress(chain)
 
     sealed class UnsupportedChainError : Throwable() {
         object NoWethAddress : UnsupportedChainError()

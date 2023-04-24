@@ -16,7 +16,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         Chain.Polygon,
         Chain.Optimism,
         Chain.ArbitrumOne,
-        Chain.EthereumGoerli -> Address("0xE592427A0AEce92De3Edee1F18E0157C05861564")
+        Chain.EthereumGoerli -> Address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45")
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
@@ -95,7 +95,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         else -> when (bestTrade.tradeType) {
             TradeType.ExactIn -> {
                 ExactInputMethod(
-                    path = bestTrade.swapPath,
+                    path = bestTrade.swapPath.abiEncodePacked(),
                     recipient = swapRecipient,
                     deadline = deadline,
                     amountIn = bestTrade.amountIn,
@@ -104,7 +104,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
             }
             TradeType.ExactOut -> {
                 ExactOutputMethod(
-                    path = bestTrade.swapPath,
+                    path = bestTrade.swapPath.abiEncodePacked(),
                     recipient = swapRecipient,
                     deadline = deadline,
                     amountOut = bestTrade.amountOut,

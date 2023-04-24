@@ -19,6 +19,7 @@ import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.hdwalletkit.Mnemonic
 import io.horizontalsystems.oneinchkit.OneInchKit
 import io.horizontalsystems.uniswapkit.UniswapKit
+import io.horizontalsystems.uniswapkit.UniswapV3Kit
 import io.horizontalsystems.uniswapkit.models.SwapData
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeData
@@ -84,6 +85,7 @@ class MainViewModel : ViewModel() {
         Erc20Kit.addTransactionSyncer(ethereumKit)
         Erc20Kit.addDecorators(ethereumKit)
         UniswapKit.addDecorators(ethereumKit)
+        UniswapV3Kit.addDecorators(ethereumKit)
         OneInchKit.addDecorators(ethereumKit)
 
         updateBalance()

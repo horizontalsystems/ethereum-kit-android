@@ -2,8 +2,11 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.uniswapkit.v3.contract.UniswapV3ContractMethodFactories
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
+import io.horizontalsystems.uniswapkit.v3.UniswapV3MethodDecorator
+import io.horizontalsystems.uniswapkit.v3.UniswapV3TransactionDecorator
 import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import io.horizontalsystems.uniswapkit.v3.quoter.Quoter
 import io.horizontalsystems.uniswapkit.v3.router.SwapRouter
@@ -53,10 +56,11 @@ class UniswapV3Kit(
             return UniswapV3Kit(quoter, swapRouter, tokenFactory)
         }
 
-//        fun addDecorators(ethereumKit: EthereumKit) {
-//            ethereumKit.addMethodDecorator(SwapMethodDecorator(SwapContractMethodFactories))
-//            ethereumKit.addTransactionDecorator(SwapTransactionDecorator())
-//        }
+        fun addDecorators(ethereumKit: EthereumKit) {
+            val tokenFactory = TokenFactory(ethereumKit.chain)
+            ethereumKit.addMethodDecorator(UniswapV3MethodDecorator(UniswapV3ContractMethodFactories))
+            ethereumKit.addTransactionDecorator(UniswapV3TransactionDecorator(tokenFactory.wethAddress))
+        }
 
     }
 
