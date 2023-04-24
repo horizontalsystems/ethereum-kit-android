@@ -1,17 +1,17 @@
 package io.horizontalsystems.uniswapkit.v3
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
-import io.horizontalsystems.uniswapkit.models.Token
+import io.horizontalsystems.ethereumkit.models.Address
 import java.math.BigInteger
 import kotlin.math.max
 
 data class SwapPath(val items: List<SwapPathItem>) {
 
     fun abiEncodePacked(): ByteArray {
-        var res = items.first().token1.address.raw
+        var res = items.first().token1.raw
 
         items.forEach {
-            res += encodeUnit24(it.fee.value) + it.token2.address.raw
+            res += encodeUnit24(it.fee.value) + it.token2.raw
         }
 
         return res
@@ -24,4 +24,4 @@ data class SwapPath(val items: List<SwapPathItem>) {
     }
 }
 
-data class SwapPathItem(val token1: Token, val token2: Token, val fee: FeeAmount)
+data class SwapPathItem(val token1: Address, val token2: Address, val fee: FeeAmount)

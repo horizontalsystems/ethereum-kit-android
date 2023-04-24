@@ -1,6 +1,8 @@
 package io.horizontalsystems.uniswapkit.v3.router
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactory
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.uniswapkit.v3.SwapPath
@@ -11,7 +13,7 @@ import org.web3j.abi.datatypes.generated.Uint256
 import java.math.BigInteger
 
 class ExactOutputMethod(
-    val path: SwapPath,
+    val path: ByteArray,
     val recipient: Address,
     val deadline: BigInteger,
     val amountOut: BigInteger,
@@ -25,7 +27,7 @@ class ExactOutputMethod(
             "exactOutput",
             listOf(
                 DynamicStruct(
-                    DynamicBytes(path.abiEncodePacked()),
+                    DynamicBytes(path),
                     org.web3j.abi.datatypes.Address(recipient.hex),
                     Uint256(deadline),
                     Uint256(amountOut),
@@ -39,6 +41,35 @@ class ExactOutputMethod(
     }
 
     companion object {
-        const val methodSignature = "exactOutput((bytes,address,uint256,uint256,uint256))"
+        private const val methodSignature = "exactOutput((bytes,address,uint256,uint256,uint256))"
+    }
+
+    class Factory : ContractMethodFactory {
+        override val methodId = ContractMethodHelper.getMethodId(methodSignature)
+
+        override fun createMethod(inputArguments: ByteArray): ContractMethod {
+            val argumentTypes = listOf(
+                ContractMethodHelper.DynamicStruct(
+                    listOf(
+                        ByteArray::class,
+                        Address::class,
+                        BigInteger::class,
+                        BigInteger::class,
+                        BigInteger::class
+                    )
+                ),
+            )
+            val dynamicStruct = ContractMethodHelper.decodeABI(inputArguments, argumentTypes)
+
+            val parsedArguments = dynamicStruct.first() as List<Any>
+
+            return ExactOutputMethod(
+                path = parsedArguments[0] as ByteArray,
+                recipient = parsedArguments[1] as Address,
+                deadline = parsedArguments[2] as BigInteger,
+                amountOut = parsedArguments[3] as BigInteger,
+                amountInMaximum = parsedArguments[4] as BigInteger,
+            )
+        }
     }
 }

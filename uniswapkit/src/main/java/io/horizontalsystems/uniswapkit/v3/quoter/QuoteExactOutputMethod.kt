@@ -9,10 +9,7 @@ class QuoteExactOutputMethod(
     val amountOut: BigInteger,
 ) : ContractMethod() {
 
-    override val methodSignature = Companion.methodSignature
+    override val methodSignature = "quoteExactOutput(bytes,uint256)"
     override fun getArguments() = listOf(path.abiEncodePacked(), amountOut)
 
-    companion object {
-        const val methodSignature = "quoteExactOutput(bytes,uint256)"
-    }
 }

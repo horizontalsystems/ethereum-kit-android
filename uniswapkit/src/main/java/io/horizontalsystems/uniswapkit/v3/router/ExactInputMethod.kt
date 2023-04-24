@@ -1,9 +1,10 @@
 package io.horizontalsystems.uniswapkit.v3.router
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactory
+import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
 import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.uniswapkit.v3.SwapPath
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.datatypes.DynamicBytes
 import org.web3j.abi.datatypes.DynamicStruct
@@ -11,7 +12,7 @@ import org.web3j.abi.datatypes.generated.Uint256
 import java.math.BigInteger
 
 class ExactInputMethod(
-    val path: SwapPath,
+    val path: ByteArray,
     val recipient: Address,
     val deadline: BigInteger,
     val amountIn: BigInteger,
@@ -25,7 +26,7 @@ class ExactInputMethod(
             "exactInput",
             listOf(
                 DynamicStruct(
-                    DynamicBytes(path.abiEncodePacked()),
+                    DynamicBytes(path),
                     org.web3j.abi.datatypes.Address(recipient.hex),
                     Uint256(deadline),
                     Uint256(amountIn),
@@ -39,6 +40,48 @@ class ExactInputMethod(
     }
 
     companion object {
-        const val methodSignature = "exactInput((bytes,address,uint256,uint256,uint256))"
+        private const val methodSignature = "exactInput((bytes,address,uint256,uint256,uint256))"
+    }
+
+    class Factory : ContractMethodFactory {
+        override val methodId = ContractMethodHelper.getMethodId(methodSignature)
+
+        override fun createMethod(inputArguments: ByteArray): ContractMethod {
+            val argumentTypes = listOf(
+                ContractMethodHelper.DynamicStruct(
+                    listOf(
+                        ByteArray::class,
+                        Address::class,
+                        BigInteger::class,
+                        BigInteger::class,
+                        BigInteger::class
+                    )
+                ),
+            )
+            val dynamicStruct = ContractMethodHelper.decodeABI(inputArguments, argumentTypes)
+
+            val parsedArguments = dynamicStruct.first() as List<Any>
+
+            return ExactInputMethod(
+                path = parsedArguments[0] as ByteArray,
+                recipient = parsedArguments[1] as Address,
+                deadline = parsedArguments[2] as BigInteger,
+                amountIn = parsedArguments[3] as BigInteger,
+                amountOutMinimum = parsedArguments[4] as BigInteger,
+            )
+        }
     }
 }
+
+val ExactInputMethod.tokenIn: Address
+    get() = Address(path.copyOfRange(0, 20))
+
+val ExactInputMethod.tokenOut: Address
+    get() = Address(path.copyOfRange(path.size - 20, path.size))
+
+val ExactOutputMethod.tokenIn: Address
+    get() = Address(path.copyOfRange(path.size - 20, path.size))
+
+val ExactOutputMethod.tokenOut: Address
+    get() = Address(path.copyOfRange(0, 20))
+
