@@ -14,7 +14,6 @@ import java.math.BigInteger
 class ExactInputMethod(
     val path: ByteArray,
     val recipient: Address,
-    val deadline: BigInteger,
     val amountIn: BigInteger,
     val amountOutMinimum: BigInteger,
 ) : ContractMethod() {
@@ -28,7 +27,6 @@ class ExactInputMethod(
                 DynamicStruct(
                     DynamicBytes(path),
                     org.web3j.abi.datatypes.Address(recipient.hex),
-                    Uint256(deadline),
                     Uint256(amountIn),
                     Uint256(amountOutMinimum)
                 )
@@ -40,7 +38,7 @@ class ExactInputMethod(
     }
 
     companion object {
-        private const val methodSignature = "exactInput((bytes,address,uint256,uint256,uint256))"
+        private const val methodSignature = "exactInput((bytes,address,uint256,uint256))"
     }
 
     class Factory : ContractMethodFactory {
@@ -53,7 +51,6 @@ class ExactInputMethod(
                         ByteArray::class,
                         Address::class,
                         BigInteger::class,
-                        BigInteger::class,
                         BigInteger::class
                     )
                 ),
@@ -65,9 +62,8 @@ class ExactInputMethod(
             return ExactInputMethod(
                 path = parsedArguments[0] as ByteArray,
                 recipient = parsedArguments[1] as Address,
-                deadline = parsedArguments[2] as BigInteger,
-                amountIn = parsedArguments[3] as BigInteger,
-                amountOutMinimum = parsedArguments[4] as BigInteger,
+                amountIn = parsedArguments[2] as BigInteger,
+                amountOutMinimum = parsedArguments[3] as BigInteger,
             )
         }
     }

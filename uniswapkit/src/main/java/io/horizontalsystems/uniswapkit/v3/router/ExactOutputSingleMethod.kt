@@ -11,7 +11,6 @@ class ExactOutputSingleMethod(
     val tokenOut: Address,
     val fee: BigInteger,
     val recipient: Address,
-    val deadline: BigInteger,
     val amountOut: BigInteger,
     val amountInMaximum: BigInteger,
     val sqrtPriceLimitX96: BigInteger,
@@ -22,7 +21,6 @@ class ExactOutputSingleMethod(
         tokenOut,
         fee,
         recipient,
-        deadline,
         amountOut,
         amountInMaximum,
         sqrtPriceLimitX96
@@ -30,7 +28,7 @@ class ExactOutputSingleMethod(
 
     companion object {
         private const val methodSignature =
-            "exactOutputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"
+            "exactOutputSingle((address,address,uint24,address,uint256,uint256,uint160))"
     }
 
     class Factory : ContractMethodFactory {
@@ -46,7 +44,6 @@ class ExactOutputSingleMethod(
                     BigInteger::class,
                     BigInteger::class,
                     BigInteger::class,
-                    BigInteger::class,
                 )
             )
 
@@ -55,10 +52,9 @@ class ExactOutputSingleMethod(
                 tokenOut = parsedArguments[1] as Address,
                 fee = parsedArguments[2] as BigInteger,
                 recipient = parsedArguments[3] as Address,
-                deadline = parsedArguments[4] as BigInteger,
-                amountOut = parsedArguments[5] as BigInteger,
-                amountInMaximum = parsedArguments[6] as BigInteger,
-                sqrtPriceLimitX96 = parsedArguments[7] as BigInteger,
+                amountOut = parsedArguments[4] as BigInteger,
+                amountInMaximum = parsedArguments[5] as BigInteger,
+                sqrtPriceLimitX96 = parsedArguments[6] as BigInteger,
             )
         }
     }

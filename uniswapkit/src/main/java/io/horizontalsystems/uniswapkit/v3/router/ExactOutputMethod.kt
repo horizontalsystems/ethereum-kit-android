@@ -15,7 +15,6 @@ import java.math.BigInteger
 class ExactOutputMethod(
     val path: ByteArray,
     val recipient: Address,
-    val deadline: BigInteger,
     val amountOut: BigInteger,
     val amountInMaximum: BigInteger,
 ) : ContractMethod() {
@@ -29,7 +28,6 @@ class ExactOutputMethod(
                 DynamicStruct(
                     DynamicBytes(path),
                     org.web3j.abi.datatypes.Address(recipient.hex),
-                    Uint256(deadline),
                     Uint256(amountOut),
                     Uint256(amountInMaximum)
                 )
@@ -41,7 +39,7 @@ class ExactOutputMethod(
     }
 
     companion object {
-        private const val methodSignature = "exactOutput((bytes,address,uint256,uint256,uint256))"
+        private const val methodSignature = "exactOutput((bytes,address,uint256,uint256))"
     }
 
     class Factory : ContractMethodFactory {
@@ -54,7 +52,6 @@ class ExactOutputMethod(
                         ByteArray::class,
                         Address::class,
                         BigInteger::class,
-                        BigInteger::class,
                         BigInteger::class
                     )
                 ),
@@ -66,9 +63,8 @@ class ExactOutputMethod(
             return ExactOutputMethod(
                 path = parsedArguments[0] as ByteArray,
                 recipient = parsedArguments[1] as Address,
-                deadline = parsedArguments[2] as BigInteger,
-                amountOut = parsedArguments[3] as BigInteger,
-                amountInMaximum = parsedArguments[4] as BigInteger,
+                amountOut = parsedArguments[2] as BigInteger,
+                amountInMaximum = parsedArguments[3] as BigInteger,
             )
         }
     }

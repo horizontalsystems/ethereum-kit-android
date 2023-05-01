@@ -13,7 +13,7 @@ class SwapDecoration(
         val tokenIn: Token,
         val tokenOut: Token,
         val recipient: Address?,
-        val deadline: BigInteger
+        val deadline: BigInteger?
 ) : TransactionDecoration() {
 
     sealed class Amount(val value: BigInteger) {
