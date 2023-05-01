@@ -28,7 +28,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
                     amountIn = contractMethod.amountIn,
                     amountOutMinimum = contractMethod.amountOutMinimum,
                     recipient = contractMethod.recipient,
-                    deadline = contractMethod.deadline
                 )
             }
             is ExactInputMethod -> {
@@ -42,7 +41,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
                     amountIn = contractMethod.amountIn,
                     amountOutMinimum = contractMethod.amountOutMinimum,
                     recipient = contractMethod.recipient,
-                    deadline = contractMethod.deadline
                 )
             }
             is ExactOutputSingleMethod -> {
@@ -56,7 +54,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
                     contractMethod.amountOut,
                     contractMethod.amountInMaximum,
                     contractMethod.recipient,
-                    contractMethod.deadline
                 )
             }
             is ExactOutputMethod -> {
@@ -70,7 +67,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
                     contractMethod.amountOut,
                     contractMethod.amountInMaximum,
                     contractMethod.recipient,
-                    contractMethod.deadline
                 )
             }
 
@@ -112,7 +108,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
         amountOut: BigInteger,
         amountInMaximum: BigInteger,
         recipient: Address,
-        deadline: BigInteger
     ): SwapDecoration {
         val amountIn = if (eventInstances.isEmpty()) {
             SwapDecoration.Amount.Extremum(amountInMaximum)
@@ -134,7 +129,7 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
             tokenIn = swapDecorationTokenIn,
             tokenOut = findEip20Token(eventInstances, tokenOut),
             recipient = if (recipient == from) null else recipient,
-            deadline = deadline
+            deadline = null
         )
     }
 
@@ -148,7 +143,6 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
         amountIn: BigInteger,
         amountOutMinimum: BigInteger,
         recipient: Address,
-        deadline: BigInteger
     ): SwapDecoration {
         val amountOut = if (eventInstances.isEmpty()) {
             SwapDecoration.Amount.Extremum(amountOutMinimum)
@@ -182,7 +176,7 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
             tokenIn = swapDecorationTokenIn,
             tokenOut = findEip20Token(eventInstances, tokenOut),
             recipient = if (recipient == from) null else recipient,
-            deadline = deadline
+            deadline = null
         )
     }
 

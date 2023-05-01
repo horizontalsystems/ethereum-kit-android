@@ -11,7 +11,6 @@ class ExactInputSingleMethod(
     val tokenOut: Address,
     val fee: BigInteger,
     val recipient: Address,
-    val deadline: BigInteger,
     val amountIn: BigInteger,
     val amountOutMinimum: BigInteger,
     val sqrtPriceLimitX96: BigInteger,
@@ -22,7 +21,6 @@ class ExactInputSingleMethod(
         tokenOut,
         fee,
         recipient,
-        deadline,
         amountIn,
         amountOutMinimum,
         sqrtPriceLimitX96
@@ -30,7 +28,7 @@ class ExactInputSingleMethod(
 
     companion object {
         private const val methodSignature =
-            "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"
+            "exactInputSingle((address,address,uint24,address,uint256,uint256,uint160))"
     }
 
     class Factory : ContractMethodFactory {
@@ -46,7 +44,6 @@ class ExactInputSingleMethod(
                     BigInteger::class,
                     BigInteger::class,
                     BigInteger::class,
-                    BigInteger::class,
                 )
             )
 
@@ -55,10 +52,9 @@ class ExactInputSingleMethod(
                 tokenOut = parsedArguments[1] as Address,
                 fee = parsedArguments[2] as BigInteger,
                 recipient = parsedArguments[3] as Address,
-                deadline = parsedArguments[4] as BigInteger,
-                amountIn = parsedArguments[5] as BigInteger,
-                amountOutMinimum = parsedArguments[6] as BigInteger,
-                sqrtPriceLimitX96 = parsedArguments[7] as BigInteger,
+                amountIn = parsedArguments[4] as BigInteger,
+                amountOutMinimum = parsedArguments[5] as BigInteger,
+                sqrtPriceLimitX96 = parsedArguments[6] as BigInteger,
             )
         }
     }

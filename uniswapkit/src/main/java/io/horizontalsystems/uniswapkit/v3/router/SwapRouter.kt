@@ -8,7 +8,6 @@ import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import java.math.BigInteger
-import java.util.*
 
 class SwapRouter(private val ethereumKit: EthereumKit) {
     val swapRouterAddress = when (ethereumKit.chain) {
@@ -25,7 +24,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         tradeOptions: TradeOptions
     ): TransactionData {
         val recipient = tradeOptions.recipient ?: ethereumKit.receiveAddress
-        val deadline = (Date().time / 1000 + tradeOptions.ttl).toBigInteger()
 
         val swapRecipient = when {
             bestTrade.tokenOut.isEther -> Address("0x0000000000000000000000000000000000000000")
@@ -37,7 +35,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
             else -> BigInteger.ZERO
         }
 
-        val swapMethod = buildSwapMethod(bestTrade, swapRecipient, deadline)
+        val swapMethod = buildSwapMethod(bestTrade, swapRecipient)
 
         val methods = buildList {
             add(swapMethod)
@@ -64,7 +62,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
     private fun buildSwapMethod(
         bestTrade: BestTrade,
         swapRecipient: Address,
-        deadline: BigInteger
     ) = when {
         bestTrade.singleSwap -> when (bestTrade.tradeType) {
             TradeType.ExactIn -> {
@@ -73,7 +70,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     tokenOut = bestTrade.tokenOut.address,
                     fee = bestTrade.singleSwapFee.value,
                     recipient = swapRecipient,
-                    deadline = deadline,
                     amountIn = bestTrade.amountIn,
                     amountOutMinimum = bestTrade.amountOut,
                     sqrtPriceLimitX96 = BigInteger.ZERO
@@ -85,7 +81,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     tokenOut = bestTrade.tokenOut.address,
                     fee = bestTrade.singleSwapFee.value,
                     recipient = swapRecipient,
-                    deadline = deadline,
                     amountOut = bestTrade.amountOut,
                     amountInMaximum = bestTrade.amountIn,
                     sqrtPriceLimitX96 = BigInteger.ZERO
@@ -97,7 +92,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                 ExactInputMethod(
                     path = bestTrade.swapPath.abiEncodePacked(),
                     recipient = swapRecipient,
-                    deadline = deadline,
                     amountIn = bestTrade.amountIn,
                     amountOutMinimum = bestTrade.amountOut,
                 )
@@ -106,7 +100,6 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                 ExactOutputMethod(
                     path = bestTrade.swapPath.abiEncodePacked(),
                     recipient = swapRecipient,
-                    deadline = deadline,
                     amountOut = bestTrade.amountOut,
                     amountInMaximum = bestTrade.amountIn,
                 )
