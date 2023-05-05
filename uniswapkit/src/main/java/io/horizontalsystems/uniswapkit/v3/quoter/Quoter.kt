@@ -4,6 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
+import io.horizontalsystems.uniswapkit.TradeError
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.FeeAmount
@@ -29,15 +30,14 @@ class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
         tokenIn: Token,
         tokenOut: Token,
         amountIn: BigInteger
-    ): BestTrade? {
+    ): BestTrade {
         quoteExactInputSingle(tokenIn, tokenOut, amountIn)?.let {
             return it
         }
         quoteExactInputMultihop(tokenIn, tokenOut, amountIn)?.let {
             return it
         }
-
-        return null
+        throw TradeError.TradeNotFound()
     }
 
     private suspend fun quoteExactInputSingle(
@@ -126,9 +126,14 @@ class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
         tokenIn: Token,
         tokenOut: Token,
         amountOut: BigInteger
-    ): BestTrade? {
-        return quoteExactOutputSingle(tokenIn, tokenOut, amountOut)
-            ?: quoteExactOutputMultihop(tokenIn, tokenOut, amountOut)
+    ): BestTrade {
+        quoteExactOutputSingle(tokenIn, tokenOut, amountOut)?.let {
+            return it
+        }
+        quoteExactOutputMultihop(tokenIn, tokenOut, amountOut)?.let {
+            return it
+        }
+        throw TradeError.TradeNotFound()
     }
 
     private suspend fun quoteExactOutputSingle(
