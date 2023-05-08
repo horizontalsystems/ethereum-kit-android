@@ -70,29 +70,11 @@ class UniswapV3TransactionDecorator(private val wethAddress: Address) : ITransac
                 )
             }
 
-//            is MulticallMethod -> {
-//                val tokenOutIsEther = tokenOut is Ether
-//
-//                when {
-//                    tokenOutIsEther -> {
-//                        val amountOut = if (internalTransactions.isEmpty()) {
-//                            SwapDecoration.Amount.Extremum(contractMethod.amountOutMinimum)
-//                        } else {
-//                            SwapDecoration.Amount.Exact(totalETHIncoming(contractMethod.recipient, internalTransactions))
-//                        }
-//
-//                        return SwapDecoration(
-//                            to,
-//                            SwapDecoration.Amount.Exact(contractMethod.amountIn),
-//                            amountOut,
-//                            findEip20Token(eventInstances, tokenIn),
-//                            SwapDecoration.Token.EvmCoin,
-//                            if (contractMethod.recipient == from) null else contractMethod.recipient,
-//                            contractMethod.deadline
-//                        )
-//                    }
-//                }
-//            }
+            is MulticallMethod -> {
+                return contractMethod.methods.firstNotNullOfOrNull {
+                    decoration(from, to, value, it, internalTransactions, eventInstances)
+                }
+            }
 
             else -> return null
         }

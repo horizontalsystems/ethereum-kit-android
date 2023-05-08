@@ -1,11 +1,7 @@
 package io.horizontalsystems.uniswapkit.v3.contract
 
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodFactories
-import io.horizontalsystems.uniswapkit.contract.*
-import io.horizontalsystems.uniswapkit.v3.router.ExactInputMethod
-import io.horizontalsystems.uniswapkit.v3.router.ExactInputSingleMethod
-import io.horizontalsystems.uniswapkit.v3.router.ExactOutputMethod
-import io.horizontalsystems.uniswapkit.v3.router.ExactOutputSingleMethod
+import io.horizontalsystems.uniswapkit.v3.router.*
 
 object UniswapV3ContractMethodFactories : ContractMethodFactories() {
     init {
@@ -14,6 +10,7 @@ object UniswapV3ContractMethodFactories : ContractMethodFactories() {
             ExactOutputMethod.Factory(),
             ExactInputSingleMethod.Factory(),
             ExactOutputSingleMethod.Factory(),
+            MulticallMethod.Factory(UniswapV3ContractMethodFactories),
         )
         registerMethodFactories(swapContractMethodFactories)
     }
