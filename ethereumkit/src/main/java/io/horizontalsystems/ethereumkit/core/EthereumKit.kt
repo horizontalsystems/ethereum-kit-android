@@ -61,7 +61,6 @@ class EthereumKit(
     private val accountStateSubject = PublishSubject.create<AccountState>()
 
     val defaultGasLimit: Long = 21_000
-    private val maxGasLimit: Long = 2_000_000
     private val defaultMinAmount: BigInteger = BigInteger.ONE
 
     private var started = false
@@ -162,11 +161,11 @@ class EthereumKit(
         // if amount is 0 - set default minimum amount
         val resolvedAmount = if (value == BigInteger.ZERO) defaultMinAmount else value
 
-        return blockchain.estimateGas(to, resolvedAmount, maxGasLimit, gasPrice, null)
+        return blockchain.estimateGas(to, resolvedAmount, chain.gasLimit, gasPrice, null)
     }
 
     fun estimateGas(to: Address?, value: BigInteger?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {
-        return blockchain.estimateGas(to, value, maxGasLimit, gasPrice, data)
+        return blockchain.estimateGas(to, value, chain.gasLimit, gasPrice, data)
     }
 
     fun estimateGas(transactionData: TransactionData, gasPrice: GasPrice): Single<Long> {
