@@ -5,7 +5,11 @@ import io.horizontalsystems.uniswapkit.v3.quoter.BestTrade
 import java.math.BigDecimal
 import java.math.BigInteger
 
-data class TradeDataV3(val trade: BestTrade, val options: TradeOptions) {
+data class TradeDataV3(
+    val trade: BestTrade,
+    val options: TradeOptions,
+    val priceImpact: BigDecimal?
+) {
     val tradeType by trade::tradeType
     val swapPath by trade::swapPath
     val amountIn by trade::amountIn
@@ -31,6 +35,5 @@ data class TradeDataV3(val trade: BestTrade, val options: TradeOptions) {
         get() = TokenAmount(tokenOut, amountOutMinimum)
 
     val executionPrice = Price(baseTokenAmount = tokenAmountIn, quoteTokenAmount = tokenAmountOut).decimalValue?.stripTrailingZeros()
-    val priceImpact: BigDecimal? = BigDecimal.TEN
 
 }
