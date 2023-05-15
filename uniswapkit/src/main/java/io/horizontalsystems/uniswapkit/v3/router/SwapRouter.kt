@@ -41,7 +41,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
                     add(RefundETHMethod())
                 }
                 tradeData.tokenOut.isEther -> {
-                    add(UnwrapWETH9Method(tradeData.trade.amountOut, recipient))
+                    add(UnwrapWETH9Method(tradeData.amountOutMinimum, recipient))
                 }
             }
         }
