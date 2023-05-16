@@ -22,7 +22,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         val recipient = tradeData.options.recipient ?: ethereumKit.receiveAddress
 
         val swapRecipient = when {
-            tradeData.tokenOut.isEther -> Address("0x0000000000000000000000000000000000000000")
+            tradeData.tokenOut.isEther -> Address("0x0000000000000000000000000000000000000002")
             else -> recipient
         }
 
