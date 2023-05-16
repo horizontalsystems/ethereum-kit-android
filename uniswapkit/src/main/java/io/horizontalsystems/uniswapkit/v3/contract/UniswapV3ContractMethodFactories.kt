@@ -10,6 +10,7 @@ object UniswapV3ContractMethodFactories : ContractMethodFactories() {
             ExactOutputMethod.Factory(),
             ExactInputSingleMethod.Factory(),
             ExactOutputSingleMethod.Factory(),
+            UnwrapWETH9Method.Factory(),
             MulticallMethod.Factory(UniswapV3ContractMethodFactories),
         )
         registerMethodFactories(swapContractMethodFactories)
