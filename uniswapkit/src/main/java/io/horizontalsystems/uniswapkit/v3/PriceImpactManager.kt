@@ -9,7 +9,7 @@ import java.math.BigDecimal
 class PriceImpactManager(private val poolManager: PoolManager) {
 
     suspend fun getPriceImpact(bestTrade: BestTrade): BigDecimal? {
-        val bestPrice = Fraction(bestTrade.amountIn, bestTrade.amountOut)
+        val tradePrice = Fraction(bestTrade.amountIn, bestTrade.amountOut)
 
         val poolPrices = when (bestTrade.tradeType) {
             TradeType.ExactIn -> bestTrade.swapPath.items.map {
@@ -20,12 +20,11 @@ class PriceImpactManager(private val poolManager: PoolManager) {
             }
         }
 
-        val poolPrice = poolPrices.reduce { acc, fraction ->
+        val marketPrice = poolPrices.reduce { acc, fraction ->
             acc * fraction
         }
 
-        val priceImpact =
-            (bestPrice / poolPrice - Fraction(BigDecimal.ONE)) * Fraction(BigDecimal(100))
+        val priceImpact = (tradePrice - marketPrice) / tradePrice * Fraction(BigDecimal(100))
 
         return priceImpact.toBigDecimal(2)
     }
