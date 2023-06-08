@@ -22,7 +22,8 @@ class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
         Chain.Polygon,
         Chain.Optimism,
         Chain.ArbitrumOne,
-        Chain.EthereumGoerli -> "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
+        Chain.EthereumGoerli,
+        Chain.EthereumSepolia -> "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 

@@ -205,6 +205,13 @@ class MainViewModel : ViewModel() {
                 else
                     RpcSource.goerliInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
+            Chain.EthereumSepolia -> {
+                transactionSource = TransactionSource.sepoliaEtherscan(Configuration.etherscanKey)
+                rpcSource = if(Configuration.webSocket)
+                    RpcSource.sepoliaInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
+                else
+                    RpcSource.sepoliaInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+            }
             else -> {
                 rpcSource = null
                 transactionSource = null

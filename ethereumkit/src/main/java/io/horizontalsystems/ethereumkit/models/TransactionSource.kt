@@ -27,6 +27,10 @@ class TransactionSource(val name: String, val type: SourceType) {
             return etherscan("api-goerli", "goerli", apiKey)
         }
 
+        fun sepoliaEtherscan(apiKey: String): TransactionSource {
+            return etherscan("api-sepolia", "sepolia", apiKey)
+        }
+
         fun bscscan(apiKey: String): TransactionSource {
             return TransactionSource(
                 "bscscan.com",

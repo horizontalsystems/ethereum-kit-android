@@ -23,12 +23,20 @@ sealed class RpcSource() {
             return infuraHttp("goerli", projectId, projectSecret)
         }
 
+        fun sepoliaInfuraHttp(projectId: String, projectSecret: String? = null): Http {
+            return infuraHttp("sepolia", projectId, projectSecret)
+        }
+
         fun ethereumInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
             return infuraWebSocket("mainnet", projectId, projectSecret)
         }
 
         fun goerliInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
             return infuraWebSocket("goerli", projectId, projectSecret)
+        }
+
+        fun sepoliaInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
+            return infuraWebSocket("sepolia", projectId, projectSecret)
         }
 
         fun bscRpcHttp(): Http {
