@@ -162,7 +162,7 @@ class EtherscanService(
             @Query("address") address: String? = null,
             @Query("txhash") txHash: String? = null,
             @Query("startblock") startBlock: Long? = null,
-            @Query("endblock") endBlock: Long? = 99_999_999,
+            @Query("endblock") endBlock: Long? = null,
             @Query("sort") sort: String? = "desc",
             @Query("apikey") apiKey: String
         ): Single<JsonElement>
