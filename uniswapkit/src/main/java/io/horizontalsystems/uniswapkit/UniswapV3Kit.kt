@@ -10,13 +10,13 @@ import io.horizontalsystems.uniswapkit.v3.UniswapV3MethodDecorator
 import io.horizontalsystems.uniswapkit.v3.UniswapV3TransactionDecorator
 import io.horizontalsystems.uniswapkit.v3.contract.UniswapV3ContractMethodFactories
 import io.horizontalsystems.uniswapkit.v3.pool.PoolManager
-import io.horizontalsystems.uniswapkit.v3.quoter.Quoter
+import io.horizontalsystems.uniswapkit.v3.quoter.QuoterV2
 import io.horizontalsystems.uniswapkit.v3.router.SwapRouter
 import java.math.BigDecimal
 import java.math.BigInteger
 
 class UniswapV3Kit(
-    private val quoter: Quoter,
+    private val quoter: QuoterV2,
     private val swapRouter: SwapRouter,
     private val tokenFactory: TokenFactory,
     private val priceImpactManager: PriceImpactManager
@@ -88,7 +88,7 @@ class UniswapV3Kit(
     companion object {
         fun getInstance(ethereumKit: EthereumKit): UniswapV3Kit {
             val tokenFactory = TokenFactory(ethereumKit.chain)
-            val quoter = Quoter(ethereumKit, tokenFactory.etherToken())
+            val quoter = QuoterV2(ethereumKit, tokenFactory.etherToken())
             val swapRouter = SwapRouter(ethereumKit)
             val poolManager = PoolManager(ethereumKit)
             val priceImpactManager = PriceImpactManager(poolManager)

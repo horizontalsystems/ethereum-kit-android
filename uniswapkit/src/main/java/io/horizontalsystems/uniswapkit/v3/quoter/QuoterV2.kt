@@ -15,14 +15,15 @@ import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 import kotlin.coroutines.coroutineContext
 
-class Quoter(private val ethereumKit: EthereumKit, private val weth: Token) {
+class QuoterV2(private val ethereumKit: EthereumKit, private val weth: Token) {
 
     private val quoterAddress = when (ethereumKit.chain) {
         Chain.Ethereum,
         Chain.Polygon,
         Chain.Optimism,
         Chain.ArbitrumOne,
-        Chain.EthereumGoerli -> "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
+        Chain.EthereumGoerli -> "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"
+        Chain.BinanceSmartChain -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
