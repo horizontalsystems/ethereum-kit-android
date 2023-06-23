@@ -16,6 +16,7 @@ class PoolManager(private val ethereumKit: EthereumKit) {
         Chain.Optimism,
         Chain.ArbitrumOne,
         Chain.EthereumGoerli -> "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+        Chain.BinanceSmartChain -> "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865"
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
