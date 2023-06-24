@@ -15,7 +15,7 @@ class SwapRouter(private val ethereumKit: EthereumKit) {
         Chain.Optimism,
         Chain.ArbitrumOne,
         Chain.EthereumGoerli -> Address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45")
-        Chain.BinanceSmartChain -> Address("0x1b81D678ffb9C0263b24A97847620C99d213eB14")
+        Chain.BinanceSmartChain -> Address("0x13f4EA83D0bd40E75C8222255bc855a974568Dd4")
         else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
     }
 
