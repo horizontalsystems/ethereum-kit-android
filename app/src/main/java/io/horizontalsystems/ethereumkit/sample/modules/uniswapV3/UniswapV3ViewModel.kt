@@ -34,11 +34,11 @@ class UniswapV3ViewModel(
     private val signer: Signer
 ) : ViewModel() {
 
-    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit, DexType.Uniswap)
+    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit, DexType.PancakeSwap)
     private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
-    val fromToken: Erc20Token? = Configuration.erc20Tokens[1]
-    val toToken: Erc20Token? = Configuration.erc20Tokens[2]
+    val fromToken: Erc20Token? = Configuration.erc20Tokens[5]
+    val toToken: Erc20Token? = Configuration.erc20Tokens[3]
 
     private val fromUniswapToken = uniswapToken(fromToken)
     private val toUniswapToken = uniswapToken(toToken)

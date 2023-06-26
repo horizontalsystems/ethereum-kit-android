@@ -26,7 +26,8 @@ class SwapRouter(private val ethereumKit: EthereumKit, dexType: DexType) {
     }
 
     private fun getPancakeSwapRouterAddress(chain: Chain)= when (chain) {
-        Chain.BinanceSmartChain -> Address("0x13f4EA83D0bd40E75C8222255bc855a974568Dd4")
+        Chain.BinanceSmartChain,
+        Chain.Ethereum -> Address("0x13f4EA83D0bd40E75C8222255bc855a974568Dd4")
         else -> throw IllegalStateException("Not supported PancakeSwap chain ${ethereumKit.chain}")
     }
 

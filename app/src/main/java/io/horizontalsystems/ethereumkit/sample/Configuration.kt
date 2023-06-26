@@ -6,7 +6,7 @@ import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 
 object Configuration {
     const val webSocket: Boolean = false
-    val chain: Chain = Chain.BinanceSmartChain
+    val chain: Chain = Chain.Ethereum
     const val walletId = "walletId"
     val watchAddress: String? = null
     const val defaultsWords = "apart approve black comfort steel spin real renew tone primary key cherry"
@@ -25,7 +25,8 @@ object Configuration {
                         Erc20Token("ArcBlock", "ABT", Address("0xB98d4C97425d9908E66E53A6fDf673ACcA0BE986"), 18),
                         Erc20Token("DAI", "DAI", Address("0x6b175474e89094c44da98b954eedeac495271d0f"), 18),
                         Erc20Token("USDT", "USDT", Address("0xdAC17F958D2ee523a2206206994597C13D831ec7"), 6),
-                        Erc20Token("USD Coin", "USDC", Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), 6)
+                        Erc20Token("USD Coin", "USDC", Address("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"), 6),
+                        Erc20Token("PancakeSwap", "CAKE", Address("0x152649ea73beab28c5b49b26eb48f7ead6d4c898"), 18)
                 )
                 Chain.ArbitrumOne -> listOf(
                         Erc20Token("USDT", "USDT", Address("0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"), 6),
