@@ -2,6 +2,7 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.uniswapkit.models.DexType
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.v3.PriceImpactManager
@@ -86,11 +87,11 @@ class UniswapV3Kit(
     fun transactionData(tradeData: TradeDataV3) = swapRouter.transactionData(tradeData)
 
     companion object {
-        fun getInstance(ethereumKit: EthereumKit): UniswapV3Kit {
+        fun getInstance(ethereumKit: EthereumKit, dexType: DexType): UniswapV3Kit {
             val tokenFactory = TokenFactory(ethereumKit.chain)
-            val quoter = QuoterV2(ethereumKit, tokenFactory.etherToken())
-            val swapRouter = SwapRouter(ethereumKit)
-            val poolManager = PoolManager(ethereumKit)
+            val quoter = QuoterV2(ethereumKit, tokenFactory.etherToken(), dexType)
+            val swapRouter = SwapRouter(ethereumKit, dexType)
+            val poolManager = PoolManager(ethereumKit, dexType)
             val priceImpactManager = PriceImpactManager(poolManager)
 
             return UniswapV3Kit(quoter, swapRouter, tokenFactory, priceImpactManager)

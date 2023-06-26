@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.uniswapkit.TradeError
+import io.horizontalsystems.uniswapkit.models.DexType
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeType
 import io.horizontalsystems.uniswapkit.v3.FeeAmount
@@ -15,16 +16,30 @@ import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 import kotlin.coroutines.coroutineContext
 
-class QuoterV2(private val ethereumKit: EthereumKit, private val weth: Token) {
+class QuoterV2(
+    private val ethereumKit: EthereumKit,
+    private val weth: Token,
+    dexType: DexType
+) {
 
-    private val quoterAddress = when (ethereumKit.chain) {
+    private val quoterAddress = when (dexType) {
+        DexType.Uniswap -> getUniswapQuoterAddress(ethereumKit.chain)
+        DexType.PancakeSwap -> getPancakeSwapQuoterAddress(ethereumKit.chain)
+    }
+
+    private fun getUniswapQuoterAddress(chain: Chain) = when (chain) {
         Chain.Ethereum,
         Chain.Polygon,
         Chain.Optimism,
         Chain.ArbitrumOne,
         Chain.EthereumGoerli -> "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"
+        Chain.BinanceSmartChain -> "0x78D78E420Da98ad378D7799bE8f4AF69033EB077"
+        else -> throw IllegalStateException("Not supported Uniswap chain ${ethereumKit.chain}")
+    }
+
+    private fun getPancakeSwapQuoterAddress(chain: Chain) = when (chain) {
         Chain.BinanceSmartChain -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
-        else -> throw IllegalStateException("Not supported chain ${ethereumKit.chain}")
+        else -> throw IllegalStateException("Not supported PancakeSwap chain ${ethereumKit.chain}")
     }
 
     suspend fun bestTradeExactIn(

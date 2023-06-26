@@ -16,6 +16,7 @@ import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.uniswapkit.UniswapV3Kit
+import io.horizontalsystems.uniswapkit.models.DexType
 import io.horizontalsystems.uniswapkit.models.TradeOptions
 import io.horizontalsystems.uniswapkit.v3.TradeDataV3
 import kotlinx.coroutines.Dispatchers
@@ -33,11 +34,11 @@ class UniswapV3ViewModel(
     private val signer: Signer
 ) : ViewModel() {
 
-    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit)
+    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit, DexType.Uniswap)
     private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
-    val fromToken: Erc20Token? = Configuration.erc20Tokens[0]
-    val toToken: Erc20Token? = Configuration.erc20Tokens[1]
+    val fromToken: Erc20Token? = Configuration.erc20Tokens[1]
+    val toToken: Erc20Token? = Configuration.erc20Tokens[2]
 
     private val fromUniswapToken = uniswapToken(fromToken)
     private val toUniswapToken = uniswapToken(toToken)
