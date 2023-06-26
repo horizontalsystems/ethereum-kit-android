@@ -22,6 +22,8 @@ class QuoterV2(
     dexType: DexType
 ) {
 
+    private val feeAmounts = FeeAmount.sorted(dexType)
+
     private val quoterAddress = when (dexType) {
         DexType.Uniswap -> getUniswapQuoterAddress(ethereumKit.chain)
         DexType.PancakeSwap -> getPancakeSwapQuoterAddress(ethereumKit.chain)
@@ -38,7 +40,8 @@ class QuoterV2(
     }
 
     private fun getPancakeSwapQuoterAddress(chain: Chain) = when (chain) {
-        Chain.BinanceSmartChain -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
+        Chain.BinanceSmartChain,
+        Chain.Ethereum -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
         else -> throw IllegalStateException("Not supported PancakeSwap chain ${ethereumKit.chain}")
     }
 
@@ -63,7 +66,7 @@ class QuoterV2(
     ): BestTrade? {
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
-        val amounts = FeeAmount.sorted().mapNotNull { fee ->
+        val amounts = feeAmounts.mapNotNull { fee ->
             coroutineContext.ensureActive()
             try {
                 val callResponse = ethCall(
@@ -159,7 +162,7 @@ class QuoterV2(
     ): BestTrade? {
         val sqrtPriceLimitX96 = BigInteger.ZERO
 
-        val amounts = FeeAmount.sorted().mapNotNull { fee ->
+        val amounts = feeAmounts.mapNotNull { fee ->
             coroutineContext.ensureActive()
             try {
                 val callResponse = ethCall(
