@@ -48,10 +48,45 @@ class TransactionManager(
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> =
         decorationManager.decorateTransactions(storage.getTransactions(hashes))
 
+    private fun save(transactions: List<Transaction>) {
+        val existingTransactions = storage.getTransactions(hashes = transactions.map { it.hash }).associateBy { it.hashString }
+
+        val mergedTransactions = transactions.map { newTx ->
+            val existingTx = existingTransactions[newTx.hashString]
+
+            if (existingTx != null) {
+                Transaction(
+                    hash = existingTx.hash,
+                    timestamp = newTx.timestamp,
+                    isFailed = existingTx.isFailed || newTx.isFailed,
+
+                    blockNumber = newTx.blockNumber ?: existingTx.blockNumber,
+                    transactionIndex = newTx.transactionIndex ?: existingTx.transactionIndex,
+                    from = newTx.from ?: existingTx.from,
+                    to = newTx.to ?: existingTx.to,
+                    value = newTx.value ?: existingTx.value,
+                    input = newTx.input ?: existingTx.input,
+                    nonce = newTx.nonce ?: existingTx.nonce,
+                    gasPrice = newTx.gasPrice ?: existingTx.gasPrice,
+                    maxFeePerGas = newTx.maxFeePerGas ?: existingTx.maxFeePerGas,
+                    maxPriorityFeePerGas = newTx.maxPriorityFeePerGas ?: existingTx.maxPriorityFeePerGas,
+                    gasLimit = newTx.gasLimit ?: existingTx.gasLimit,
+                    gasUsed = newTx.gasUsed ?: existingTx.gasUsed,
+
+                    replacedWith = newTx.replacedWith ?: existingTx.replacedWith
+                )
+            } else {
+                newTx
+            }
+        }
+
+        storage.save(mergedTransactions)
+    }
+
     fun handle(transactions: List<Transaction>, initial: Boolean = false): List<FullTransaction> {
         if (transactions.isEmpty()) return listOf()
 
-        storage.save(transactions)
+        save(transactions)
         val failedTransactions = failPendingTransactions()
         val fullTransactions = decorationManager.decorateTransactions(transactions + failedTransactions)
 
@@ -113,7 +148,7 @@ class TransactionManager(
             }
         }
 
-        storage.save(processedTransactions)
+        save(processedTransactions)
         return processedTransactions
     }
 
