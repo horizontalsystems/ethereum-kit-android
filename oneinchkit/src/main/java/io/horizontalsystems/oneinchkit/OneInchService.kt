@@ -20,7 +20,7 @@ class OneInchService(
     chain: Chain
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val url = "https://unstoppable.api.enterprise.1inch.exchange/v5.0/${chain.id}/"
+    private val url = "https://api-unstoppable.1inch.io/v5.0/${chain.id}/"
     private val service: OneInchServiceApi
 
     init {
