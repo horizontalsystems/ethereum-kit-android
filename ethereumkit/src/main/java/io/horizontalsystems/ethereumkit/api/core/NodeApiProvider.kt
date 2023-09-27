@@ -16,12 +16,11 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Url
 import java.net.URI
-import java.net.URL
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 
 class NodeApiProvider(
-    private val urls: List<URL>,
+    private val uris: List<URI>,
     private val gson: Gson,
     auth: String? = null
 ) : IRpcApiProvider {
@@ -47,7 +46,7 @@ class NodeApiProvider(
                 .addInterceptor(headersInterceptor)
 
         val retrofit = Retrofit.Builder()
-                .baseUrl("${urls.first()}/")
+                .baseUrl("${uris.first()}/")
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(gson))
@@ -57,7 +56,7 @@ class NodeApiProvider(
         service = retrofit.create(InfuraService::class.java)
     }
 
-    override val source: String = urls.first().host
+    override val source: String = uris.first().host
 
     override fun <T> single(rpc: JsonRpc<T>): Single<T> {
         rpc.id = currentRpcId.addAndGet(1)
@@ -65,9 +64,9 @@ class NodeApiProvider(
         return Single.create { emitter ->
             var error: Throwable = ApiProviderError.ApiUrlNotFound
 
-            for (url in urls) {
+            for (uri in uris) {
                 try {
-                    val rpcResponse = service.single(url.toURI(), gson.toJson(rpc)).blockingGet()
+                    val rpcResponse = service.single(uri, gson.toJson(rpc)).blockingGet()
                     val response = rpc.parseResponse(rpcResponse, gson)
 
                     emitter.onSuccess(response)

@@ -31,7 +31,7 @@ class Eip1155Provider(
     companion object {
 
         fun instance(rpcSource: RpcSource.Http): Eip1155Provider {
-            val apiProvider = NodeApiProvider(rpcSource.urls, EthereumKit.gson, rpcSource.auth)
+            val apiProvider = NodeApiProvider(rpcSource.uris, EthereumKit.gson, rpcSource.auth)
 
             return Eip1155Provider(apiProvider)
         }
