@@ -18,13 +18,13 @@ import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import java.net.URL
+import java.net.URI
 import java.util.logging.Logger
 
 class NodeWebSocket(
-        url: URL,
-        private val gson: Gson,
-        auth: String? = null
+    uri: URI,
+    private val gson: Gson,
+    auth: String? = null
 ) : IRpcWebSocket {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private var disposables = CompositeDisposable()
@@ -68,7 +68,7 @@ class NodeWebSocket(
                 .build()
 
         scarlet = Scarlet.Builder()
-                .webSocketFactory(okHttpClient.newWebSocketFactory(url.toString()))
+                .webSocketFactory(okHttpClient.newWebSocketFactory(uri.toString()))
                 .addMessageAdapterFactory(GsonMessageAdapter.Factory(gson))
                 .addStreamAdapterFactory(RxJava2StreamAdapterFactory())
                 .backoffStrategy(backoffStrategy)
@@ -78,7 +78,7 @@ class NodeWebSocket(
     //region IRpcWebSocket
     override var listener: IRpcWebSocketListener? = null
 
-    override val source: String = url.host
+    override val source: String = uri.host
 
     override fun start() {
         state = WebSocketState.Connecting

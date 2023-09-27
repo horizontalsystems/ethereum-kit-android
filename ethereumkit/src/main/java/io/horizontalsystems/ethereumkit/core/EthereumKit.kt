@@ -378,7 +378,7 @@ class EthereumKit(
 
             val syncer: IRpcSyncer = when (rpcSource) {
                 is RpcSource.WebSocket -> {
-                    val rpcWebSocket = NodeWebSocket(rpcSource.url, gson, rpcSource.auth)
+                    val rpcWebSocket = NodeWebSocket(rpcSource.uri, gson, rpcSource.auth)
                     val webSocketRpcSyncer = WebSocketRpcSyncer(rpcWebSocket, gson)
 
                     rpcWebSocket.listener = webSocketRpcSyncer
@@ -386,7 +386,7 @@ class EthereumKit(
                     webSocketRpcSyncer
                 }
                 is RpcSource.Http -> {
-                    val apiProvider = NodeApiProvider(rpcSource.urls, gson, rpcSource.auth)
+                    val apiProvider = NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
                     ApiRpcSyncer(apiProvider, connectionManager, chain.syncInterval)
                 }
             }
@@ -441,7 +441,7 @@ class EthereumKit(
         }
 
         fun getNodeApiProvider(rpcSource: RpcSource.Http): NodeApiProvider {
-            return NodeApiProvider(rpcSource.urls, gson, rpcSource.auth)
+            return NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
         }
 
         private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
