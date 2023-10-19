@@ -90,8 +90,8 @@ class OneInchKit(
     )
 
     companion object {
-        fun getInstance(evmKit: EthereumKit): OneInchKit {
-            val service = OneInchService(evmKit.chain)
+        fun getInstance(evmKit: EthereumKit, apiKey: String): OneInchKit {
+            val service = OneInchService(evmKit.chain, apiKey)
             return OneInchKit(evmKit, service)
         }
 
@@ -114,13 +114,12 @@ data class Token(
 data class Quote(
     val fromToken: Token,
     val toToken: Token,
-    val fromTokenAmount: BigInteger,
-    val toTokenAmount: BigInteger,
+    @SerializedName("toAmount") val toTokenAmount: BigInteger,
     @SerializedName("protocols") val route: List<Any>,
-    val estimatedGas: Long
+    @SerializedName("gas") val estimatedGas: Long
 ) {
     override fun toString(): String {
-        return "Quote {fromToken: ${fromToken.name}, toToken: ${toToken.name}, fromTokenAmount: $fromTokenAmount, toTokenAmount: $toTokenAmount}"
+        return "Quote {fromToken: ${fromToken.name}, toToken: ${toToken.name}, toTokenAmount: $toTokenAmount}"
     }
 }
 
@@ -143,7 +142,7 @@ data class Swap(
     val fromToken: Token,
     val toToken: Token,
     val fromTokenAmount: BigInteger,
-    val toTokenAmount: BigInteger,
+    @SerializedName("toAmount") val toTokenAmount: BigInteger,
     @SerializedName("protocols") val route: List<Any>,
     @SerializedName("tx") val transaction: SwapTransaction
 ) {
