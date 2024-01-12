@@ -23,6 +23,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
+import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
@@ -49,6 +50,7 @@ class UniswapV3Fragment : Fragment() {
                     mainViewModel.ethereumAdapter,
                     mainViewModel.gasPriceHelper,
                     mainViewModel.signer,
+                    mainViewModel.rpcSource
                 )
             }
         }
@@ -61,14 +63,16 @@ fun UniswapV3Screen(
     erc20Adapter: Erc20Adapter,
     ethereumAdapter: EthereumAdapter,
     gasPriceHelper: GasPriceHelper,
-    signer: Signer
+    signer: Signer,
+    rpcSource: RpcSource
 ) {
     val factory = UniswapV3ViewModel.Factory(
         ethereumKit,
         erc20Adapter,
         ethereumAdapter,
         gasPriceHelper,
-        signer
+        signer,
+        rpcSource
     )
     val viewModel = viewModel<UniswapV3ViewModel>(factory = factory)
 

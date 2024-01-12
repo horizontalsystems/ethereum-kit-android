@@ -5,6 +5,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.*
 import io.horizontalsystems.uniswapkit.models.*
@@ -15,15 +16,8 @@ import java.math.BigInteger
 import java.util.*
 import java.util.logging.Logger
 
-class TradeManager(
-    private val evmKit: EthereumKit
-) {
-    private val address: Address = evmKit.receiveAddress
+class TradeManager {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
-
-    val routerAddress: Address = getRouterAddress(evmKit.chain)
-    val factoryAddressString: String = getFactoryAddressString(evmKit.chain)
-    val initCodeHashString: String = getInitCodeHashString(evmKit.chain)
 
     sealed class UnsupportedChainError : Throwable() {
         object NoRouterAddress : UnsupportedChainError()
@@ -31,15 +25,16 @@ class TradeManager(
         object NoInitCodeHash : UnsupportedChainError()
     }
 
-    fun pair(tokenA: Token, tokenB: Token): Single<Pair> {
-
+    fun pair(rpcSource: RpcSource, chain: Chain, tokenA: Token, tokenB: Token): Single<Pair> {
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
+        val factoryAddressString = getFactoryAddressString(chain)
+        val initCodeHashString = getInitCodeHashString(chain)
 
         val pairAddress = Pair.address(token0, token1, factoryAddressString, initCodeHashString)
 
         logger.info("pairAddress: ${pairAddress.hex}")
 
-        return evmKit.call(pairAddress, GetReservesMethod().encodedABI())
+        return EthereumKit.call(rpcSource, pairAddress, GetReservesMethod().encodedABI())
                 .map { data ->
                     logger.info("getReserves data: ${data.toHexString()}")
 
@@ -60,22 +55,25 @@ class TradeManager(
                 }
     }
 
-    fun transactionData(tradeData: TradeData): TransactionData {
-        return buildSwapData(tradeData).let {
+    fun transactionData(receiveAddress: Address, chain: Chain, tradeData: TradeData): TransactionData {
+        val routerAddress = getRouterAddress(chain)
+
+        return buildSwapData(receiveAddress, tradeData).let {
+
             TransactionData(routerAddress, it.amount, it.input)
         }
     }
 
     private class SwapData(val amount: BigInteger, val input: ByteArray)
 
-    private fun buildSwapData(tradeData: TradeData): SwapData {
+    private fun buildSwapData(receiveAddress: Address, tradeData: TradeData): SwapData {
         val trade = tradeData.trade
 
         val tokenIn = trade.tokenAmountIn.token
         val tokenOut = trade.tokenAmountOut.token
 
         val path = trade.route.path.map { it.address }
-        val to = tradeData.options.recipient ?: address
+        val to = tradeData.options.recipient ?: receiveAddress
         val deadline = (Date().time / 1000 + tradeData.options.ttl).toBigInteger()
 
         val method = when (trade.type) {
@@ -121,7 +119,7 @@ class TradeManager(
 
     companion object {
 
-        private fun getRouterAddress(chain: Chain) =
+        fun getRouterAddress(chain: Chain) =
             when (chain) {
                 Chain.Ethereum, Chain.EthereumGoerli -> Address("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D")
                 Chain.BinanceSmartChain -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")

@@ -4,7 +4,13 @@ import android.app.Application
 import android.content.Context
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.horizontalsystems.ethereumkit.api.core.*
+import io.horizontalsystems.ethereumkit.api.core.ApiRpcSyncer
+import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
+import io.horizontalsystems.ethereumkit.api.core.IRpcSyncer
+import io.horizontalsystems.ethereumkit.api.core.NodeApiProvider
+import io.horizontalsystems.ethereumkit.api.core.NodeWebSocket
+import io.horizontalsystems.ethereumkit.api.core.RpcBlockchain
+import io.horizontalsystems.ethereumkit.api.core.WebSocketRpcSyncer
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
@@ -21,8 +27,26 @@ import io.horizontalsystems.ethereumkit.crypto.InternalBouncyCastleProvider
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
 import io.horizontalsystems.ethereumkit.decorations.EthereumDecorator
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
-import io.horizontalsystems.ethereumkit.models.*
-import io.horizontalsystems.ethereumkit.network.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.RpcSource
+import io.horizontalsystems.ethereumkit.models.Signature
+import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.ethereumkit.models.TransactionLog
+import io.horizontalsystems.ethereumkit.models.TransactionSource
+import io.horizontalsystems.ethereumkit.network.AddressTypeAdapter
+import io.horizontalsystems.ethereumkit.network.BigIntegerTypeAdapter
+import io.horizontalsystems.ethereumkit.network.ByteArrayTypeAdapter
+import io.horizontalsystems.ethereumkit.network.ConnectionManager
+import io.horizontalsystems.ethereumkit.network.DefaultBlockParameterTypeAdapter
+import io.horizontalsystems.ethereumkit.network.EtherscanService
+import io.horizontalsystems.ethereumkit.network.IntTypeAdapter
+import io.horizontalsystems.ethereumkit.network.LongTypeAdapter
+import io.horizontalsystems.ethereumkit.network.OptionalTypeAdapter
 import io.horizontalsystems.ethereumkit.transactionsyncers.EthereumTransactionSyncer
 import io.horizontalsystems.ethereumkit.transactionsyncers.InternalTransactionSyncer
 import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
@@ -36,7 +60,8 @@ import io.reactivex.subjects.PublishSubject
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
 import java.security.Security
-import java.util.*
+import java.util.Objects
+import java.util.Optional
 import java.util.logging.Logger
 
 class EthereumKit(
@@ -132,6 +157,7 @@ class EthereumKit(
     fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
         return blockchain.getNonce(defaultBlockParameter)
     }
+
     fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
         return transactionManager.getFullTransactionsFlowable(tags)
     }
@@ -340,10 +366,33 @@ class EthereumKit(
             .registerTypeAdapter(ByteArray::class.java, ByteArrayTypeAdapter())
             .registerTypeAdapter(Address::class.java, AddressTypeAdapter())
             .registerTypeHierarchyAdapter(DefaultBlockParameter::class.java, DefaultBlockParameterTypeAdapter())
-            .registerTypeAdapter(object : TypeToken<Optional<RpcTransaction>>() {}.type, OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java))
-            .registerTypeAdapter(object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type, OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java))
+            .registerTypeAdapter(
+                object : TypeToken<Optional<RpcTransaction>>() {}.type,
+                OptionalTypeAdapter<RpcTransaction>(RpcTransaction::class.java)
+            )
+            .registerTypeAdapter(
+                object : TypeToken<Optional<RpcTransactionReceipt>>() {}.type,
+                OptionalTypeAdapter<RpcTransactionReceipt>(RpcTransactionReceipt::class.java)
+            )
             .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
             .create()
+
+        fun call(
+            rpcSource: RpcSource,
+            contractAddress: Address,
+            data: ByteArray,
+            defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest
+        ): Single<ByteArray> {
+            val rpcApiProvider: IRpcApiProvider = when (rpcSource) {
+                is RpcSource.Http -> {
+                    NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
+                }
+
+                is RpcSource.WebSocket -> throw IllegalStateException("Websocket not supported")
+            }
+            val rpc = RpcBlockchain.callRpc(contractAddress, data, defaultBlockParameter)
+            return rpcApiProvider.single(rpc)
+        }
 
         fun init() {
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME)
@@ -385,6 +434,7 @@ class EthereumKit(
 
                     webSocketRpcSyncer
                 }
+
                 is RpcSource.Http -> {
                     val apiProvider = NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
                     ApiRpcSyncer(apiProvider, connectionManager, chain.syncInterval)

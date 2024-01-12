@@ -4,15 +4,14 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.uniswapkit.models.Token
 
-class TokenFactory(chain: Chain) {
-    val wethAddress = getWethAddress(chain)
+class TokenFactory {
 
     sealed class UnsupportedChainError : Throwable() {
         object NoWethAddress : UnsupportedChainError()
     }
 
-    fun etherToken(): Token {
-        return Token.Ether(wethAddress)
+    fun etherToken(chain: Chain): Token {
+        return Token.Ether(getWethAddress(chain))
     }
 
     fun token(contractAddress: Address, decimals: Int): Token {
@@ -20,7 +19,7 @@ class TokenFactory(chain: Chain) {
     }
 
     companion object {
-        private fun getWethAddress(chain: Chain): Address {
+        fun getWethAddress(chain: Chain): Address {
             val wethAddressHex = when (chain) {
                 Chain.Ethereum -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
                 Chain.Optimism -> "0x4200000000000000000000000000000000000006"
