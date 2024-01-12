@@ -2,6 +2,8 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.uniswapkit.contract.SwapContractMethodFactories
 import io.horizontalsystems.uniswapkit.models.*
@@ -16,21 +18,21 @@ class UniswapKit(
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
-    val routerAddress: Address
-        get() = tradeManager.routerAddress
+    fun routerAddress(chain: Chain): Address
+         = TradeManager.getRouterAddress(chain)
 
-    fun etherToken(): Token {
-        return tokenFactory.etherToken()
+    fun etherToken(chain: Chain): Token {
+        return tokenFactory.etherToken(chain)
     }
 
     fun token(contractAddress: Address, decimals: Int): Token {
         return tokenFactory.token(contractAddress, decimals)
     }
 
-    fun swapData(tokenIn: Token, tokenOut: Token): Single<SwapData> {
-        val tokenPairs = pairSelector.tokenPairs(tokenIn, tokenOut)
+    fun swapData(rpcSource: RpcSource, chain: Chain, tokenIn: Token, tokenOut: Token): Single<SwapData> {
+        val tokenPairs = pairSelector.tokenPairs(chain, tokenIn, tokenOut)
         val singles = tokenPairs.map { (tokenA, tokenB) ->
-            tradeManager.pair(tokenA, tokenB)
+            tradeManager.pair(rpcSource, chain, tokenA, tokenB)
         }
 
         return Single.zip(singles) { array ->
@@ -77,14 +79,14 @@ class UniswapKit(
         return TradeData(trade, options)
     }
 
-    fun transactionData(tradeData: TradeData): TransactionData {
-        return tradeManager.transactionData(tradeData)
+    fun transactionData(receiveAddress: Address, chain: Chain, tradeData: TradeData): TransactionData {
+        return tradeManager.transactionData(receiveAddress, chain, tradeData)
     }
 
     companion object {
-        fun getInstance(ethereumKit: EthereumKit): UniswapKit {
-            val tradeManager = TradeManager(ethereumKit)
-            val tokenFactory = TokenFactory(ethereumKit.chain)
+        fun getInstance(): UniswapKit {
+            val tradeManager = TradeManager()
+            val tokenFactory = TokenFactory()
             val pairSelector = PairSelector(tokenFactory)
 
             return UniswapKit(tradeManager, pairSelector, tokenFactory)

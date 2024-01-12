@@ -9,7 +9,11 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.core.toHexString
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.RpcSource
+import io.horizontalsystems.ethereumkit.models.TransactionSource
 import io.horizontalsystems.ethereumkit.sample.App
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.SingleLiveEvent
@@ -38,6 +42,8 @@ class MainViewModel : ViewModel() {
     lateinit var ethereumKit: EthereumKit
     lateinit var ethereumAdapter: EthereumAdapter
     lateinit var signer: Signer
+    lateinit var rpcSource: RpcSource
+    private lateinit var transactionSource: TransactionSource
 
     lateinit var erc20Adapter: Erc20Adapter
 
@@ -72,15 +78,20 @@ class MainViewModel : ViewModel() {
     val toToken: Erc20Token = Configuration.erc20Tokens[1]
     lateinit var gasPriceHelper: GasPriceHelper
 
+    private val chain: Chain
+        get() = ethereumKit.chain
+
     fun init() {
         val words = Configuration.defaultsWords.split(" ")
         val seed = Mnemonic().toSeed(words)
         signer = Signer.getInstance(seed, Configuration.chain)
         ethereumKit = createKit()
         ethereumAdapter = EthereumAdapter(ethereumKit, signer)
-        erc20Adapter = Erc20Adapter(App.instance, fromToken ?: toToken
-        ?: Configuration.erc20Tokens.first(), ethereumKit, signer)
-        uniswapKit = UniswapKit.getInstance(ethereumKit)
+        erc20Adapter = Erc20Adapter(
+            App.instance, fromToken ?: toToken
+            ?: Configuration.erc20Tokens.first(), ethereumKit, signer
+        )
+        uniswapKit = UniswapKit.getInstance()
 
         Erc20Kit.addTransactionSyncer(ethereumKit)
         Erc20Kit.addDecorators(ethereumKit)
@@ -179,14 +190,12 @@ class MainViewModel : ViewModel() {
     }
 
     private fun createKit(): EthereumKit {
-        val rpcSource: RpcSource?
-        val transactionSource: TransactionSource?
-
         when (Configuration.chain) {
             Chain.BinanceSmartChain -> {
                 transactionSource = TransactionSource.bscscan(Configuration.bscScanKey)
                 rpcSource = RpcSource.binanceSmartChainHttp()
             }
+
             Chain.Ethereum -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
@@ -194,10 +203,12 @@ class MainViewModel : ViewModel() {
                 else
                     RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
+
             Chain.ArbitrumOne -> {
                 transactionSource = TransactionSource.arbiscan(Configuration.arbiscanApiKey)
                 rpcSource = RpcSource.arbitrumOneRpcHttp()
             }
+
             Chain.EthereumGoerli -> {
                 transactionSource = TransactionSource.goerliEtherscan(Configuration.etherscanKey)
                 rpcSource = if (Configuration.webSocket)
@@ -205,18 +216,10 @@ class MainViewModel : ViewModel() {
                 else
                     RpcSource.goerliInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
+
             else -> {
-                rpcSource = null
-                transactionSource = null
+                throw Exception("Could not get rpcSource & transactionSource!")
             }
-        }
-
-        checkNotNull(rpcSource) {
-            throw Exception("Could not get rpcSource!")
-        }
-
-        checkNotNull(transactionSource) {
-            throw Exception("Could not get transactionSource!")
         }
 
         return if (Configuration.watchAddress != null) {
@@ -402,7 +405,7 @@ class MainViewModel : ViewModel() {
         val tokenIn = uniswapToken(fromToken)
         val tokenOut = uniswapToken(toToken)
 
-        uniswapKit.swapData(tokenIn, tokenOut)
+        uniswapKit.swapData(rpcSource, chain, tokenIn, tokenOut)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
@@ -415,7 +418,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun syncAllowance() {
-        erc20Adapter.allowance(uniswapKit.routerAddress)
+        erc20Adapter.allowance(uniswapKit.routerAddress(chain))
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
@@ -428,7 +431,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun approve(decimalAmount: BigDecimal) {
-        val spenderAddress = uniswapKit.routerAddress
+        val spenderAddress = uniswapKit.routerAddress(chain)
 
         val token = fromToken ?: return
         val amount = decimalAmount.movePointRight(token.decimals).toBigInteger()
@@ -457,7 +460,7 @@ class MainViewModel : ViewModel() {
 
     private fun uniswapToken(token: Erc20Token?): Token {
         if (token == null)
-            return uniswapKit.etherToken()
+            return uniswapKit.etherToken(chain)
 
         return uniswapKit.token(token.contractAddress, token.decimals)
     }
@@ -489,12 +492,12 @@ class MainViewModel : ViewModel() {
     fun swap() {
         tradeData.value?.let { tradeData ->
 
-            val transactionData = uniswapKit.transactionData(tradeData)
+            val transactionData = uniswapKit.transactionData(ethereumKit.receiveAddress, chain, tradeData)
             ethereumKit.estimateGas(transactionData, gasPrice)
                 .flatMap { gasLimit ->
                     logger.info("gas limit: $gasLimit")
 
-                    val transactionData = uniswapKit.transactionData(tradeData)
+                    val transactionData = uniswapKit.transactionData(ethereumKit.receiveAddress, chain, tradeData)
                     ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
                 }
                 .flatMap { rawTransaction ->
@@ -524,4 +527,5 @@ data class Erc20Token(
     val name: String,
     val code: String,
     val contractAddress: Address,
-    val decimals: Int)
+    val decimals: Int
+)

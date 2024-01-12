@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.signer.Signer
 import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.sample.Configuration
 import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
@@ -31,10 +32,12 @@ class UniswapV3ViewModel(
     private val erc20Adapter: Erc20Adapter,
     private val ethereumAdapter: EthereumAdapter,
     private val gasPriceHelper: GasPriceHelper,
-    private val signer: Signer
+    private val signer: Signer,
+    private val rpcSource: RpcSource
 ) : ViewModel() {
 
-    private var uniswapV3Kit = UniswapV3Kit.getInstance(ethereumKit, DexType.PancakeSwap)
+    private val chain = ethereumKit.chain
+    private var uniswapV3Kit = UniswapV3Kit.getInstance(DexType.PancakeSwap)
     private var gasPrice: GasPrice = GasPrice.Legacy(20_000_000_000)
 
     val fromToken: Erc20Token? = Configuration.erc20Tokens[5]
@@ -83,7 +86,7 @@ class UniswapV3ViewModel(
             allowance = BigDecimal(Int.MAX_VALUE)
         } else {
             allowance = try {
-                erc20Adapter.allowance(uniswapV3Kit.routerAddress).await().stripTrailingZeros()
+                erc20Adapter.allowance(uniswapV3Kit.routerAddress(chain)).await().stripTrailingZeros()
             } catch (it: Throwable) {
                 Log.e("AAA", "allowance error", it)
                 BigDecimal.ZERO
@@ -93,7 +96,7 @@ class UniswapV3ViewModel(
 
     fun approve() {
         val tmpAmountIn = amountIn ?: return
-        val spenderAddress = uniswapV3Kit.routerAddress
+        val spenderAddress = uniswapV3Kit.routerAddress(chain)
 
         val token = fromUniswapToken
         val amount = tmpAmountIn.movePointRight(token.decimals).toBigInteger()
@@ -138,6 +141,8 @@ class UniswapV3ViewModel(
             job = viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val bestTradeExactIn = uniswapV3Kit.bestTradeExactIn(
+                        rpcSource = rpcSource,
+                        chain = chain,
                         tokenIn = fromUniswapToken,
                         tokenOut = toUniswapToken,
                         amountIn = amountIn,
@@ -156,7 +161,7 @@ class UniswapV3ViewModel(
     }
 
     private fun uniswapToken(token: Erc20Token?) = when (token) {
-        null -> uniswapV3Kit.etherToken()
+        null -> uniswapV3Kit.etherToken(chain)
         else -> uniswapV3Kit.token(token.contractAddress, token.decimals)
     }
 
@@ -177,6 +182,8 @@ class UniswapV3ViewModel(
             job = viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val bestTradeExactOut = uniswapV3Kit.bestTradeExactOut(
+                        rpcSource = rpcSource,
+                        chain = chain,
                         tokenIn = fromUniswapToken,
                         tokenOut = toUniswapToken,
                         amountOut = amountOut,
@@ -222,7 +229,7 @@ class UniswapV3ViewModel(
         val tradeData = tradeData ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val transactionData = uniswapV3Kit.transactionData(tradeData)
+            val transactionData = uniswapV3Kit.transactionData(ethereumKit.receiveAddress, chain, tradeData)
 
             loading = true
             emitState()
@@ -249,11 +256,12 @@ class UniswapV3ViewModel(
         private val erc20Adapter: Erc20Adapter,
         private val ethereumAdapter: EthereumAdapter,
         private val gasPriceHelper: GasPriceHelper,
-        private val signer: Signer
+        private val signer: Signer,
+        private val rpcSource: RpcSource
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return UniswapV3ViewModel(ethereumKit, erc20Adapter, ethereumAdapter, gasPriceHelper, signer) as T
+            return UniswapV3ViewModel(ethereumKit, erc20Adapter, ethereumAdapter, gasPriceHelper, signer, rpcSource) as T
         }
     }
 }

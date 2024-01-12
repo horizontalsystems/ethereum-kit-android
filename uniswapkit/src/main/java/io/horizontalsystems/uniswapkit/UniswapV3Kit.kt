@@ -2,6 +2,8 @@ package io.horizontalsystems.uniswapkit
 
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.uniswapkit.models.DexType
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeOptions
@@ -22,10 +24,10 @@ class UniswapV3Kit(
     private val tokenFactory: TokenFactory,
     private val priceImpactManager: PriceImpactManager
 ) {
-    val routerAddress get() = swapRouter.swapRouterAddress
+    fun routerAddress(chain: Chain): Address = swapRouter.swapRouterAddress(chain)
 
-    fun etherToken(): Token {
-        return tokenFactory.etherToken()
+    fun etherToken(chain: Chain): Token {
+        return tokenFactory.etherToken(chain)
     }
 
     fun token(contractAddress: Address, decimals: Int): Token {
@@ -33,11 +35,15 @@ class UniswapV3Kit(
     }
 
     suspend fun bestTradeExactIn(
+        rpcSource: RpcSource,
+        chain: Chain,
         tokenIn: Token,
         tokenOut: Token,
         amountIn: BigDecimal,
         tradeOptions: TradeOptions
     ) = bestTradeExactIn(
+        rpcSource,
+        chain,
         tokenIn,
         tokenOut,
         amountIn.movePointRight(tokenIn.decimals).toBigInteger(),
@@ -45,25 +51,31 @@ class UniswapV3Kit(
     )
 
     suspend fun bestTradeExactIn(
+        rpcSource: RpcSource,
+        chain: Chain,
         tokenIn: Token,
         tokenOut: Token,
         amountIn: BigInteger,
         tradeOptions: TradeOptions
     ): TradeDataV3 {
-        val bestTrade = quoter.bestTradeExactIn(tokenIn, tokenOut, amountIn)
+        val bestTrade = quoter.bestTradeExactIn(rpcSource, chain, tokenIn, tokenOut, amountIn)
         return TradeDataV3(
             bestTrade,
             tradeOptions,
-            priceImpactManager.getPriceImpact(bestTrade)
+            priceImpactManager.getPriceImpact(rpcSource, chain, bestTrade)
         )
     }
 
     suspend fun bestTradeExactOut(
+        rpcSource: RpcSource,
+        chain: Chain,
         tokenIn: Token,
         tokenOut: Token,
         amountOut: BigDecimal,
         tradeOptions: TradeOptions
     ) = bestTradeExactOut(
+        rpcSource,
+        chain,
         tokenIn,
         tokenOut,
         amountOut.movePointRight(tokenOut.decimals).toBigInteger(),
@@ -71,36 +83,41 @@ class UniswapV3Kit(
     )
 
     suspend fun bestTradeExactOut(
+        rpcSource: RpcSource,
+        chain: Chain,
         tokenIn: Token,
         tokenOut: Token,
         amountOut: BigInteger,
         tradeOptions: TradeOptions
     ): TradeDataV3 {
-        val bestTrade = quoter.bestTradeExactOut(tokenIn, tokenOut, amountOut)
+        val bestTrade = quoter.bestTradeExactOut(rpcSource, chain, tokenIn, tokenOut, amountOut)
         return TradeDataV3(
             bestTrade,
             tradeOptions,
-            priceImpactManager.getPriceImpact(bestTrade)
+            priceImpactManager.getPriceImpact(rpcSource, chain, bestTrade)
         )
     }
 
-    fun transactionData(tradeData: TradeDataV3) = swapRouter.transactionData(tradeData)
+    fun transactionData(
+        receiveAddress: Address,
+        chain: Chain,
+        tradeData: TradeDataV3
+    ) = swapRouter.transactionData(receiveAddress, chain, tradeData)
 
     companion object {
-        fun getInstance(ethereumKit: EthereumKit, dexType: DexType): UniswapV3Kit {
-            val tokenFactory = TokenFactory(ethereumKit.chain)
-            val quoter = QuoterV2(ethereumKit, tokenFactory.etherToken(), dexType)
-            val swapRouter = SwapRouter(ethereumKit, dexType)
-            val poolManager = PoolManager(ethereumKit, dexType)
+        fun getInstance(dexType: DexType): UniswapV3Kit {
+            val tokenFactory = TokenFactory()
+            val quoter = QuoterV2(tokenFactory, dexType)
+            val swapRouter = SwapRouter(dexType)
+            val poolManager = PoolManager(dexType)
             val priceImpactManager = PriceImpactManager(poolManager)
 
             return UniswapV3Kit(quoter, swapRouter, tokenFactory, priceImpactManager)
         }
 
         fun addDecorators(ethereumKit: EthereumKit) {
-            val tokenFactory = TokenFactory(ethereumKit.chain)
             ethereumKit.addMethodDecorator(UniswapV3MethodDecorator(UniswapV3ContractMethodFactories))
-            ethereumKit.addTransactionDecorator(UniswapV3TransactionDecorator(tokenFactory.wethAddress))
+            ethereumKit.addTransactionDecorator(UniswapV3TransactionDecorator(TokenFactory.getWethAddress(ethereumKit.chain)))
         }
 
     }
