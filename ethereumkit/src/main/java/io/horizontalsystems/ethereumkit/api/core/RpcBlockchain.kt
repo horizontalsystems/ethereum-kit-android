@@ -1,23 +1,46 @@
 package io.horizontalsystems.ethereumkit.api.core
 
-import io.horizontalsystems.ethereumkit.api.jsonrpc.*
+import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.CallJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.DataJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.EstimateGasJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBalanceJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetBlockByNumberJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetLogsJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetStorageAtJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionByHashJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionCountJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionReceiptJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.SendRawTransactionJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcBlock
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransactionReceipt
 import io.horizontalsystems.ethereumkit.api.models.AccountState
-import io.horizontalsystems.ethereumkit.core.*
+import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.core.IApiStorage
+import io.horizontalsystems.ethereumkit.core.IBlockchain
+import io.horizontalsystems.ethereumkit.core.IBlockchainListener
+import io.horizontalsystems.ethereumkit.core.TransactionBuilder
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.RpcSource
+import io.horizontalsystems.ethereumkit.models.Signature
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigInteger
 
 class RpcBlockchain(
-        private val address: Address,
-        private val storage: IApiStorage,
-        private val syncer: IRpcSyncer,
-        private val transactionBuilder: TransactionBuilder
+    private val address: Address,
+    private val storage: IApiStorage,
+    private val syncer: IRpcSyncer,
+    private val transactionBuilder: TransactionBuilder
 ) : IBlockchain, IRpcSyncerListener {
 
     private val disposables = CompositeDisposable()
@@ -34,32 +57,32 @@ class RpcBlockchain(
 
     private fun syncLastBlockHeight() {
         syncer.single(BlockNumberJsonRpc())
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe({ lastBlockNumber ->
-                    onUpdateLastBlockHeight(lastBlockNumber)
-                }, {
-                    syncState = SyncState.NotSynced(it)
-                }).let {
-                    disposables.add(it)
-                }
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe({ lastBlockNumber ->
+                onUpdateLastBlockHeight(lastBlockNumber)
+            }, {
+                syncState = SyncState.NotSynced(it)
+            }).let {
+                disposables.add(it)
+            }
     }
 
     override fun syncAccountState() {
         Single.zip(
-                syncer.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
-                syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest))
+            syncer.single(GetBalanceJsonRpc(address, DefaultBlockParameter.Latest)),
+            syncer.single(GetTransactionCountJsonRpc(address, DefaultBlockParameter.Latest))
         ) { t1, t2 -> Pair(t1, t2) }
-                .subscribeOn(Schedulers.io())
-                .subscribe({ (balance, nonce) ->
-                    onUpdateAccountState(AccountState(balance, nonce))
-                    syncState = SyncState.Synced()
-                }, {
-                    it?.printStackTrace()
-                    syncState = SyncState.NotSynced(it)
-                }).let {
-                    disposables.add(it)
-                }
+            .subscribeOn(Schedulers.io())
+            .subscribe({ (balance, nonce) ->
+                onUpdateAccountState(AccountState(balance, nonce))
+                syncState = SyncState.Synced()
+            }, {
+                it?.printStackTrace()
+                syncState = SyncState.NotSynced(it)
+            }).let {
+                disposables.add(it)
+            }
     }
 
 
@@ -92,10 +115,12 @@ class RpcBlockchain(
         when (syncer.state) {
             SyncerState.Preparing -> {
             }
+
             SyncerState.Ready -> {
                 syncAccountState()
                 syncLastBlockHeight()
             }
+
             is SyncerState.NotReady -> {
                 syncer.start()
             }
@@ -111,7 +136,7 @@ class RpcBlockchain(
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
         return syncer.single(SendRawTransactionJsonRpc(encoded))
-                .map { transaction }
+            .map { transaction }
     }
 
     override fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
@@ -134,15 +159,28 @@ class RpcBlockchain(
         return syncer.single(GetBlockByNumberJsonRpc(blockNumber))
     }
 
-    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
-        return syncer.single(GetLogsJsonRpc(address, DefaultBlockParameter.BlockNumber(fromBlock), DefaultBlockParameter.BlockNumber(toBlock), topics))
-                .flatMap { logs ->
-                    if (pullTimestamps) {
-                        pullTransactionTimestamps(logs)
-                    } else {
-                        Single.just(logs)
-                    }
+    override fun getLogs(
+        address: Address?,
+        topics: List<ByteArray?>,
+        fromBlock: Long,
+        toBlock: Long,
+        pullTimestamps: Boolean
+    ): Single<List<TransactionLog>> {
+        return syncer.single(
+            GetLogsJsonRpc(
+                address,
+                DefaultBlockParameter.BlockNumber(fromBlock),
+                DefaultBlockParameter.BlockNumber(toBlock),
+                topics
+            )
+        )
+            .flatMap { logs ->
+                if (pullTimestamps) {
+                    pullTransactionTimestamps(logs)
+                } else {
+                    Single.just(logs)
                 }
+            }
     }
 
     private fun pullTransactionTimestamps(logs: List<TransactionLog>): Single<List<TransactionLog>> {
@@ -150,7 +188,7 @@ class RpcBlockchain(
 
         for (log in logs) {
             val logs: MutableList<TransactionLog> = logsByBlockNumber[log.blockNumber]
-                    ?: mutableListOf()
+                ?: mutableListOf()
             logs.add(log)
             logsByBlockNumber[log.blockNumber] = logs
         }
@@ -200,11 +238,13 @@ class RpcBlockchain(
             SyncerState.Preparing -> {
                 syncState = SyncState.Syncing()
             }
+
             SyncerState.Ready -> {
                 syncState = SyncState.Syncing()
                 syncAccountState()
                 syncLastBlockHeight()
             }
+
             is SyncerState.NotReady -> {
                 syncState = SyncState.NotSynced(state.error)
                 disposables.clear()
@@ -215,10 +255,12 @@ class RpcBlockchain(
     //endregion
 
     companion object {
-        fun instance(address: Address,
-                     storage: IApiStorage,
-                     syncer: IRpcSyncer,
-                     transactionBuilder: TransactionBuilder): RpcBlockchain {
+        fun instance(
+            address: Address,
+            storage: IApiStorage,
+            syncer: IRpcSyncer,
+            transactionBuilder: TransactionBuilder
+        ): RpcBlockchain {
 
             val rpcBlockchain = RpcBlockchain(address, storage, syncer, transactionBuilder)
             syncer.listener = rpcBlockchain
@@ -228,5 +270,25 @@ class RpcBlockchain(
 
         fun callRpc(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): DataJsonRpc =
             CallJsonRpc(contractAddress, data, defaultBlockParameter)
+
+        fun estimateGas(
+            rpcSource: RpcSource,
+            from: Address,
+            to: Address?,
+            amount: BigInteger?,
+            gasLimit: Long?,
+            gasPrice: GasPrice,
+            data: ByteArray?
+        ): Single<Long> {
+            val rpcApiProvider: IRpcApiProvider = when (rpcSource) {
+                is RpcSource.Http -> {
+                    NodeApiProvider(rpcSource.uris, EthereumKit.gson, rpcSource.auth)
+                }
+
+                is RpcSource.WebSocket -> throw IllegalStateException("Websocket not supported")
+            }
+
+            return rpcApiProvider.single(EstimateGasJsonRpc(from, to, amount, gasLimit, gasPrice, data))
+        }
     }
 }

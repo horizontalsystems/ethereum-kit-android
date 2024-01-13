@@ -252,7 +252,11 @@ class EthereumKit(
         return blockchain.getStorageAt(contractAddress, position, defaultBlockParameter)
     }
 
-    fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<ByteArray> {
+    fun call(
+        contractAddress: Address,
+        data: ByteArray,
+        defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest
+    ): Single<ByteArray> {
         return blockchain.call(contractAddress, data, defaultBlockParameter)
     }
 
@@ -392,6 +396,28 @@ class EthereumKit(
             }
             val rpc = RpcBlockchain.callRpc(contractAddress, data, defaultBlockParameter)
             return rpcApiProvider.single(rpc)
+        }
+
+        fun estimateGas(
+            rpcSource: RpcSource,
+            chain: Chain,
+            from: Address,
+            to: Address?,
+            value: BigInteger?,
+            gasPrice: GasPrice,
+            data: ByteArray?
+        ): Single<Long> {
+            return RpcBlockchain.estimateGas(rpcSource, from, to, value, chain.gasLimit, gasPrice, data)
+        }
+
+        fun estimateGas(
+            rpcSource: RpcSource,
+            chain: Chain,
+            from: Address,
+            transactionData: TransactionData,
+            gasPrice: GasPrice
+        ): Single<Long> {
+            return estimateGas(rpcSource, chain, from, transactionData.to, transactionData.value, gasPrice, transactionData.input)
         }
 
         fun init() {
