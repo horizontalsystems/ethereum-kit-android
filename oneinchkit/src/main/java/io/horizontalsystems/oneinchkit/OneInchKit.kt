@@ -13,26 +13,14 @@ import java.math.BigInteger
 import java.util.*
 
 class OneInchKit(
-    private val evmKit: EthereumKit,
     private val service: OneInchService
 ) {
 
-    val routerAddress: Address = when (evmKit.chain) {
-        Chain.Ethereum,
-        Chain.BinanceSmartChain,
-        Chain.Polygon,
-        Chain.Optimism,
-        Chain.ArbitrumOne,
-        Chain.Gnosis,
-        Chain.Fantom,
-        Chain.Avalanche -> Address("0x1111111254eeb25477b68fb85ed929f73a960582")
-        else -> throw IllegalArgumentException("Invalid Chain: ${evmKit.chain.id}")
-    }
-
-    fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger) =
-        service.getApproveCallDataAsync(tokenAddress, amount)
+    fun getApproveCallDataAsync(chain: Chain, tokenAddress: Address, amount: BigInteger) =
+        service.getApproveCallDataAsync(chain, tokenAddress, amount)
 
     fun getQuoteAsync(
+        chain: Chain,
         fromToken: Address,
         toToken: Address,
         amount: BigInteger,
@@ -44,6 +32,7 @@ class OneInchKit(
         mainRouteParts: Int? = null,
         parts: Int? = null
     ) = service.getQuoteAsync(
+        chain,
         fromToken,
         toToken,
         amount,
@@ -57,6 +46,8 @@ class OneInchKit(
     )
 
     fun getSwapAsync(
+        chain: Chain,
+        receiveAddress: Address,
         fromToken: Address,
         toToken: Address,
         amount: BigInteger,
@@ -72,10 +63,11 @@ class OneInchKit(
         parts: Int? = null,
         mainRouteParts: Int? = null
     ) = service.getSwapAsync(
+        chain,
         fromToken,
         toToken,
         amount,
-        evmKit.receiveAddress,
+        receiveAddress,
         slippagePercentage,
         protocols,
         recipient,
@@ -90,14 +82,26 @@ class OneInchKit(
     )
 
     companion object {
-        fun getInstance(evmKit: EthereumKit, apiKey: String): OneInchKit {
-            val service = OneInchService(evmKit.chain, apiKey)
-            return OneInchKit(evmKit, service)
+        fun getInstance(apiKey: String): OneInchKit {
+            return OneInchKit(OneInchService(apiKey))
         }
 
         fun addDecorators(evmKit: EthereumKit) {
             evmKit.addMethodDecorator(OneInchMethodDecorator(OneInchContractMethodFactories))
             evmKit.addTransactionDecorator(OneInchTransactionDecorator(evmKit.receiveAddress))
+        }
+
+        fun routerAddress(chain: Chain): Address = when (chain) {
+            Chain.Ethereum,
+            Chain.BinanceSmartChain,
+            Chain.Polygon,
+            Chain.Optimism,
+            Chain.ArbitrumOne,
+            Chain.Gnosis,
+            Chain.Fantom,
+            Chain.Avalanche -> Address("0x1111111254eeb25477b68fb85ed929f73a960582")
+
+            else -> throw IllegalArgumentException("Invalid Chain: ${chain.id}")
         }
     }
 

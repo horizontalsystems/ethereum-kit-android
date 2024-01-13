@@ -13,16 +13,16 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 import java.math.BigInteger
 import java.util.logging.Logger
 
 class OneInchService(
-    chain: Chain,
     apiKey: String
 ) {
     private val logger = Logger.getLogger("OneInchService")
-    private val url = "https://api.1inch.dev/swap/v5.2/${chain.id}/"
+    private val url = "https://api.1inch.dev/swap/v5.2/"
     private val service: OneInchServiceApi
 
     init {
@@ -60,10 +60,11 @@ class OneInchService(
         service = retrofit.create(OneInchServiceApi::class.java)
     }
 
-    fun getApproveCallDataAsync(tokenAddress: Address, amount: BigInteger) =
-        service.getApproveCallData(tokenAddress.hex, amount)
+    fun getApproveCallDataAsync(chain: Chain, tokenAddress: Address, amount: BigInteger) =
+        service.getApproveCallData(tokenAddress = tokenAddress.hex, amount = amount, chainId = chain.id)
 
     fun getQuoteAsync(
+        chain: Chain,
         fromToken: Address,
         toToken: Address,
         amount: BigInteger,
@@ -86,7 +87,8 @@ class OneInchService(
             connectorTokens = connectorTokens?.joinToString(","),
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts
+            mainRouteParts = mainRouteParts,
+            chainId = chain.id
         )
     } else {
         service.getQuote(
@@ -99,11 +101,13 @@ class OneInchService(
             connectorTokens = connectorTokens?.joinToString(","),
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts
+            mainRouteParts = mainRouteParts,
+            chainId = chain.id
         )
     }
 
     fun getSwapAsync(
+        chain: Chain,
         fromTokenAddress: Address,
         toTokenAddress: Address,
         amount: BigInteger,
@@ -136,7 +140,8 @@ class OneInchService(
             allowPartialFill = allowPartialFill,
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts
+            mainRouteParts = mainRouteParts,
+            chainId = chain.id
         )
     } else {
         service.getSwap(
@@ -154,19 +159,21 @@ class OneInchService(
             allowPartialFill = allowPartialFill,
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts
+            mainRouteParts = mainRouteParts,
+            chainId = chain.id
         )
     }
 
     private interface OneInchServiceApi {
-        @GET("approve/calldata")
+        @GET("{chain_id}/approve/calldata")
         fun getApproveCallData(
             @Query("tokenAddress") tokenAddress: String,
             @Query("amount") amount: BigInteger? = null,
-            @Query("infinity") infinity: Boolean? = null
+            @Query("infinity") infinity: Boolean? = null,
+            @Path("chain_id") chainId: Int
         ): Single<ApproveCallData>
 
-        @GET("quote")
+        @GET("{chain_id}/quote")
         fun getQuote(
             @Query("src") fromTokenAddress: String,
             @Query("dst") toTokenAddress: String,
@@ -183,9 +190,10 @@ class OneInchService(
             @Query("includeTokensInfo") includeTokensInfo: Boolean = true,
             @Query("includeProtocols") includeProtocols: Boolean = true,
             @Query("includeGas") includeGas: Boolean = true,
+            @Path("chain_id") chainId: Int
         ): Single<Quote>
 
-        @GET("swap")
+        @GET("{chain_id}/swap")
         fun getSwap(
             @Query("src") fromTokenAddress: String,
             @Query("dst") toTokenAddress: String,
@@ -208,6 +216,7 @@ class OneInchService(
             @Query("includeTokensInfo") includeTokensInfo: Boolean = true,
             @Query("includeProtocols") includeProtocols: Boolean = true,
             @Query("includeGas") includeGas: Boolean = true,
+            @Path("chain_id") chainId: Int
         ): Single<Swap>
     }
 
