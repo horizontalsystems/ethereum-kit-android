@@ -61,7 +61,7 @@ class OneInchService(
     }
 
     fun getApproveCallDataAsync(chain: Chain, tokenAddress: Address, amount: BigInteger) =
-        service.getApproveCallData(tokenAddress = tokenAddress.hex, amount = amount, chainId = chain.id)
+        service.getApproveCallData(chainId = chain.id, tokenAddress = tokenAddress.hex, amount = amount)
 
     fun getQuoteAsync(
         chain: Chain,
@@ -77,6 +77,7 @@ class OneInchService(
         parts: Int? = null
     ) = if (gasPrice is GasPrice.Eip1559) {
         service.getQuote(
+            chainId = chain.id,
             fromTokenAddress = fromToken.hex,
             toTokenAddress = toToken.hex,
             amount = amount,
@@ -87,11 +88,11 @@ class OneInchService(
             connectorTokens = connectorTokens?.joinToString(","),
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts,
-            chainId = chain.id
+            mainRouteParts = mainRouteParts
         )
     } else {
         service.getQuote(
+            chainId = chain.id,
             fromTokenAddress = fromToken.hex,
             toTokenAddress = toToken.hex,
             amount = amount,
@@ -101,8 +102,7 @@ class OneInchService(
             connectorTokens = connectorTokens?.joinToString(","),
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts,
-            chainId = chain.id
+            mainRouteParts = mainRouteParts
         )
     }
 
@@ -125,6 +125,7 @@ class OneInchService(
         mainRouteParts: Int? = null
     ) = if (gasPrice is GasPrice.Eip1559) {
         service.getSwap(
+            chainId = chain.id,
             fromTokenAddress = fromTokenAddress.hex,
             toTokenAddress = toTokenAddress.hex,
             amount = amount,
@@ -140,11 +141,11 @@ class OneInchService(
             allowPartialFill = allowPartialFill,
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts,
-            chainId = chain.id
+            mainRouteParts = mainRouteParts
         )
     } else {
         service.getSwap(
+            chainId = chain.id,
             fromTokenAddress = fromTokenAddress.hex,
             toTokenAddress = toTokenAddress.hex,
             amount = amount,
@@ -159,22 +160,22 @@ class OneInchService(
             allowPartialFill = allowPartialFill,
             gasLimit = gasLimit,
             parts = parts,
-            mainRouteParts = mainRouteParts,
-            chainId = chain.id
+            mainRouteParts = mainRouteParts
         )
     }
 
     private interface OneInchServiceApi {
         @GET("{chain_id}/approve/calldata")
         fun getApproveCallData(
+            @Path("chain_id") chainId: Int,
             @Query("tokenAddress") tokenAddress: String,
             @Query("amount") amount: BigInteger? = null,
-            @Query("infinity") infinity: Boolean? = null,
-            @Path("chain_id") chainId: Int
+            @Query("infinity") infinity: Boolean? = null
         ): Single<ApproveCallData>
 
         @GET("{chain_id}/quote")
         fun getQuote(
+            @Path("chain_id") chainId: Int,
             @Query("src") fromTokenAddress: String,
             @Query("dst") toTokenAddress: String,
             @Query("amount") amount: BigInteger,
@@ -189,12 +190,12 @@ class OneInchService(
             @Query("mainRouteParts") mainRouteParts: Int? = null,
             @Query("includeTokensInfo") includeTokensInfo: Boolean = true,
             @Query("includeProtocols") includeProtocols: Boolean = true,
-            @Query("includeGas") includeGas: Boolean = true,
-            @Path("chain_id") chainId: Int
+            @Query("includeGas") includeGas: Boolean = true
         ): Single<Quote>
 
         @GET("{chain_id}/swap")
         fun getSwap(
+            @Path("chain_id") chainId: Int,
             @Query("src") fromTokenAddress: String,
             @Query("dst") toTokenAddress: String,
             @Query("amount") amount: BigInteger,
@@ -215,8 +216,7 @@ class OneInchService(
             @Query("mainRouteParts") mainRouteParts: Int? = null,
             @Query("includeTokensInfo") includeTokensInfo: Boolean = true,
             @Query("includeProtocols") includeProtocols: Boolean = true,
-            @Query("includeGas") includeGas: Boolean = true,
-            @Path("chain_id") chainId: Int
+            @Query("includeGas") includeGas: Boolean = true
         ): Single<Swap>
     }
 
