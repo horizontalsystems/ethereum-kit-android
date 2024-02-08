@@ -64,7 +64,7 @@ class EtherscanService(
 
     fun getTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
         return service.accountApi(
-            action = "txList",
+            action = "txlist",
             address = address.hex,
             startBlock = startBlock,
             apiKey = apiKey
