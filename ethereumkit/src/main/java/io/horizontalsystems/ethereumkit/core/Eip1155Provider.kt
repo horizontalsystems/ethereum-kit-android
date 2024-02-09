@@ -1,7 +1,6 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
-import io.horizontalsystems.ethereumkit.api.core.NodeApiProvider
 import io.horizontalsystems.ethereumkit.api.core.RpcBlockchain
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.models.Address
@@ -31,7 +30,7 @@ class Eip1155Provider(
     companion object {
 
         fun instance(rpcSource: RpcSource.Http): Eip1155Provider {
-            val apiProvider = NodeApiProvider(rpcSource.uris, EthereumKit.gson, rpcSource.auth)
+            val apiProvider = RpcApiProviderFactory.nodeApiProvider(rpcSource)
 
             return Eip1155Provider(apiProvider)
         }

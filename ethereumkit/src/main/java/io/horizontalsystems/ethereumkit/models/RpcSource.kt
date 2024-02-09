@@ -2,9 +2,9 @@ package io.horizontalsystems.ethereumkit.models
 
 import java.net.URI
 
-sealed class RpcSource() {
-    class Http(val uris: List<URI>, val auth: String?) : RpcSource()
-    class WebSocket(val uri: URI, val auth: String?) : RpcSource()
+sealed class RpcSource {
+    data class Http(val uris: List<URI>, val auth: String?) : RpcSource()
+    data class WebSocket(val uri: URI, val auth: String?) : RpcSource()
 
     companion object {
         private fun infuraHttp(subdomain: String, projectId: String, projectSecret: String? = null): Http {
