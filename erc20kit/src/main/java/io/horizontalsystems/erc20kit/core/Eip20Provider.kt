@@ -7,7 +7,7 @@ import io.horizontalsystems.erc20kit.events.TokenInfo
 import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
 import io.horizontalsystems.ethereumkit.api.core.RpcBlockchain
 import io.horizontalsystems.ethereumkit.contracts.ContractMethodHelper
-import io.horizontalsystems.ethereumkit.core.EthereumKit
+import io.horizontalsystems.ethereumkit.core.RpcApiProviderFactory
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.RpcSource
@@ -87,7 +87,7 @@ class Eip20Provider(private val provider: IRpcApiProvider) {
     companion object {
 
         fun instance(rpcSource: RpcSource.Http): Eip20Provider {
-            return Eip20Provider(EthereumKit.getNodeApiProvider(rpcSource))
+            return Eip20Provider(RpcApiProviderFactory.nodeApiProvider(rpcSource))
         }
 
     }

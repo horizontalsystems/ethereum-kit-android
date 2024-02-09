@@ -22,6 +22,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.IApiStorage
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IBlockchainListener
+import io.horizontalsystems.ethereumkit.core.RpcApiProviderFactory
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
@@ -280,13 +281,7 @@ class RpcBlockchain(
             gasPrice: GasPrice,
             data: ByteArray?
         ): Single<Long> {
-            val rpcApiProvider: IRpcApiProvider = when (rpcSource) {
-                is RpcSource.Http -> {
-                    NodeApiProvider(rpcSource.uris, EthereumKit.gson, rpcSource.auth)
-                }
-
-                is RpcSource.WebSocket -> throw IllegalStateException("Websocket not supported")
-            }
+            val rpcApiProvider = RpcApiProviderFactory.nodeApiProvider(rpcSource)
 
             return rpcApiProvider.single(EstimateGasJsonRpc(from, to, amount, gasLimit, gasPrice, data))
         }

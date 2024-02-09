@@ -5,9 +5,7 @@ import android.content.Context
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.horizontalsystems.ethereumkit.api.core.ApiRpcSyncer
-import io.horizontalsystems.ethereumkit.api.core.IRpcApiProvider
 import io.horizontalsystems.ethereumkit.api.core.IRpcSyncer
-import io.horizontalsystems.ethereumkit.api.core.NodeApiProvider
 import io.horizontalsystems.ethereumkit.api.core.NodeWebSocket
 import io.horizontalsystems.ethereumkit.api.core.RpcBlockchain
 import io.horizontalsystems.ethereumkit.api.core.WebSocketRpcSyncer
@@ -387,13 +385,7 @@ class EthereumKit(
             data: ByteArray,
             defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest
         ): Single<ByteArray> {
-            val rpcApiProvider: IRpcApiProvider = when (rpcSource) {
-                is RpcSource.Http -> {
-                    NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
-                }
-
-                is RpcSource.WebSocket -> throw IllegalStateException("Websocket not supported")
-            }
+            val rpcApiProvider = RpcApiProviderFactory.nodeApiProvider(rpcSource)
             val rpc = RpcBlockchain.callRpc(contractAddress, data, defaultBlockParameter)
             return rpcApiProvider.single(rpc)
         }
@@ -462,7 +454,7 @@ class EthereumKit(
                 }
 
                 is RpcSource.Http -> {
-                    val apiProvider = NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
+                    val apiProvider = RpcApiProviderFactory.nodeApiProvider(rpcSource)
                     ApiRpcSyncer(apiProvider, connectionManager, chain.syncInterval)
                 }
             }
@@ -514,10 +506,6 @@ class EthereumKit(
 
         fun clear(context: Context, chain: Chain, walletId: String) {
             EthereumDatabaseManager.clear(context, chain, walletId)
-        }
-
-        fun getNodeApiProvider(rpcSource: RpcSource.Http): NodeApiProvider {
-            return NodeApiProvider(rpcSource.uris, gson, rpcSource.auth)
         }
 
         private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
