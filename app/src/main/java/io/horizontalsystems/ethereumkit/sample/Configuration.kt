@@ -32,6 +32,9 @@ object Configuration {
                         Erc20Token("USDT", "USDT", Address("0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"), 6),
                         Erc20Token("Uniswap", "UNI", Address("0xFa7F8980b0f1E64A2062791cc3b0871572f1F7f0"), 18),
                 )
+                Chain.Rootstock -> listOf(
+                        Erc20Token("RIF", "RIF", Address("0x2acc95758f8b5f583470ba265eb685a8f45fc9d5"), 18),
+                )
                 Chain.BinanceSmartChain -> listOf(
                         Erc20Token("Beefy.Finance", "BIFI", Address("0xCa3F508B8e4Dd382eE878A314789373D80A5190A"), 18),
                         Erc20Token("PancakeSwap", "CAKE", Address("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"), 18),
