@@ -3,6 +3,7 @@ package io.horizontalsystems.nftkit.events
 import io.horizontalsystems.ethereumkit.contracts.ContractEvent
 import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import io.horizontalsystems.nftkit.models.TokenInfo
 import java.math.BigInteger
 
@@ -18,14 +19,17 @@ class Eip721TransferEventInstance(
         add(contractAddress.hex)
 
         if (from == userAddress) {
-            add("${contractAddress.hex}_outgoing")
-            add("outgoing")
+            add(TransactionTag.tokenOutgoing(contractAddress.hex))
+            add(TransactionTag.OUTGOING)
         }
 
         if (to == userAddress) {
-            add("${contractAddress.hex}_incoming")
-            add("incoming")
+            add(TransactionTag.tokenIncoming(contractAddress.hex))
+            add(TransactionTag.INCOMING)
         }
+
+        add(TransactionTag.fromAddress(from.hex))
+        add(TransactionTag.toAddress(to.hex))
     }
 
     companion object {
