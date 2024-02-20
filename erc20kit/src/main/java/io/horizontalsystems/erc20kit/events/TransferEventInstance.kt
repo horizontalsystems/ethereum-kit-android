@@ -24,6 +24,9 @@ class TransferEventInstance(
             tags.add(TransactionTag.INCOMING)
         }
 
+        tags.add(TransactionTag.fromAddress(from.hex))
+        tags.add(TransactionTag.toAddress(to.hex))
+
         return tags
     }
 
