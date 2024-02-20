@@ -20,6 +20,9 @@ class TransactionTag(
 
         fun tokenIncoming(contractAddress: String): String = "${contractAddress}_$INCOMING"
         fun tokenOutgoing(contractAddress: String): String = "${contractAddress}_$OUTGOING"
+
+        fun fromAddress(address: String): String = "from_$address"
+        fun toAddress(address: String): String = "to_$address"
     }
 
 }

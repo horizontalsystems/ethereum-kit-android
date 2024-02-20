@@ -1,7 +1,12 @@
 package io.horizontalsystems.ethereumkit.core
 
 import io.horizontalsystems.ethereumkit.decorations.DecorationManager
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.FullRpcTransaction
+import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -94,7 +99,21 @@ class TransactionManager(
         val allTags: MutableList<TransactionTag> = mutableListOf()
 
         fullTransactions.forEach { fullTransaction ->
-            val tags = fullTransaction.decoration.tags().map { TransactionTag(it, fullTransaction.transaction.hash) }
+            val transaction = fullTransaction.transaction
+            val transactionAddressTags = buildList {
+                transaction.from?.let {
+                    add(TransactionTag.fromAddress(it.hex))
+                }
+                transaction.to?.let {
+                    add(TransactionTag.toAddress(it.hex))
+                }
+            }
+
+            val decorationTags = fullTransaction.decoration.tags()
+            val tags = (transactionAddressTags + decorationTags).map {
+                TransactionTag(it, transaction.hash)
+            }
+
             allTags.addAll(tags)
             transactionWithTags.add(TransactionWithTags(fullTransaction, tags.map { it.name }))
         }
