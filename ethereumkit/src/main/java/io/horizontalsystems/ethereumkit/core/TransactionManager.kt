@@ -99,19 +99,9 @@ class TransactionManager(
         val allTags: MutableList<TransactionTag> = mutableListOf()
 
         fullTransactions.forEach { fullTransaction ->
-            val transaction = fullTransaction.transaction
-            val transactionAddressTags = buildList {
-                transaction.from?.let {
-                    add(TransactionTag.fromAddress(it.hex))
-                }
-                transaction.to?.let {
-                    add(TransactionTag.toAddress(it.hex))
-                }
-            }
-
-            val decorationTags = fullTransaction.decoration.tags()
-            val tags = (transactionAddressTags + decorationTags).map {
-                TransactionTag(it, transaction.hash)
+            val transactionHash = fullTransaction.transaction.hash
+            val tags = fullTransaction.decoration.tags().map {
+                TransactionTag(it, transactionHash)
             }
 
             allTags.addAll(tags)
