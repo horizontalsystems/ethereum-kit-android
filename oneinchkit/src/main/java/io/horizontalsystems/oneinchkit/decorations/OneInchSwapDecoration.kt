@@ -1,6 +1,7 @@
 package io.horizontalsystems.oneinchkit.decorations
 
 import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import java.math.BigInteger
 
 class OneInchSwapDecoration(
@@ -24,6 +25,8 @@ class OneInchSwapDecoration(
 
         if (recipient == null) {
             tags.addAll(getTags(tokenOut, "incoming"))
+        } else {
+            tags.add(TransactionTag.toAddress(recipient.hex))
         }
 
         return tags

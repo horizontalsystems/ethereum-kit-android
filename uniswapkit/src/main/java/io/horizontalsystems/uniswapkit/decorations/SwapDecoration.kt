@@ -39,6 +39,8 @@ class SwapDecoration(
 
         if (recipient == null) {
             tags.addAll(tags(tokenOut, "incoming"))
+        } else {
+            tags.add(TransactionTag.toAddress(recipient.hex))
         }
 
         return tags
