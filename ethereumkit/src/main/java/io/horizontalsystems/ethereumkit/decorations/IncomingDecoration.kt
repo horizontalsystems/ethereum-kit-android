@@ -7,7 +7,7 @@ import java.math.BigInteger
 class IncomingDecoration(
     val from: Address,
     val value: BigInteger
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
     override fun tags() = listOf(
         TransactionTag.EVM_COIN,

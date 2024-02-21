@@ -14,18 +14,12 @@ class OneInchUnoswapDecoration(
     val params: Bytes32Array
 ) : OneInchDecoration(contractAddress) {
 
-    override fun tags(): List<String> {
-        val tags = super.tags().toMutableList()
-
-        listOf(contractAddress.hex, TransactionTag.SWAP)
-
-        tags.addAll(getTags(tokenIn, TransactionTag.OUTGOING))
+    override fun tags() = buildList {
+        addAll(super.tags())
+        addAll(getTags(tokenIn, TransactionTag.OUTGOING))
 
         if (tokenOut != null) {
-            tags.addAll(getTags(tokenOut, TransactionTag.INCOMING))
+            addAll(getTags(tokenOut, TransactionTag.INCOMING))
         }
-
-        return tags
     }
-
 }

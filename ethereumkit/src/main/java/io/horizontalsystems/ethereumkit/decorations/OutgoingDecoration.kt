@@ -8,18 +8,16 @@ class OutgoingDecoration(
     val to: Address,
     val value: BigInteger,
     val sentToSelf: Boolean
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
-    override fun tags(): List<String> {
-        val tags = mutableListOf(TransactionTag.EVM_COIN, TransactionTag.EVM_COIN_OUTGOING, TransactionTag.OUTGOING)
+    override fun tags() = buildList {
+        addAll(listOf(TransactionTag.EVM_COIN, TransactionTag.EVM_COIN_OUTGOING, TransactionTag.OUTGOING))
 
         if (sentToSelf) {
-            tags += listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.INCOMING)
+            addAll(listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.INCOMING))
         }
 
-        tags.add(TransactionTag.toAddress(to.hex))
-
-        return tags
+        add(TransactionTag.toAddress(to.hex))
     }
 
 }

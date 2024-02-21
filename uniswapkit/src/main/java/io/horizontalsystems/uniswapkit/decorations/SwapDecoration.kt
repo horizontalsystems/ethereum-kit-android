@@ -14,7 +14,7 @@ class SwapDecoration(
         val tokenOut: Token,
         val recipient: Address?,
         val deadline: BigInteger?
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
     sealed class Amount(val value: BigInteger) {
         class Exact(value: BigInteger) : Amount(value)
@@ -32,18 +32,15 @@ class SwapDecoration(
             }
     }
 
-    override fun tags(): List<String> {
-        val tags: MutableList<String> = mutableListOf(contractAddress.hex, "swap")
-
-        tags.addAll(tags(tokenIn, "outgoing"))
+    override fun tags() = buildList {
+        addAll(listOf(contractAddress.hex, TransactionTag.SWAP))
+        addAll(tags(tokenIn, TransactionTag.OUTGOING))
 
         if (recipient == null) {
-            tags.addAll(tags(tokenOut, "incoming"))
+            addAll(tags(tokenOut, TransactionTag.INCOMING))
         } else {
-            tags.add(TransactionTag.toAddress(recipient.hex))
+            add(TransactionTag.toAddress(recipient.hex))
         }
-
-        return tags
     }
 
     private fun tags(token: Token, type: String): List<String> =

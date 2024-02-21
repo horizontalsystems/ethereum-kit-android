@@ -7,25 +7,21 @@ import java.math.BigInteger
 class OneInchUnknownDecoration(
     override val contractAddress: Address,
     val tokenAmountIn: TokenAmount?,
-    val tokenAmountOut: TokenAmount?
+    val tokenAmountOut: TokenAmount?,
 ) : OneInchDecoration(contractAddress) {
 
     class TokenAmount(val token: Token, val value: BigInteger)
 
-    override fun tags(): List<String> {
-        val tags = super.tags().toMutableList()
-
-        listOf(contractAddress.hex, TransactionTag.SWAP)
+    override fun tags() = buildList {
+        addAll(super.tags())
 
         if (tokenAmountIn != null) {
-            tags.addAll(getTags(tokenAmountIn.token, TransactionTag.OUTGOING))
+            addAll(getTags(tokenAmountIn.token, TransactionTag.OUTGOING))
         }
 
         if (tokenAmountOut != null) {
-            tags.addAll(getTags(tokenAmountOut.token, TransactionTag.INCOMING))
+            addAll(getTags(tokenAmountOut.token, TransactionTag.INCOMING))
         }
-
-        return tags
     }
 
 }
