@@ -10,10 +10,9 @@ class ApproveEip20Decoration(
     val contractAddress: Address,
     val spender: Address,
     val value: BigInteger
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
-    override fun tags(): List<String> =
-        listOf(contractAddress.hex, TransactionTag.EIP20_APPROVE)
+    override fun tags() = listOf(contractAddress.hex, TransactionTag.EIP20_APPROVE)
 
     companion object {
         val signature = ContractEvent(

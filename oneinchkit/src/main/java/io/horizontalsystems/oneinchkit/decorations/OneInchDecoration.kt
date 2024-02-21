@@ -8,7 +8,7 @@ import java.math.BigInteger
 
 abstract class OneInchDecoration(
     open val contractAddress: Address
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
     sealed class Amount(val value: BigInteger) {
         class Exact(value: BigInteger) : Amount(value)
@@ -26,13 +26,16 @@ abstract class OneInchDecoration(
             }
     }
 
-    override fun tags(): List<String> =
-        listOf(contractAddress.hex, "swap")
+    override fun tags() = listOf(contractAddress.hex, TransactionTag.SWAP)
 
-    internal fun getTags(token: Token, type: String): List<String> =
-        when (token) {
-            is Token.EvmCoin -> listOf("${TransactionTag.EVM_COIN}_$type", TransactionTag.EVM_COIN, type)
-            is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
-        }
+    protected fun getTags(token: Token, type: String) = when (token) {
+        is Token.EvmCoin -> listOf(
+            "${TransactionTag.EVM_COIN}_$type",
+            TransactionTag.EVM_COIN,
+            type
+        )
+
+        is Token.Eip20Coin -> listOf("${token.address.hex}_$type", token.address.hex, type)
+    }
 
 }

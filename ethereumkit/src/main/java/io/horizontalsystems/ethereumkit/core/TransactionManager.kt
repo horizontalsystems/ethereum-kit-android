@@ -96,16 +96,15 @@ class TransactionManager(
         val fullTransactions = decorationManager.decorateTransactions(transactions + failedTransactions)
 
         val transactionWithTags = mutableListOf<TransactionWithTags>()
-        val allTags: MutableList<TransactionTag> = mutableListOf()
+        val allTags = mutableListOf<TransactionTag>()
 
         fullTransactions.forEach { fullTransaction ->
+            val tags = fullTransaction.decoration.tags()
             val transactionHash = fullTransaction.transaction.hash
-            val tags = fullTransaction.decoration.tags().map {
-                TransactionTag(it, transactionHash)
-            }
+            val transactionTags = tags.map { TransactionTag(it, transactionHash) }
 
-            allTags.addAll(tags)
-            transactionWithTags.add(TransactionWithTags(fullTransaction, tags.map { it.name }))
+            allTags.addAll(transactionTags)
+            transactionWithTags.add(TransactionWithTags(fullTransaction, tags))
         }
 
         storage.saveTags(allTags)

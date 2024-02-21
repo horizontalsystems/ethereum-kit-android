@@ -13,48 +13,37 @@ open class UnknownTransactionDecoration(
         private val value: BigInteger?,
         open val internalTransactions: List<InternalTransaction>,
         open val eventInstances: List<ContractEventInstance>
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
-    override fun tags(): List<String> = (tagsFromInternalTransactions + tagsFromEventInstances).toSet().toList()
+    override fun tags(): List<String> = (tagsFromInternalTransactions + tagsFromEventInstances).distinct()
 
-    private val tagsFromInternalTransactions: List<String>
-        get() {
-            var outgoingValue = if (fromAddress == userAddress) value ?: BigInteger.ZERO else BigInteger.ZERO
-            for (internalTx in internalTransactions.filter { it.from == userAddress }) {
-                outgoingValue += internalTx.value
+    private val tagsFromInternalTransactions: List<String> by lazy {
+        val incomingTxs = internalTransactions.filter { it.to == userAddress }
+        val outgoingTxs = internalTransactions.filter { it.from == userAddress }
+
+        var incomingValue = incomingTxs.sumOf { it.value }
+        var outgoingValue = outgoingTxs.sumOf { it.value }
+
+        value?.let {
+            when (userAddress) {
+                toAddress -> incomingValue += value
+                fromAddress -> outgoingValue += value
             }
-
-            var incomingValue = if (toAddress == userAddress) value ?: BigInteger.ZERO else BigInteger.ZERO
-            for (internalTx in internalTransactions.filter { it.to == userAddress }) {
-                incomingValue += internalTx.value
-            }
-
-            if (incomingValue == BigInteger.ZERO && outgoingValue == BigInteger.ZERO) return listOf()
-
-            val tags = mutableListOf(TransactionTag.EVM_COIN)
-
-            if (incomingValue > outgoingValue) {
-                tags.add(TransactionTag.EVM_COIN_INCOMING)
-                tags.add(TransactionTag.INCOMING)
-            }
-
-            if (outgoingValue > incomingValue) {
-                tags.add(TransactionTag.EVM_COIN_OUTGOING)
-                tags.add(TransactionTag.OUTGOING)
-            }
-
-            return tags
         }
 
-    private val tagsFromEventInstances: List<String>
-        get() {
-            val tags: MutableList<String> = mutableListOf()
-
-            for (eventInstance in eventInstances) {
-                tags.addAll(eventInstance.tags(userAddress))
+        when {
+            incomingValue > outgoingValue -> {
+                listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.INCOMING)
             }
-
-            return tags
+            incomingValue < outgoingValue -> {
+                listOf(TransactionTag.EVM_COIN_OUTGOING, TransactionTag.OUTGOING)
+            }
+            else -> listOf()
         }
+    }
+
+    private val tagsFromEventInstances: List<String> by lazy {
+        eventInstances.map { it.tags(userAddress) }.flatten()
+    }
 
 }

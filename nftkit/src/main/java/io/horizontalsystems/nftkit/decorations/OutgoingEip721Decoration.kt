@@ -12,7 +12,7 @@ class OutgoingEip721Decoration(
     val tokenId: BigInteger,
     val sentToSelf: Boolean,
     val tokenInfo: TokenInfo?,
-) : TransactionDecoration() {
+) : TransactionDecoration {
 
     override fun tags() = listOf(
         contractAddress.hex,
