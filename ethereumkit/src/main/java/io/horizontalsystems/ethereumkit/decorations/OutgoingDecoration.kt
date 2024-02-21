@@ -17,6 +17,8 @@ class OutgoingDecoration(
             tags += listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.INCOMING)
         }
 
+        tags.add(TransactionTag.toAddress(to.hex))
+
         return tags
     }
 
