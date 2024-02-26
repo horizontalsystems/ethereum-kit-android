@@ -31,14 +31,27 @@ open class UnknownTransactionDecoration(
             }
         }
 
-        when {
-            incomingValue > outgoingValue -> {
-                listOf(TransactionTag.EVM_COIN_INCOMING, TransactionTag.INCOMING)
+        buildList {
+            when {
+                incomingValue > outgoingValue -> {
+                    add(TransactionTag.EVM_COIN_INCOMING)
+                    add(TransactionTag.INCOMING)
+                }
+                incomingValue < outgoingValue -> {
+                    add(TransactionTag.EVM_COIN_OUTGOING)
+                    add(TransactionTag.OUTGOING)
+                }
             }
-            incomingValue < outgoingValue -> {
-                listOf(TransactionTag.EVM_COIN_OUTGOING, TransactionTag.OUTGOING)
+
+            internalTransactions.forEach { internalTransaction ->
+                if (internalTransaction.from != userAddress) {
+                    add(TransactionTag.fromAddress(internalTransaction.from.hex))
+                }
+
+                if (internalTransaction.to != userAddress) {
+                    add(TransactionTag.toAddress(internalTransaction.to.hex))
+                }
             }
-            else -> listOf()
         }
     }
 
