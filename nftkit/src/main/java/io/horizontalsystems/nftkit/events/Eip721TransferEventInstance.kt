@@ -21,15 +21,14 @@ class Eip721TransferEventInstance(
         if (from == userAddress) {
             add(TransactionTag.tokenOutgoing(contractAddress.hex))
             add(TransactionTag.OUTGOING)
+            add(TransactionTag.toAddress(to.hex))
         }
 
         if (to == userAddress) {
             add(TransactionTag.tokenIncoming(contractAddress.hex))
             add(TransactionTag.INCOMING)
+            add(TransactionTag.fromAddress(from.hex))
         }
-
-        add(TransactionTag.fromAddress(from.hex))
-        add(TransactionTag.toAddress(to.hex))
     }
 
     companion object {
