@@ -17,15 +17,14 @@ class TransferEventInstance(
         if (from == userAddress) {
             tags.add(TransactionTag.tokenOutgoing(contractAddress.hex))
             tags.add(TransactionTag.OUTGOING)
+            tags.add(TransactionTag.toAddress(to.hex))
         }
 
         if (to == userAddress) {
             tags.add(TransactionTag.tokenIncoming(contractAddress.hex))
             tags.add(TransactionTag.INCOMING)
+            tags.add(TransactionTag.fromAddress(from.hex))
         }
-
-        tags.add(TransactionTag.fromAddress(from.hex))
-        tags.add(TransactionTag.toAddress(to.hex))
 
         return tags
     }
