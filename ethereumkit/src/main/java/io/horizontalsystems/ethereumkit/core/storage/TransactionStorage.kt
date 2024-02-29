@@ -139,4 +139,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
         tagsDao.insert(tags)
     }
 
+    override fun getDistinctTokenContractAddresses(): List<String> {
+        return tagsDao.getDistinctTokenContractAddresses()
+    }
 }
