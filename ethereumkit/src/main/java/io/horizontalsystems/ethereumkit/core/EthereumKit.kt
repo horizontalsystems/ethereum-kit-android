@@ -275,6 +275,10 @@ class EthereumKit(
         return statusInfo
     }
 
+    fun getTagTokenContractAddresses(): List<String> {
+        return transactionManager.getDistinctTokenContractAddresses()
+    }
+
     //
     //IBlockchainListener
     //

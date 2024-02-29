@@ -81,6 +81,7 @@ interface ITransactionStorage {
     fun saveInternalTransactions(internalTransactions: List<InternalTransaction>)
 
     fun saveTags(tags: List<TransactionTag>)
+    fun getDistinctTokenContractAddresses(): List<String>
 }
 
 interface IEip20Storage {

@@ -53,6 +53,14 @@ class TransactionManager(
     fun getFullTransactions(hashes: List<ByteArray>): List<FullTransaction> =
         decorationManager.decorateTransactions(storage.getTransactions(hashes))
 
+    fun getDistinctTokenContractAddresses(): List<String> {
+        return storage.getDistinctTokenContractAddresses().map {
+            it
+                .replace("_outgoing", "")
+                .replace("_incoming", "")
+        }
+    }
+
     private fun save(transactions: List<Transaction>) {
         val existingTransactions = storage.getTransactions(hashes = transactions.map { it.hash }).associateBy { it.hashString }
 
