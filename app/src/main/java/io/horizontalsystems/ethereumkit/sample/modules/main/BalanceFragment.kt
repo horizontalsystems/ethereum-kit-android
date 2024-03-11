@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample.modules.main
 
 import androidx.lifecycle.Observer
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +22,8 @@ class BalanceFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        Log.e("e", "onViewCreated")
 
         viewModel = ViewModelProvider(requireActivity()).get(MainViewModel::class.java)
 
