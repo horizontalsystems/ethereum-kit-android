@@ -7,30 +7,6 @@ sealed class RpcSource {
     data class WebSocket(val uri: URI, val auth: String?) : RpcSource()
 
     companion object {
-        private fun infuraHttp(subdomain: String, projectId: String, projectSecret: String? = null): Http {
-            return Http(listOf(URI("https://$subdomain.infura.io/v3/$projectId")), projectSecret)
-        }
-
-        private fun infuraWebSocket(subdomain: String, projectId: String, projectSecret: String? = null): WebSocket {
-            return WebSocket(URI("https://$subdomain.infura.io/ws/v3/$projectId"), projectSecret)
-        }
-
-        fun ethereumInfuraHttp(projectId: String, projectSecret: String? = null): Http {
-            return infuraHttp("mainnet", projectId, projectSecret)
-        }
-
-        fun goerliInfuraHttp(projectId: String, projectSecret: String? = null): Http {
-            return infuraHttp("goerli", projectId, projectSecret)
-        }
-
-        fun ethereumInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
-            return infuraWebSocket("mainnet", projectId, projectSecret)
-        }
-
-        fun goerliInfuraWebSocket(projectId: String, projectSecret: String? = null): WebSocket {
-            return infuraWebSocket("goerli", projectId, projectSecret)
-        }
-
         fun bscRpcHttp(): Http {
             return Http(listOf(URI("https://bscrpc.com")), null)
         }
