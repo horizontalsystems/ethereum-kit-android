@@ -32,6 +32,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import java.math.BigDecimal
+import java.net.URI
 import java.util.logging.Logger
 
 class MainViewModel : ViewModel() {
@@ -198,23 +199,12 @@ class MainViewModel : ViewModel() {
 
             Chain.Ethereum -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
-                rpcSource = if (Configuration.webSocket)
-                    RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
-                else
-                    RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+                rpcSource = RpcSource.Http(listOf(URI(Configuration.ethereumRpc)), null)
             }
 
             Chain.ArbitrumOne -> {
                 transactionSource = TransactionSource.arbiscan(Configuration.arbiscanApiKey)
                 rpcSource = RpcSource.arbitrumOneRpcHttp()
-            }
-
-            Chain.EthereumGoerli -> {
-                transactionSource = TransactionSource.goerliEtherscan(Configuration.etherscanKey)
-                rpcSource = if (Configuration.webSocket)
-                    RpcSource.goerliInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
-                else
-                    RpcSource.goerliInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
             }
 
             else -> {

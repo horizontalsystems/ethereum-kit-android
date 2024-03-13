@@ -17,6 +17,7 @@ import io.horizontalsystems.ethereumkit.sample.modules.main.ShowTxType
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import java.net.URI
 
 class AddressWatchViewModel : ViewModel() {
 
@@ -133,17 +134,7 @@ class AddressWatchViewModel : ViewModel() {
             }
             Chain.Ethereum -> {
                 transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
-                rpcSource = if (Configuration.webSocket)
-                    RpcSource.ethereumInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
-                else
-                    RpcSource.ethereumInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
-            }
-            Chain.EthereumGoerli -> {
-                transactionSource = TransactionSource.goerliEtherscan(Configuration.etherscanKey)
-                rpcSource = if (Configuration.webSocket)
-                    RpcSource.goerliInfuraWebSocket(Configuration.infuraProjectId, Configuration.infuraSecret)
-                else
-                    RpcSource.goerliInfuraHttp(Configuration.infuraProjectId, Configuration.infuraSecret)
+                rpcSource = RpcSource.Http(listOf(URI(Configuration.ethereumRpc)), null)
             }
             else -> {
                 rpcSource = null
