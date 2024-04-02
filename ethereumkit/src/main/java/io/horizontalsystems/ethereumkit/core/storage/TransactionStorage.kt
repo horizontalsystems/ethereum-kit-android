@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.core.storage
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
+import io.horizontalsystems.ethereumkit.core.toRawHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
@@ -43,8 +44,8 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
                                 ) OR
                                 (
                                     tx.timestamp = ${fromTransaction.timestamp} AND
-                                    tx.transactionIndex IS $transactionIndex AND
-                                    HEX(tx.hash) < "${fromTransaction.hashString}"
+                                    tx.transactionIndex = $transactionIndex AND
+                                    HEX(tx.hash) < "${fromTransaction.hash.toRawHexString().uppercase()}"
                                 )
                            )
                            """
