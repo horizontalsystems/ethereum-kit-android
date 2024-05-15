@@ -12,7 +12,7 @@ class TransactionSigner(
         private val chainId: Int
 ) {
 
-    fun signatureLegacy(rawTransaction: RawTransaction): Signature {
+    fun signature(rawTransaction: RawTransaction): Signature {
         return when (val gasPrice = rawTransaction.gasPrice) {
             is GasPrice.Eip1559 -> {
                 val signatureData = signEip1559(rawTransaction, gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas)
