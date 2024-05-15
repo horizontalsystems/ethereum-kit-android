@@ -21,7 +21,7 @@ class Signer(
 ) {
 
     fun signature(rawTransaction: RawTransaction): Signature {
-        return transactionSigner.signatureLegacy(rawTransaction)
+        return transactionSigner.signature(rawTransaction)
     }
 
     fun signedTransaction(
@@ -40,7 +40,7 @@ class Signer(
             nonce,
             transactionInput
         )
-        val signature = transactionSigner.signatureLegacy(rawTransaction)
+        val signature = transactionSigner.signature(rawTransaction)
         return transactionBuilder.encode(rawTransaction, signature)
     }
 
