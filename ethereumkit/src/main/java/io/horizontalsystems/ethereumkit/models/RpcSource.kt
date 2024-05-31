@@ -56,5 +56,9 @@ sealed class RpcSource {
             return Http(listOf(URI("https://rpc.fantom.network")), null)
         }
 
+        fun rootstockRpcHttp(): Http {
+            return Http(listOf(URL("https://public-node.rsk.co")), null)
+        }
+
     }
 }

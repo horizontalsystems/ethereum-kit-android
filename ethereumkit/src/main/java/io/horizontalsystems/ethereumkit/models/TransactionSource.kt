@@ -76,6 +76,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun rootstock(): TransactionSource {
+            return TransactionSource(
+                "blockscout.com",
+                SourceType.Etherscan("https://rootstock.blockscout.com", "https://rootstock.blockscout.com/api", "")
+            )
+        }
+
     }
 
 }
