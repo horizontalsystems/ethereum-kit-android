@@ -7,13 +7,19 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.models.TransactionData
-import io.horizontalsystems.uniswapkit.contract.*
+import io.horizontalsystems.uniswapkit.contract.GetReservesMethod
+import io.horizontalsystems.uniswapkit.contract.SwapETHForExactTokensMethod
+import io.horizontalsystems.uniswapkit.contract.SwapExactETHForTokensMethod
+import io.horizontalsystems.uniswapkit.contract.SwapExactTokensForETHMethod
+import io.horizontalsystems.uniswapkit.contract.SwapExactTokensForTokensMethod
+import io.horizontalsystems.uniswapkit.contract.SwapTokensForExactETHMethod
+import io.horizontalsystems.uniswapkit.contract.SwapTokensForExactTokensMethod
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
 import io.horizontalsystems.uniswapkit.models.Token.Ether
 import io.reactivex.Single
 import java.math.BigInteger
-import java.util.*
+import java.util.Date
 import java.util.logging.Logger
 
 class TradeManager {
@@ -125,6 +131,7 @@ class TradeManager {
                 Chain.BinanceSmartChain -> Address("0x10ED43C718714eb63d5aA57B78B54704E256024E")
                 Chain.Polygon -> Address("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
                 Chain.Avalanche -> Address("0x60aE616a2155Ee3d9A68541Ba4544862310933d4")
+                Chain.Base -> Address("0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
                 else -> throw UnsupportedChainError.NoRouterAddress
             }
 
@@ -134,12 +141,19 @@ class TradeManager {
                 Chain.BinanceSmartChain -> "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
                 Chain.Polygon -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
                 Chain.Avalanche -> "0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10"
+                Chain.Base -> "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"
                 else -> throw UnsupportedChainError.NoFactoryAddress
             }
 
         private fun getInitCodeHashString(chain: Chain) =
             when (chain) {
-                Chain.Ethereum, Chain.EthereumGoerli, Chain.Polygon, Chain.Avalanche -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+                Chain.Ethereum,
+                Chain.EthereumGoerli,
+                Chain.Polygon,
+                Chain.Avalanche,
+                Chain.Base,
+                -> "0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
+
                 Chain.BinanceSmartChain -> "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"
                 else -> throw UnsupportedChainError.NoInitCodeHash
             }

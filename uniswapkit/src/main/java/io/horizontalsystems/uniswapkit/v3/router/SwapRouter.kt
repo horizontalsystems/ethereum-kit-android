@@ -23,12 +23,14 @@ class SwapRouter(private val dexType: DexType) {
         Chain.EthereumGoerli -> Address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45")
 
         Chain.BinanceSmartChain -> Address("0xB971eF87ede563556b2ED4b1C0b0019111Dd85d2")
+        Chain.Base -> Address("0x2626664c2603336E57B271c5C0b26F421741e481")
         else -> throw IllegalStateException("Not supported Uniswap chain ${chain}")
     }
 
     private fun getPancakeSwapRouterAddress(chain: Chain) = when (chain) {
         Chain.BinanceSmartChain,
         Chain.Ethereum -> Address("0x13f4EA83D0bd40E75C8222255bc855a974568Dd4")
+        Chain.Base -> Address("0x678Aa4bF4E210cf2166753e054d5b7c31cc7fa86")
 
         else -> throw IllegalStateException("Not supported PancakeSwap chain ${chain}")
     }
