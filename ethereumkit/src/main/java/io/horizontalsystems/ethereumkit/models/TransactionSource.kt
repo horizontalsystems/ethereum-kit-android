@@ -76,6 +76,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun basescan(apiKey: String): TransactionSource {
+            return TransactionSource(
+                "basescan.org",
+                SourceType.Etherscan("https://api.basescan.org", "https://basescan.org", apiKey)
+            )
+        }
+
     }
 
 }

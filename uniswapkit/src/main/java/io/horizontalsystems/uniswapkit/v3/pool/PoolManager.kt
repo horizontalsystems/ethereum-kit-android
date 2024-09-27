@@ -26,6 +26,7 @@ class PoolManager(
         Chain.ArbitrumOne,
         Chain.EthereumGoerli -> "0x1F98431c8aD98523631AE4a59f267346ea31F984"
         Chain.BinanceSmartChain -> "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7"
+        Chain.Base -> "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
         else -> throw IllegalStateException("Not supported Uniswap chain ${chain}")
     }
 

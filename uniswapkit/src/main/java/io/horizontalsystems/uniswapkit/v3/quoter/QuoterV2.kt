@@ -38,6 +38,7 @@ class QuoterV2(
         Chain.EthereumGoerli -> "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"
 
         Chain.BinanceSmartChain -> "0x78D78E420Da98ad378D7799bE8f4AF69033EB077"
+        Chain.Base -> "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a"
         else -> throw IllegalStateException("Not supported Uniswap chain $chain")
     }
 
