@@ -515,7 +515,7 @@ class EthereumKit(
         private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
             when (transactionSource.type) {
                 is TransactionSource.SourceType.Etherscan -> {
-                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKey)
+                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKeys)
                     return EtherscanTransactionProvider(service, address)
                 }
             }

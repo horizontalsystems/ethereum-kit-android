@@ -8,78 +8,78 @@ class TransactionSource(val name: String, val type: SourceType) {
         }
 
     sealed class SourceType {
-        class Etherscan(val apiBaseUrl: String, val txBaseUrl: String, val apiKey: String) : SourceType()
+        class Etherscan(val apiBaseUrl: String, val txBaseUrl: String, val apiKeys: List<String>) : SourceType()
     }
 
     companion object {
-        private fun etherscan(apiSubdomain: String, txSubdomain: String?, apiKey: String): TransactionSource {
+        private fun etherscan(apiSubdomain: String, txSubdomain: String?, apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "etherscan.io",
-                SourceType.Etherscan("https://$apiSubdomain.etherscan.io", "https://${txSubdomain?.let { "$it." } ?: ""}etherscan.io", apiKey)
+                SourceType.Etherscan("https://$apiSubdomain.etherscan.io", "https://${txSubdomain?.let { "$it." } ?: ""}etherscan.io", apiKeys)
             )
         }
 
-        fun ethereumEtherscan(apiKey: String): TransactionSource {
-            return etherscan("api", null, apiKey)
+        fun ethereumEtherscan(apiKeys: List<String>): TransactionSource {
+            return etherscan("api", null, apiKeys)
         }
 
-        fun goerliEtherscan(apiKey: String): TransactionSource {
-            return etherscan("api-goerli", "goerli", apiKey)
+        fun goerliEtherscan(apiKeys: List<String>): TransactionSource {
+            return etherscan("api-goerli", "goerli", apiKeys)
         }
 
-        fun bscscan(apiKey: String): TransactionSource {
+        fun bscscan(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "bscscan.com",
-                SourceType.Etherscan("https://api.bscscan.com", "https://bscscan.com", apiKey)
+                SourceType.Etherscan("https://api.bscscan.com", "https://bscscan.com", apiKeys)
             )
         }
 
-        fun polygonscan(apiKey: String): TransactionSource {
+        fun polygonscan(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "polygonscan.com",
-                SourceType.Etherscan("https://api.polygonscan.com", "https://polygonscan.com", apiKey)
+                SourceType.Etherscan("https://api.polygonscan.com", "https://polygonscan.com", apiKeys)
             )
         }
 
-        fun optimisticEtherscan(apiKey: String): TransactionSource {
+        fun optimisticEtherscan(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "optimistic.etherscan.io",
-                SourceType.Etherscan("https://api-optimistic.etherscan.io", "https://optimistic.etherscan.io", apiKey)
+                SourceType.Etherscan("https://api-optimistic.etherscan.io", "https://optimistic.etherscan.io", apiKeys)
             )
         }
 
-        fun arbiscan(apiKey: String): TransactionSource {
+        fun arbiscan(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "arbiscan.io",
-                SourceType.Etherscan("https://api.arbiscan.io", "https://arbiscan.io", apiKey)
+                SourceType.Etherscan("https://api.arbiscan.io", "https://arbiscan.io", apiKeys)
             )
         }
 
-        fun snowtrace(apiKey: String): TransactionSource {
+        fun snowtrace(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "snowtrace.io",
-                SourceType.Etherscan("https://api.snowtrace.io", "https://snowtrace.io", apiKey)
+                SourceType.Etherscan("https://api.snowtrace.io", "https://snowtrace.io", apiKeys)
             )
         }
 
-        fun gnosis(apiKey: String): TransactionSource {
+        fun gnosis(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "gnosisscan.io",
-                SourceType.Etherscan("https://api.gnosisscan.io", "https://gnosisscan.io", apiKey)
+                SourceType.Etherscan("https://api.gnosisscan.io", "https://gnosisscan.io", apiKeys)
             )
         }
 
-        fun fantom(apiKey: String): TransactionSource {
+        fun fantom(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "ftmscan.com",
-                SourceType.Etherscan("https://api.ftmscan.com", "https://ftmscan.com", apiKey)
+                SourceType.Etherscan("https://api.ftmscan.com", "https://ftmscan.com", apiKeys)
             )
         }
 
-        fun basescan(apiKey: String): TransactionSource {
+        fun basescan(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "basescan.org",
-                SourceType.Etherscan("https://api.basescan.org", "https://basescan.org", apiKey)
+                SourceType.Etherscan("https://api.basescan.org", "https://basescan.org", apiKeys)
             )
         }
 
