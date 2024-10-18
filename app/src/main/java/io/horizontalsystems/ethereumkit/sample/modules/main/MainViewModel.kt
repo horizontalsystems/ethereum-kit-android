@@ -193,17 +193,17 @@ class MainViewModel : ViewModel() {
     private fun createKit(): EthereumKit {
         when (Configuration.chain) {
             Chain.BinanceSmartChain -> {
-                transactionSource = TransactionSource.bscscan(Configuration.bscScanKey)
+                transactionSource = TransactionSource.bscscan(listOf(Configuration.bscScanKey))
                 rpcSource = RpcSource.binanceSmartChainHttp()
             }
 
             Chain.Ethereum -> {
-                transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey)
+                transactionSource = TransactionSource.ethereumEtherscan(Configuration.etherscanKey.split(","))
                 rpcSource = RpcSource.Http(listOf(URI(Configuration.ethereumRpc)), null)
             }
 
             Chain.ArbitrumOne -> {
-                transactionSource = TransactionSource.arbiscan(Configuration.arbiscanApiKey)
+                transactionSource = TransactionSource.arbiscan(listOf(Configuration.arbiscanApiKey),)
                 rpcSource = RpcSource.arbitrumOneRpcHttp()
             }
 

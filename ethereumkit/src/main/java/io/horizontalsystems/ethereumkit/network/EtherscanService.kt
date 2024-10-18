@@ -9,9 +9,7 @@ import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
 import io.reactivex.Single
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -22,8 +20,10 @@ import java.util.logging.Logger
 
 class EtherscanService(
     baseUrl: String,
-    private val apiKey: String
+    private val apiKeys: List<String>
 ) {
+    private val apiKeysSize = apiKeys.size
+    private var apiKeyIndex = 0
 
     private val logger = Logger.getLogger("EtherscanService")
 
@@ -32,21 +32,27 @@ class EtherscanService(
     private val gson: Gson
 
     init {
-        val loggingInterceptor = HttpLoggingInterceptor(object : HttpLoggingInterceptor.Logger {
-            override fun log(message: String) {
-                logger.info(message)
-            }
-        }).setLevel(HttpLoggingInterceptor.Level.BASIC)
+        val loggingInterceptor = HttpLoggingInterceptor {
+            logger.info(it)
+        }.setLevel(HttpLoggingInterceptor.Level.BASIC)
 
         val httpClient = OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
-            .addInterceptor(Interceptor { chain ->
-                val originalRequest: Request = chain.request()
-                val requestWithUserAgent: Request = originalRequest.newBuilder()
-                    .header("User-Agent", "Mobile App Agent")
+            .addInterceptor { chain ->
+                val originalRequest = chain.request()
+                val originalUrl = originalRequest.url
+
+                val url = originalUrl.newBuilder()
+                    .addQueryParameter("apikey", getNextApiKey())
                     .build()
-                chain.proceed(requestWithUserAgent)
-            })
+
+                val request = originalRequest.newBuilder()
+                    .header("User-Agent", "Mobile App Agent")
+                    .url(url)
+                    .build()
+
+                chain.proceed(request)
+            }
+            .addInterceptor(loggingInterceptor)
 
         gson = GsonBuilder()
             .setLenient()
@@ -62,12 +68,17 @@ class EtherscanService(
         service = retrofit.create(EtherscanServiceAPI::class.java)
     }
 
+    private fun getNextApiKey(): String {
+        if (apiKeyIndex >= apiKeysSize) apiKeyIndex = 0
+
+        return apiKeys[apiKeyIndex++]
+    }
+
     fun getTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
         return service.accountApi(
             action = "txlist",
             address = address.hex,
             startBlock = startBlock,
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -78,7 +89,6 @@ class EtherscanService(
             action = "txlistinternal",
             address = address.hex,
             startBlock = startBlock,
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -89,7 +99,6 @@ class EtherscanService(
             action = "tokentx",
             address = address.hex,
             startBlock = startBlock,
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -99,7 +108,6 @@ class EtherscanService(
         return service.accountApi(
             action = "txlistinternal",
             txHash = transactionHash.toHexString(),
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -110,7 +118,6 @@ class EtherscanService(
             action = "tokennfttx",
             address = address.hex,
             startBlock = startBlock,
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -121,7 +128,6 @@ class EtherscanService(
             action = "token1155tx",
             address = address.hex,
             startBlock = startBlock,
-            apiKey = apiKey
         ).map {
             parseResponse(it)
         }.retryWhenError(RequestError.RateLimitExceed::class)
@@ -163,8 +169,7 @@ class EtherscanService(
             @Query("txhash") txHash: String? = null,
             @Query("startblock") startBlock: Long? = null,
             @Query("endblock") endBlock: Long? = null,
-            @Query("sort") sort: String? = "desc",
-            @Query("apikey") apiKey: String
+            @Query("sort") sort: String? = "desc"
         ): Single<JsonElement>
     }
 
