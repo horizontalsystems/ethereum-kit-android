@@ -10,7 +10,7 @@ class EstimateGasJsonRpc(
         @Transient val to: Address?,
         @Transient val amount: BigInteger?,
         @Transient val gasLimit: Long?,
-        @Transient val gasPrice: GasPrice,
+        @Transient val gasPrice: GasPrice?,
         @Transient val data: ByteArray?
 ) : LongJsonRpc(
         method = "eth_estimateGas",
@@ -18,13 +18,16 @@ class EstimateGasJsonRpc(
 ) {
 
     companion object {
-        private fun estimateGasParams(from: Address, to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): EstimateGasParams {
+        private fun estimateGasParams(from: Address, to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): EstimateGasParams {
             return when (gasPrice) {
                 is GasPrice.Eip1559 -> {
                     EstimateGasParams.Eip1559(from, to, amount, gasLimit, gasPrice.maxFeePerGas, gasPrice.maxPriorityFeePerGas, data)
                 }
                 is GasPrice.Legacy -> {
                     EstimateGasParams.Legacy(from, to, amount, gasLimit, gasPrice.legacyGasPrice, data)
+                }
+                null -> {
+                    EstimateGasParams.NoGasPrice(from, to, amount, gasLimit, data)
                 }
             }
         }
@@ -51,6 +54,16 @@ class EstimateGasJsonRpc(
                 val gasLimit: Long?,
                 val maxFeePerGas: Long,
                 val maxPriorityFeePerGas: Long,
+                val data: ByteArray?
+        ) : EstimateGasParams()
+
+        data class NoGasPrice(
+                val from: Address,
+                val to: Address?,
+                @SerializedName("value")
+                val amount: BigInteger?,
+                @SerializedName("gas")
+                val gasLimit: Long?,
                 val data: ByteArray?
         ) : EstimateGasParams()
     }
