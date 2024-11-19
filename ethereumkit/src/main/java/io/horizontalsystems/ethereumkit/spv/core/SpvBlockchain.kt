@@ -94,7 +94,7 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice, data: ByteArray?): Single<Long> {
+    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): Single<Long> {
         TODO("not implemented")
     }
 
