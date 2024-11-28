@@ -384,7 +384,6 @@ for (nftBalance in nftBalances) {
 }
 ```
 
-
 ### Send an NFT
 
 ```kotlin
