@@ -176,6 +176,10 @@ class EthereumKit(
         return transactionManager.getFullTransactionSingle(hash)
     }
 
+    fun getFullTransactionsAfterSingle(hash: ByteArray?): Single<List<FullTransaction>> {
+        return transactionManager.getFullTransactionsAfterSingle(hash)
+    }
+
     fun estimateGas(to: Address?, value: BigInteger, gasPrice: GasPrice): Single<Long> {
         // without address - provide default gas limit
         if (to == null) {

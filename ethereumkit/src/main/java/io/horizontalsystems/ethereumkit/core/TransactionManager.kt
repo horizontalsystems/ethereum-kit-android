@@ -146,6 +146,12 @@ class TransactionManager(
         return fullRpcTransactionSingle.map { decorationManager.decorateFullRpcTransaction(it) }
     }
 
+    fun getFullTransactionsAfterSingle(fromHash: ByteArray? = null): Single<List<FullTransaction>> =
+        storage.getTransactionsAfterSingle(fromHash)
+            .map { transactions ->
+                decorationManager.decorateTransactions(transactions)
+            }
+
     private fun failPendingTransactions(): List<Transaction> {
         val pendingTransactions = storage.getPendingTransactions()
 

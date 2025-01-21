@@ -19,7 +19,7 @@ interface TransactionDao {
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>
 
     @RawQuery
-    fun getTransactionsBeforeAsync(query: SupportSQLiteQuery): Single<List<Transaction>>
+    fun getTransactionsByRawQuery(query: SupportSQLiteQuery): Single<List<Transaction>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transactions: List<Transaction>)
