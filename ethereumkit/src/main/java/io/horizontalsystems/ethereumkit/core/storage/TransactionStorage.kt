@@ -72,7 +72,7 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
                       $limitClause
                       """
 
-        return transactionDao.getTransactionsBeforeAsync(SimpleSQLiteQuery(sqlQuery))
+        return transactionDao.getTransactionsByRawQuery(SimpleSQLiteQuery(sqlQuery))
     }
 
     override fun save(transactions: List<Transaction>) {
@@ -142,5 +142,40 @@ class TransactionStorage(database: TransactionDatabase) : ITransactionStorage {
 
     override fun getDistinctTokenContractAddresses(): List<String> {
         return tagsDao.getDistinctTokenContractAddresses()
+    }
+
+    override fun getTransactionsAfterSingle(hash: ByteArray?): Single<List<Transaction>> {
+        val whereConditions = mutableListOf<String>()
+        hash?.let { transactionDao.getTransaction(hash) }?.let { fromTransaction ->
+            val transactionIndex = fromTransaction.transactionIndex ?: 0
+            val fromCondition = """
+                           (
+                                tx.timestamp > ${fromTransaction.timestamp} OR 
+                                (
+                                    tx.timestamp = ${fromTransaction.timestamp} AND 
+                                    tx.transactionIndex > $transactionIndex
+                                ) OR
+                                (
+                                    tx.timestamp = ${fromTransaction.timestamp} AND
+                                    tx.transactionIndex = $transactionIndex AND
+                                    HEX(tx.hash) > "${fromTransaction.hash.toRawHexString().uppercase()}"
+                                )
+                           )
+                           """
+
+            whereConditions.add(fromCondition)
+        }
+
+        val whereClause = if (whereConditions.isNotEmpty()) "WHERE ${whereConditions.joinToString(" AND ")}" else ""
+        val orderClause = "ORDER BY tx.timestamp, tx.transactionIndex, HEX(tx.hash)"
+
+        val sqlQuery = """
+                      SELECT tx.*
+                      FROM `Transaction` as tx
+                      $whereClause
+                      $orderClause
+                      """
+
+        return transactionDao.getTransactionsByRawQuery(SimpleSQLiteQuery(sqlQuery))
     }
 }
