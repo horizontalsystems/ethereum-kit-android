@@ -11,6 +11,10 @@ sealed class RpcSource {
             return Http(listOf(URI("https://bscrpc.com")), null)
         }
 
+        fun zkSyncRpcHttp(): Http {
+            return Http(listOf(URI("https://mainnet.era.zksync.io")), null)
+        }
+
         fun binanceSmartChainHttp(): Http {
             return Http(
                     listOf(

@@ -83,6 +83,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
+        fun eraZkSync(apiKeys: List<String>): TransactionSource {
+            return TransactionSource(
+                "era.zksync.network",
+                SourceType.Etherscan("https://api-era.zksync.network", "https://era.zksync.network", apiKeys)
+            )
+        }
+
     }
 
 }
