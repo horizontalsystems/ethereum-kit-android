@@ -39,12 +39,14 @@ class QuoterV2(
 
         Chain.BinanceSmartChain -> "0x78D78E420Da98ad378D7799bE8f4AF69033EB077"
         Chain.Base -> "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a"
+        Chain.ZkSync -> "0x8Cb537fc92E26d8EBBb760E632c95484b6Ea3e28"
         else -> throw IllegalStateException("Not supported Uniswap chain $chain")
     }
 
     private fun getPancakeSwapQuoterAddress(chain: Chain) = when (chain) {
         Chain.BinanceSmartChain,
         Chain.Ethereum -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
+        Chain.ZkSync -> "0x3d146FcE6c1006857750cBe8aF44f76a28041CCc"
 
         else -> throw IllegalStateException("Not supported PancakeSwap chain $chain")
     }
