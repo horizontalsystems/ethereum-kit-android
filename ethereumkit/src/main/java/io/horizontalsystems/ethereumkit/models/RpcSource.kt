@@ -37,7 +37,12 @@ sealed class RpcSource {
         }
 
         fun polygonRpcHttp(): Http {
-            return Http(listOf(URI("https://polygon-rpc.com")), null)
+            return Http(
+                listOf(
+                    URI("https://polygon-rpc.com"),
+                    URI("https://polygon.drpc.org"),
+                ),
+                null)
         }
 
         fun optimismRpcHttp(): Http {
