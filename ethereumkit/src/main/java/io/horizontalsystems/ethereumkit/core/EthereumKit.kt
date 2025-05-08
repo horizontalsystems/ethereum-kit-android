@@ -468,7 +468,7 @@ class EthereumKit(
             }
 
             val transactionBuilder = TransactionBuilder(address, chain.id)
-            val transactionProvider = transactionProvider(transactionSource, address)
+            val transactionProvider = transactionProvider(transactionSource, address, chain.id)
 
             val apiDatabase = EthereumDatabaseManager.getEthereumApiDatabase(application, walletId, chain)
             val storage = ApiStorage(apiDatabase)
@@ -516,10 +516,10 @@ class EthereumKit(
             EthereumDatabaseManager.clear(context, chain, walletId)
         }
 
-        private fun transactionProvider(transactionSource: TransactionSource, address: Address): ITransactionProvider {
+        private fun transactionProvider(transactionSource: TransactionSource, address: Address, chainId: Int): ITransactionProvider {
             when (transactionSource.type) {
                 is TransactionSource.SourceType.Etherscan -> {
-                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKeys)
+                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKeys, chainId)
                     return EtherscanTransactionProvider(service, address)
                 }
             }
