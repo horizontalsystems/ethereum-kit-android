@@ -15,7 +15,7 @@ class TransactionSource(val name: String, val type: SourceType) {
         private fun etherscan(apiSubdomain: String, txSubdomain: String?, apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "etherscan.io",
-                SourceType.Etherscan("https://$apiSubdomain.etherscan.io", "https://${txSubdomain?.let { "$it." } ?: ""}etherscan.io", apiKeys)
+                SourceType.Etherscan("https://$apiSubdomain.etherscan.io/v2/", "https://${txSubdomain?.let { "$it." } ?: ""}etherscan.io", apiKeys)
             )
         }
 

@@ -20,7 +20,8 @@ import java.util.logging.Logger
 
 class EtherscanService(
     baseUrl: String,
-    private val apiKeys: List<String>
+    private val apiKeys: List<String>,
+    private val chainId: Int,
 ) {
     private val apiKeysSize = apiKeys.size
     private var apiKeyIndex = 0
@@ -43,6 +44,7 @@ class EtherscanService(
 
                 val url = originalUrl.newBuilder()
                     .addQueryParameter("apikey", getNextApiKey())
+                    .addQueryParameter("chainid", chainId.toString())
                     .build()
 
                 val request = originalRequest.newBuilder()
@@ -161,7 +163,7 @@ class EtherscanService(
     }
 
     private interface EtherscanServiceAPI {
-        @GET("/api")
+        @GET("api")
         fun accountApi(
             @Query("module") module: String = "account",
             @Query("action") action: String,
