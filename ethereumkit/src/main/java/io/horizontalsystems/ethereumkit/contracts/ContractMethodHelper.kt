@@ -47,6 +47,11 @@ object ContractMethodHelper {
                     data += pad(unsignedBigIntergerToByteArray(BigInteger.valueOf(arguments.size * 32L + arraysData.size)))
                     arraysData += pad(BigInteger.valueOf(argument.size.toLong()).toByteArray()) + argument
                 }
+                is String -> {
+                    data += pad(unsignedBigIntergerToByteArray(BigInteger.valueOf(arguments.size * 32L + arraysData.size)))
+                    arraysData += encode(argument)
+                }
+                else -> throw IllegalArgumentException("encoding for $argument")
             }
         }
         return data + arraysData
@@ -148,5 +153,19 @@ object ContractMethodHelper {
             data += pad(address.raw)
         }
         return data
+    }
+
+    fun encode(string: String): ByteArray {
+        val stringData = string.toByteArray(Charsets.UTF_8)
+        val count = stringData.size
+
+        var res = pad(byteArrayOf(count.toByte())) + stringData
+
+        val remainder = count % 32
+        if (remainder > 0) {
+            res += ByteArray(32 - remainder)
+        }
+
+        return res
     }
 }
