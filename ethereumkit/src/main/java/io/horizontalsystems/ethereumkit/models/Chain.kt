@@ -9,7 +9,7 @@ enum class Chain(
 ) {
     Ethereum(1, 60, 2_000_000, 15, true),
     BinanceSmartChain(56, 60, 10_000_000, 15, false),
-    Base(8453, 60, 10_000_000, 15, true),
+    Base(8453, 60, 20_000_000, 15, true),
     ZkSync(324, 60, 10_000_000, 15, true),
     Polygon(137, 60, 10_000_000, 15, true),
     Optimism(10, 60, 10_000_000, 15, false),
