@@ -34,10 +34,12 @@ open class UnknownTransactionDecoration(
         buildList {
             when {
                 incomingValue > outgoingValue -> {
+                    add(TransactionTag.EVM_COIN)
                     add(TransactionTag.EVM_COIN_INCOMING)
                     add(TransactionTag.INCOMING)
                 }
                 incomingValue < outgoingValue -> {
+                    add(TransactionTag.EVM_COIN)
                     add(TransactionTag.EVM_COIN_OUTGOING)
                     add(TransactionTag.OUTGOING)
                 }
