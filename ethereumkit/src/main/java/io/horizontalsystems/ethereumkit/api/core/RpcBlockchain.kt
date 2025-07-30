@@ -22,6 +22,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.core.IApiStorage
 import io.horizontalsystems.ethereumkit.core.IBlockchain
 import io.horizontalsystems.ethereumkit.core.IBlockchainListener
+import io.horizontalsystems.ethereumkit.core.INonceProvider
 import io.horizontalsystems.ethereumkit.core.RpcApiProviderFactory
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.models.Address
@@ -42,7 +43,7 @@ class RpcBlockchain(
     private val storage: IApiStorage,
     private val syncer: IRpcSyncer,
     private val transactionBuilder: TransactionBuilder
-) : IBlockchain, IRpcSyncerListener {
+) : IBlockchain, IRpcSyncerListener, INonceProvider {
 
     private val disposables = CompositeDisposable()
 

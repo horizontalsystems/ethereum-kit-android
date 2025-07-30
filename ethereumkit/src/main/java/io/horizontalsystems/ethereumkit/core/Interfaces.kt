@@ -8,7 +8,21 @@ import io.horizontalsystems.ethereumkit.api.models.AccountState
 import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.decorations.TransactionDecoration
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
+import io.horizontalsystems.ethereumkit.models.Eip20Event
+import io.horizontalsystems.ethereumkit.models.GasPrice
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderEip1155Transaction
+import io.horizontalsystems.ethereumkit.models.ProviderEip721Transaction
+import io.horizontalsystems.ethereumkit.models.ProviderInternalTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
+import io.horizontalsystems.ethereumkit.models.ProviderTransaction
+import io.horizontalsystems.ethereumkit.models.RawTransaction
+import io.horizontalsystems.ethereumkit.models.Signature
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionLog
+import io.horizontalsystems.ethereumkit.models.TransactionTag
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
 import io.reactivex.Single
@@ -124,4 +138,8 @@ interface ITransactionProvider {
     fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>>
     fun getEip721Transactions(startBlock: Long): Single<List<ProviderEip721Transaction>>
     fun getEip1155Transactions(startBlock: Long): Single<List<ProviderEip1155Transaction>>
+}
+
+interface INonceProvider {
+    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long>
 }
