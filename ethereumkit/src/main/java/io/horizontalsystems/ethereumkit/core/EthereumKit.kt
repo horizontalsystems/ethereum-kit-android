@@ -64,6 +64,7 @@ import java.util.logging.Logger
 
 class EthereumKit(
     private val blockchain: IBlockchain,
+    private val nonceProvider: NonceProvider,
     private val transactionManager: TransactionManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val connectionManager: ConnectionManager,
@@ -153,7 +154,7 @@ class EthereumKit(
     }
 
     fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
-        return blockchain.getNonce(defaultBlockParameter)
+        return nonceProvider.getNonce(defaultBlockParameter)
     }
 
     fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
@@ -224,7 +225,7 @@ class EthereumKit(
         gasLimit: Long,
         nonce: Long? = null
     ): Single<RawTransaction> {
-        val nonceSingle = nonce?.let { Single.just(it) } ?: blockchain.getNonce(DefaultBlockParameter.Pending)
+        val nonceSingle = nonce?.let { Single.just(it) } ?: nonceProvider.getNonce(DefaultBlockParameter.Pending)
 
         return nonceSingle.flatMap { nonce ->
             Single.just(RawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput))
@@ -309,6 +310,10 @@ class EthereumKit(
 
     fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {
         transactionSyncManager.add(transactionSyncer)
+    }
+
+    fun addNonceProvider(provider: INonceProvider) {
+        nonceProvider.addProvider(provider)
     }
 
     fun addMethodDecorator(decorator: IMethodDecorator) {
@@ -492,8 +497,12 @@ class EthereumKit(
             transactionSyncManager.add(internalTransactionsSyncer)
             transactionSyncManager.add(ethereumTransactionSyncer)
 
+            val nonceProvider = NonceProvider()
+            nonceProvider.addProvider(blockchain)
+
             val ethereumKit = EthereumKit(
                 blockchain,
+                nonceProvider,
                 transactionManager,
                 transactionSyncManager,
                 connectionManager,
