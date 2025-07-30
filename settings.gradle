@@ -1,1 +1,2 @@
 include ':app', ':ethereumkit', ':erc20kit', ':uniswapkit', ':oneinchkit', ':nftkit'
+include ':merkleiokit'
