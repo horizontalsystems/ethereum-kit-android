@@ -65,7 +65,7 @@ import java.util.logging.Logger
 class EthereumKit(
     private val blockchain: IBlockchain,
     private val nonceProvider: NonceProvider,
-    private val transactionManager: TransactionManager,
+    val transactionManager: TransactionManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val connectionManager: ConnectionManager,
     private val address: Address,

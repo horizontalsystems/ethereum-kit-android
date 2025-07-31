@@ -6,11 +6,12 @@ import io.horizontalsystems.ethereumkit.api.core.NodeApiProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
+import io.horizontalsystems.ethereumkit.core.TransactionManager
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.Chain
+import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.RawTransaction
 import io.horizontalsystems.ethereumkit.models.Signature
-import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.reactivex.Single
 import java.net.URI
@@ -18,9 +19,11 @@ import java.net.URI
 class MerkleTransactionAdapter(
     val blockchain: MerkleRpcBlockchain,
     val syncer: ITransactionSyncer,
+    private val transactionManager: TransactionManager,
 ) {
-    fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction> {
+    fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
         return blockchain.send(rawTransaction, signature)
+            .map { transactionManager.handle(listOf(it)).first() }
     }
 
     companion object {
@@ -37,6 +40,7 @@ class MerkleTransactionAdapter(
             chain: Chain,
             context: Context,
             walletId: String,
+            transactionManager: TransactionManager,
         ): MerkleTransactionAdapter? {
             val baseUrl = "https://mempool.merkle.io/rpc/"
             val blockchainPath = blockchainPathMap[chain] ?: return null
@@ -68,7 +72,7 @@ class MerkleTransactionAdapter(
                 blockchain = blockchain
             )
 
-            return MerkleTransactionAdapter(blockchain, syncer)
+            return MerkleTransactionAdapter(blockchain, syncer, transactionManager)
         }
     }
 }
