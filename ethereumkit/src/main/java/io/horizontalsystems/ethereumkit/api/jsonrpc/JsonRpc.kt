@@ -20,15 +20,19 @@ abstract class JsonRpc<T>(
         if (response.error != null) {
             throw ResponseError.RpcError(response.error)
         }
-        return parseResult(response.result, gson)
-    }
 
-    fun parseResult(result: JsonElement?, gson: Gson): T {
-        return try {
-            gson.fromJson(result, typeOfResult) as T
-        } catch (error: Throwable) {
+        val result = parseResult(response.result, gson)
+        if (result == null) {
             throw ResponseError.InvalidResult(result.toString())
         }
+
+        return result
+    }
+
+    private fun parseResult(result: JsonElement?, gson: Gson): T = try {
+        gson.fromJson(result, typeOfResult)
+    } catch (error: Throwable) {
+        throw ResponseError.InvalidResult(result.toString())
     }
 
     sealed class ResponseError : Throwable() {
