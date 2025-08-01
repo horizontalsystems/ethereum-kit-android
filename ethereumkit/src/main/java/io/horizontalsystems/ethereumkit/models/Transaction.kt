@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.core.toHexString
 import java.math.BigInteger
 
 @Entity
-class Transaction(
+data class Transaction(
     @PrimaryKey
     val hash: ByteArray,
     val timestamp: Long,

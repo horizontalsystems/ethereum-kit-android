@@ -1,7 +1,6 @@
 package io.horizontalsystems.merkleiokit
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 
@@ -14,7 +13,7 @@ interface MerkleTransactionDao {
     @Insert
     fun save(hash: MerkleTransactionHash)
 
-    @Delete
-    fun delete(hashes: List<MerkleTransactionHash>)
+    @Query("DELETE FROM MerkleTransactionHash WHERE hash IN (:hashes)")
+    fun delete(hashes: List<ByteArray>)
 
 }
