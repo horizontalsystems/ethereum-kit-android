@@ -61,7 +61,6 @@ class MerkleTransactionAdapter(
 
             val blockchain = MerkleRpcBlockchain(
                 address = address,
-                chain = chain,
                 manager = merkleTransactionHashManager,
                 syncer = rpcSyncer,
                 transactionBuilder = transactionBuilder

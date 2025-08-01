@@ -31,12 +31,11 @@ class MerkleTransactionSyncer(
 
 
     override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
-        val chainId = blockchain.chain.id
-        if (!manager.hasMerkleTransactions(chainId)) {
+        val hashes = manager.hashes()
+        if (hashes.isEmpty()) {
             return Single.just(Pair(listOf(), false))
         }
 
-        val hashes = manager.hashes(chainId)
         val singles = hashes.map { tx ->
             blockchain.transaction(tx.hash).map { convert(it) }
         }
@@ -47,7 +46,7 @@ class MerkleTransactionSyncer(
 
         return transactionsSingle
             .doOnSuccess {
-                manager.handle(it, chainId)
+                manager.handle(it)
             }
             .map {
                 Pair(it, false)

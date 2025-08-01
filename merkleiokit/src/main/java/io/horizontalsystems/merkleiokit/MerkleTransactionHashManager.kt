@@ -4,22 +4,18 @@ import io.horizontalsystems.ethereumkit.models.Transaction
 
 class MerkleTransactionHashManager(private val dao: MerkleTransactionDao) {
 
-    fun hasMerkleTransactions(chainId: Int): Boolean {
-        return dao.hasMerkleTransactions(chainId)
-    }
-
-    fun hashes(chainId: Int): List<MerkleTransactionHash> {
-        return dao.hashes(chainId)
+    fun hashes(): List<MerkleTransactionHash> {
+        return dao.hashes()
     }
 
     fun save(hash: MerkleTransactionHash) {
         dao.save(hash)
     }
 
-    fun handle(transactions: List<Transaction>, chainId: Int) {
+    fun handle(transactions: List<Transaction>) {
         val toRemove = transactions.mapNotNull { tx ->
             tx.blockNumber?.let {
-                MerkleTransactionHash(tx.hash, chainId)
+                MerkleTransactionHash(tx.hash)
             }
         }
 
