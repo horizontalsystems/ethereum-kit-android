@@ -3,6 +3,7 @@ package io.horizontalsystems.merkleiokit
 import io.horizontalsystems.ethereumkit.api.core.IRpcSyncer
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionByHashJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionCountJsonRpc
+import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.SendRawTransactionJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.core.INonceProvider
@@ -13,6 +14,7 @@ import io.horizontalsystems.ethereumkit.models.RawTransaction
 import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.reactivex.Single
+import java.util.Optional
 
 class MerkleRpcBlockchain(
     private val address: Address,
@@ -41,7 +43,15 @@ class MerkleRpcBlockchain(
             .map { tx }
     }
 
-    fun transaction(transactionHash: ByteArray): Single<RpcTransaction> {
+    fun transaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>> {
         return syncer.single(GetTransactionByHashJsonRpc(transactionHash))
+            .map { Optional.of(it) }
+            .onErrorResumeNext { throwable ->
+                if (throwable is JsonRpc.ResponseError.InvalidResult) {
+                    Single.just(Optional.empty())
+                } else {
+                    Single.error(throwable)
+                }
+            }
     }
 }

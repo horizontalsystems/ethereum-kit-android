@@ -68,7 +68,8 @@ class MerkleTransactionAdapter(
 
             val syncer = MerkleTransactionSyncer(
                 manager = merkleTransactionHashManager,
-                blockchain = blockchain
+                blockchain = blockchain,
+                transactionManager = transactionManager
             )
 
             return MerkleTransactionAdapter(blockchain, syncer, transactionManager)
