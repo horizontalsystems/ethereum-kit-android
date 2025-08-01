@@ -6,6 +6,5 @@ import androidx.room.PrimaryKey
 @Entity
 data class MerkleTransactionHash(
     @PrimaryKey
-    val hash: ByteArray,
-    val chainId: Int,
+    val hash: ByteArray
 )

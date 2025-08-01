@@ -8,7 +8,6 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.core.INonceProvider
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.models.Address
-import io.horizontalsystems.ethereumkit.models.Chain
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.RawTransaction
 import io.horizontalsystems.ethereumkit.models.Signature
@@ -17,7 +16,6 @@ import io.reactivex.Single
 
 class MerkleRpcBlockchain(
     private val address: Address,
-    val chain: Chain,
     private val manager: MerkleTransactionHashManager,
     private val syncer: IRpcSyncer,
     private val transactionBuilder: TransactionBuilder
@@ -37,11 +35,10 @@ class MerkleRpcBlockchain(
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
         return syncer.single(SendRawTransactionJsonRpc(encoded))
-            .map { txHash ->
-                manager.save(MerkleTransactionHash(txHash, chain.id))
-
-                tx
+            .doOnSuccess { txHash ->
+                manager.save(MerkleTransactionHash(txHash))
             }
+            .map { tx }
     }
 
     fun transaction(transactionHash: ByteArray): Single<RpcTransaction> {
