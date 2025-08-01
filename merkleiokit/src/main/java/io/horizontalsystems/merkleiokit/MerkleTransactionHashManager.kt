@@ -4,18 +4,8 @@ import io.horizontalsystems.ethereumkit.models.Transaction
 
 class MerkleTransactionHashManager(private val dao: MerkleTransactionDao) {
 
-    private val _hasMerkleTransactions = mutableMapOf<Int, Boolean>()
-
     fun hasMerkleTransactions(chainId: Int): Boolean {
-        _hasMerkleTransactions[chainId]?.let {
-            return it
-        }
-
-        val hasTxs = dao.hasMerkleTransactions(chainId)
-
-        _hasMerkleTransactions[chainId] = hasTxs
-
-        return hasTxs
+        return dao.hasMerkleTransactions(chainId)
     }
 
     fun hashes(chainId: Int): List<MerkleTransactionHash> {
@@ -24,7 +14,6 @@ class MerkleTransactionHashManager(private val dao: MerkleTransactionDao) {
 
     fun save(hash: MerkleTransactionHash) {
         dao.save(hash)
-        _hasMerkleTransactions[hash.chainId] = true
     }
 
     fun handle(transactions: List<Transaction>, chainId: Int) {
@@ -36,8 +25,6 @@ class MerkleTransactionHashManager(private val dao: MerkleTransactionDao) {
 
         if (toRemove.isNotEmpty()) {
             dao.delete(toRemove)
-
-            _hasMerkleTransactions[chainId] = dao.hasMerkleTransactions(chainId)
         }
     }
 }
