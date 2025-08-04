@@ -10,6 +10,9 @@ interface MerkleTransactionDao {
     @Query("SELECT * FROM MerkleTransactionHash")
     fun hashes() : List<MerkleTransactionHash>
 
+    @Query("SELECT * FROM MerkleTransactionHash WHERE hash = :hash")
+    fun hash(hash: ByteArray) : MerkleTransactionHash?
+
     @Insert
     fun save(hash: MerkleTransactionHash)
 
