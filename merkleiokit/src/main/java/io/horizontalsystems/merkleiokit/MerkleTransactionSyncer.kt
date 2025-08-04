@@ -30,20 +30,23 @@ class MerkleTransactionSyncer(
             .toList()
 
         return transactionsSingle.map { rpcTransactions ->
-            val processedTxHashes = mutableListOf<ByteArray>()
+            val completedTxHashes = mutableListOf<ByteArray>()
+            val failedTxHashes = mutableListOf<ByteArray>()
             val failedTxs = mutableListOf<Transaction>()
 
             rpcTransactions.forEach { (hash, rpcTransaction) ->
-                processedTxHashes.add(hash)
-
                 if (rpcTransaction == null) {
+                    failedTxHashes.add(hash)
+
                     transactionManager.getFullTransactions(listOf(hash)).firstOrNull()?.let {
                         failedTxs.add(it.transaction.copy(isFailed = true))
                     }
+                } else if (rpcTransaction.blockNumber != null) {
+                    completedTxHashes.add(hash)
                 }
             }
 
-            manager.handleProcessed(processedTxHashes)
+            manager.handle(completedTxHashes + failedTxHashes)
 
             Pair(failedTxs, false)
         }

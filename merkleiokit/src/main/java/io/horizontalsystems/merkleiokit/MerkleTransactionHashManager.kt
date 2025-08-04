@@ -6,6 +6,6 @@ class MerkleTransactionHashManager(private val dao: MerkleTransactionDao) {
 
     fun save(hash: MerkleTransactionHash) = dao.save(hash)
 
-    fun handleProcessed(confirmedTxHashes: List<ByteArray>) = dao.delete(confirmedTxHashes)
+    fun handle(txHashes: List<ByteArray>) = dao.delete(txHashes)
 }
 
