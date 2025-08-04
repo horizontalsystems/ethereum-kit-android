@@ -1,5 +1,6 @@
 package io.horizontalsystems.merkleiokit
 
+import io.horizontalsystems.ethereumkit.core.IExtraDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionManager
 import io.horizontalsystems.ethereumkit.models.Transaction
@@ -10,7 +11,7 @@ class MerkleTransactionSyncer(
     private val manager: MerkleTransactionHashManager,
     private val blockchain: MerkleRpcBlockchain,
     private val transactionManager: TransactionManager,
-) : ITransactionSyncer {
+) : ITransactionSyncer, IExtraDecorator {
 
     @OptIn(ExperimentalStdlibApi::class)
     override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
@@ -49,6 +50,16 @@ class MerkleTransactionSyncer(
             manager.handle(completedTxHashes + failedTxHashes)
 
             Pair(failedTxs, false)
+        }
+    }
+
+    override fun extra(hash: ByteArray): Map<String, Any> {
+        val merkleTransactionHash = manager.hash(hash)
+
+        return if (merkleTransactionHash != null) {
+            mapOf(MerkleTransactionAdapter.protectedKey to true)
+        } else {
+            mapOf()
         }
     }
 }

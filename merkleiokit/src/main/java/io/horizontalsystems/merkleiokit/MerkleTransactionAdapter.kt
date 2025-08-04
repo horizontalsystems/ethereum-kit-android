@@ -4,7 +4,6 @@ import android.content.Context
 import io.horizontalsystems.ethereumkit.api.core.ApiRpcSyncer
 import io.horizontalsystems.ethereumkit.api.core.NodeApiProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
 import io.horizontalsystems.ethereumkit.core.TransactionManager
 import io.horizontalsystems.ethereumkit.models.Address
@@ -18,7 +17,7 @@ import java.net.URI
 
 class MerkleTransactionAdapter(
     val blockchain: MerkleRpcBlockchain,
-    val syncer: ITransactionSyncer,
+    val syncer: MerkleTransactionSyncer,
     private val transactionManager: TransactionManager,
 ) {
     fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
@@ -26,13 +25,24 @@ class MerkleTransactionAdapter(
             .map { transactionManager.handle(listOf(it)).first() }
     }
 
+    fun registerInKit(ethereumKit: EthereumKit) {
+        ethereumKit.addNonceProvider(blockchain)
+        ethereumKit.addTransactionSyncer(syncer)
+        ethereumKit.addExtraDecorator(syncer)
+    }
+
     companion object {
+        val protectedKey = "protected"
 
         private val blockchainPathMap = mapOf(
             Chain.Ethereum to "eth",
             Chain.BinanceSmartChain to "bsc",
             Chain.Base to "base"
         )
+
+        fun isProtected(transaction: FullTransaction): Boolean {
+            return transaction.extra[protectedKey] == true
+        }
 
         fun getInstance(
             merkleIoPubKey: String,
