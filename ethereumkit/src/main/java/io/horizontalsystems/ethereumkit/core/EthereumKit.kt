@@ -316,6 +316,10 @@ class EthereumKit(
         nonceProvider.addProvider(provider)
     }
 
+    fun addExtraDecorator(decorator: IExtraDecorator) {
+        decorationManager.addExtraDecorator(decorator)
+    }
+
     fun addMethodDecorator(decorator: IMethodDecorator) {
         decorationManager.addMethodDecorator(decorator)
     }

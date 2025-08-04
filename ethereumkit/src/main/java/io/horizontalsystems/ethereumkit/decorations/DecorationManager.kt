@@ -4,16 +4,34 @@ import io.horizontalsystems.ethereumkit.contracts.ContractEventInstance
 import io.horizontalsystems.ethereumkit.contracts.ContractMethod
 import io.horizontalsystems.ethereumkit.contracts.EmptyMethod
 import io.horizontalsystems.ethereumkit.core.IEventDecorator
+import io.horizontalsystems.ethereumkit.core.IExtraDecorator
 import io.horizontalsystems.ethereumkit.core.IMethodDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionStorage
-import io.horizontalsystems.ethereumkit.models.*
+import io.horizontalsystems.ethereumkit.models.Address
+import io.horizontalsystems.ethereumkit.models.FullRpcTransaction
+import io.horizontalsystems.ethereumkit.models.FullTransaction
+import io.horizontalsystems.ethereumkit.models.InternalTransaction
+import io.horizontalsystems.ethereumkit.models.Transaction
+import io.horizontalsystems.ethereumkit.models.TransactionData
+import io.horizontalsystems.ethereumkit.models.TransactionLog
 import java.math.BigInteger
 
 class DecorationManager(private val userAddress: Address, private val storage: ITransactionStorage) {
     private val methodDecorators = mutableListOf<IMethodDecorator>()
     private val eventDecorators = mutableListOf<IEventDecorator>()
     private val transactionDecorators = mutableListOf<ITransactionDecorator>()
+    private val extraDecorators = mutableListOf<IExtraDecorator>()
+
+    private fun extra(hash: ByteArray) = buildMap {
+        extraDecorators.forEach { extraDecorator ->
+            putAll(extraDecorator.extra(hash))
+        }
+    }
+
+    fun addExtraDecorator(decorator: IExtraDecorator) {
+        extraDecorators.add(decorator)
+    }
 
     fun addMethodDecorator(decorator: IMethodDecorator) {
         methodDecorators.add(decorator)
@@ -58,7 +76,7 @@ class DecorationManager(private val userAddress: Address, private val storage: I
                 eventInstancesMap[transaction.hashString] ?: listOf()
             )
 
-            return@map FullTransaction(transaction, decoration)
+            return@map FullTransaction(transaction, decoration, extra(transaction.hash))
         }
     }
 
@@ -81,7 +99,7 @@ class DecorationManager(private val userAddress: Address, private val storage: I
             fullRpcTransaction.rpcReceipt?.logs?.let { eventInstances(it) } ?: listOf()
         )
 
-        return FullTransaction(transaction, decoration)
+        return FullTransaction(transaction, decoration, extra(transaction.hash))
     }
 
     private fun getInternalTransactionsMap(transactions: List<Transaction>): Map<String, List<InternalTransaction>> {
