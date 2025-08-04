@@ -120,6 +120,10 @@ interface IEventDecorator {
     fun contractEventInstances(logs: List<TransactionLog>): List<ContractEventInstance>
 }
 
+interface IExtraDecorator {
+    fun extra(hash: ByteArray) : Map<String, Any>
+}
+
 interface ITransactionDecorator {
     fun decoration(
         from: Address?,
