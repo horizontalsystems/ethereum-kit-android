@@ -19,9 +19,10 @@ class MerkleTransactionAdapter(
     val blockchain: MerkleRpcBlockchain,
     val syncer: MerkleTransactionSyncer,
     private val transactionManager: TransactionManager,
+    private val sourceTag: String,
 ) {
     fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
-        return blockchain.send(rawTransaction, signature)
+        return blockchain.send(rawTransaction, signature, sourceTag)
             .map { transactionManager.handle(listOf(it)).first() }
     }
 
@@ -51,6 +52,7 @@ class MerkleTransactionAdapter(
             context: Context,
             walletId: String,
             transactionManager: TransactionManager,
+            sourceTag: String,
         ): MerkleTransactionAdapter? {
             val baseUrl = "https://mempool.merkle.io/rpc/"
             val blockchainPath = blockchainPathMap[chain] ?: return null
@@ -82,7 +84,7 @@ class MerkleTransactionAdapter(
                 transactionManager = transactionManager
             )
 
-            return MerkleTransactionAdapter(blockchain, syncer, transactionManager)
+            return MerkleTransactionAdapter(blockchain, syncer, transactionManager, sourceTag)
         }
     }
 }

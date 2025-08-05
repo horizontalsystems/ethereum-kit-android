@@ -4,7 +4,6 @@ import io.horizontalsystems.ethereumkit.api.core.IRpcSyncer
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionByHashJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.GetTransactionCountJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.horizontalsystems.ethereumkit.api.jsonrpc.SendRawTransactionJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.models.RpcTransaction
 import io.horizontalsystems.ethereumkit.core.INonceProvider
 import io.horizontalsystems.ethereumkit.core.TransactionBuilder
@@ -32,11 +31,11 @@ class MerkleRpcBlockchain(
         return syncer.single(GetTransactionCountJsonRpc(address, defaultBlockParameter))
     }
 
-    fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction> {
+    fun send(rawTransaction: RawTransaction, signature: Signature, sourceTag: String): Single<Transaction> {
         val tx = transactionBuilder.transaction(rawTransaction, signature)
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
-        return syncer.single(SendRawTransactionJsonRpc(encoded))
+        return syncer.single(MerkleSendRawTransactionJsonRpc(encoded, sourceTag))
             .doOnSuccess { txHash ->
                 manager.save(MerkleTransactionHash(txHash))
             }
