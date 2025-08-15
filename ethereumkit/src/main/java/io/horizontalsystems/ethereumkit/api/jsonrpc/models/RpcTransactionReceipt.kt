@@ -5,7 +5,7 @@ import io.horizontalsystems.ethereumkit.models.TransactionLog
 
 class RpcTransactionReceipt(
         val transactionHash: ByteArray,
-        val transactionIndex: Int,
+        val transactionIndex: Long,
         val blockHash: ByteArray,
         val blockNumber: Long,
         val from: Address,
@@ -17,5 +17,5 @@ class RpcTransactionReceipt(
         val logs: List<TransactionLog>,
         val logsBloom: ByteArray,
         val root: ByteArray?,
-        val status: Int?
+        val status: Long?
 )
