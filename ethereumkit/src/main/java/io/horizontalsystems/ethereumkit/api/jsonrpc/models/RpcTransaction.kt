@@ -9,7 +9,7 @@ class RpcTransaction(
         val nonce: Long,
         val blockHash: ByteArray?,
         val blockNumber: Long?,
-        val transactionIndex: Int?,
+        val transactionIndex: Long?,
         val from: Address,
         val to: Address?,
         val value: BigInteger,
