@@ -46,7 +46,7 @@ val evmKit = EthereumKit.getInstance(
     address,
     Chain.Ethereum,
     RpcSource.ethereumInfuraHttp("projectId", "projectSecret"),
-    TransactionSource.ethereumEtherscan("apiKey"),
+    TransactionSource.etherscanApi("apiKey"),
     "unique_wallet_id"
 )
 ```
