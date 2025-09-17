@@ -13,8 +13,6 @@ object Configuration {
 
     const val ethereumRpc = "https://api-dev.blocksdecoded.com/v1/ethereum-rpc/mainnet"
     const val etherscanKey = "GKNHXT22ED7PRVCKZATFZQD1YI7FK9AAYE"
-    const val arbiscanApiKey = "Z43JN5434XVNA5D73UGPWKF26G5D9MGDPZ"
-    const val bscScanKey = "5ZGSHWYHZVA8XZHB8PF6UUTRNNB4KT43ZZ"
 
     val erc20Tokens: List<Erc20Token>
         get() {
