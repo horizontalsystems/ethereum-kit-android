@@ -8,15 +8,17 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.ViewModelProvider
 import io.horizontalsystems.ethereumkit.core.EthereumKit
-import io.horizontalsystems.ethereumkit.sample.R
-import kotlinx.android.synthetic.main.fragment_balance.*
+import io.horizontalsystems.ethereumkit.sample.databinding.FragmentBalanceBinding 
 
 class BalanceFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
+    private var _binding: FragmentBalanceBinding? = null 
+    private val binding get() = _binding!! 
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_balance, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentBalanceBinding.inflate(inflater, container, false) 
+        return binding.root 
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -25,54 +27,59 @@ class BalanceFragment : Fragment() {
         viewModel = ViewModelProvider(requireActivity()).get(MainViewModel::class.java)
 
         viewModel.balance.observe(viewLifecycleOwner, Observer { balance ->
-            balanceValue.text = (balance ?: 0).toString()
+            binding.balanceValue.text = (balance ?: 0).toString() 
         })
 
         viewModel.erc20TokenBalance.observe(viewLifecycleOwner, Observer { balance ->
-            tokenBalanceValue.text = (balance ?: 0).toString()
+            binding.tokenBalanceValue.text = (balance ?: 0).toString() 
         })
 
         viewModel.lastBlockHeight.observe(viewLifecycleOwner, Observer { lbh ->
-            lbhValue.text = (lbh ?: 0).toString()
+            binding.lbhValue.text = (lbh ?: 0).toString() 
         })
 
         viewModel.syncState.observe(viewLifecycleOwner, Observer { state ->
             val syncStateInfo = getSynStateInfo(state)
-            syncStateValue.text = syncStateInfo.description
+            binding.syncStateValue.text = syncStateInfo.description 
             if (syncStateInfo.error == null) {
-                syncStateError.visibility = View.GONE
+                binding.syncStateError.visibility = View.GONE 
             } else {
-                syncStateError.text = syncStateInfo.error.message
-                syncStateError.visibility = View.VISIBLE
+                binding.syncStateError.text = syncStateInfo.error.message 
+                binding.syncStateError.visibility = View.VISIBLE 
             }
         })
 
         viewModel.transactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
-            txSyncStateValue.text = getSynStateInfo(state).description
+            binding.txSyncStateValue.text = getSynStateInfo(state).description 
         })
 
         viewModel.erc20SyncState.observe(viewLifecycleOwner, Observer { state ->
             val syncStateInfo = getSynStateInfo(state)
-            erc20SyncStateValue.text = syncStateInfo.description
+            binding.erc20SyncStateValue.text = syncStateInfo.description 
             if (syncStateInfo.error == null) {
-                erc20SyncStateError.visibility = View.GONE
+                binding.erc20SyncStateError.visibility = View.GONE 
             } else {
-                erc20SyncStateError.text = syncStateInfo.error.message
-                erc20SyncStateError.visibility = View.VISIBLE
+                binding.erc20SyncStateError.text = syncStateInfo.error.message 
+                binding.erc20SyncStateError.visibility = View.VISIBLE 
             }
         })
 
         viewModel.erc20TransactionsSyncState.observe(viewLifecycleOwner, Observer { state ->
-            erc20TxSyncStateValue.text = getSynStateInfo(state).description
+            binding.erc20TxSyncStateValue.text = getSynStateInfo(state).description 
         })
 
-        buttonRefresh.setOnClickListener {
+        binding.buttonRefresh.setOnClickListener { 
             viewModel.refresh()
         }
 
-        buttonClear.setOnClickListener {
+        binding.buttonClear.setOnClickListener { 
             viewModel.clear()
         }
+    }
+
+    override fun onDestroyView() { 
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun getSynStateInfo(syncState: EthereumKit.SyncState): SyncStateInfo =

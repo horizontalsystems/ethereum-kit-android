@@ -4,14 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.horizontalsystems.ethereumkit.sample.R
+import io.horizontalsystems.ethereumkit.sample.databinding.ActivityMainBinding
 import io.horizontalsystems.ethereumkit.sample.modules.addresswatch.AddressWatchActivity
 import io.horizontalsystems.ethereumkit.sample.modules.uniswapV3.UniswapV3Fragment
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemSelectedListener {
 
@@ -25,12 +24,14 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     private var active: Fragment = balanceFragment
 
     lateinit var viewModel: MainViewModel
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        toolbar.setOnMenuItemClickListener { item ->
+        binding.toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.menuAddressWatch -> {
                     val intent = Intent(this, AddressWatchActivity::class.java)
@@ -41,17 +42,16 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             }
         }
 
-        val navigation = findViewById<BottomNavigationView>(R.id.navigation)
-        navigation.setOnNavigationItemSelectedListener(this)
+        binding.navigation.setOnNavigationItemSelectedListener(this) 
 
-        fm.beginTransaction().add(R.id.fragment_container, uniswapV3Fragment, "6").hide(uniswapV3Fragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, nftsFragment, "5").hide(nftsFragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, swapFragment, "4").hide(swapFragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, sendReceiveFragment, "3").hide(sendReceiveFragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, transactionsFragment, "2").hide(transactionsFragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, balanceFragment, "1").commit()
+        fm.beginTransaction().add(binding.fragmentContainer.id, uniswapV3Fragment, "6").hide(uniswapV3Fragment).commit() 
+        fm.beginTransaction().add(binding.fragmentContainer.id, nftsFragment, "5").hide(nftsFragment).commit() 
+        fm.beginTransaction().add(binding.fragmentContainer.id, swapFragment, "4").hide(swapFragment).commit() 
+        fm.beginTransaction().add(binding.fragmentContainer.id, sendReceiveFragment, "3").hide(sendReceiveFragment).commit() 
+        fm.beginTransaction().add(binding.fragmentContainer.id, transactionsFragment, "2").hide(transactionsFragment).commit() 
+        fm.beginTransaction().add(binding.fragmentContainer.id, balanceFragment, "1").commit() 
 
-        navigation.selectedItemId = R.id.navigation_nfts
+        binding.navigation.selectedItemId = R.id.navigation_nfts 
 
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.init()
@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
                     .commit()
 
             active = fragment
-            findViewById<Toolbar>(R.id.toolbar)?.title = item.title
+            binding.toolbar.title = item.title 
 
             return true
         }

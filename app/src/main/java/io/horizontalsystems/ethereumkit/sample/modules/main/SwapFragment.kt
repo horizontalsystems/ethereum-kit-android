@@ -11,15 +11,16 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import io.horizontalsystems.ethereumkit.sample.Configuration
-import io.horizontalsystems.ethereumkit.sample.R
+import io.horizontalsystems.ethereumkit.sample.databinding.FragmentSwapBinding 
 import io.horizontalsystems.uniswapkit.models.Token
 import io.horizontalsystems.uniswapkit.models.TradeType
-import kotlinx.android.synthetic.main.fragment_swap.*
 import java.math.BigDecimal
 
 class SwapFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
+    private var _binding: FragmentSwapBinding? = null 
+    private val binding get() = _binding!! 
 
     private val fromAmountListener = object : TextWatcher {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -47,8 +48,9 @@ class SwapFragment : Fragment() {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_swap, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View { 
+        _binding = FragmentSwapBinding.inflate(inflater, container, false) 
+        return binding.root 
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -62,73 +64,78 @@ class SwapFragment : Fragment() {
         })
 
         viewModel.swapData.observe(viewLifecycleOwner, Observer { swapData ->
-            fromAmount.isEnabled = swapData != null
-            toAmount.isEnabled = swapData != null
+            binding.fromAmount.isEnabled = swapData != null
+            binding.toAmount.isEnabled = swapData != null
         })
 
         viewModel.tradeData.observe(viewLifecycleOwner, Observer { tradeData ->
 
             if (tradeData == null) {
-                minMax.text = null
-                executionPrice.text = null
-                midPrice.text = null
-                priceImpact.text = null
+                binding.minMax.text = null 
+                binding.executionPrice.text = null 
+                binding.midPrice.text = null 
+                binding.priceImpact.text = null 
             } else {
                 when (tradeData.type) {
                     TradeType.ExactIn -> {
                         setToAmount(tradeData.amountOut)
-                        minMax.text = "Minimum Received: ${tradeData.amountOutMin?.let { "${it.stripTrailingZeros().toPlainString()} $toTokenCode" } ?: ""}"
+                        binding.minMax.text = "Minimum Received: ${tradeData.amountOutMin?.let { "${it.stripTrailingZeros().toPlainString()} $toTokenCode" } ?: ""}" 
                     }
                     TradeType.ExactOut -> {
                         setFromAmount(tradeData.amountIn)
-                        minMax.text = "Maximum Sold: ${tradeData.amountInMax?.let { "${it.stripTrailingZeros().toPlainString()} $fromTokenCode" } ?: ""}"
+                        binding.minMax.text = "Maximum Sold: ${tradeData.amountInMax?.let { "${it.stripTrailingZeros().toPlainString()} $fromTokenCode" } ?: ""}" 
                     }
                 }
 
                 val executionPriceStr = tradeData.executionPrice?.let {
                     "${it.toPlainString()} $toTokenCode / $fromTokenCode "
                 }
-                executionPrice.text = "Execution Price: " + (executionPriceStr ?: "")
+                binding.executionPrice.text = "Execution Price: " + (executionPriceStr ?: "") 
 
                 val midPriceStr = tradeData.midPrice?.let {
                     "${it.toPlainString()} $toTokenCode / $fromTokenCode "
                 }
-                midPrice.text = "Mid Price: " + (midPriceStr ?: "")
+                binding.midPrice.text = "Mid Price: " + (midPriceStr ?: "") 
 
-                priceImpact.text = "Price Impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%"
+                binding.priceImpact.text = "Price Impact: ${tradeData.priceImpact?.toPlainString() ?: ""}%" 
 
-                providerFee.text = "Provider Fee: ${tradeData.providerFee?.toPlainString() ?: ""}"
+                binding.providerFee.text = "Provider Fee: ${tradeData.providerFee?.toPlainString() ?: ""}" 
 
-                path.text = "Path: ${pathDescription(tradeData.path)}"
+                binding.path.text = "Path: ${pathDescription(tradeData.path)}" 
 
                 updateLabels(tradeData.type)
             }
         })
 
-        buttonSyncSwapData.setOnClickListener {
+        binding.buttonSyncSwapData.setOnClickListener { 
             syncSwapData()
         }
 
-        buttonSwap.setOnClickListener {
+        binding.buttonSwap.setOnClickListener { 
             viewModel.swap()
         }
 
-        buttonSyncAllowance.setOnClickListener {
+        binding.buttonSyncAllowance.setOnClickListener { 
             viewModel.syncAllowance()
         }
 
-        buttonApprove.setOnClickListener {
-            fromAmount.text?.let {
+        binding.buttonApprove.setOnClickListener { 
+            binding.fromAmount.text?.let { 
                 if (it.isNotBlank()) {
                     viewModel.approve(BigDecimal(it.toString()))
                 }
             }
         }
 
-        fromAmount.addTextChangedListener(fromAmountListener)
-        toAmount.addTextChangedListener(toAmountListener)
+        binding.fromAmount.addTextChangedListener(fromAmountListener) 
+        binding.toAmount.addTextChangedListener(toAmountListener) 
 
         updateLabels(TradeType.ExactIn)
+    }
+
+    override fun onDestroyView() { 
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun pathDescription(path: List<Token>): String {
@@ -146,22 +153,22 @@ class SwapFragment : Fragment() {
         get() = viewModel.toToken?.code ?: "ETH"
 
     private fun syncSwapData() {
-        fromAmount.isEnabled = false
-        toAmount.isEnabled = false
+        binding.fromAmount.isEnabled = false 
+        binding.toAmount.isEnabled = false 
 
         viewModel.syncSwapData()
     }
 
     private fun setFromAmount(amount: BigDecimal?) {
-        fromAmount.removeTextChangedListener(fromAmountListener)
-        fromAmount.setText(amount?.stripTrailingZeros()?.toPlainString())
-        fromAmount.addTextChangedListener(fromAmountListener)
+        binding.fromAmount.removeTextChangedListener(fromAmountListener) 
+        binding.fromAmount.setText(amount?.stripTrailingZeros()?.toPlainString()) 
+        binding.fromAmount.addTextChangedListener(fromAmountListener) 
     }
 
     private fun setToAmount(amount: BigDecimal?) {
-        toAmount.removeTextChangedListener(toAmountListener)
-        toAmount.setText(amount?.stripTrailingZeros()?.toPlainString())
-        toAmount.addTextChangedListener(toAmountListener)
+        binding.toAmount.removeTextChangedListener(toAmountListener) 
+        binding.toAmount.setText(amount?.stripTrailingZeros()?.toPlainString()) 
+        binding.toAmount.addTextChangedListener(toAmountListener) 
     }
 
     private fun updateLabels(tradeType: TradeType) {
@@ -174,10 +181,10 @@ class SwapFragment : Fragment() {
             fromLabel += " (estimated)"
         }
 
-        fromAmount.hint = fromLabel
-        fromAmountLayout.hint = fromLabel
-        toAmount.hint = toLabel
-        toAmountLayout.hint = toLabel
+        binding.fromAmount.hint = fromLabel 
+        binding.fromAmountLayout.hint = fromLabel 
+        binding.toAmount.hint = toLabel 
+        binding.toAmountLayout.hint = toLabel 
     }
 
 }

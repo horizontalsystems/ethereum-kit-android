@@ -20,14 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.android.synthetic.main.activity_main.*
 
 class NftsFragment : Fragment() {
     private lateinit var mainViewModel: MainViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        toolbar?.title = "Nfts"
-
         mainViewModel = activity?.let { ViewModelProvider(it)[MainViewModel::class.java] } ?: return null
 
         return ComposeView(requireContext()).apply {
