@@ -50,7 +50,10 @@ class SwapRouter(private val dexType: DexType) {
         }
 
         val ethValue = when {
-            tradeData.tokenIn.isEther -> tradeData.trade.amountIn
+            tradeData.tokenIn.isEther -> when (tradeData.tradeType) {
+                TradeType.ExactIn -> tradeData.amountIn
+                TradeType.ExactOut -> tradeData.amountInMaximum
+            }
             else -> BigInteger.ZERO
         }
 
