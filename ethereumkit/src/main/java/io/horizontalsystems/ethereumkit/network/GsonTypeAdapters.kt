@@ -130,7 +130,7 @@ class DefaultBlockParameterTypeAdapter : TypeAdapter<DefaultBlockParameter?>() {
     }
 }
 
-class OptionalTypeAdapter<T>(
+class OptionalTypeAdapter<T: Any>(
         private val type: Type
 ) : TypeAdapter<Optional<T>>() {
 

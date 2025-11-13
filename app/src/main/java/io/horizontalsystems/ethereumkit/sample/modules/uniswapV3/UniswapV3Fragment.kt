@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,14 +29,12 @@ import io.horizontalsystems.ethereumkit.sample.core.Erc20Adapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumAdapter
 import io.horizontalsystems.ethereumkit.sample.modules.main.GasPriceHelper
 import io.horizontalsystems.ethereumkit.sample.modules.main.MainViewModel
-import io.horizontalsystems.uniswapkit.models.TradeType
-import kotlinx.android.synthetic.main.activity_main.*
 import java.math.BigDecimal
 
 class UniswapV3Fragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        toolbar?.title = "Uniswap V3"
+        (activity as? AppCompatActivity)?.supportActionBar?.title = "Uniswap V3"
 
         val mainViewModel = activity?.let { ViewModelProvider(it)[MainViewModel::class.java] } ?: return null
 

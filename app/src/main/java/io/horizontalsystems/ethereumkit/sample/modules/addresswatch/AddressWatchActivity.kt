@@ -2,26 +2,41 @@ package io.horizontalsystems.ethereumkit.sample.modules.addresswatch
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.ethereumkit.sample.modules.main.ShowTxType
 import io.horizontalsystems.ethereumkit.sample.modules.main.TransactionsAdapter
-import kotlinx.android.synthetic.main.activity_address_watch.*
-import kotlinx.android.synthetic.main.activity_address_watch.ethFilter
-import kotlinx.android.synthetic.main.activity_address_watch.tokenFilter
-import kotlinx.android.synthetic.main.activity_address_watch.transactionsRecyclerView
 
 class AddressWatchActivity : AppCompatActivity() {
 
     private lateinit var viewModel: AddressWatchViewModel
 
+    private lateinit var addressInput: EditText
+    private lateinit var watchButton: Button
+    private lateinit var ethFilter: Button
+    private lateinit var tokenFilter: Button
+    private lateinit var transactionsRecyclerView: RecyclerView
+    private lateinit var transactionSyncProgress: ProgressBar
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         viewModel = ViewModelProvider(this).get(AddressWatchViewModel::class.java)
+
+        addressInput = findViewById(R.id.addressInput)
+        watchButton = findViewById(R.id.watchButton)
+        ethFilter = findViewById(R.id.ethFilter)
+        tokenFilter = findViewById(R.id.tokenFilter)
+        transactionsRecyclerView = findViewById(R.id.transactionsRecyclerView)
+        transactionSyncProgress = findViewById(R.id.transactionSyncProgress)
 
         setContentView(R.layout.activity_address_watch)
 

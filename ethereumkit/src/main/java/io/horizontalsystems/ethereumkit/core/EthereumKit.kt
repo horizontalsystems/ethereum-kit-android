@@ -332,7 +332,7 @@ class EthereumKit(
         decorationManager.addTransactionDecorator(decorator)
     }
 
-    internal fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+    internal fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T> {
         return blockchain.rpcSingle(rpc)
     }
 

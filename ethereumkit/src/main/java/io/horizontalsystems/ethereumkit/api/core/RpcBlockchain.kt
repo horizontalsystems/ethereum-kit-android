@@ -224,7 +224,7 @@ class RpcBlockchain(
         return syncer.single(callRpc(contractAddress, data, defaultBlockParameter))
     }
 
-    override fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+    override fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T> {
         return syncer.single(rpc)
     }
 

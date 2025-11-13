@@ -52,7 +52,7 @@ class ApiRpcSyncer(
         stopTimer()
     }
 
-    override fun <T> single(rpc: JsonRpc<T>): Single<T> =
+    override fun <T: Any> single(rpc: JsonRpc<T>): Single<T> =
         rpcApiProvider.single(rpc)
     //endregion
 

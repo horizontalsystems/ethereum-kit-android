@@ -58,7 +58,7 @@ class NodeApiProvider(
 
     override val source: String = uris.first().host
 
-    override fun <T> single(rpc: JsonRpc<T>): Single<T> {
+    override fun <T: Any> single(rpc: JsonRpc<T>): Single<T> {
         rpc.id = currentRpcId.addAndGet(1)
 
         return Single.create { emitter ->

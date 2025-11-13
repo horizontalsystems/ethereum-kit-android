@@ -46,7 +46,7 @@ class WebSocketRpcSyncer(
         rpcSocket.stop()
     }
 
-    override fun <T> single(rpc: JsonRpc<T>): Single<T> {
+    override fun <T: Any> single(rpc: JsonRpc<T>): Single<T> {
         return Single.create { emitter ->
             send(
                     rpc = rpc,

@@ -122,7 +122,7 @@ class SpvBlockchain(
         TODO("not implemented")
     }
 
-    override fun <T> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+    override fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T> {
         TODO("not implemented")
     }
 

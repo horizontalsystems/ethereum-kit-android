@@ -129,11 +129,11 @@ class AddressWatchViewModel : ViewModel() {
 
         when (Configuration.chain) {
             Chain.BinanceSmartChain -> {
-                transactionSource = TransactionSource.etherscanApi(Configuration.etherscanKey.split(","))
+                transactionSource = TransactionSource.binance(Configuration.etherscanKey.split(","))
                 rpcSource = RpcSource.binanceSmartChainHttp()
             }
             Chain.Ethereum -> {
-                transactionSource = TransactionSource.etherscanApi(Configuration.etherscanKey.split(","))
+                transactionSource = TransactionSource.ethereum(Configuration.etherscanKey.split(","))
                 rpcSource = RpcSource.Http(listOf(URI(Configuration.ethereumRpc)), null)
             }
             else -> {
