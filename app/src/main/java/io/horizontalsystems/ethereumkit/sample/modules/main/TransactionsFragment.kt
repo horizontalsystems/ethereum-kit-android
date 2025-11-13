@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.horizontalsystems.ethereumkit.sample.R
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
-import kotlinx.android.synthetic.main.fragment_transactions.*
+import io.horizontalsystems.ethereumkit.sample.databinding.FragmentTransactionsBinding
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -25,16 +25,20 @@ class TransactionsFragment : Fragment() {
     private lateinit var viewModel: MainViewModel
 
     private val transactionsAdapter = TransactionsAdapter()
+    private var _binding: FragmentTransactionsBinding? = null
+    private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_transactions, container, false)
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentTransactionsBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        transactionsRecyclerView.adapter = transactionsAdapter
-        transactionsRecyclerView.layoutManager = LinearLayoutManager(context)
+        binding.transactionsRecyclerView.adapter = transactionsAdapter
+        binding.transactionsRecyclerView.layoutManager = LinearLayoutManager(context)
 
         viewModel = activity?.let { ViewModelProvider(it).get(MainViewModel::class.java) } ?: return
 
@@ -55,12 +59,12 @@ class TransactionsFragment : Fragment() {
             context?.let { ctx ->
                 when (showTxType) {
                     ShowTxType.Eth -> {
-                        ethFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
-                        tokenFilter.setBackgroundColor(Color.WHITE)
+                        binding.ethFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
+                        binding.tokenFilter.setBackgroundColor(Color.WHITE)
                     }
                     ShowTxType.Erc20 -> {
-                        tokenFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
-                        ethFilter.setBackgroundColor(Color.WHITE)
+                        binding.tokenFilter.setBackgroundColor(ctx.getColor(R.color.colorSelected))
+                        binding.ethFilter.setBackgroundColor(Color.WHITE)
                     }
                     else -> {
                     }
@@ -69,11 +73,11 @@ class TransactionsFragment : Fragment() {
 
         }
 
-        ethFilter.setOnClickListener {
+        binding.ethFilter.setOnClickListener {
             viewModel.filterTransactions(true)
         }
 
-        tokenFilter.setOnClickListener {
+        binding.tokenFilter.setOnClickListener {
             viewModel.filterTransactions(false)
         }
     }

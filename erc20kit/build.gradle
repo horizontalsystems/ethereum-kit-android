@@ -16,11 +16,12 @@ afterEvaluate {
 }
 
 android {
-    compileSdkVersion 32
+    namespace 'io.horizontalsystems.erc20kit'
+    compileSdkVersion 33
 
     defaultConfig {
         minSdkVersion 26
-        targetSdkVersion 32
+        targetSdkVersion 33
 
         kapt {
             arguments {
@@ -38,8 +39,13 @@ android {
         }
     }
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 
 }

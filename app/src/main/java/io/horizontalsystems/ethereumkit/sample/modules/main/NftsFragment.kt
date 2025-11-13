@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.Toolbar
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -20,12 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.android.synthetic.main.activity_main.*
+import io.horizontalsystems.ethereumkit.sample.R
 
 class NftsFragment : Fragment() {
     private lateinit var mainViewModel: MainViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val toolbar = activity?.findViewById<Toolbar>(R.id.toolbar) // <-- FIND THE VIEW
         toolbar?.title = "Nfts"
 
         mainViewModel = activity?.let { ViewModelProvider(it)[MainViewModel::class.java] } ?: return null
