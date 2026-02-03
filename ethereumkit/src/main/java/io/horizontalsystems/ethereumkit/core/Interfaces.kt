@@ -53,6 +53,8 @@ interface IBlockchain {
     fun start()
     fun refresh()
     fun stop()
+    fun pause()
+    fun resume()
     fun syncAccountState()
 
     val syncState: EthereumKit.SyncState

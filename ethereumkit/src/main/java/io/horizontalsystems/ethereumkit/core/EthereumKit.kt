@@ -148,6 +148,14 @@ class EthereumKit(
         connectionManager.stop()
     }
 
+    fun onEnterForeground() {
+        blockchain.resume()
+    }
+
+    fun onEnterBackground() {
+        blockchain.pause()
+    }
+
     fun refresh() {
         blockchain.refresh()
         transactionSyncManager.sync()

@@ -58,6 +58,8 @@ interface IRpcSyncer {
 
     fun start()
     fun stop()
+    fun pause()
+    fun resume()
     fun <T: Any> single(rpc: JsonRpc<T>): Single<T>
 }
 
