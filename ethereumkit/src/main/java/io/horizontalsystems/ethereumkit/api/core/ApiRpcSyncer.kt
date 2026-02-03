@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
-import java.util.*
+import java.util.Timer
 import kotlin.concurrent.schedule
 
 class ApiRpcSyncer(
@@ -50,6 +50,14 @@ class ApiRpcSyncer(
         state = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
         disposables.clear()
         stopTimer()
+    }
+
+    override fun pause() {
+        stopTimer()
+    }
+
+    override fun resume() {
+        startTimer()
     }
 
     override fun <T: Any> single(rpc: JsonRpc<T>): Single<T> =
