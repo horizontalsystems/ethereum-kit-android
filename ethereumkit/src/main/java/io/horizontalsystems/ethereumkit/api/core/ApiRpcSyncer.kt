@@ -77,6 +77,8 @@ class ApiRpcSyncer(
     }
 
     private fun startTimer() {
+        if (timer != null) return
+
         timer = Timer().apply {
             schedule(0, syncInterval * 1000) {
                 onFireTimer()
