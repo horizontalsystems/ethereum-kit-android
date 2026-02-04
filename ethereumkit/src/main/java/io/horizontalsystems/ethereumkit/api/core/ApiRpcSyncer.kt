@@ -95,11 +95,9 @@ class ApiRpcSyncer(
         rpcApiProvider.single(BlockNumberJsonRpc())
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
-                .subscribe({ lastBlockNumber ->
+                .subscribe { lastBlockNumber ->
                     listener?.didUpdateLastBlockHeight(lastBlockNumber)
-                }, {
-                    state = SyncerState.NotReady(it)
-                }).let {
+                }.let {
                     disposables.add(it)
                 }
     }
