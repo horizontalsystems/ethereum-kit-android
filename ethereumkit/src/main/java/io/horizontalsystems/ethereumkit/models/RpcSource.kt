@@ -39,8 +39,8 @@ sealed class RpcSource {
         fun polygonRpcHttp(): Http {
             return Http(
                 listOf(
-                    URI("https://polygon-rpc.com"),
                     URI("https://polygon.drpc.org"),
+                    URI("https://1rpc.io/matic")
                 ),
                 null)
         }
