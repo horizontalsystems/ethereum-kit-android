@@ -65,6 +65,10 @@ sealed class RpcSource {
             return Http(listOf(URI("https://rpc.fantom.network")), null)
         }
 
+        fun sonicRpcHttp(): Http {
+            return Http(listOf(URI("https://rpc.soniclabs.com")), null)
+        }
+
         fun baseRpcHttp(): Http {
             return Http(listOf(URI("https://mainnet.base.org")), null)
         }

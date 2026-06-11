@@ -54,6 +54,10 @@ class TransactionSource(val name: String, val type: SourceType) {
             return etherscan("ftmscan.com", "https://ftmscan.com", apiKeys)
         }
 
+        fun sonic(apiKeys: List<String>): TransactionSource {
+            return etherscan("sonicscan.org", "https://sonicscan.org", apiKeys)
+        }
+
         fun zkSync(apiKeys: List<String>): TransactionSource {
             return etherscan("era.zksync.network", "https://era.zksync.network", apiKeys)
         }
