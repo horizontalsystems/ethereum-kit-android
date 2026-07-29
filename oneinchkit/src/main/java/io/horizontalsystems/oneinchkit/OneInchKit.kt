@@ -63,6 +63,7 @@ class OneInchKit(
         complexityLevel: Int? = null,
         connectorTokens: List<String>? = null,
         allowPartialFill: Boolean = false,
+        disableEstimate: Boolean? = null,
         gasLimit: Long? = null,
         parts: Int? = null,
         mainRouteParts: Int? = null
@@ -82,6 +83,7 @@ class OneInchKit(
         complexityLevel,
         connectorTokens,
         allowPartialFill,
+        disableEstimate,
         gasLimit,
         parts,
         mainRouteParts
