@@ -5,11 +5,12 @@ import io.horizontalsystems.ethereumkit.core.hexStringToByteArray
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.utils.EIP55
 
-data class Address(var raw: ByteArray) {
+class Address(rawBytes: ByteArray) {
+
+    // 32-byte inputs are left-padded words (e.g. event topics); the address is the last 20 bytes.
+    val raw: ByteArray = if (rawBytes.size == 32) rawBytes.copyOfRange(12, rawBytes.size) else rawBytes
+
     init {
-        if (raw.size == 32) {
-            raw = raw.copyOfRange(12, raw.size)
-        }
         AddressValidator.validate(hex)
     }
 
@@ -18,8 +19,10 @@ data class Address(var raw: ByteArray) {
     val hex: String
         get() = raw.toHexString()
 
+    // A benign race may compute this twice; both results are identical.
+    private var eip55Cache: String? = null
     val eip55: String
-        get() = EIP55.format(hex)
+        get() = eip55Cache ?: EIP55.format(hex).also { eip55Cache = it }
 
     override fun equals(other: Any?): Boolean {
         if (this === other)
