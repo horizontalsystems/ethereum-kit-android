@@ -14,6 +14,7 @@ enum class Chain(
     Polygon(137, 60, 10_000_000, 15, true),
     Optimism(10, 60, 10_000_000, 15, true),
     ArbitrumOne(42161, 60, 10_000_000, 15, true),
+    RobinhoodChain(4663, 60, 10_000_000, 15, true),
     Avalanche(43114, 60, 10_000_000, 15, true),
     Gnosis(100, 60, 10_000_000, 15, true),
     Fantom(250, 60, 10_000_000, 15, false),
