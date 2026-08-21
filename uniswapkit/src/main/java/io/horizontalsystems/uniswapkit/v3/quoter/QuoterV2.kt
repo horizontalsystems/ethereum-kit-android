@@ -39,6 +39,7 @@ class QuoterV2(
         Chain.Base -> "0x88F1905197cCb1A94a1EA906F4e973bF6F2248dB"
 
         Chain.ZkSync -> "0x8Cb537fc92E26d8EBBb760E632c95484b6Ea3e28"
+        Chain.RobinhoodChain -> "0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7"
         Chain.EthereumGoerli -> "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"
         else -> throw IllegalStateException("Not supported Uniswap chain $chain")
     }

@@ -28,6 +28,7 @@ class PoolManager(
         Chain.BinanceSmartChain -> "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7"
         Chain.Base -> "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
         Chain.ZkSync -> "0x8FdA5a7a8dCA67BBcDd10F02Fa0649A937215422"
+        Chain.RobinhoodChain -> "0x1f7d7550b1b028f7571e69a784071f0205fd2efa"
         else -> throw IllegalStateException("Not supported Uniswap chain ${chain}")
     }
 
