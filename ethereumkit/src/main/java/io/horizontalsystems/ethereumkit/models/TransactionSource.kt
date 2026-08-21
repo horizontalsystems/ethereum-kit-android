@@ -58,6 +58,20 @@ class TransactionSource(val name: String, val type: SourceType) {
             return etherscan("era.zksync.network", "https://era.zksync.network", apiKeys)
         }
 
+        // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan; it exposes a
+        // Blockscout instance whose legacy /api endpoint is Etherscan-compatible. Point the
+        // API base at Blockscout directly instead of the shared Etherscan v2 endpoint.
+        fun robinhood(apiKeys: List<String>): TransactionSource {
+            return TransactionSource(
+                "robinhoodchain.blockscout.com",
+                SourceType.Etherscan(
+                    apiBaseUrl = "https://robinhoodchain.blockscout.com/",
+                    txBaseUrl = "https://robinhoodchain.blockscout.com",
+                    apiKeys = apiKeys
+                )
+            )
+        }
+
     }
 
 }
