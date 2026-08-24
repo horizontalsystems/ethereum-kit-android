@@ -38,6 +38,7 @@ import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.models.TransactionSource
 import io.horizontalsystems.ethereumkit.network.AddressTypeAdapter
 import io.horizontalsystems.ethereumkit.network.BigIntegerTypeAdapter
+import io.horizontalsystems.ethereumkit.network.BlockscoutService
 import io.horizontalsystems.ethereumkit.network.ByteArrayTypeAdapter
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
 import io.horizontalsystems.ethereumkit.network.DefaultBlockParameterTypeAdapter
@@ -538,10 +539,14 @@ class EthereumKit(
         }
 
         private fun transactionProvider(transactionSource: TransactionSource, address: Address, chainId: Int): ITransactionProvider {
-            when (transactionSource.type) {
+            return when (val type = transactionSource.type) {
                 is TransactionSource.SourceType.Etherscan -> {
-                    val service = EtherscanService(transactionSource.type.apiBaseUrl, transactionSource.type.apiKeys, chainId)
-                    return EtherscanTransactionProvider(service, address)
+                    val service = EtherscanService(type.apiBaseUrl, type.apiKeys, chainId)
+                    EtherscanTransactionProvider(service, address)
+                }
+                is TransactionSource.SourceType.Blockscout -> {
+                    val service = BlockscoutService(type.apiBaseUrl, type.apiKeys)
+                    BlockscoutTransactionProvider(service, address)
                 }
             }
         }
