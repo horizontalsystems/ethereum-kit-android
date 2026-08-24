@@ -5,10 +5,15 @@ class TransactionSource(val name: String, val type: SourceType) {
     fun transactionUrl(hash: String) =
         when (type) {
             is SourceType.Etherscan -> "${type.txBaseUrl}/tx/$hash"
+            is SourceType.Blockscout -> "${type.txBaseUrl}/tx/$hash"
         }
 
     sealed class SourceType {
         class Etherscan(val apiBaseUrl: String, val txBaseUrl: String, val apiKeys: List<String>) : SourceType()
+
+        // Blockscout's modern REST API (/api/v2). Used for chains whose Blockscout instance
+        // throttles the legacy Etherscan-compatible /api endpoint for anonymous callers.
+        class Blockscout(val apiBaseUrl: String, val txBaseUrl: String, val apiKeys: List<String>) : SourceType()
     }
 
     companion object {
@@ -59,12 +64,13 @@ class TransactionSource(val name: String, val type: SourceType) {
         }
 
         // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan; it exposes a
-        // Blockscout instance whose legacy /api endpoint is Etherscan-compatible. Point the
-        // API base at Blockscout directly instead of the shared Etherscan v2 endpoint.
+        // Blockscout instance. Its legacy Etherscan-compatible /api endpoint hard-throttles
+        // anonymous callers (HTTP 429 "Too many requests"), so transaction history never loads
+        // there. The modern /api/v2 REST endpoint is not throttled, so use that instead.
         fun robinhood(apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 "robinhoodchain.blockscout.com",
-                SourceType.Etherscan(
+                SourceType.Blockscout(
                     apiBaseUrl = "https://robinhoodchain.blockscout.com/",
                     txBaseUrl = "https://robinhoodchain.blockscout.com",
                     apiKeys = apiKeys
