@@ -8,7 +8,6 @@ import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
 import io.horizontalsystems.uniswapkit.models.DexType
 import io.horizontalsystems.uniswapkit.models.Fraction
 import io.horizontalsystems.uniswapkit.v3.FeeAmount
-import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 
 class PoolManager(
@@ -58,7 +57,7 @@ class PoolManager(
     }
 
     private suspend fun ethCall(rpcSource: RpcSource, contractAddress: Address, data: ByteArray): ByteArray {
-        return EthereumKit.call(rpcSource, contractAddress, data).await()
+        return EthereumKit.call(rpcSource, contractAddress, data)
     }
 }
 

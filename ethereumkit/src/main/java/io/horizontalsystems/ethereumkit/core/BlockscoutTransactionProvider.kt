@@ -8,8 +8,6 @@ import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
 import io.horizontalsystems.ethereumkit.models.ProviderTransaction
 import io.horizontalsystems.ethereumkit.network.BlockscoutInternalTransaction
 import io.horizontalsystems.ethereumkit.network.BlockscoutService
-import io.horizontalsystems.ethereumkit.network.BlockscoutTokenTransfer
-import io.reactivex.Single
 import java.time.Instant
 
 /**
@@ -25,131 +23,131 @@ class BlockscoutTransactionProvider(
     private val address: Address,
 ) : ITransactionProvider {
 
-    override fun getTransactions(startBlock: Long): Single<List<ProviderTransaction>> =
-        service.getTransactions(address.hex, startBlock).map { transactions ->
-            transactions.mapNotNull { tx ->
-                try {
-                    val success = tx.status == "ok"
-                    ProviderTransaction(
-                        blockNumber = tx.blockNumber!!,
-                        timestamp = parseTimestamp(tx.timestamp),
-                        hash = tx.hash!!.hexStringToByteArray(),
-                        nonce = tx.nonce ?: 0,
-                        blockHash = null,
-                        transactionIndex = tx.position ?: 0,
-                        from = Address(tx.from!!.hash!!),
-                        to = tx.to?.hash?.let { Address(it) },
-                        value = tx.value!!.toBigInteger(),
-                        gasLimit = tx.gasLimit?.toLong() ?: 0,
-                        gasPrice = tx.gasPrice?.toLong() ?: 0,
-                        isError = if (success) 0 else 1,
-                        txReceiptStatus = if (success) 1 else 0,
-                        input = tx.rawInput?.hexStringToByteArray() ?: ByteArray(0),
-                        cumulativeGasUsed = null,
-                        gasUsed = tx.gasUsed?.toLongOrNull()
-                    )
-                } catch (throwable: Throwable) {
-                    null
-                }
+    override suspend fun getTransactions(startBlock: Long): List<ProviderTransaction> {
+        val transactions = service.getTransactions(address.hex, startBlock)
+        return transactions.mapNotNull { tx ->
+            try {
+                val success = tx.status == "ok"
+                ProviderTransaction(
+                    blockNumber = tx.blockNumber!!,
+                    timestamp = parseTimestamp(tx.timestamp),
+                    hash = tx.hash!!.hexStringToByteArray(),
+                    nonce = tx.nonce ?: 0,
+                    blockHash = null,
+                    transactionIndex = tx.position ?: 0,
+                    from = Address(tx.from!!.hash!!),
+                    to = tx.to?.hash?.let { Address(it) },
+                    value = tx.value!!.toBigInteger(),
+                    gasLimit = tx.gasLimit?.toLong() ?: 0,
+                    gasPrice = tx.gasPrice?.toLong() ?: 0,
+                    isError = if (success) 0 else 1,
+                    txReceiptStatus = if (success) 1 else 0,
+                    input = tx.rawInput?.hexStringToByteArray() ?: ByteArray(0),
+                    cumulativeGasUsed = null,
+                    gasUsed = tx.gasUsed?.toLongOrNull()
+                )
+            } catch (throwable: Throwable) {
+                null
             }
         }
+    }
 
-    override fun getInternalTransactions(startBlock: Long): Single<List<ProviderInternalTransaction>> =
-        service.getInternalTransactions(address.hex, startBlock).map { internalTransactions ->
-            internalTransactions.mapNotNull { mapInternalTransaction(it) }
-        }
+    override suspend fun getInternalTransactions(startBlock: Long): List<ProviderInternalTransaction> {
+        val internalTransactions = service.getInternalTransactions(address.hex, startBlock)
+        return internalTransactions.mapNotNull { mapInternalTransaction(it) }
+    }
 
-    override fun getInternalTransactionsAsync(hash: ByteArray): Single<List<ProviderInternalTransaction>> =
-        service.getInternalTransactions(hash.toHexString()).map { internalTransactions ->
-            internalTransactions.mapNotNull { mapInternalTransaction(it) }
-        }
+    override suspend fun getInternalTransactionsAsync(hash: ByteArray): List<ProviderInternalTransaction> {
+        val internalTransactions = service.getInternalTransactions(hash.toHexString())
+        return internalTransactions.mapNotNull { mapInternalTransaction(it) }
+    }
 
-    override fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>> =
-        service.getTokenTransfers(address.hex, ERC20, startBlock).map { transfers ->
-            transfers.mapNotNull { transfer ->
-                try {
-                    ProviderTokenTransaction(
-                        blockNumber = transfer.blockNumber!!,
-                        timestamp = parseTimestamp(transfer.timestamp),
-                        hash = transfer.transactionHash!!.hexStringToByteArray(),
-                        nonce = 0,
-                        blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
-                        from = Address(transfer.from!!.hash!!),
-                        contractAddress = Address(transfer.token!!.addressHash!!),
-                        to = Address(transfer.to!!.hash!!),
-                        value = transfer.total!!.value!!.toBigInteger(),
-                        tokenName = transfer.token.name ?: "",
-                        tokenSymbol = transfer.token.symbol ?: "",
-                        tokenDecimal = transfer.token.decimals?.toIntOrNull() ?: 0,
-                        transactionIndex = 0,
-                        gasLimit = 0,
-                        gasPrice = 0,
-                        gasUsed = 0,
-                        cumulativeGasUsed = 0
-                    )
-                } catch (throwable: Throwable) {
-                    null
-                }
+    override suspend fun getTokenTransactions(startBlock: Long): List<ProviderTokenTransaction> {
+        val transfers = service.getTokenTransfers(address.hex, ERC20, startBlock)
+        return transfers.mapNotNull { transfer ->
+            try {
+                ProviderTokenTransaction(
+                    blockNumber = transfer.blockNumber!!,
+                    timestamp = parseTimestamp(transfer.timestamp),
+                    hash = transfer.transactionHash!!.hexStringToByteArray(),
+                    nonce = 0,
+                    blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
+                    from = Address(transfer.from!!.hash!!),
+                    contractAddress = Address(transfer.token!!.addressHash!!),
+                    to = Address(transfer.to!!.hash!!),
+                    value = transfer.total!!.value!!.toBigInteger(),
+                    tokenName = transfer.token.name ?: "",
+                    tokenSymbol = transfer.token.symbol ?: "",
+                    tokenDecimal = transfer.token.decimals?.toIntOrNull() ?: 0,
+                    transactionIndex = 0,
+                    gasLimit = 0,
+                    gasPrice = 0,
+                    gasUsed = 0,
+                    cumulativeGasUsed = 0
+                )
+            } catch (throwable: Throwable) {
+                null
             }
         }
+    }
 
-    override fun getEip721Transactions(startBlock: Long): Single<List<ProviderEip721Transaction>> =
-        service.getTokenTransfers(address.hex, ERC721, startBlock).map { transfers ->
-            transfers.mapNotNull { transfer ->
-                try {
-                    ProviderEip721Transaction(
-                        blockNumber = transfer.blockNumber!!,
-                        timestamp = parseTimestamp(transfer.timestamp),
-                        hash = transfer.transactionHash!!.hexStringToByteArray(),
-                        nonce = 0,
-                        blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
-                        transactionIndex = 0,
-                        gasLimit = 0,
-                        gasPrice = 0,
-                        gasUsed = 0,
-                        cumulativeGasUsed = 0,
-                        contractAddress = Address(transfer.token!!.addressHash!!),
-                        from = Address(transfer.from!!.hash!!),
-                        to = Address(transfer.to!!.hash!!),
-                        tokenId = transfer.total!!.tokenId!!.toBigInteger(),
-                        tokenName = transfer.token.name ?: "",
-                        tokenSymbol = transfer.token.symbol ?: "",
-                        tokenDecimal = transfer.token.decimals?.toIntOrNull() ?: 0
-                    )
-                } catch (throwable: Throwable) {
-                    null
-                }
+    override suspend fun getEip721Transactions(startBlock: Long): List<ProviderEip721Transaction> {
+        val transfers = service.getTokenTransfers(address.hex, ERC721, startBlock)
+        return transfers.mapNotNull { transfer ->
+            try {
+                ProviderEip721Transaction(
+                    blockNumber = transfer.blockNumber!!,
+                    timestamp = parseTimestamp(transfer.timestamp),
+                    hash = transfer.transactionHash!!.hexStringToByteArray(),
+                    nonce = 0,
+                    blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
+                    transactionIndex = 0,
+                    gasLimit = 0,
+                    gasPrice = 0,
+                    gasUsed = 0,
+                    cumulativeGasUsed = 0,
+                    contractAddress = Address(transfer.token!!.addressHash!!),
+                    from = Address(transfer.from!!.hash!!),
+                    to = Address(transfer.to!!.hash!!),
+                    tokenId = transfer.total!!.tokenId!!.toBigInteger(),
+                    tokenName = transfer.token.name ?: "",
+                    tokenSymbol = transfer.token.symbol ?: "",
+                    tokenDecimal = transfer.token.decimals?.toIntOrNull() ?: 0
+                )
+            } catch (throwable: Throwable) {
+                null
             }
         }
+    }
 
-    override fun getEip1155Transactions(startBlock: Long): Single<List<ProviderEip1155Transaction>> =
-        service.getTokenTransfers(address.hex, ERC1155, startBlock).map { transfers ->
-            transfers.mapNotNull { transfer ->
-                try {
-                    ProviderEip1155Transaction(
-                        blockNumber = transfer.blockNumber!!,
-                        timestamp = parseTimestamp(transfer.timestamp),
-                        hash = transfer.transactionHash!!.hexStringToByteArray(),
-                        nonce = 0,
-                        blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
-                        transactionIndex = 0,
-                        gasLimit = 0,
-                        gasPrice = 0,
-                        gasUsed = 0,
-                        cumulativeGasUsed = 0,
-                        contractAddress = Address(transfer.token!!.addressHash!!),
-                        from = Address(transfer.from!!.hash!!),
-                        to = Address(transfer.to!!.hash!!),
-                        tokenId = transfer.total!!.tokenId!!.toBigInteger(),
-                        tokenValue = transfer.total.value?.toIntOrNull() ?: 0,
-                        tokenName = transfer.token.name ?: "",
-                        tokenSymbol = transfer.token.symbol ?: ""
-                    )
-                } catch (throwable: Throwable) {
-                    null
-                }
+    override suspend fun getEip1155Transactions(startBlock: Long): List<ProviderEip1155Transaction> {
+        val transfers = service.getTokenTransfers(address.hex, ERC1155, startBlock)
+        return transfers.mapNotNull { transfer ->
+            try {
+                ProviderEip1155Transaction(
+                    blockNumber = transfer.blockNumber!!,
+                    timestamp = parseTimestamp(transfer.timestamp),
+                    hash = transfer.transactionHash!!.hexStringToByteArray(),
+                    nonce = 0,
+                    blockHash = transfer.blockHash?.hexStringToByteArray() ?: ByteArray(0),
+                    transactionIndex = 0,
+                    gasLimit = 0,
+                    gasPrice = 0,
+                    gasUsed = 0,
+                    cumulativeGasUsed = 0,
+                    contractAddress = Address(transfer.token!!.addressHash!!),
+                    from = Address(transfer.from!!.hash!!),
+                    to = Address(transfer.to!!.hash!!),
+                    tokenId = transfer.total!!.tokenId!!.toBigInteger(),
+                    tokenValue = transfer.total.value?.toIntOrNull() ?: 0,
+                    tokenName = transfer.token.name ?: "",
+                    tokenSymbol = transfer.token.symbol ?: ""
+                )
+            } catch (throwable: Throwable) {
+                null
             }
         }
+    }
 
     private fun mapInternalTransaction(internalTx: BlockscoutInternalTransaction): ProviderInternalTransaction? =
         try {

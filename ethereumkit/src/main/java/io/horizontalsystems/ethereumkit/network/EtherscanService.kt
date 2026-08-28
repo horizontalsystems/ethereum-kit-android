@@ -8,11 +8,9 @@ import io.horizontalsystems.ethereumkit.api.models.EtherscanResponse
 import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.core.toHexString
 import io.horizontalsystems.ethereumkit.models.Address
-import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -62,7 +60,6 @@ class EtherscanService(
 
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(httpClient.build())
             .build()
@@ -76,63 +73,69 @@ class EtherscanService(
         return apiKeys[apiKeyIndex++]
     }
 
-    fun getTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "txlist",
-            address = address.hex,
-            startBlock = startBlock,
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getTransactionList(address: Address, startBlock: Long): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "txlist",
+                address = address.hex,
+                startBlock = startBlock,
+            )
+            parseResponse(response)
+        }
     }
 
-    fun getInternalTransactionList(address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "txlistinternal",
-            address = address.hex,
-            startBlock = startBlock,
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getInternalTransactionList(address: Address, startBlock: Long): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "txlistinternal",
+                address = address.hex,
+                startBlock = startBlock,
+            )
+            parseResponse(response)
+        }
     }
 
-    fun getTokenTransactions(address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "tokentx",
-            address = address.hex,
-            startBlock = startBlock,
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getTokenTransactions(address: Address, startBlock: Long): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "tokentx",
+                address = address.hex,
+                startBlock = startBlock,
+            )
+            parseResponse(response)
+        }
     }
 
-    fun getInternalTransactionsAsync(transactionHash: ByteArray): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "txlistinternal",
-            txHash = transactionHash.toHexString(),
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getInternalTransactionsAsync(transactionHash: ByteArray): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "txlistinternal",
+                txHash = transactionHash.toHexString(),
+            )
+            parseResponse(response)
+        }
     }
 
-    fun getEip721Transactions(address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "tokennfttx",
-            address = address.hex,
-            startBlock = startBlock,
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getEip721Transactions(address: Address, startBlock: Long): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "tokennfttx",
+                address = address.hex,
+                startBlock = startBlock,
+            )
+            parseResponse(response)
+        }
     }
 
-    fun getEip1155Transactions(address: Address, startBlock: Long): Single<EtherscanResponse> {
-        return service.accountApi(
-            action = "token1155tx",
-            address = address.hex,
-            startBlock = startBlock,
-        ).map {
-            parseResponse(it)
-        }.retryWhenError(RequestError.RateLimitExceed::class)
+    suspend fun getEip1155Transactions(address: Address, startBlock: Long): EtherscanResponse {
+        return retryWhenError(RequestError.RateLimitExceed::class) {
+            val response = service.accountApi(
+                action = "token1155tx",
+                address = address.hex,
+                startBlock = startBlock,
+            )
+            parseResponse(response)
+        }
     }
 
     private fun parseResponse(response: JsonElement): EtherscanResponse {
@@ -171,7 +174,7 @@ class EtherscanService(
 
     private interface EtherscanServiceAPI {
         @GET("api")
-        fun accountApi(
+        suspend fun accountApi(
             @Query("module") module: String = "account",
             @Query("action") action: String,
             @Query("address") address: String? = null,
@@ -179,7 +182,7 @@ class EtherscanService(
             @Query("startblock") startBlock: Long? = null,
             @Query("endblock") endBlock: Long? = null,
             @Query("sort") sort: String? = "desc"
-        ): Single<JsonElement>
+        ): JsonElement
     }
 
 }

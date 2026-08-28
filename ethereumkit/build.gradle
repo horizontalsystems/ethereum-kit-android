@@ -59,29 +59,21 @@ dependencies {
 
     implementation 'com.github.horizontalsystems:hd-wallet-kit-android:a74b51f3'
 
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.19'
-    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
 
-    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0'
     implementation 'com.squareup.retrofit2:converter-scalars:2.9.0'
     implementation 'com.google.code.gson:gson:2.9.0'
-
-    def scarlet_version = "0.1.12"
-    implementation "com.tinder.scarlet:scarlet:$scarlet_version"
-    implementation "com.tinder.scarlet:websocket-okhttp:$scarlet_version"
-    implementation "com.tinder.scarlet:stream-adapter-rxjava2:$scarlet_version"
-    implementation "com.tinder.scarlet:message-adapter-gson:$scarlet_version"
-    implementation "com.tinder.scarlet:lifecycle-android:$scarlet_version"
 
     // Geth mobile
 //    implementation 'org.ethereum:geth:1.8.11';
 
     // Room
     implementation "androidx.room:room-runtime:$room_version"
-    implementation "androidx.room:room-rxjava2:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
 
     //Eip712
@@ -100,6 +92,7 @@ dependencies {
     testRuntimeOnly 'org.spekframework.spek2:spek-runner-junit5:2.0.9'
     testRuntimeOnly "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version"
 
     // Android Instrumentation Test
     implementation 'androidx.annotation:annotation:1.4.0'

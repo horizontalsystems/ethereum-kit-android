@@ -16,10 +16,10 @@ class OneInchKit(
     private val service: OneInchService
 ) {
 
-    fun getApproveCallDataAsync(chain: Chain, tokenAddress: Address, amount: BigInteger) =
+    suspend fun getApproveCallDataAsync(chain: Chain, tokenAddress: Address, amount: BigInteger) =
         service.getApproveCallDataAsync(chain, tokenAddress, amount)
 
-    fun getQuoteAsync(
+    suspend fun getQuoteAsync(
         chain: Chain,
         fromToken: Address,
         toToken: Address,
@@ -47,7 +47,7 @@ class OneInchKit(
         parts
     )
 
-    fun getSwapAsync(
+    suspend fun getSwapAsync(
         chain: Chain,
         receiveAddress: Address,
         fromToken: Address,

@@ -4,8 +4,7 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
-import io.reactivex.Flowable
-import io.reactivex.Single
+import kotlinx.coroutines.flow.Flow
 import java.math.BigDecimal
 
 interface IAdapter {
@@ -20,17 +19,17 @@ interface IAdapter {
 
     val receiveAddress: Address
 
-    val lastBlockHeightFlowable: Flowable<Unit>
-    val syncStateFlowable: Flowable<Unit>
-    val transactionsSyncStateFlowable: Flowable<Unit>
-    val balanceFlowable: Flowable<Unit>
-    val transactionsFlowable: Flowable<Unit>
+    val lastBlockHeightFlow: Flow<Unit>
+    val syncStateFlow: Flow<Unit>
+    val transactionsSyncStateFlow: Flow<Unit>
+    val balanceFlow: Flow<Unit>
+    val transactionsFlow: Flow<Unit>
 
     fun start()
     fun stop()
     fun refresh()
-    fun send(address: Address, amount: BigDecimal, gasPrice: GasPrice, gasLimit: Long): Single<FullTransaction>
-    fun transactions(fromHash: ByteArray? = null, limit: Int? = null): Single<List<TransactionRecord>>
+    suspend fun send(address: Address, amount: BigDecimal, gasPrice: GasPrice, gasLimit: Long): FullTransaction
+    suspend fun transactions(fromHash: ByteArray? = null, limit: Int? = null): List<TransactionRecord>
 
-    fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: GasPrice): Single<Long>
+    suspend fun estimatedGasLimit(toAddress: Address, value: BigDecimal, gasPrice: GasPrice): Long
 }

@@ -7,7 +7,7 @@ import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.nftkit.models.Eip721Event
 import io.horizontalsystems.nftkit.models.Nft
 import io.horizontalsystems.nftkit.models.NftType
-import io.reactivex.Single
+import kotlinx.coroutines.CancellationException
 
 class Eip721TransactionSyncer(
     private val transactionProvider: ITransactionProvider,
@@ -37,29 +37,32 @@ class Eip721TransactionSyncer(
         listener?.didSync(nfts, NftType.Eip721)
     }
 
-    override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
+    override suspend fun getTransactions(): Pair<List<Transaction>, Boolean> {
         val lastTransactionBlockNumber = storage.lastEip721Event()?.blockNumber ?: 0
         val initial: Boolean = lastTransactionBlockNumber == 0L
 
-        return transactionProvider.getEip721Transactions(lastTransactionBlockNumber + 1)
-            .doOnSuccess { providerTokenTransactions -> handle(providerTokenTransactions) }
-            .map { providerTokenTransactions ->
-                val array = providerTokenTransactions.map { transaction ->
-                    Transaction(
-                        hash = transaction.hash,
-                        timestamp = transaction.timestamp,
-                        isFailed = false,
-                        blockNumber = transaction.blockNumber,
-                        transactionIndex = transaction.transactionIndex,
-                        nonce = transaction.nonce,
-                        gasPrice = transaction.gasPrice,
-                        gasLimit = transaction.gasLimit,
-                        gasUsed = transaction.gasUsed
-                    )
+        return try {
+            val providerTokenTransactions = transactionProvider.getEip721Transactions(lastTransactionBlockNumber + 1)
+            handle(providerTokenTransactions)
 
-                }
-                Pair(array, initial)
+            val array = providerTokenTransactions.map { transaction ->
+                Transaction(
+                    hash = transaction.hash,
+                    timestamp = transaction.timestamp,
+                    isFailed = false,
+                    blockNumber = transaction.blockNumber,
+                    transactionIndex = transaction.transactionIndex,
+                    nonce = transaction.nonce,
+                    gasPrice = transaction.gasPrice,
+                    gasLimit = transaction.gasLimit,
+                    gasUsed = transaction.gasUsed
+                )
             }
-            .onErrorReturnItem(Pair(listOf(), initial))
+            Pair(array, initial)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Pair(listOf(), initial)
+        }
     }
 }

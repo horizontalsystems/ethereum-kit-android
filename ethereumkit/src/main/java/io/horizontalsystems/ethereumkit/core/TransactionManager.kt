@@ -7,10 +7,13 @@ import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.models.TransactionTag
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.Single
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.math.BigInteger
 
 class TransactionManager(
@@ -21,13 +24,13 @@ class TransactionManager(
     private val provider: ITransactionProvider
 ) {
 
-    private val fullTransactionsSubject = PublishSubject.create<Pair<List<FullTransaction>, Boolean>>()
-    private val fullTransactionsWithTagsSubject = PublishSubject.create<List<TransactionWithTags>>()
+    private val fullTransactionsSubject = bufferedSharedFlow<Pair<List<FullTransaction>, Boolean>>()
+    private val fullTransactionsWithTagsSubject = bufferedSharedFlow<List<TransactionWithTags>>()
 
-    val fullTransactionsAsync: Flowable<Pair<List<FullTransaction>, Boolean>> = fullTransactionsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val fullTransactionsFlow: Flow<Pair<List<FullTransaction>, Boolean>> = fullTransactionsSubject
 
-    fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
-        return fullTransactionsWithTagsSubject.toFlowable(BackpressureStrategy.BUFFER)
+    fun getFullTransactionsFlow(tags: List<List<String>>): Flow<List<FullTransaction>> {
+        return fullTransactionsWithTagsSubject
             .map { transactions ->
                 transactions.mapNotNull { transactionWithTags ->
                     for (andTags in tags) {
@@ -41,11 +44,8 @@ class TransactionManager(
             .filter { it.isNotEmpty() }
     }
 
-    fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> =
-        storage.getTransactionsBeforeAsync(tags, fromHash, limit)
-            .map { transactions ->
-                decorationManager.decorateTransactions(transactions)
-            }
+    suspend fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): List<FullTransaction> =
+        decorationManager.decorateTransactions(storage.getTransactionsBeforeAsync(tags, fromHash, limit))
 
     fun getPendingFullTransactions(tags: List<List<String>>): List<FullTransaction> =
         decorationManager.decorateTransactions(storage.getPendingTransactions(tags))
@@ -117,8 +117,8 @@ class TransactionManager(
 
         storage.saveTags(allTags)
 
-        fullTransactionsSubject.onNext(Pair(fullTransactions, initial))
-        fullTransactionsWithTagsSubject.onNext(transactionWithTags)
+        fullTransactionsSubject.tryEmit(Pair(fullTransactions, initial))
+        fullTransactionsWithTagsSubject.tryEmit(transactionWithTags)
 
         return fullTransactions
     }
@@ -127,30 +127,33 @@ class TransactionManager(
         return TransactionData(address, value, byteArrayOf())
     }
 
-    fun getFullTransactionSingle(hash: ByteArray): Single<FullTransaction> {
-        val fullRpcTransactionSingle = blockchain.getTransaction(hash)
-            .flatMap { transaction ->
-                if (transaction.blockNumber != null) {
-                    return@flatMap Single.zip(
-                        blockchain.getTransactionReceipt(hash),
-                        blockchain.getBlock(transaction.blockNumber),
-                        provider.getInternalTransactionsAsync(hash)
-                    ) { receipt, block, internalTransactions ->
-                        FullRpcTransaction(transaction, receipt, block, internalTransactions.map { it.internalTransaction() }.toMutableList())
-                    }
-                } else {
-                    return@flatMap Single.just(FullRpcTransaction(transaction, null, null, mutableListOf()))
-                }
-            }
+    suspend fun getFullTransaction(hash: ByteArray): FullTransaction {
+        val transaction = blockchain.getTransaction(hash)
 
-        return fullRpcTransactionSingle.map { decorationManager.decorateFullRpcTransaction(it) }
+        val fullRpcTransaction = if (transaction.blockNumber != null) {
+            coroutineScope {
+                val receipt = async { blockchain.getTransactionReceipt(hash) }
+                val block = async { blockchain.getBlock(transaction.blockNumber) }
+                val internalTransactions = async { provider.getInternalTransactionsAsync(hash) }
+
+                FullRpcTransaction(
+                    transaction,
+                    receipt.await(),
+                    block.await(),
+                    internalTransactions.await().map { it.internalTransaction() }.toMutableList()
+                )
+            }
+        } else {
+            FullRpcTransaction(transaction, null, null, mutableListOf())
+        }
+
+        return withContext(Dispatchers.IO) {
+            decorationManager.decorateFullRpcTransaction(fullRpcTransaction)
+        }
     }
 
-    fun getFullTransactionsAfterSingle(fromHash: ByteArray? = null): Single<List<FullTransaction>> =
-        storage.getTransactionsAfterSingle(fromHash)
-            .map { transactions ->
-                decorationManager.decorateTransactions(transactions)
-            }
+    suspend fun getFullTransactionsAfter(fromHash: ByteArray? = null): List<FullTransaction> =
+        decorationManager.decorateTransactions(storage.getTransactionsAfter(fromHash))
 
     private fun failPendingTransactions(): List<Transaction> {
         val pendingTransactions = storage.getPendingTransactions()

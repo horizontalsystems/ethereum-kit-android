@@ -4,13 +4,15 @@ import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionManager
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
+import io.horizontalsystems.ethereumkit.core.bufferedSharedFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Logger
 
@@ -19,17 +21,17 @@ class TransactionSyncManager(
 ) {
     private val logger = Logger.getLogger(this.javaClass.simpleName)
 
-    private val disposables = CompositeDisposable()
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val stateSubject = PublishSubject.create<EthereumKit.SyncState>()
+    private val stateSubject = bufferedSharedFlow<EthereumKit.SyncState>()
     private val syncers = CopyOnWriteArrayList<ITransactionSyncer>()
 
     var syncState: EthereumKit.SyncState = EthereumKit.SyncState.NotSynced(EthereumKit.SyncError.NotStarted())
         private set(value) {
             field = value
-            stateSubject.onNext(value)
+            stateSubject.tryEmit(value)
         }
-    val syncStateAsync: Flowable<EthereumKit.SyncState> = stateSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val syncStateFlow: Flow<EthereumKit.SyncState> = stateSubject
 
     fun add(syncer: ITransactionSyncer) {
         syncers.add(syncer)
@@ -40,24 +42,23 @@ class TransactionSyncManager(
 
         syncState = EthereumKit.SyncState.Syncing()
 
-        Single.zip(syncers.map {
-            it.getTransactionsSingle()
-        }) { array ->
-            array.map { it as Pair<List<Transaction>, Boolean> }
-                    .reduce { acc, list ->
-                        Pair(acc.first + list.first, acc.second && list.second)
-                    }
-        }
-                .subscribeOn(Schedulers.io())
-                .subscribe({ transactions ->
-                    handle(transactions)
-                    syncState = EthereumKit.SyncState.Synced()
-                }, {
-                    syncState = EthereumKit.SyncState.NotSynced(it)
-                    logger.warning("sync ERROR = ${it.message}")
-                }).let {
-                    disposables.add(it)
+        scope.launch {
+            try {
+                val transactions = coroutineScope {
+                    syncers.map { syncer ->
+                        async { syncer.getTransactions() }
+                    }.awaitAll()
+                }.reduce { acc, list ->
+                    Pair(acc.first + list.first, acc.second && list.second)
                 }
+
+                handle(transactions)
+                syncState = EthereumKit.SyncState.Synced()
+            } catch (error: Throwable) {
+                syncState = EthereumKit.SyncState.NotSynced(error)
+                logger.warning("sync ERROR = ${error.message}")
+            }
+        }
     }
 
     private fun merge(tx1: Transaction, tx2: Transaction) =

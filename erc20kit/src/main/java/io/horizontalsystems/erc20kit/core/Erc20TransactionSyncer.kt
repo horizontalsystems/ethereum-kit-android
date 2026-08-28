@@ -6,7 +6,7 @@ import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.models.Eip20Event
 import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.reactivex.Single
+import kotlinx.coroutines.CancellationException
 
 class Erc20TransactionSyncer(
         private val transactionProvider: ITransactionProvider,
@@ -23,30 +23,33 @@ class Erc20TransactionSyncer(
         storage.save(events)
     }
 
-    override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
+    override suspend fun getTransactions(): Pair<List<Transaction>, Boolean> {
         val lastTransactionBlockNumber = storage.getLastEvent()?.blockNumber ?: 0
         val initial: Boolean = lastTransactionBlockNumber == 0L
 
-        return transactionProvider.getTokenTransactions(lastTransactionBlockNumber + 1)
-                .doOnSuccess { providerTokenTransactions -> handle(providerTokenTransactions) }
-                .map { providerTokenTransactions ->
-                    val array = providerTokenTransactions.map { transaction ->
-                        Transaction(
-                                hash = transaction.hash,
-                                timestamp = transaction.timestamp,
-                                isFailed = false,
-                                blockNumber = transaction.blockNumber,
-                                transactionIndex = transaction.transactionIndex,
-                                nonce = transaction.nonce,
-                                gasPrice = transaction.gasPrice,
-                                gasLimit = transaction.gasLimit,
-                                gasUsed = transaction.gasUsed
-                        )
+        return try {
+            val providerTokenTransactions = transactionProvider.getTokenTransactions(lastTransactionBlockNumber + 1)
+            handle(providerTokenTransactions)
 
-                    }
-                    Pair(array, initial)
-                }
-                .onErrorReturnItem(Pair(listOf(), initial))
+            val array = providerTokenTransactions.map { transaction ->
+                Transaction(
+                        hash = transaction.hash,
+                        timestamp = transaction.timestamp,
+                        isFailed = false,
+                        blockNumber = transaction.blockNumber,
+                        transactionIndex = transaction.transactionIndex,
+                        nonce = transaction.nonce,
+                        gasPrice = transaction.gasPrice,
+                        gasLimit = transaction.gasLimit,
+                        gasUsed = transaction.gasUsed
+                )
+            }
+            Pair(array, initial)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Pair(listOf(), initial)
+        }
     }
 
 }

@@ -4,9 +4,11 @@ import io.horizontalsystems.ethereumkit.api.jsonrpc.BlockNumberJsonRpc
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
-import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
 import java.util.Timer
 import kotlin.concurrent.schedule
 
@@ -15,7 +17,7 @@ class ApiRpcSyncer(
     private val connectionManager: ConnectionManager,
     private val syncInterval: Long,
 ) : IRpcSyncer {
-    private val disposables = CompositeDisposable()
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var isStarted = false
     private var timer: Timer? = null
 
@@ -48,7 +50,7 @@ class ApiRpcSyncer(
         isStarted = false
 
         state = SyncerState.NotReady(EthereumKit.SyncError.NotStarted())
-        disposables.clear()
+        scope.coroutineContext.cancelChildren()
         stopTimer()
     }
 
@@ -60,8 +62,8 @@ class ApiRpcSyncer(
         startTimer()
     }
 
-    override fun <T: Any> single(rpc: JsonRpc<T>): Single<T> =
-        rpcApiProvider.single(rpc)
+    override suspend fun <T: Any> execute(rpc: JsonRpc<T>): T =
+        rpcApiProvider.execute(rpc)
     //endregion
 
     private fun handleConnectionChange() {
@@ -92,14 +94,14 @@ class ApiRpcSyncer(
     }
 
     private fun onFireTimer() {
-        rpcApiProvider.single(BlockNumberJsonRpc())
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe { lastBlockNumber ->
-                    listener?.didUpdateLastBlockHeight(lastBlockNumber)
-                }.let {
-                    disposables.add(it)
-                }
+        scope.launch {
+            try {
+                val lastBlockNumber = rpcApiProvider.execute(BlockNumberJsonRpc())
+                listener?.didUpdateLastBlockHeight(lastBlockNumber)
+            } catch (error: Throwable) {
+                // ignored, same as the previous RxJava subscription without an error handler
+            }
+        }
     }
 
 }

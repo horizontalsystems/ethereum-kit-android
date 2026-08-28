@@ -6,7 +6,7 @@ import io.horizontalsystems.ethereumkit.core.storage.TransactionSyncerStateStora
 import io.horizontalsystems.ethereumkit.models.ProviderTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionSyncerState
-import io.reactivex.Single
+import kotlinx.coroutines.CancellationException
 
 class EthereumTransactionSyncer(
         private val transactionProvider: ITransactionProvider,
@@ -17,14 +17,15 @@ class EthereumTransactionSyncer(
         const val SyncerId = "ethereum-transaction-syncer"
     }
 
-    override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
+    override suspend fun getTransactions(): Pair<List<Transaction>, Boolean> {
         val lastTransactionBlockNumber = storage.get(SyncerId)?.lastBlockNumber ?: 0
         val initial = lastTransactionBlockNumber == 0L
 
-        return transactionProvider.getTransactions(lastTransactionBlockNumber + 1)
-                .doOnSuccess { providerTransactions -> handle(providerTransactions) }
-                .map { providerTransactions ->
-                    val array = providerTransactions.map { transaction ->
+        return try {
+            val providerTransactions = transactionProvider.getTransactions(lastTransactionBlockNumber + 1)
+            handle(providerTransactions)
+
+            val array = providerTransactions.map { transaction ->
                         val isFailed = when {
                             transaction.txReceiptStatus != null -> {
                                 transaction.txReceiptStatus != 1
@@ -40,25 +41,28 @@ class EthereumTransactionSyncer(
                             }
                         }
 
-                        Transaction(
-                                hash = transaction.hash,
-                                timestamp = transaction.timestamp,
-                                isFailed = isFailed,
-                                blockNumber = transaction.blockNumber,
-                                transactionIndex = transaction.transactionIndex,
-                                from = transaction.from,
-                                to = transaction.to,
-                                value = transaction.value,
-                                input = transaction.input,
-                                nonce = transaction.nonce,
-                                gasPrice = transaction.gasPrice,
-                                gasUsed = transaction.gasUsed
-                        )
-                    }
+                Transaction(
+                        hash = transaction.hash,
+                        timestamp = transaction.timestamp,
+                        isFailed = isFailed,
+                        blockNumber = transaction.blockNumber,
+                        transactionIndex = transaction.transactionIndex,
+                        from = transaction.from,
+                        to = transaction.to,
+                        value = transaction.value,
+                        input = transaction.input,
+                        nonce = transaction.nonce,
+                        gasPrice = transaction.gasPrice,
+                        gasUsed = transaction.gasUsed
+                )
+            }
 
-                    Pair(array, initial)
-                }
-                .onErrorReturnItem(Pair(listOf(), initial))
+            Pair(array, initial)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Pair(listOf(), initial)
+        }
     }
 
     private fun handle(transactions: List<ProviderTransaction>) {

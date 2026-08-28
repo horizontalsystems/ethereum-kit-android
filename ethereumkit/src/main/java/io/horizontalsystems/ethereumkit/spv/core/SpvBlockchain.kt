@@ -34,8 +34,7 @@ import io.horizontalsystems.ethereumkit.spv.net.handlers.BlockHeadersTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.handlers.HandshakeTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.handlers.SendTransactionTaskHandler
 import io.horizontalsystems.ethereumkit.spv.net.tasks.HandshakeTask
-import io.reactivex.Single
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.CompletableDeferred
 import java.math.BigInteger
 import java.util.logging.Logger
 
@@ -52,7 +51,7 @@ class SpvBlockchain(
 
     private val logger = Logger.getLogger("SpvBlockchain")
 
-    private val sendingTransactions: MutableMap<Int, PublishSubject<Transaction>> = HashMap()
+    private val sendingTransactions: MutableMap<Int, CompletableDeferred<Transaction>> = HashMap()
 
     //--------------IBlockchain---------------------
 
@@ -95,52 +94,52 @@ class SpvBlockchain(
     override val accountState: AccountState?
         get() = storage.getAccountState()?.let { AccountState(it.balance, it.nonce) }
 
-    override fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction> {
-        return try {
-            val sendId = RandomHelper.randomInt()
+    override suspend fun send(rawTransaction: RawTransaction, signature: Signature): Transaction {
+        val sendId = RandomHelper.randomInt()
+        val deferred = CompletableDeferred<Transaction>()
+        sendingTransactions[sendId] = deferred
+        try {
             transactionSender.send(sendId, peer, rawTransaction, signature)
-            val subject = PublishSubject.create<Transaction>()
-            sendingTransactions[sendId] = subject
-            Single.fromFuture(subject.toFuture())
-
         } catch (error: Throwable) {
-            Single.error(error)
+            sendingTransactions.remove(sendId)
+            throw error
         }
+        return deferred.await()
     }
 
-    override fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
+    override suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long {
         TODO("not implemented")
     }
 
-    override fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): Single<Long> {
+    override suspend fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): Long {
         TODO("not implemented")
     }
 
-    override fun getTransactionReceipt(transactionHash: ByteArray): Single<RpcTransactionReceipt> {
+    override suspend fun getTransactionReceipt(transactionHash: ByteArray): RpcTransactionReceipt {
         TODO("not implemented")
     }
 
-    override fun getTransaction(transactionHash: ByteArray): Single<RpcTransaction> {
+    override suspend fun getTransaction(transactionHash: ByteArray): RpcTransaction {
         TODO("not implemented")
     }
 
-    override fun getBlock(blockNumber: Long): Single<RpcBlock> {
+    override suspend fun getBlock(blockNumber: Long): RpcBlock {
         TODO("not implemented")
     }
 
-    override fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
+    override suspend fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): List<TransactionLog> {
         TODO("not implemented")
     }
 
-    override fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+    override suspend fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): ByteArray {
         TODO("not implemented")
     }
 
-    override fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+    override suspend fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): ByteArray {
         TODO("not implemented")
     }
 
-    override fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T> {
+    override suspend fun <T: Any> rpc(rpc: JsonRpc<T>): T {
         TODO("not implemented")
     }
 
@@ -180,16 +179,15 @@ class SpvBlockchain(
     //---------------TransactionSender.Listener------------------
 
     override fun onSendSuccess(sendId: Int, transaction: Transaction) {
-        val subject = sendingTransactions.remove(sendId) ?: return
+        val deferred = sendingTransactions.remove(sendId) ?: return
 
-        subject.onNext(transaction)
-        subject.onComplete()
+        deferred.complete(transaction)
     }
 
     override fun onSendFailure(sendId: Int, error: Throwable) {
-        val subject = sendingTransactions.remove(sendId) ?: return
+        val deferred = sendingTransactions.remove(sendId) ?: return
 
-        subject.onError(error)
+        deferred.completeExceptionally(error)
     }
 
     companion object {

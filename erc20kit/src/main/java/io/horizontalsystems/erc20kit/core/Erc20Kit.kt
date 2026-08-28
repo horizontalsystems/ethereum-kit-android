@@ -5,11 +5,13 @@ import io.horizontalsystems.erc20kit.contract.Eip20ContractMethodFactories
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.core.EthereumKit.SyncState
 import io.horizontalsystems.ethereumkit.models.*
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.math.BigInteger
 
 class Erc20Kit(
@@ -20,48 +22,45 @@ class Erc20Kit(
         private val state: KitState = KitState()
 ) : IBalanceManagerListener {
 
-    private val disposables = CompositeDisposable()
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
         onSyncStateUpdate(ethereumKit.syncState)
         state.balance = balanceManager.balance
 
-        ethereumKit.syncStateFlowable
-                .subscribe {
+        ethereumKit.syncStateFlow
+                .onEach {
                     onSyncStateUpdate(it)
-                }.let {
-                    disposables.add(it)
                 }
+                .launchIn(scope)
 
-        transactionManager.transactionsAsync
-                .subscribeOn(Schedulers.io())
-                .subscribe {
+        transactionManager.transactionsFlow
+                .onEach {
                     balanceManager.sync()
-                }.let {
-                    disposables.add(it)
                 }
+                .launchIn(scope)
     }
 
     val syncState: SyncState
         get() = state.syncState
 
-    val syncStateFlowable: Flowable<SyncState>
-        get() = state.syncStateSubject.toFlowable(BackpressureStrategy.LATEST)
+    val syncStateFlow: Flow<SyncState>
+        get() = state.syncStateSubject
 
     val transactionsSyncState: SyncState
         get() = ethereumKit.transactionsSyncState
 
-    val transactionsSyncStateFlowable: Flowable<SyncState>
-        get() = ethereumKit.transactionsSyncStateFlowable
+    val transactionsSyncStateFlow: Flow<SyncState>
+        get() = ethereumKit.transactionsSyncStateFlow
 
     val balance: BigInteger?
         get() = state.balance
 
-    val balanceFlowable: Flowable<BigInteger>
-        get() = state.balanceSubject.toFlowable(BackpressureStrategy.LATEST)
+    val balanceFlow: Flow<BigInteger>
+        get() = state.balanceSubject
 
-    val transactionsFlowable: Flowable<List<FullTransaction>>
-        get() = transactionManager.transactionsAsync
+    val transactionsFlow: Flow<List<FullTransaction>>
+        get() = transactionManager.transactionsFlow
 
     fun start() {
         balanceManager.sync()
@@ -70,12 +69,12 @@ class Erc20Kit(
     fun stop() {
         transactionManager.stop()
 
-        disposables.clear()
+        scope.coroutineContext.cancelChildren()
     }
 
     fun refresh() {}
 
-    fun getAllowanceAsync(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): Single<BigInteger> {
+    suspend fun getAllowanceAsync(spenderAddress: Address, defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest): BigInteger {
         return allowanceManager.allowance(spenderAddress, defaultBlockParameter)
     }
 
@@ -87,7 +86,7 @@ class Erc20Kit(
         return transactionManager.buildTransferTransactionData(to, value)
     }
 
-    fun getTransactionsAsync(fromHash: ByteArray?, limit: Int?): Single<List<FullTransaction>> {
+    suspend fun getTransactionsAsync(fromHash: ByteArray?, limit: Int?): List<FullTransaction> {
         return transactionManager.getTransactionsAsync(fromHash, limit)
     }
 

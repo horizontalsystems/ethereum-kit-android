@@ -12,7 +12,8 @@ import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.RawTransaction
 import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.network.ConnectionManager
-import io.reactivex.Single
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.net.URI
 
 class MerkleTransactionAdapter(
@@ -21,9 +22,11 @@ class MerkleTransactionAdapter(
     private val transactionManager: TransactionManager,
     private val sourceTag: String,
 ) {
-    fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
-        return blockchain.send(rawTransaction, signature, sourceTag)
-            .map { transactionManager.handle(listOf(it)).first() }
+    suspend fun send(rawTransaction: RawTransaction, signature: Signature): FullTransaction {
+        val transaction = blockchain.send(rawTransaction, signature, sourceTag)
+        return withContext(Dispatchers.IO) {
+            transactionManager.handle(listOf(transaction)).first()
+        }
     }
 
     fun registerInKit(ethereumKit: EthereumKit) {

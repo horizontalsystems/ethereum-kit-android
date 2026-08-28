@@ -1,7 +1,6 @@
 package io.horizontalsystems.erc20kit.core
 
 import io.horizontalsystems.ethereumkit.models.Address
-import io.reactivex.Single
 import java.math.BigInteger
 
 interface IBalanceManagerListener {
@@ -22,5 +21,5 @@ interface ITokenBalanceStorage {
 }
 
 interface IDataProvider {
-    fun getBalance(contractAddress: Address, address: Address): Single<BigInteger>
+    suspend fun getBalance(contractAddress: Address, address: Address): BigInteger
 }
