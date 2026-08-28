@@ -25,7 +25,6 @@ import io.horizontalsystems.ethereumkit.models.TransactionLog
 import io.horizontalsystems.ethereumkit.models.TransactionTag
 import io.horizontalsystems.ethereumkit.spv.models.AccountStateSpv
 import io.horizontalsystems.ethereumkit.spv.models.BlockHeader
-import io.reactivex.Single
 import java.math.BigInteger
 
 
@@ -61,18 +60,18 @@ interface IBlockchain {
     val lastBlockHeight: Long?
     val accountState: AccountState?
 
-    fun send(rawTransaction: RawTransaction, signature: Signature): Single<Transaction>
-    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long>
-    fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): Single<Long>
-    fun getTransactionReceipt(transactionHash: ByteArray): Single<RpcTransactionReceipt>
-    fun getTransaction(transactionHash: ByteArray): Single<RpcTransaction>
-    fun getBlock(blockNumber: Long): Single<RpcBlock>
+    suspend fun send(rawTransaction: RawTransaction, signature: Signature): Transaction
+    suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long
+    suspend fun estimateGas(to: Address?, amount: BigInteger?, gasLimit: Long?, gasPrice: GasPrice?, data: ByteArray?): Long
+    suspend fun getTransactionReceipt(transactionHash: ByteArray): RpcTransactionReceipt
+    suspend fun getTransaction(transactionHash: ByteArray): RpcTransaction
+    suspend fun getBlock(blockNumber: Long): RpcBlock
 
-    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>>
-    fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
-    fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray>
+    suspend fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): List<TransactionLog>
+    suspend fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): ByteArray
+    suspend fun call(contractAddress: Address, data: ByteArray, defaultBlockParameter: DefaultBlockParameter): ByteArray
 
-    fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T>
+    suspend fun <T: Any> rpc(rpc: JsonRpc<T>): T
 }
 
 interface IBlockchainListener {
@@ -84,7 +83,7 @@ interface IBlockchainListener {
 interface ITransactionStorage {
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>
     fun getTransaction(hash: ByteArray): Transaction?
-    fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): Single<List<Transaction>>
+    suspend fun getTransactionsBeforeAsync(tags: List<List<String>>, hash: ByteArray?, limit: Int?): List<Transaction>
     fun save(transactions: List<Transaction>)
 
     fun getPendingTransactions(): List<Transaction>
@@ -99,7 +98,7 @@ interface ITransactionStorage {
     fun saveTags(tags: List<TransactionTag>)
     fun getDistinctTokenContractAddresses(): List<String>
 
-    fun getTransactionsAfterSingle(hash: ByteArray?): Single<List<Transaction>>
+    suspend fun getTransactionsAfter(hash: ByteArray?): List<Transaction>
 }
 
 interface IEip20Storage {
@@ -110,7 +109,7 @@ interface IEip20Storage {
 }
 
 interface ITransactionSyncer {
-    fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>>
+    suspend fun getTransactions(): Pair<List<Transaction>, Boolean>
 }
 
 interface IMethodDecorator {
@@ -138,14 +137,14 @@ interface ITransactionDecorator {
 }
 
 interface ITransactionProvider {
-    fun getTransactions(startBlock: Long): Single<List<ProviderTransaction>>
-    fun getInternalTransactions(startBlock: Long): Single<List<ProviderInternalTransaction>>
-    fun getInternalTransactionsAsync(hash: ByteArray): Single<List<ProviderInternalTransaction>>
-    fun getTokenTransactions(startBlock: Long): Single<List<ProviderTokenTransaction>>
-    fun getEip721Transactions(startBlock: Long): Single<List<ProviderEip721Transaction>>
-    fun getEip1155Transactions(startBlock: Long): Single<List<ProviderEip1155Transaction>>
+    suspend fun getTransactions(startBlock: Long): List<ProviderTransaction>
+    suspend fun getInternalTransactions(startBlock: Long): List<ProviderInternalTransaction>
+    suspend fun getInternalTransactionsAsync(hash: ByteArray): List<ProviderInternalTransaction>
+    suspend fun getTokenTransactions(startBlock: Long): List<ProviderTokenTransaction>
+    suspend fun getEip721Transactions(startBlock: Long): List<ProviderEip721Transaction>
+    suspend fun getEip1155Transactions(startBlock: Long): List<ProviderEip1155Transaction>
 }
 
 interface INonceProvider {
-    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long>
+    suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long
 }

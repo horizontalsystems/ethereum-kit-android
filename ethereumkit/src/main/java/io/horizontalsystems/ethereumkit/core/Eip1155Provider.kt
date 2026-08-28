@@ -7,7 +7,6 @@ import io.horizontalsystems.ethereumkit.models.Address
 import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.spv.core.toBigInteger
-import io.reactivex.Single
 import java.math.BigInteger
 
 class Eip1155Provider(
@@ -19,12 +18,10 @@ class Eip1155Provider(
         override fun getArguments() = listOf(owner, tokenId)
     }
 
-    fun getTokenBalance(contractAddress: Address, tokenId: BigInteger, address: Address): Single<BigInteger> {
+    suspend fun getTokenBalance(contractAddress: Address, tokenId: BigInteger, address: Address): BigInteger {
         val callRpc = RpcBlockchain.callRpc(contractAddress, BalanceOfMethod(address, tokenId).encodedABI(), DefaultBlockParameter.Latest)
 
-        return provider
-            .single(callRpc)
-            .map { it.sliceArray(IntRange(0, 31)).toBigInteger() }
+        return provider.execute(callRpc).sliceArray(IntRange(0, 31)).toBigInteger()
     }
 
     companion object {

@@ -3,7 +3,6 @@ package io.horizontalsystems.ethereumkit.api.core
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import io.reactivex.Single
 
 class RpcHandler(val onSuccess: (RpcResponse) -> Unit, val onError: (Throwable) -> Unit)
 typealias SubscriptionHandler = (RpcSubscriptionResponse) -> Unit
@@ -47,7 +46,7 @@ sealed class WebSocketState {
 interface IRpcApiProvider {
     val source: String
 
-    fun <T: Any> single(rpc: JsonRpc<T>): Single<T>
+    suspend fun <T: Any> execute(rpc: JsonRpc<T>): T
 }
 
 interface IRpcSyncer {
@@ -60,7 +59,7 @@ interface IRpcSyncer {
     fun stop()
     fun pause()
     fun resume()
-    fun <T: Any> single(rpc: JsonRpc<T>): Single<T>
+    suspend fun <T: Any> execute(rpc: JsonRpc<T>): T
 }
 
 interface IRpcSyncerListener {

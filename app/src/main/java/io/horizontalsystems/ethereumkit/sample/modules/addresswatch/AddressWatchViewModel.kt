@@ -2,6 +2,7 @@ package io.horizontalsystems.ethereumkit.sample.modules.addresswatch
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.horizontalsystems.erc20kit.core.Erc20Kit
 import io.horizontalsystems.ethereumkit.core.EthereumKit
 import io.horizontalsystems.ethereumkit.models.Chain
@@ -14,14 +15,12 @@ import io.horizontalsystems.ethereumkit.sample.core.Erc20BaseAdapter
 import io.horizontalsystems.ethereumkit.sample.core.EthereumBaseAdapter
 import io.horizontalsystems.ethereumkit.sample.core.TransactionRecord
 import io.horizontalsystems.ethereumkit.sample.modules.main.ShowTxType
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.net.URI
 
 class AddressWatchViewModel : ViewModel() {
-
-    private val disposables = CompositeDisposable()
 
     private var showTxType = ShowTxType.Eth
     private var ethTxs = listOf<TransactionRecord>()
@@ -58,38 +57,28 @@ class AddressWatchViewModel : ViewModel() {
         Erc20Kit.addTransactionSyncer(evmKit)
         Erc20Kit.addDecorators(evmKit)
 
-        evmAdapter.lastBlockHeightFlowable.subscribe {
+        evmAdapter.lastBlockHeightFlow.onEach {
             lastBlockHeight.postValue(evmKit.lastBlockHeight)
             updateEthTransactions(evmAdapter)
-        }.let {
-            disposables.add(it)
-        }
+        }.launchIn(viewModelScope)
 
-        evmAdapter.transactionsFlowable.subscribe {
+        evmAdapter.transactionsFlow.onEach {
             updateEthTransactions(evmAdapter)
-        }.let {
-            disposables.add(it)
-        }
+        }.launchIn(viewModelScope)
 
-        erc20Adapter.transactionsFlowable.subscribe {
+        erc20Adapter.transactionsFlow.onEach {
             updateErc20Transactions(erc20Adapter)
-        }.let {
-            disposables.add(it)
-        }
+        }.launchIn(viewModelScope)
 
-        evmAdapter.transactionsSyncStateFlowable.subscribe {
+        evmAdapter.transactionsSyncStateFlow.onEach {
             ethTxSyncState = evmAdapter.transactionsSyncState
             updateTransactionsSyncState()
-        }.let {
-            disposables.add(it)
-        }
+        }.launchIn(viewModelScope)
 
-        erc20Adapter.transactionsSyncStateFlowable.subscribe {
+        erc20Adapter.transactionsSyncStateFlow.onEach {
             erc20TxSyncState = erc20Adapter.transactionsSyncState
             updateTransactionsSyncState()
-        }.let {
-            disposables.add(it)
-        }
+        }.launchIn(viewModelScope)
 
         evmAdapter.start()
         erc20Adapter.start()
@@ -97,7 +86,6 @@ class AddressWatchViewModel : ViewModel() {
 
     override fun onCleared() {
         clearKits()
-        disposables.clear()
     }
 
     private fun clearKits() {
@@ -158,27 +146,25 @@ class AddressWatchViewModel : ViewModel() {
     }
 
     private fun updateEthTransactions(evmAdapter: EthereumBaseAdapter) {
-        evmAdapter.transactions()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { list: List<TransactionRecord> ->
-                ethTxs = list
+        viewModelScope.launch {
+            try {
+                ethTxs = evmAdapter.transactions()
                 updateTransactionList()
-            }.let {
-                disposables.add(it)
+            } catch (error: Throwable) {
+                // ignored, same as the previous RxJava subscription without an error handler
             }
+        }
     }
 
     private fun updateErc20Transactions(erc20Adapter: Erc20BaseAdapter) {
-        erc20Adapter.transactions()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { list: List<TransactionRecord> ->
-                erc20Txs = list
+        viewModelScope.launch {
+            try {
+                erc20Txs = erc20Adapter.transactions()
                 updateTransactionList()
-            }.let {
-                disposables.add(it)
+            } catch (error: Throwable) {
+                // ignored, same as the previous RxJava subscription without an error handler
             }
+        }
     }
 
     private fun updateTransactionList() {

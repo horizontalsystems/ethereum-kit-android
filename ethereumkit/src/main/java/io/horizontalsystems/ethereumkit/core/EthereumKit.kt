@@ -50,12 +50,13 @@ import io.horizontalsystems.ethereumkit.transactionsyncers.EthereumTransactionSy
 import io.horizontalsystems.ethereumkit.transactionsyncers.InternalTransactionSyncer
 import io.horizontalsystems.ethereumkit.transactionsyncers.TransactionSyncManager
 import io.horizontalsystems.hdwalletkit.Mnemonic
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
-import io.reactivex.Single
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.withContext
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.math.BigInteger
 import java.security.Security
@@ -79,11 +80,11 @@ class EthereumKit(
 ) : IBlockchainListener {
 
     private val logger = Logger.getLogger("EthereumKit")
-    private val disposables = CompositeDisposable()
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val lastBlockHeightSubject = PublishSubject.create<Long>()
-    private val syncStateSubject = PublishSubject.create<SyncState>()
-    private val accountStateSubject = PublishSubject.create<AccountState>()
+    private val lastBlockHeightSubject = bufferedSharedFlow<Long>()
+    private val syncStateSubject = bufferedSharedFlow<SyncState>()
+    private val accountStateSubject = bufferedSharedFlow<AccountState>()
 
     val defaultGasLimit: Long = 21_000
     private val defaultMinAmount: BigInteger = BigInteger.ONE
@@ -94,13 +95,11 @@ class EthereumKit(
         state.lastBlockHeight = blockchain.lastBlockHeight
         state.accountState = blockchain.accountState
 
-        transactionManager.fullTransactionsAsync
-            .subscribeOn(Schedulers.io())
-            .subscribe {
+        transactionManager.fullTransactionsFlow
+            .onEach {
                 blockchain.syncAccountState()
-            }.let {
-                disposables.add(it)
             }
+            .launchIn(scope)
     }
 
     val lastBlockHeight: Long?
@@ -118,20 +117,20 @@ class EthereumKit(
     val receiveAddress: Address
         get() = address
 
-    val lastBlockHeightFlowable: Flowable<Long>
-        get() = lastBlockHeightSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val lastBlockHeightFlow: Flow<Long>
+        get() = lastBlockHeightSubject
 
-    val syncStateFlowable: Flowable<SyncState>
-        get() = syncStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val syncStateFlow: Flow<SyncState>
+        get() = syncStateSubject
 
-    val transactionsSyncStateFlowable: Flowable<SyncState>
-        get() = transactionSyncManager.syncStateAsync
+    val transactionsSyncStateFlow: Flow<SyncState>
+        get() = transactionSyncManager.syncStateFlow
 
-    val accountStateFlowable: Flowable<AccountState>
-        get() = accountStateSubject.toFlowable(BackpressureStrategy.BUFFER)
+    val accountStateFlow: Flow<AccountState>
+        get() = accountStateSubject
 
-    val allTransactionsFlowable: Flowable<Pair<List<FullTransaction>, Boolean>>
-        get() = transactionManager.fullTransactionsAsync
+    val allTransactionsFlow: Flow<Pair<List<FullTransaction>, Boolean>>
+        get() = transactionManager.fullTransactionsFlow
 
     fun start() {
         if (started)
@@ -162,15 +161,15 @@ class EthereumKit(
         transactionSyncManager.sync()
     }
 
-    fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
+    suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long {
         return nonceProvider.getNonce(defaultBlockParameter)
     }
 
-    fun getFullTransactionsFlowable(tags: List<List<String>>): Flowable<List<FullTransaction>> {
-        return transactionManager.getFullTransactionsFlowable(tags)
+    fun getFullTransactionsFlow(tags: List<List<String>>): Flow<List<FullTransaction>> {
+        return transactionManager.getFullTransactionsFlow(tags)
     }
 
-    fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): Single<List<FullTransaction>> {
+    suspend fun getFullTransactionsAsync(tags: List<List<String>>, fromHash: ByteArray? = null, limit: Int? = null): List<FullTransaction> {
         return transactionManager.getFullTransactionsAsync(tags, fromHash, limit)
     }
 
@@ -182,18 +181,18 @@ class EthereumKit(
         return transactionManager.getFullTransactions(hashes)
     }
 
-    fun getFullTransactionSingle(hash: ByteArray): Single<FullTransaction> {
-        return transactionManager.getFullTransactionSingle(hash)
+    suspend fun getFullTransaction(hash: ByteArray): FullTransaction {
+        return transactionManager.getFullTransaction(hash)
     }
 
-    fun getFullTransactionsAfterSingle(hash: ByteArray?): Single<List<FullTransaction>> {
-        return transactionManager.getFullTransactionsAfterSingle(hash)
+    suspend fun getFullTransactionsAfter(hash: ByteArray?): List<FullTransaction> {
+        return transactionManager.getFullTransactionsAfter(hash)
     }
 
-    fun estimateGas(to: Address?, value: BigInteger, gasPrice: GasPrice): Single<Long> {
+    suspend fun estimateGas(to: Address?, value: BigInteger, gasPrice: GasPrice): Long {
         // without address - provide default gas limit
         if (to == null) {
-            return Single.just(defaultGasLimit)
+            return defaultGasLimit
         }
 
         // if amount is 0 - set default minimum amount
@@ -202,20 +201,20 @@ class EthereumKit(
         return blockchain.estimateGas(to, resolvedAmount, chain.gasLimit, gasPrice, null)
     }
 
-    fun estimateGas(to: Address?, value: BigInteger?, gasPrice: GasPrice?, data: ByteArray?): Single<Long> {
+    suspend fun estimateGas(to: Address?, value: BigInteger?, gasPrice: GasPrice?, data: ByteArray?): Long {
         return blockchain.estimateGas(to, value, chain.gasLimit, gasPrice, data)
     }
 
-    fun estimateGas(transactionData: TransactionData, gasPrice: GasPrice? = null): Single<Long> {
+    suspend fun estimateGas(transactionData: TransactionData, gasPrice: GasPrice? = null): Long {
         return estimateGas(transactionData.to, transactionData.value, gasPrice, transactionData.input)
     }
 
-    fun rawTransaction(
+    suspend fun rawTransaction(
         transactionData: TransactionData,
         gasPrice: GasPrice,
         gasLimit: Long,
         nonce: Long? = null
-    ): Single<RawTransaction> {
+    ): RawTransaction {
         return rawTransaction(
             address = transactionData.to,
             value = transactionData.value,
@@ -226,26 +225,26 @@ class EthereumKit(
         )
     }
 
-    fun rawTransaction(
+    suspend fun rawTransaction(
         address: Address,
         value: BigInteger,
         transactionInput: ByteArray = byteArrayOf(),
         gasPrice: GasPrice,
         gasLimit: Long,
         nonce: Long? = null
-    ): Single<RawTransaction> {
-        val nonceSingle = nonce?.let { Single.just(it) } ?: nonceProvider.getNonce(DefaultBlockParameter.Pending)
+    ): RawTransaction {
+        val resolvedNonce = nonce ?: nonceProvider.getNonce(DefaultBlockParameter.Pending)
 
-        return nonceSingle.flatMap { nonce ->
-            Single.just(RawTransaction(gasPrice, gasLimit, address, value, nonce, transactionInput))
-        }
+        return RawTransaction(gasPrice, gasLimit, address, value, resolvedNonce, transactionInput)
     }
 
-    fun send(rawTransaction: RawTransaction, signature: Signature): Single<FullTransaction> {
+    suspend fun send(rawTransaction: RawTransaction, signature: Signature): FullTransaction {
         logger.info("send rawTransaction: $rawTransaction")
 
-        return blockchain.send(rawTransaction, signature)
-            .map { transactionManager.handle(listOf(it)).first() }
+        val transaction = blockchain.send(rawTransaction, signature)
+        return withContext(Dispatchers.IO) {
+            transactionManager.handle(listOf(transaction)).first()
+        }
     }
 
     fun decorate(transactionData: TransactionData): TransactionDecoration? {
@@ -256,19 +255,19 @@ class EthereumKit(
         return transactionManager.etherTransferTransactionData(address = address, value = value)
     }
 
-    fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): Single<List<TransactionLog>> {
+    suspend fun getLogs(address: Address?, topics: List<ByteArray?>, fromBlock: Long, toBlock: Long, pullTimestamps: Boolean): List<TransactionLog> {
         return blockchain.getLogs(address, topics, fromBlock, toBlock, pullTimestamps)
     }
 
-    fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): Single<ByteArray> {
+    suspend fun getStorageAt(contractAddress: Address, position: ByteArray, defaultBlockParameter: DefaultBlockParameter): ByteArray {
         return blockchain.getStorageAt(contractAddress, position, defaultBlockParameter)
     }
 
-    fun call(
+    suspend fun call(
         contractAddress: Address,
         data: ByteArray,
         defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest
-    ): Single<ByteArray> {
+    ): ByteArray {
         return blockchain.call(contractAddress, data, defaultBlockParameter)
     }
 
@@ -302,19 +301,19 @@ class EthereumKit(
             return
 
         state.lastBlockHeight = lastBlockHeight
-        lastBlockHeightSubject.onNext(lastBlockHeight)
+        lastBlockHeightSubject.tryEmit(lastBlockHeight)
         transactionSyncManager.sync()
     }
 
     override fun onUpdateSyncState(syncState: SyncState) {
-        syncStateSubject.onNext(syncState)
+        syncStateSubject.tryEmit(syncState)
     }
 
     override fun onUpdateAccountState(accountState: AccountState) {
         if (state.accountState == accountState) return
 
         state.accountState = accountState
-        accountStateSubject.onNext(accountState)
+        accountStateSubject.tryEmit(accountState)
     }
 
     fun addTransactionSyncer(transactionSyncer: ITransactionSyncer) {
@@ -341,8 +340,8 @@ class EthereumKit(
         decorationManager.addTransactionDecorator(decorator)
     }
 
-    internal fun <T: Any> rpcSingle(rpc: JsonRpc<T>): Single<T> {
-        return blockchain.rpcSingle(rpc)
+    internal suspend fun <T: Any> rpc(rpc: JsonRpc<T>): T {
+        return blockchain.rpc(rpc)
     }
 
     sealed class SyncState {
@@ -405,18 +404,18 @@ class EthereumKit(
             .registerTypeAdapter(object : TypeToken<Optional<RpcBlock>>() {}.type, OptionalTypeAdapter<RpcBlock>(RpcBlock::class.java))
             .create()
 
-        fun call(
+        suspend fun call(
             rpcSource: RpcSource,
             contractAddress: Address,
             data: ByteArray,
             defaultBlockParameter: DefaultBlockParameter = DefaultBlockParameter.Latest
-        ): Single<ByteArray> {
+        ): ByteArray {
             val rpcApiProvider = RpcApiProviderFactory.nodeApiProvider(rpcSource)
             val rpc = RpcBlockchain.callRpc(contractAddress, data, defaultBlockParameter)
-            return rpcApiProvider.single(rpc)
+            return rpcApiProvider.execute(rpc)
         }
 
-        fun estimateGas(
+        suspend fun estimateGas(
             rpcSource: RpcSource,
             chain: Chain,
             from: Address,
@@ -424,17 +423,17 @@ class EthereumKit(
             value: BigInteger?,
             gasPrice: GasPrice,
             data: ByteArray?
-        ): Single<Long> {
+        ): Long {
             return RpcBlockchain.estimateGas(rpcSource, from, to, value, chain.gasLimit, gasPrice, data)
         }
 
-        fun estimateGas(
+        suspend fun estimateGas(
             rpcSource: RpcSource,
             chain: Chain,
             from: Address,
             transactionData: TransactionData,
             gasPrice: GasPrice
-        ): Single<Long> {
+        ): Long {
             return estimateGas(rpcSource, chain, from, transactionData.to, transactionData.value, gasPrice, transactionData.input)
         }
 

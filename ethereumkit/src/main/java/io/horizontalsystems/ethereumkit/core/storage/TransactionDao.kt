@@ -4,7 +4,6 @@ import androidx.room.*
 import androidx.sqlite.db.SupportSQLiteQuery
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.reactivex.Single
 
 @Dao
 interface TransactionDao {
@@ -19,7 +18,7 @@ interface TransactionDao {
     fun getTransactions(hashes: List<ByteArray>): List<Transaction>
 
     @RawQuery
-    fun getTransactionsByRawQuery(query: SupportSQLiteQuery): Single<List<Transaction>>
+    fun getTransactionsByRawQuery(query: SupportSQLiteQuery): List<Transaction>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(transactions: List<Transaction>)

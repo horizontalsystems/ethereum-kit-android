@@ -23,8 +23,6 @@ import io.horizontalsystems.uniswapkit.v3.TradeDataV3
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.reactive.collect
-import kotlinx.coroutines.rx2.await
 import java.math.BigDecimal
 
 class UniswapV3ViewModel(
@@ -70,7 +68,7 @@ class UniswapV3ViewModel(
 
     init {
         viewModelScope.launch {
-            gasPriceHelper.gasPriceFlowable().collect {
+            gasPriceHelper.gasPriceFlow().collect {
                 gasPrice = it
             }
         }
@@ -86,7 +84,7 @@ class UniswapV3ViewModel(
             allowance = BigDecimal(Int.MAX_VALUE)
         } else {
             allowance = try {
-                erc20Adapter.allowance(uniswapV3Kit.routerAddress(chain)).await().stripTrailingZeros()
+                erc20Adapter.allowance(uniswapV3Kit.routerAddress(chain)).stripTrailingZeros()
             } catch (it: Throwable) {
                 Log.e("AAA", "allowance error", it)
                 BigDecimal.ZERO
@@ -108,11 +106,11 @@ class UniswapV3ViewModel(
             emitState()
 
             try {
-                val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice).await()
+                val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice)
                 Log.e("AAA", "gas limit: $gasLimit")
-                val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit).await()
+                val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
                 val signature = signer.signature(rawTransaction)
-                val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
+                val fullTransaction = ethereumKit.send(rawTransaction, signature)
                 Log.e("AAA", "approve: ${fullTransaction.transaction.hash}")
             } catch (it: Throwable) {
                 Log.e("AAA", "approve ERROR = ${it.message}")
@@ -235,11 +233,11 @@ class UniswapV3ViewModel(
             emitState()
 
             try {
-                val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice).await()
+                val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice)
                 Log.e("AAA", "gas limit: $gasLimit")
-                val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit).await()
+                val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
                 val signature = signer.signature(rawTransaction)
-//                val fullTransaction = ethereumKit.send(rawTransaction, signature).await()
+//                val fullTransaction = ethereumKit.send(rawTransaction, signature)
 //                error = null
 //                Log.e("AAA", "swap SUCCESS, txHash=${fullTransaction.transaction.hash.toHexString()}")
             } catch (it: Throwable) {

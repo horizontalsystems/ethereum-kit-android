@@ -5,11 +5,9 @@ import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.network.EtherscanService.RequestError
-import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -54,11 +52,6 @@ class BlockscoutService(
 
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
-            // Async adapter (enqueue, not execute): TransactionSyncManager zips the per-address
-            // syncers, and a synchronous adapter would block the single subscribe thread, running
-            // the (slow) Blockscout requests one-after-another. Async lets them run concurrently,
-            // so the first-sync wait is the slowest request, not the sum of all of them.
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.createAsync())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(httpClient.build())
             .build()
@@ -66,55 +59,63 @@ class BlockscoutService(
         service = retrofit.create(BlockscoutServiceAPI::class.java)
     }
 
-    fun getTransactions(address: String, startBlock: Long): Single<List<BlockscoutTransaction>> =
+    suspend fun getTransactions(address: String, startBlock: Long): List<BlockscoutTransaction> =
         fetchPages(startBlock, { it.blockNumber }) { params ->
             service.transactions(address, apiKey, params)
         }
 
-    fun getInternalTransactions(address: String, startBlock: Long): Single<List<BlockscoutInternalTransaction>> =
+    suspend fun getInternalTransactions(address: String, startBlock: Long): List<BlockscoutInternalTransaction> =
         fetchPages(startBlock, { it.blockNumber }) { params ->
             service.internalTransactions(address, apiKey, params)
         }
 
-    fun getInternalTransactions(txHash: String): Single<List<BlockscoutInternalTransaction>> =
+    suspend fun getInternalTransactions(txHash: String): List<BlockscoutInternalTransaction> =
         fetchPages(0, { it.blockNumber }) { params ->
             service.transactionInternalTransactions(txHash, apiKey, params)
         }
 
-    fun getTokenTransfers(address: String, type: String, startBlock: Long): Single<List<BlockscoutTokenTransfer>> =
+    suspend fun getTokenTransfers(address: String, type: String, startBlock: Long): List<BlockscoutTokenTransfer> =
         fetchPages(startBlock, { it.blockNumber }) { params ->
             service.tokenTransfers(address, type, apiKey, params)
         }
 
-    private fun <T> fetchPages(
+    private suspend fun <T> fetchPages(
         startBlock: Long,
         blockNumberOf: (T) -> Long?,
-        call: (Map<String, String>) -> Single<Page<T>>,
-    ): Single<List<T>> {
+        call: suspend (Map<String, String>) -> Page<T>,
+    ): List<T> = retryWhenError(RequestError.RateLimitExceed::class) {
+        fetchAllPages(startBlock, blockNumberOf, call)
+    }
+
+    private suspend fun <T> fetchAllPages(
+        startBlock: Long,
+        blockNumberOf: (T) -> Long?,
+        call: suspend (Map<String, String>) -> Page<T>,
+    ): List<T> {
         val accumulated = mutableListOf<T>()
+        var params: Map<String, String> = emptyMap()
+        var page = 0
 
-        fun nextPage(params: Map<String, String>, page: Int): Single<List<T>> =
-            call(params).flatMap { response ->
-                val items = response.items.orEmpty()
-                var reachedOlder = false
-                for (item in items) {
-                    val blockNumber = blockNumberOf(item) ?: 0
-                    if (blockNumber < startBlock) {
-                        reachedOlder = true
-                    } else {
-                        accumulated.add(item)
-                    }
-                }
-
-                val nextParams = response.nextPageParams?.toStringMap()
-                if (reachedOlder || nextParams.isNullOrEmpty() || page + 1 >= MAX_PAGES) {
-                    Single.just(accumulated.toList())
+        while (true) {
+            val response = call(params)
+            val items = response.items.orEmpty()
+            var reachedOlder = false
+            for (item in items) {
+                val blockNumber = blockNumberOf(item) ?: 0
+                if (blockNumber < startBlock) {
+                    reachedOlder = true
                 } else {
-                    nextPage(nextParams, page + 1)
+                    accumulated.add(item)
                 }
             }
 
-        return nextPage(emptyMap(), 0).retryWhenError(RequestError.RateLimitExceed::class)
+            val nextParams = response.nextPageParams?.toStringMap()
+            if (reachedOlder || nextParams.isNullOrEmpty() || page + 1 >= MAX_PAGES) {
+                return accumulated.toList()
+            }
+            params = nextParams
+            page += 1
+        }
     }
 
     // next_page_params is a JSON object on non-final pages and JSON null on the last page. It must
@@ -137,33 +138,33 @@ class BlockscoutService(
 
     private interface BlockscoutServiceAPI {
         @GET("api/v2/addresses/{address}/transactions")
-        fun transactions(
+        suspend fun transactions(
             @Path("address") address: String,
             @Query("apikey") apiKey: String?,
             @QueryMap params: Map<String, String>,
-        ): Single<Page<BlockscoutTransaction>>
+        ): Page<BlockscoutTransaction>
 
         @GET("api/v2/addresses/{address}/internal-transactions")
-        fun internalTransactions(
+        suspend fun internalTransactions(
             @Path("address") address: String,
             @Query("apikey") apiKey: String?,
             @QueryMap params: Map<String, String>,
-        ): Single<Page<BlockscoutInternalTransaction>>
+        ): Page<BlockscoutInternalTransaction>
 
         @GET("api/v2/transactions/{txHash}/internal-transactions")
-        fun transactionInternalTransactions(
+        suspend fun transactionInternalTransactions(
             @Path("txHash") txHash: String,
             @Query("apikey") apiKey: String?,
             @QueryMap params: Map<String, String>,
-        ): Single<Page<BlockscoutInternalTransaction>>
+        ): Page<BlockscoutInternalTransaction>
 
         @GET("api/v2/addresses/{address}/token-transfers")
-        fun tokenTransfers(
+        suspend fun tokenTransfers(
             @Path("address") address: String,
             @Query("type") type: String,
             @Query("apikey") apiKey: String?,
             @QueryMap params: Map<String, String>,
-        ): Single<Page<BlockscoutTokenTransfer>>
+        ): Page<BlockscoutTokenTransfer>
     }
 }
 

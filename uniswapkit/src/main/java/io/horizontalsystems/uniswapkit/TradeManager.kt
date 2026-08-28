@@ -17,7 +17,6 @@ import io.horizontalsystems.uniswapkit.contract.SwapTokensForExactTokensMethod
 import io.horizontalsystems.uniswapkit.models.*
 import io.horizontalsystems.uniswapkit.models.Token.Erc20
 import io.horizontalsystems.uniswapkit.models.Token.Ether
-import io.reactivex.Single
 import java.math.BigInteger
 import java.util.Date
 import java.util.logging.Logger
@@ -31,7 +30,7 @@ class TradeManager {
         object NoInitCodeHash : UnsupportedChainError()
     }
 
-    fun pair(rpcSource: RpcSource, chain: Chain, tokenA: Token, tokenB: Token): Single<Pair> {
+    suspend fun pair(rpcSource: RpcSource, chain: Chain, tokenA: Token, tokenB: Token): Pair {
         val (token0, token1) = if (tokenA.sortsBefore(tokenB)) Pair(tokenA, tokenB) else Pair(tokenB, tokenA)
         val factoryAddressString = getFactoryAddressString(chain)
         val initCodeHashString = getInitCodeHashString(chain)
@@ -40,25 +39,23 @@ class TradeManager {
 
         logger.info("pairAddress: ${pairAddress.hex}")
 
-        return EthereumKit.call(rpcSource, pairAddress, GetReservesMethod().encodedABI())
-                .map { data ->
-                    logger.info("getReserves data: ${data.toHexString()}")
+        val data = EthereumKit.call(rpcSource, pairAddress, GetReservesMethod().encodedABI())
+        logger.info("getReserves data: ${data.toHexString()}")
 
-                    var rawReserve0: BigInteger = BigInteger.ZERO
-                    var rawReserve1: BigInteger = BigInteger.ZERO
+        var rawReserve0: BigInteger = BigInteger.ZERO
+        var rawReserve1: BigInteger = BigInteger.ZERO
 
-                    if (data.size == 3 * 32) {
-                        rawReserve0 = BigInteger(data.copyOfRange(0, 32))
-                        rawReserve1 = BigInteger(data.copyOfRange(32, 64))
-                    }
+        if (data.size == 3 * 32) {
+            rawReserve0 = BigInteger(data.copyOfRange(0, 32))
+            rawReserve1 = BigInteger(data.copyOfRange(32, 64))
+        }
 
-                    val reserve0 = TokenAmount(token0, rawReserve0)
-                    val reserve1 = TokenAmount(token1, rawReserve1)
+        val reserve0 = TokenAmount(token0, rawReserve0)
+        val reserve1 = TokenAmount(token1, rawReserve1)
 
-                    logger.info("getReserves reserve0: $reserve0, reserve1: $reserve1")
+        logger.info("getReserves reserve0: $reserve0, reserve1: $reserve1")
 
-                    Pair(reserve0, reserve1)
-                }
+        return Pair(reserve0, reserve1)
     }
 
     fun transactionData(receiveAddress: Address, chain: Chain, tradeData: TradeData): TransactionData {

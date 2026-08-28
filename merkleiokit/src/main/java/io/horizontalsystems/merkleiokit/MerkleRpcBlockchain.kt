@@ -12,7 +12,6 @@ import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.RawTransaction
 import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.reactivex.Single
 import java.util.Optional
 
 class MerkleRpcBlockchain(
@@ -22,35 +21,30 @@ class MerkleRpcBlockchain(
     private val transactionBuilder: TransactionBuilder
 ) : INonceProvider {
 
-    override fun getNonce(defaultBlockParameter: DefaultBlockParameter): Single<Long> {
+    override suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long {
         // sync only if needed pending/ because others will be same with main blockchain
         if (defaultBlockParameter != DefaultBlockParameter.Pending) {
-            return Single.just(0)
+            return 0
         }
 
-        return syncer.single(GetTransactionCountJsonRpc(address, defaultBlockParameter))
+        return syncer.execute(GetTransactionCountJsonRpc(address, defaultBlockParameter))
     }
 
-    fun send(rawTransaction: RawTransaction, signature: Signature, sourceTag: String): Single<Transaction> {
+    suspend fun send(rawTransaction: RawTransaction, signature: Signature, sourceTag: String): Transaction {
         val tx = transactionBuilder.transaction(rawTransaction, signature)
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
-        return syncer.single(MerkleSendRawTransactionJsonRpc(encoded, sourceTag))
-            .doOnSuccess { txHash ->
-                manager.save(MerkleTransactionHash(txHash))
-            }
-            .map { tx }
+        val txHash = syncer.execute(MerkleSendRawTransactionJsonRpc(encoded, sourceTag))
+        manager.save(MerkleTransactionHash(txHash))
+
+        return tx
     }
 
-    fun transaction(transactionHash: ByteArray): Single<Optional<RpcTransaction>> {
-        return syncer.single(GetTransactionByHashJsonRpc(transactionHash))
-            .map { Optional.of(it) }
-            .onErrorResumeNext { throwable ->
-                if (throwable is JsonRpc.ResponseError.InvalidResult) {
-                    Single.just(Optional.empty())
-                } else {
-                    Single.error(throwable)
-                }
-            }
+    suspend fun transaction(transactionHash: ByteArray): Optional<RpcTransaction> {
+        return try {
+            Optional.of(syncer.execute(GetTransactionByHashJsonRpc(transactionHash)))
+        } catch (throwable: JsonRpc.ResponseError.InvalidResult) {
+            Optional.empty()
+        }
     }
 }

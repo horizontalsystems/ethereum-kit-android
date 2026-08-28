@@ -14,7 +14,6 @@ import io.horizontalsystems.uniswapkit.v3.FeeAmount
 import io.horizontalsystems.uniswapkit.v3.SwapPath
 import io.horizontalsystems.uniswapkit.v3.SwapPathItem
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.rx2.await
 import java.math.BigInteger
 import kotlin.coroutines.coroutineContext
 
@@ -273,6 +272,6 @@ class QuoterV2(
 
     private suspend fun ethCall(rpcSource: RpcSource, chain: Chain, data: ByteArray): ByteArray {
         val quoterAddress = Address(quoterAddress(chain))
-        return EthereumKit.call(rpcSource, quoterAddress, data).await()
+        return EthereumKit.call(rpcSource, quoterAddress, data)
     }
 }

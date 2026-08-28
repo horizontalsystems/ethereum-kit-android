@@ -10,8 +10,8 @@ import io.horizontalsystems.ethereumkit.models.FullTransaction
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.TransactionData
 import io.horizontalsystems.ethereumkit.sample.modules.main.Erc20Token
-import io.reactivex.Flowable
-import io.reactivex.Single
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -43,20 +43,20 @@ open class Erc20BaseAdapter(
     override val receiveAddress: Address
         get() = ethereumKit.receiveAddress
 
-    override val lastBlockHeightFlowable: Flowable<Unit>
-        get() = ethereumKit.lastBlockHeightFlowable.map { }
+    override val lastBlockHeightFlow: Flow<Unit>
+        get() = ethereumKit.lastBlockHeightFlow.map { }
 
-    override val syncStateFlowable: Flowable<Unit>
-        get() = erc20Kit.syncStateFlowable.map { }
+    override val syncStateFlow: Flow<Unit>
+        get() = erc20Kit.syncStateFlow.map { }
 
-    override val transactionsSyncStateFlowable: Flowable<Unit>
-        get() = erc20Kit.transactionsSyncStateFlowable.map { }
+    override val transactionsSyncStateFlow: Flow<Unit>
+        get() = erc20Kit.transactionsSyncStateFlow.map { }
 
-    override val balanceFlowable: Flowable<Unit>
-        get() = erc20Kit.balanceFlowable.map { }
+    override val balanceFlow: Flow<Unit>
+        get() = erc20Kit.balanceFlow.map { }
 
-    override val transactionsFlowable: Flowable<Unit>
-        get() = erc20Kit.transactionsFlowable.map { }
+    override val transactionsFlow: Flow<Unit>
+        get() = erc20Kit.transactionsFlow.map { }
 
     override fun start() {
         erc20Kit.start()
@@ -70,30 +70,28 @@ open class Erc20BaseAdapter(
         erc20Kit.refresh()
     }
 
-    override fun estimatedGasLimit(
+    override suspend fun estimatedGasLimit(
         toAddress: Address,
         value: BigDecimal,
         gasPrice: GasPrice
-    ): Single<Long> {
+    ): Long {
         val valueBigInteger = value.movePointRight(decimals).toBigInteger()
         val transactionData = erc20Kit.buildTransferTransactionData(toAddress, valueBigInteger)
         return ethereumKit.estimateGas(transactionData, gasPrice)
     }
 
-    override fun send(
+    override suspend fun send(
         address: Address,
         amount: BigDecimal,
         gasPrice: GasPrice,
         gasLimit: Long
-    ): Single<FullTransaction> {
+    ): FullTransaction {
         throw Exception("Subclass must override")
     }
 
-    override fun transactions(fromHash: ByteArray?, limit: Int?): Single<List<TransactionRecord>> {
+    override suspend fun transactions(fromHash: ByteArray?, limit: Int?): List<TransactionRecord> {
         return erc20Kit.getTransactionsAsync(fromHash, limit)
-            .map { transactions ->
-                transactions.map { transactionRecord(it) }
-            }
+            .map { transactionRecord(it) }
     }
 
     fun approveTransactionData(spenderAddress: Address, amount: BigInteger): TransactionData {

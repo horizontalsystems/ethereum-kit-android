@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.reactive.asFlow
 import java.math.BigInteger
 
 class NftKit(
@@ -35,7 +34,7 @@ class NftKit(
 
     init {
         coroutineScope.launch {
-            evmKit.syncStateFlowable.asFlow()
+            evmKit.syncStateFlow
                 .collect {
                     onSyncStateUpdate(it)
                 }

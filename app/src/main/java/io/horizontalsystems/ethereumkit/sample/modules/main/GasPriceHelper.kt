@@ -3,21 +3,14 @@ package io.horizontalsystems.ethereumkit.sample.modules.main
 import io.horizontalsystems.ethereumkit.core.eip1559.Eip1559GasPriceProvider
 import io.horizontalsystems.ethereumkit.core.eip1559.FeeHistory
 import io.horizontalsystems.ethereumkit.models.GasPrice
-import io.reactivex.Flowable
-import java.util.Optional
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 
 class GasPriceHelper(private val eip1559GasPriceProvider: Eip1559GasPriceProvider) {
 
-    fun gasPriceFlowable(): Flowable<GasPrice.Eip1559> {
-        return eip1559GasPriceProvider.feeHistory(4, rewardPercentile = listOf(50))
-            .map {
-                when (val mapped = map(it)) {
-                    null -> Optional.empty()
-                    else -> Optional.of(mapped)
-                }
-            }
-            .filter { it.isPresent }
-            .map { it.get() }
+    fun gasPriceFlow(): Flow<GasPrice.Eip1559> {
+        return eip1559GasPriceProvider.feeHistoryFlow(4, rewardPercentile = listOf(50))
+            .mapNotNull { map(it) }
     }
 
     private fun map(feeHistory: FeeHistory): GasPrice.Eip1559? {

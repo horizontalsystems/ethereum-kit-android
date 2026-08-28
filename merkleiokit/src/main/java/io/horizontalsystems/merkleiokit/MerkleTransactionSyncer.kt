@@ -4,7 +4,10 @@ import io.horizontalsystems.ethereumkit.core.IExtraDecorator
 import io.horizontalsystems.ethereumkit.core.ITransactionSyncer
 import io.horizontalsystems.ethereumkit.core.TransactionManager
 import io.horizontalsystems.ethereumkit.models.Transaction
-import io.reactivex.Single
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlin.jvm.optionals.getOrNull
 
 class MerkleTransactionSyncer(
@@ -14,43 +17,44 @@ class MerkleTransactionSyncer(
 ) : ITransactionSyncer, IExtraDecorator {
 
     @OptIn(ExperimentalStdlibApi::class)
-    override fun getTransactionsSingle(): Single<Pair<List<Transaction>, Boolean>> {
+    override suspend fun getTransactions(): Pair<List<Transaction>, Boolean> {
         val hashes = manager.hashes()
-        if (hashes.isEmpty()) return Single.just(Pair(listOf(), false))
+        if (hashes.isEmpty()) return Pair(listOf(), false)
 
-        val singles = hashes.map { tx ->
-            blockchain.transaction(tx.hash)
-                .map { Pair(tx.hash, it.getOrNull()) }
-                .map { Result.success(it) }
-                .onErrorReturn { Result.failure(it) }
-        }
-
-        val transactionsSingle = Single.merge(singles)
-            .filter { it.isSuccess } // Only keep successful ones
-            .map { it.getOrThrow() } // Extract the actual value
-            .toList()
-
-        return transactionsSingle.map { rpcTransactions ->
-            val completedTxHashes = mutableListOf<ByteArray>()
-            val failedTxHashes = mutableListOf<ByteArray>()
-            val failedTxs = mutableListOf<Transaction>()
-
-            rpcTransactions.forEach { (hash, rpcTransaction) ->
-                if (rpcTransaction == null) {
-                    failedTxHashes.add(hash)
-
-                    transactionManager.getFullTransactions(listOf(hash)).firstOrNull()?.let {
-                        failedTxs.add(it.transaction.copy(isFailed = true))
+        // Fetch concurrently; drop the ones that failed, keep the successful ones
+        val rpcTransactions = coroutineScope {
+            hashes.map { tx ->
+                async {
+                    try {
+                        Pair(tx.hash, blockchain.transaction(tx.hash).getOrNull())
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        null
                     }
-                } else if (rpcTransaction.blockNumber != null) {
-                    completedTxHashes.add(hash)
                 }
-            }
-
-            manager.handle(completedTxHashes + failedTxHashes)
-
-            Pair(failedTxs, false)
+            }.awaitAll().filterNotNull()
         }
+
+        val completedTxHashes = mutableListOf<ByteArray>()
+        val failedTxHashes = mutableListOf<ByteArray>()
+        val failedTxs = mutableListOf<Transaction>()
+
+        rpcTransactions.forEach { (hash, rpcTransaction) ->
+            if (rpcTransaction == null) {
+                failedTxHashes.add(hash)
+
+                transactionManager.getFullTransactions(listOf(hash)).firstOrNull()?.let {
+                    failedTxs.add(it.transaction.copy(isFailed = true))
+                }
+            } else if (rpcTransaction.blockNumber != null) {
+                completedTxHashes.add(hash)
+            }
+        }
+
+        manager.handle(completedTxHashes + failedTxHashes)
+
+        return Pair(failedTxs, false)
     }
 
     override fun extra(hash: ByteArray): Map<String, Any> {
