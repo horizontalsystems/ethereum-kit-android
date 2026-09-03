@@ -60,7 +60,17 @@ class TransactionSource(val name: String, val type: SourceType) {
         }
 
         fun zkSync(apiKeys: List<String>): TransactionSource {
-            return etherscan("era.zksync.network", "https://era.zksync.network", apiKeys)
+            // ZkSync Era is not supported by the Etherscan V2 multichain API, and the old
+            // Etherscan-family explorer (era.zksync.network) was shut down. Blockscout hosts
+            // a public instance, so use its /api/v2 REST API like Robinhood Chain does.
+            return TransactionSource(
+                "zksync.blockscout.com",
+                SourceType.Blockscout(
+                    apiBaseUrl = "https://zksync.blockscout.com/",
+                    txBaseUrl = "https://zksync.blockscout.com",
+                    apiKeys = apiKeys
+                )
+            )
         }
 
         // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan; it exposes a
