@@ -14,6 +14,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
 
 class EtherscanService(
@@ -21,8 +22,7 @@ class EtherscanService(
     private val apiKeys: List<String>,
     private val chainId: Int,
 ) {
-    private val apiKeysSize = apiKeys.size
-    private var apiKeyIndex = 0
+    private val apiKeyIndex = AtomicInteger(0)
 
     private val logger = Logger.getLogger("EtherscanService")
 
@@ -68,9 +68,8 @@ class EtherscanService(
     }
 
     private fun getNextApiKey(): String {
-        if (apiKeyIndex >= apiKeysSize) apiKeyIndex = 0
-
-        return apiKeys[apiKeyIndex++]
+        val index = apiKeyIndex.getAndUpdate { (it + 1) % apiKeys.size }
+        return apiKeys[index]
     }
 
     suspend fun getTransactionList(address: Address, startBlock: Long): EtherscanResponse {
