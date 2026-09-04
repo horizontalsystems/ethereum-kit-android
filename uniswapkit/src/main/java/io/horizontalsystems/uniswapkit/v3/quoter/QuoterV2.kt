@@ -45,6 +45,7 @@ class QuoterV2(
 
     private fun getPancakeSwapQuoterAddress(chain: Chain) = when (chain) {
         Chain.BinanceSmartChain,
+        Chain.Base,
         Chain.Ethereum -> "0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997"
         Chain.ZkSync -> "0x3d146FcE6c1006857750cBe8aF44f76a28041CCc"
 
