@@ -2,24 +2,41 @@ package io.horizontalsystems.ethereumkit.models
 
 class TransactionSource(val name: String, val type: SourceType) {
 
-    fun transactionUrl(hash: String) =
-        when (type) {
-            is SourceType.Etherscan -> "${type.txBaseUrl}/tx/$hash"
-            is SourceType.Blockscout -> "${type.txBaseUrl}/tx/$hash"
-        }
+    fun transactionUrl(hash: String) = "${type.txBaseUrl}/tx/$hash"
 
     sealed class SourceType {
-        class Etherscan(val apiBaseUrl: String, val txBaseUrl: String, val apiKeys: List<String>) : SourceType()
+        abstract val apiBaseUrl: String
+        abstract val txBaseUrl: String
+        abstract val apiKeys: List<String>
 
-        // Blockscout's modern REST API (/api/v2). Used for chains whose Blockscout instance
-        // throttles the legacy Etherscan-compatible /api endpoint for anonymous callers.
-        class Blockscout(val apiBaseUrl: String, val txBaseUrl: String, val apiKeys: List<String>) : SourceType()
+        class Etherscan(
+            override val apiBaseUrl: String,
+            override val txBaseUrl: String,
+            override val apiKeys: List<String>,
+        ) : SourceType()
+
+        // Blockscout's modern REST API (/api/v2). Used for chains that are not indexed by
+        // Etherscan or whose Blockscout instance throttles the legacy Etherscan-compatible
+        // /api endpoint for anonymous callers.
+        class Blockscout(
+            override val apiBaseUrl: String,
+            override val txBaseUrl: String,
+            override val apiKeys: List<String>,
+        ) : SourceType()
     }
 
     companion object {
         private fun etherscan(name: String, explorerUrl: String, apiKeys: List<String>): TransactionSource {
             return TransactionSource(
                 name, SourceType.Etherscan("https://api.etherscan.io/v2/", explorerUrl, apiKeys)
+            )
+        }
+
+        // A public Blockscout instance serves both the explorer UI and the /api/v2 REST API
+        // from the same host, so a single hostname is enough to describe the source.
+        private fun blockscout(host: String, apiKeys: List<String>): TransactionSource {
+            return TransactionSource(
+                host, SourceType.Blockscout("https://$host/", "https://$host", apiKeys)
             )
         }
 
@@ -59,35 +76,18 @@ class TransactionSource(val name: String, val type: SourceType) {
             return etherscan("ftmscan.com", "https://ftmscan.com", apiKeys)
         }
 
+        // ZkSync Era is not supported by the Etherscan V2 multichain API, and the old
+        // Etherscan-family explorer (era.zksync.network) was shut down.
         fun zkSync(apiKeys: List<String>): TransactionSource {
-            // ZkSync Era is not supported by the Etherscan V2 multichain API, and the old
-            // Etherscan-family explorer (era.zksync.network) was shut down. Blockscout hosts
-            // a public instance, so use its /api/v2 REST API like Robinhood Chain does.
-            return TransactionSource(
-                "zksync.blockscout.com",
-                SourceType.Blockscout(
-                    apiBaseUrl = "https://zksync.blockscout.com/",
-                    txBaseUrl = "https://zksync.blockscout.com",
-                    apiKeys = apiKeys
-                )
-            )
+            return blockscout("zksync.blockscout.com", apiKeys)
         }
 
-        // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan; it exposes a
-        // Blockscout instance. Its legacy Etherscan-compatible /api endpoint hard-throttles
-        // anonymous callers (HTTP 429 "Too many requests"), so transaction history never loads
-        // there. The modern /api/v2 REST endpoint is not throttled, so use that instead.
+        // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan. Its Blockscout
+        // instance hard-throttles anonymous callers of the legacy /api endpoint (HTTP 429
+        // "Too many requests"), so only the /api/v2 REST endpoint is usable.
         fun robinhood(apiKeys: List<String>): TransactionSource {
-            return TransactionSource(
-                "robinhoodchain.blockscout.com",
-                SourceType.Blockscout(
-                    apiBaseUrl = "https://robinhoodchain.blockscout.com/",
-                    txBaseUrl = "https://robinhoodchain.blockscout.com",
-                    apiKeys = apiKeys
-                )
-            )
+            return blockscout("robinhoodchain.blockscout.com", apiKeys)
         }
-
     }
 
 }

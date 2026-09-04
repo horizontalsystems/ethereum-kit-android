@@ -7,6 +7,7 @@ import io.horizontalsystems.ethereumkit.core.retryWhenError
 import io.horizontalsystems.ethereumkit.network.EtherscanService.RequestError
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -27,7 +28,7 @@ import java.util.logging.Logger
  */
 class BlockscoutService(
     baseUrl: String,
-    private val apiKeys: List<String>,
+    apiKeys: List<String>,
 ) {
     private val logger = Logger.getLogger("BlockscoutService")
     private val service: BlockscoutServiceAPI
@@ -63,36 +64,32 @@ class BlockscoutService(
     }
 
     suspend fun getTransactions(address: String, startBlock: Long): List<BlockscoutTransaction> =
-        fetchPages(startBlock, { it.blockNumber }) { params ->
-            service.transactions(address, apiKey, params)
-        }
+        fetchPages(startBlock) { params -> service.transactions(address, apiKey, params) }
 
     suspend fun getInternalTransactions(address: String, startBlock: Long): List<BlockscoutInternalTransaction> =
-        fetchPages(startBlock, { it.blockNumber }) { params ->
-            service.internalTransactions(address, apiKey, params)
-        }
+        fetchPages(startBlock) { params -> service.internalTransactions(address, apiKey, params) }
 
     suspend fun getInternalTransactions(txHash: String): List<BlockscoutInternalTransaction> =
-        fetchPages(0, { it.blockNumber }) { params ->
-            service.transactionInternalTransactions(txHash, apiKey, params)
-        }
+        fetchPages(0) { params -> service.transactionInternalTransactions(txHash, apiKey, params) }
 
     suspend fun getTokenTransfers(address: String, type: String, startBlock: Long): List<BlockscoutTokenTransfer> =
-        fetchPages(startBlock, { it.blockNumber }) { params ->
-            service.tokenTransfers(address, type, apiKey, params)
-        }
+        fetchPages(startBlock) { params -> service.tokenTransfers(address, type, apiKey, params) }
 
-    private suspend fun <T> fetchPages(
+    private suspend fun <T : BlockscoutItem> fetchPages(
         startBlock: Long,
-        blockNumberOf: (T) -> Long?,
         call: suspend (Map<String, String>) -> Page<T>,
     ): List<T> = retryWhenError(RequestError.RateLimitExceed::class) {
-        fetchAllPages(startBlock, blockNumberOf, call)
+        try {
+            fetchAllPages(startBlock, call)
+        } catch (error: HttpException) {
+            // Retrofit surfaces HTTP 429 as HttpException; translate it so the backoff retry above
+            // kicks in instead of failing the whole sync.
+            if (error.code() == HTTP_TOO_MANY_REQUESTS) throw RequestError.RateLimitExceed() else throw error
+        }
     }
 
-    private suspend fun <T> fetchAllPages(
+    private suspend fun <T : BlockscoutItem> fetchAllPages(
         startBlock: Long,
-        blockNumberOf: (T) -> Long?,
         call: suspend (Map<String, String>) -> Page<T>,
     ): List<T> {
         val accumulated = mutableListOf<T>()
@@ -104,8 +101,7 @@ class BlockscoutService(
             val items = response.items.orEmpty()
             var reachedOlder = false
             for (item in items) {
-                val blockNumber = blockNumberOf(item) ?: 0
-                if (blockNumber < startBlock) {
+                if ((item.blockNumber ?: 0) < startBlock) {
                     reachedOlder = true
                 } else {
                     accumulated.add(item)
@@ -137,6 +133,7 @@ class BlockscoutService(
 
     companion object {
         private const val MAX_PAGES = 20
+        private const val HTTP_TOO_MANY_REQUESTS = 429
     }
 
     private interface BlockscoutServiceAPI {
@@ -176,6 +173,11 @@ class Page<T>(
     @SerializedName("next_page_params") val nextPageParams: JsonElement?,
 )
 
+/** Any paged v2 item that can be positioned relative to a sync start block. */
+interface BlockscoutItem {
+    val blockNumber: Long?
+}
+
 class BlockscoutAddress(
     @SerializedName("hash") val hash: String?,
 )
@@ -196,7 +198,7 @@ class BlockscoutTotal(
 
 class BlockscoutTransaction(
     @SerializedName("hash") val hash: String?,
-    @SerializedName("block_number") val blockNumber: Long?,
+    @SerializedName("block_number") override val blockNumber: Long?,
     @SerializedName("timestamp") val timestamp: String?,
     @SerializedName("nonce") val nonce: Long?,
     @SerializedName("position") val position: Int?,
@@ -208,21 +210,21 @@ class BlockscoutTransaction(
     @SerializedName("gas_used") val gasUsed: String?,
     @SerializedName("status") val status: String?,
     @SerializedName("raw_input") val rawInput: String?,
-)
+) : BlockscoutItem
 
 class BlockscoutInternalTransaction(
     @SerializedName("transaction_hash") val transactionHash: String?,
-    @SerializedName("block_number") val blockNumber: Long?,
+    @SerializedName("block_number") override val blockNumber: Long?,
     @SerializedName("timestamp") val timestamp: String?,
     @SerializedName("from") val from: BlockscoutAddress?,
     @SerializedName("to") val to: BlockscoutAddress?,
     @SerializedName("value") val value: String?,
     @SerializedName("index") val index: Int?,
-)
+) : BlockscoutItem
 
 class BlockscoutTokenTransfer(
     @SerializedName("transaction_hash") val transactionHash: String?,
-    @SerializedName("block_number") val blockNumber: Long?,
+    @SerializedName("block_number") override val blockNumber: Long?,
     @SerializedName("block_hash") val blockHash: String?,
     @SerializedName("timestamp") val timestamp: String?,
     @SerializedName("from") val from: BlockscoutAddress?,
@@ -230,4 +232,4 @@ class BlockscoutTokenTransfer(
     @SerializedName("log_index") val logIndex: Int?,
     @SerializedName("token") val token: BlockscoutToken?,
     @SerializedName("total") val total: BlockscoutTotal?,
-)
+) : BlockscoutItem
