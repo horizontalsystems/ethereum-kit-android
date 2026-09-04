@@ -63,4 +63,6 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
 
     implementation project(':ethereumkit')
+
+    testImplementation 'junit:junit:4.13.2'
 }
