@@ -14,15 +14,6 @@ class TransactionSource(val name: String, val type: SourceType) {
             override val txBaseUrl: String,
             override val apiKeys: List<String>,
         ) : SourceType()
-
-        // Blockscout's modern REST API (/api/v2). Used for chains that are not indexed by
-        // Etherscan or whose Blockscout instance throttles the legacy Etherscan-compatible
-        // /api endpoint for anonymous callers.
-        class Blockscout(
-            override val apiBaseUrl: String,
-            override val txBaseUrl: String,
-            override val apiKeys: List<String>,
-        ) : SourceType()
     }
 
     companion object {
@@ -32,11 +23,13 @@ class TransactionSource(val name: String, val type: SourceType) {
             )
         }
 
-        // A public Blockscout instance serves both the explorer UI and the /api/v2 REST API
-        // from the same host, so a single hostname is enough to describe the source.
-        private fun blockscout(host: String, apiKeys: List<String>): TransactionSource {
+        // Blockscout PRO API: an Etherscan V2-compatible multichain endpoint for chains that
+        // Etherscan does not index. It takes the same `chainid` parameter and requires a
+        // `proapi_` key. Public Blockscout instances also expose an Etherscan-like /api, but
+        // they hard-throttle it, so it is not usable for syncing.
+        private fun blockscoutPro(name: String, explorerUrl: String, apiKeys: List<String>): TransactionSource {
             return TransactionSource(
-                host, SourceType.Blockscout("https://$host/", "https://$host", apiKeys)
+                name, SourceType.Etherscan("https://api.blockscout.com/v2/", explorerUrl, apiKeys)
             )
         }
 
@@ -79,14 +72,12 @@ class TransactionSource(val name: String, val type: SourceType) {
         // ZkSync Era is not supported by the Etherscan V2 multichain API, and the old
         // Etherscan-family explorer (era.zksync.network) was shut down.
         fun zkSync(apiKeys: List<String>): TransactionSource {
-            return blockscout("zksync.blockscout.com", apiKeys)
+            return blockscoutPro("zksync.blockscout.com", "https://zksync.blockscout.com", apiKeys)
         }
 
-        // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan. Its Blockscout
-        // instance hard-throttles anonymous callers of the legacy /api endpoint (HTTP 429
-        // "Too many requests"), so only the /api/v2 REST endpoint is usable.
+        // Robinhood Chain is an Arbitrum Orbit L2 not indexed by Etherscan.
         fun robinhood(apiKeys: List<String>): TransactionSource {
-            return blockscout("robinhoodchain.blockscout.com", apiKeys)
+            return blockscoutPro("robinhoodchain.blockscout.com", "https://robinhoodchain.blockscout.com", apiKeys)
         }
     }
 

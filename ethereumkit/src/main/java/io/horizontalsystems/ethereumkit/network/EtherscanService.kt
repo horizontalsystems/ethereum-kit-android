@@ -148,8 +148,8 @@ class EtherscanService(
                 val result = if (resultElement != null && resultElement.isJsonPrimitive) resultElement.asString else null
 
                 // Etherscan signals throttling with message "NOTOK" / result "Max rate limit reached";
-                // Blockscout's legacy endpoint uses "Too many requests" with a null result. Surface both
-                // as RateLimitExceed so retryWhenError backs off instead of failing the whole sync.
+                // Blockscout uses "Too many requests" with a null result. Surface both as
+                // RateLimitExceed so retryWhenError backs off instead of failing the whole sync.
                 val rateLimited = (message == "NOTOK" && result == "Max rate limit reached") ||
                         message.contains("Too many requests", ignoreCase = true)
                 if (rateLimited) {
