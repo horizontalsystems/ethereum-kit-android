@@ -79,6 +79,10 @@ class TransactionSource(val name: String, val type: SourceType) {
         fun robinhood(apiKeys: List<String>): TransactionSource {
             return blockscoutPro("robinhoodchain.blockscout.com", "https://robinhoodchain.blockscout.com", apiKeys)
         }
+
+        fun arc(apiKeys: List<String>): TransactionSource {
+            return etherscan("arc.etherscan.io", "https://arc.etherscan.io", apiKeys)
+        }
     }
 
 }
