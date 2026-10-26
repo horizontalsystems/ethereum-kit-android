@@ -1,2 +1,4 @@
 jdk:
   - openjdk17
+install:
+  - ./gradlew clean -Pgroup=$GROUP -Pversion=$VERSION -xtest -xlint -x :app:assemble assemble publishToMavenLocal --stacktrace
