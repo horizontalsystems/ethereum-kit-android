@@ -115,28 +115,6 @@ class EtherscanService(
         }
     }
 
-    suspend fun getEip721Transactions(address: Address, startBlock: Long): EtherscanResponse {
-        return retryWhenError(RequestError.RateLimitExceed::class) {
-            val response = service.accountApi(
-                action = "tokennfttx",
-                address = address.hex,
-                startBlock = startBlock,
-            )
-            parseResponse(response)
-        }
-    }
-
-    suspend fun getEip1155Transactions(address: Address, startBlock: Long): EtherscanResponse {
-        return retryWhenError(RequestError.RateLimitExceed::class) {
-            val response = service.accountApi(
-                action = "token1155tx",
-                address = address.hex,
-                startBlock = startBlock,
-            )
-            parseResponse(response)
-        }
-    }
-
     private fun parseResponse(response: JsonElement): EtherscanResponse {
         try {
             val responseObj = response.asJsonObject

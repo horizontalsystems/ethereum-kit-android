@@ -85,6 +85,5 @@ dependencies {
     implementation project(':erc20kit')
     implementation project(':uniswapkit')
     implementation project(':oneinchkit')
-    implementation project(':nftkit')
     implementation project(':merkleiokit')
 }

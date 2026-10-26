@@ -13,8 +13,6 @@ import io.horizontalsystems.ethereumkit.models.DefaultBlockParameter
 import io.horizontalsystems.ethereumkit.models.Eip20Event
 import io.horizontalsystems.ethereumkit.models.GasPrice
 import io.horizontalsystems.ethereumkit.models.InternalTransaction
-import io.horizontalsystems.ethereumkit.models.ProviderEip1155Transaction
-import io.horizontalsystems.ethereumkit.models.ProviderEip721Transaction
 import io.horizontalsystems.ethereumkit.models.ProviderInternalTransaction
 import io.horizontalsystems.ethereumkit.models.ProviderTokenTransaction
 import io.horizontalsystems.ethereumkit.models.ProviderTransaction
@@ -141,8 +139,6 @@ interface ITransactionProvider {
     suspend fun getInternalTransactions(startBlock: Long): List<ProviderInternalTransaction>
     suspend fun getInternalTransactionsAsync(hash: ByteArray): List<ProviderInternalTransaction>
     suspend fun getTokenTransactions(startBlock: Long): List<ProviderTokenTransaction>
-    suspend fun getEip721Transactions(startBlock: Long): List<ProviderEip721Transaction>
-    suspend fun getEip1155Transactions(startBlock: Long): List<ProviderEip1155Transaction>
 }
 
 interface INonceProvider {

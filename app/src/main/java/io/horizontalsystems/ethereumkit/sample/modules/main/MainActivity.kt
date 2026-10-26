@@ -22,7 +22,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
     private val sendReceiveFragment = SendReceiveFragment()
     private val swapFragment = SwapFragment()
     private val uniswapV3Fragment = UniswapV3Fragment()
-    private val nftsFragment = NftsFragment()
     private val fm = supportFragmentManager
     private var active: Fragment = balanceFragment
 
@@ -48,13 +47,12 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
         navigation.setOnNavigationItemSelectedListener(this)
 
         fm.beginTransaction().add(R.id.fragment_container, uniswapV3Fragment, "6").hide(uniswapV3Fragment).commit()
-        fm.beginTransaction().add(R.id.fragment_container, nftsFragment, "5").hide(nftsFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, swapFragment, "4").hide(swapFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, sendReceiveFragment, "3").hide(sendReceiveFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, transactionsFragment, "2").hide(transactionsFragment).commit()
         fm.beginTransaction().add(R.id.fragment_container, balanceFragment, "1").commit()
 
-        navigation.selectedItemId = R.id.navigation_nfts
+        navigation.selectedItemId = R.id.navigation_home
 
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         viewModel.init()
@@ -67,7 +65,6 @@ class MainActivity : AppCompatActivity(), BottomNavigationView.OnNavigationItemS
             R.id.navigation_send_receive -> sendReceiveFragment
 //            R.id.navigation_swap -> swapFragment
             R.id.navigation_uniswapV3 -> uniswapV3Fragment
-            R.id.navigation_nfts -> nftsFragment
             else -> null
         }
 

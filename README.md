@@ -5,7 +5,7 @@
 ## Core Features
 
 - [x] Restore with **mnemonic phrase**, **BIP39 Seed**, **EVM private key**, or simply an **Ethereum address**
-- [x] Local storage of account data (ETH, Token/NFT balance and transactions)
+- [x] Local storage of account data (ETH, Token balance and transactions)
 - [x] Synchronization over **HTTP/WebSocket**
 - [x] **Watch accounts**. Restore with any address
 - [x] Ethereum Name Service **(ENS) support**
@@ -15,7 +15,6 @@
 - [x] Support for Infura and Etherscan
 - [x] Can be extended to natively support any smart contract
 - [x] EIP20 token standard support
-- [x] EIP721 and EIP1155 non-fungible tokens(NFT)
 - [x] Uniswap (PancakeSwap, QuickSwap, Trader Joe) support
 - [x] 1Inch support
 
@@ -330,57 +329,6 @@ scope.launch {
     println("Transaction sent: ${fullTransaction.transaction.hash.toHexString()}")
 }
 ```
-
-## NFTs
-
-NftKit support EIP721 and EIP1155
-
-### Initialization
-
-```kotlin
-val nftKit = NftKit.getInstance(App.instance, ethereumKit)
-
-nftKit.addEip721Decorators()
-nftKit.addEip1155Decorators()
-
-nftKit.addEip721TransactionSyncer()
-nftKit.addEip1155TransactionSyncer()
-```
-
-### Get NFTs owned by the user
-
-```kotlin
-val nftBalances = nftKit.nftBalances
-
-for (nftBalance in nftBalances) {
-    println("---- ${nftBalance.balance} pieces of ${nftBalance.nft.tokenName} ---")
-    println("Contract Address: ${nftBalance.nft.contractAddress.eip55}")
-    println("TokenID: ${nftBalance.nft.tokenId.toString(10)}")
-}
-```
-
-
-### Send an NFT
-
-```kotlin
-val nftContractAddress = Address("0x..contract..address")
-val tokenId = BigInteger("234123894712031638516723498")
-val to = Address("0x..recipient..address")
-val gasPrice = GasPrice.Legacy(50_000_000_000)
-
-// Construct a TransactionData
-val transactionData = nftKit.transferEip721TransactionData(nftContractAddress, to, tokenId)
-
-scope.launch {
-    val gasLimit = ethereumKit.estimateGas(transactionData, gasPrice)
-    val rawTransaction = ethereumKit.rawTransaction(transactionData, gasPrice, gasLimit)
-    val signature = signer.signature(rawTransaction)
-    val fullTransaction = ethereumKit.send(rawTransaction, signature)
-
-    println("Transaction sent: ${fullTransaction.transaction.hash.toHexString()}")
-}
-```
-
 
 ## Extending
 
