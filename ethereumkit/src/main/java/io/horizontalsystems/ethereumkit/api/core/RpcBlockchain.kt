@@ -148,7 +148,14 @@ class RpcBlockchain(
         val transaction = transactionBuilder.transaction(rawTransaction, signature)
         val encoded = transactionBuilder.encode(rawTransaction, signature)
 
-        syncer.execute(SendRawTransactionJsonRpc(encoded))
+        try {
+            syncer.execute(SendRawTransactionJsonRpc(encoded))
+        } catch (error: JsonRpc.ResponseError.RpcError) {
+            // The node already holds this exact transaction: an earlier attempt reached a node
+            // whose answer was lost, and the endpoint failover delivered it again. The hash is
+            // derived from the signed bytes, so the transaction is the one being sent.
+            if (!isAlreadyKnown(error)) throw error
+        }
         return transaction
     }
 
@@ -265,6 +272,13 @@ class RpcBlockchain(
     //endregion
 
     companion object {
+        private val alreadyKnownMessages = listOf("already known", "known transaction", "already imported", "alreadyknown")
+
+        internal fun isAlreadyKnown(error: JsonRpc.ResponseError.RpcError): Boolean {
+            val message = error.error.message.lowercase()
+            return alreadyKnownMessages.any { message.contains(it) }
+        }
+
         fun instance(
             address: Address,
             storage: IApiStorage,
@@ -295,4 +309,5 @@ class RpcBlockchain(
             return rpcApiProvider.execute(EstimateGasJsonRpc(from, to, amount, gasLimit, gasPrice, data))
         }
     }
+
 }

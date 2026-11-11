@@ -2,7 +2,6 @@ package io.horizontalsystems.ethereumkit.api.core
 
 import com.google.gson.Gson
 import io.horizontalsystems.ethereumkit.api.jsonrpc.JsonRpc
-import kotlinx.coroutines.CancellationException
 import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -27,6 +26,7 @@ class NodeApiProvider(
     private val logger = Logger.getLogger(this.javaClass.simpleName)
     private val service: InfuraService
     private var currentRpcId = AtomicInteger(0)
+    private val failover = UriFailover(uris)
 
     init {
         val loggingInterceptor = HttpLoggingInterceptor { message -> logger.info(message) }
@@ -58,23 +58,11 @@ class NodeApiProvider(
 
     override suspend fun <T: Any> execute(rpc: JsonRpc<T>): T {
         rpc.id = currentRpcId.addAndGet(1)
+        val json = gson.toJson(rpc)
 
-        var error: Throwable = ApiProviderError.ApiUrlNotFound
-
-        for (uri in uris) {
-            try {
-                val rpcResponse = service.execute(uri, gson.toJson(rpc))
-                return rpc.parseResponse(rpcResponse, gson)
-            } catch (throwable: CancellationException) {
-                throw throwable
-            } catch (throwable: Throwable) {
-                error = throwable
-                if (throwable is JsonRpc.ResponseError.RpcError) {
-                    break
-                }
-            }
+        return failover.execute { uri ->
+            rpc.parseResponse(service.execute(uri, json), gson)
         }
-        throw error
     }
 
     private interface InfuraService {
