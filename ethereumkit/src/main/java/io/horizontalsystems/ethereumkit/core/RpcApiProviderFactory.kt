@@ -13,7 +13,7 @@ object RpcApiProviderFactory {
         null -> {
             val rpcApiProvider: IRpcApiProvider = when (rpcSource) {
                 is RpcSource.Http -> {
-                    NodeApiProvider(rpcSource.uris, EthereumKit.gson, rpcSource.auth)
+                    NodeApiProvider(rpcSource.endpoints, EthereumKit.gson)
                 }
 
                 is RpcSource.WebSocket -> throw IllegalStateException("Websocket not supported")

@@ -3,7 +3,20 @@ package io.horizontalsystems.ethereumkit.models
 import java.net.URI
 
 sealed class RpcSource {
-    data class Http(val uris: List<URI>, val auth: String?) : RpcSource()
+    /** One URL of an HTTP source, with the secret that belongs to it. */
+    data class Endpoint(val uri: URI, val auth: String? = null)
+
+    /**
+     * The endpoints are tried in order. Each carries its own secret, so endpoints of different
+     * providers can share one source and no provider receives another's secret.
+     */
+    data class Http(val endpoints: List<Endpoint>) : RpcSource() {
+        /** A single provider: every one of [uris] gets the same [auth]. */
+        constructor(uris: List<URI>, auth: String?) : this(uris.map { Endpoint(it, auth) })
+
+        val uris: List<URI>
+            get() = endpoints.map { it.uri }
+    }
     data class WebSocket(val uri: URI, val auth: String?) : RpcSource()
 
     companion object {
