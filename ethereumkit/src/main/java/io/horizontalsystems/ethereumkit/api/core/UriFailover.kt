@@ -32,13 +32,15 @@ internal class UriFailover<E>(
         for (index in order()) {
             try {
                 val result = attempt(endpoints[index])
-                onSuccess(index)
+                onAnswer(index)
                 return result
             } catch (throwable: CancellationException) {
                 throw throwable
             } catch (throwable: Throwable) {
                 error = throwable
                 if (throwable is JsonRpc.ResponseError.RpcError) {
+                    // The endpoint is alive: it answered, only with an error.
+                    onAnswer(index)
                     break
                 }
             }
@@ -60,7 +62,7 @@ internal class UriFailover<E>(
         return endpoints.indices.map { (start + it) % endpoints.size }
     }
 
-    private fun onSuccess(index: Int) {
+    private fun onAnswer(index: Int) {
         if (index != preferredIndex) {
             preferredIndex = index
             preferredSince = clock()

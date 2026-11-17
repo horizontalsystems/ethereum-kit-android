@@ -86,6 +86,28 @@ class UriFailoverTest {
         }
     }
 
+    // An RPC error is an answer, so the endpoint that gave it is alive and the next request
+    // must start there, not at the dead one before it.
+    @Test
+    fun endpointAnsweringWithRpcErrorBecomesPreferred() = runTest {
+        val failover = failover("a", "b", "c")
+
+        try {
+            failover.execute<String> { endpoint ->
+                calls.add(endpoint)
+                if (endpoint == "a") throw IOException("a is down")
+                throw JsonRpc.ResponseError.RpcError(RpcResponse.Error(-32000, "nonce too low"))
+            }
+            fail("expected RpcError")
+        } catch (e: JsonRpc.ResponseError.RpcError) {
+            assertEquals(listOf("a", "b"), calls)
+        }
+        calls.clear()
+
+        assertEquals("b", failover.execute(answer(setOf("a"))))
+        assertEquals(listOf("b"), calls)
+    }
+
     @Test
     fun allDeadThrowsLastError() = runTest {
         val failover = failover("a", "b")

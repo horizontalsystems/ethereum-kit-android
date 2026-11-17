@@ -33,6 +33,7 @@ import io.horizontalsystems.ethereumkit.models.RpcSource
 import io.horizontalsystems.ethereumkit.models.Signature
 import io.horizontalsystems.ethereumkit.models.Transaction
 import io.horizontalsystems.ethereumkit.models.TransactionLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,13 +42,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.math.BigInteger
 
 class RpcBlockchain(
     private val address: Address,
     private val storage: IApiStorage,
     private val syncer: IRpcSyncer,
-    private val transactionBuilder: TransactionBuilder
+    private val transactionBuilder: TransactionBuilder,
+    private val deliveryCheckTimeoutMs: Long = DELIVERY_CHECK_TIMEOUT_MS,
 ) : IBlockchain, IRpcSyncerListener, INonceProvider {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -150,14 +153,34 @@ class RpcBlockchain(
 
         try {
             syncer.execute(SendRawTransactionJsonRpc(encoded))
-        } catch (error: JsonRpc.ResponseError.RpcError) {
-            // The node already holds this exact transaction: an earlier attempt reached a node
-            // whose answer was lost, and the endpoint failover delivered it again. The hash is
-            // derived from the signed bytes, so the transaction is the one being sent.
-            if (!isAlreadyKnown(error)) throw error
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            // A failure here does not mean the transaction was not sent: an earlier attempt may
+            // have reached a node whose answer was lost. The endpoint failover then delivers the
+            // same bytes again, and the next node rejects them as already known, or with
+            // "nonce too low" once the transaction is in a block. Reporting that as a failure
+            // invites sending again, which would be a second transaction with a new nonce.
+            // The hash is derived from the signed bytes, so a node that knows it has this
+            // transaction.
+            val knownByMessage = error is JsonRpc.ResponseError.RpcError && isAlreadyKnown(error)
+            if (!knownByMessage && !isKnownToNode(transaction.hash)) throw error
         }
         return transaction
     }
+
+    private suspend fun isKnownToNode(transactionHash: ByteArray): Boolean =
+        withTimeoutOrNull(deliveryCheckTimeoutMs) {
+            try {
+                // An unknown hash answers null, which fails to parse
+                syncer.execute(GetTransactionByHashJsonRpc(transactionHash))
+                true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                false
+            }
+        } ?: false
 
     override suspend fun getNonce(defaultBlockParameter: DefaultBlockParameter): Long {
         return syncer.execute(GetTransactionCountJsonRpc(address, defaultBlockParameter))
@@ -272,6 +295,9 @@ class RpcBlockchain(
     //endregion
 
     companion object {
+        // Long enough for a live node to answer, short enough not to hold up a real failure
+        private const val DELIVERY_CHECK_TIMEOUT_MS = 5_000L
+
         private val alreadyKnownMessages = listOf("already known", "known transaction", "already imported", "alreadyknown")
 
         internal fun isAlreadyKnown(error: JsonRpc.ResponseError.RpcError): Boolean {
