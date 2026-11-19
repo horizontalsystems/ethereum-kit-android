@@ -140,4 +140,25 @@ class UriFailoverTest {
         assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("Unknown transaction")))
         assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("transaction type not supported: unknown transaction: 0x05")))
     }
+
+    @Test
+    fun preferenceReadWhileItIsSetIsKept() = runTest {
+        // Later than the TTL, as any real clock is
+        now = 5_000
+        var reading = false
+        lateinit var failover: UriFailover<String>
+        // Another request reads the preference at the moment this one stores it
+        failover = UriFailover(listOf("a", "b"), preferredTtlMs = 1_000, clock = {
+            if (!reading) {
+                reading = true
+                failover.preferred
+                reading = false
+            }
+            now
+        })
+
+        failover.execute(answer(setOf("a")))
+
+        assertEquals("b", failover.preferred)
+    }
 }
