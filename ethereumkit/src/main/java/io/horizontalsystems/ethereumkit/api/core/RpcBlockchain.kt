@@ -298,12 +298,13 @@ class RpcBlockchain(
         // Long enough for a live node to answer, short enough not to hold up a real failure
         private const val DELIVERY_CHECK_TIMEOUT_MS = 5_000L
 
-        private val alreadyKnownMessages = listOf("already known", "known transaction", "already imported", "alreadyknown")
+        // Whole phrases only: "unknown transaction type" is a refusal, and it contains
+        // "known transaction".
+        private val alreadyKnownMessage =
+            Regex("(?<![a-z])(already known|known transaction|already imported|alreadyknown)(?![a-z])")
 
-        internal fun isAlreadyKnown(error: JsonRpc.ResponseError.RpcError): Boolean {
-            val message = error.error.message.lowercase()
-            return alreadyKnownMessages.any { message.contains(it) }
-        }
+        internal fun isAlreadyKnown(error: JsonRpc.ResponseError.RpcError): Boolean =
+            alreadyKnownMessage.containsMatchIn(error.error.message.lowercase())
 
         fun instance(
             address: Address,

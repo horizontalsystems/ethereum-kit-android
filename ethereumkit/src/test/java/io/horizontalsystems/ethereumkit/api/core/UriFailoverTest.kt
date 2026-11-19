@@ -131,4 +131,13 @@ class UriFailoverTest {
         assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("nonce too low")))
         assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("insufficient funds for gas * price + value")))
     }
+
+    @Test
+    fun refusalThatContainsAKnownPhraseIsNotRecognised() {
+        fun rpcError(message: String) = JsonRpc.ResponseError.RpcError(RpcResponse.Error(-32000, message))
+
+        assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("unknown transaction type")))
+        assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("Unknown transaction")))
+        assertFalse(RpcBlockchain.isAlreadyKnown(rpcError("transaction type not supported: unknown transaction: 0x05")))
+    }
 }
